@@ -22,9 +22,19 @@ components:
       type: object
       description: 健康检查响应体。
       additionalProperties: false
+      required:
+        - status
+        - service
+        - version
       properties:
         status:
           type: string
           description: 服务健康状态，当前占位只允许 ok。
           enum:
             - ok
+        service:
+          type: string
+          description: 返回健康状态的后端服务名称。
+        version:
+          type: string
+          description: 返回健康状态的后端服务版本。

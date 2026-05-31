@@ -5,6 +5,7 @@ description = "Insight Agent Platform 的 Python / FastAPI / LangGraph Agent Run
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.6,<1.0.0",
+    "pydantic>=2.0.0,<3.0.0",
     "uvicorn[standard]>=0.34.0,<1.0.0",
 ]
 
