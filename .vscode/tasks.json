@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: Web",
+      "type": "shell",
+      "command": "pnpm dev:web",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Backend",
+      "type": "shell",
+      "command": "pnpm dev:backend",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Web + Backend",
+      "dependsOn": ["Dev: Web", "Dev: Backend"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "Open: Web",
+      "type": "shell",
+      "command": "pnpm debug:web",
+      "problemMatcher": []
+    },
+    {
+      "label": "Open: API Docs",
+      "type": "shell",
+      "command": "pnpm debug:api",
+      "problemMatcher": []
+    },
+    {
+      "label": "Check: Health",
+      "type": "shell",
+      "command": "pnpm debug:health",
+      "problemMatcher": []
+    }
+  ]
+}
