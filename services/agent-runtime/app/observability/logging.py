@@ -2,7 +2,8 @@
 承载结构化日志的模块位置。
 
 链路位置：
-上游是 API、application、runtime、tools 和 infrastructure；当前模块统一日志语义；下游是日志平台和排障流程。
+上游是 API、application、runtime、tools 和 infrastructure；
+当前模块统一日志语义；下游是日志平台和排障流程。
 
 边界：
 允许记录可排查的结构化上下文；不允许输出密钥、原始敏感数据或未脱敏模型输入。

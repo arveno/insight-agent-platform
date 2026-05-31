@@ -2,7 +2,8 @@
 承载治理审计事件的记录边界。
 
 链路位置：
-上游是 policy_engine、sql_guard、tool_permission 和 data_access；当前模块归集审计语义；下游是 AuditLog contract 和持久化层。
+上游是 policy_engine、sql_guard、tool_permission 和 data_access；
+当前模块归集审计语义；下游是 AuditLog contract 和持久化层。
 
 边界：
 允许记录谁在何时因何规则访问或拒绝了什么资源；不允许记录脱离契约的临时审计字段。
