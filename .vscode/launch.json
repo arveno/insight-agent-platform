@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "Debug: Web Console",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/apps/web"
     },
     {
       "name": "Debug: FastAPI Docs",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "url": "http://127.0.0.1:8000/docs",
       "webRoot": "${workspaceFolder}"
