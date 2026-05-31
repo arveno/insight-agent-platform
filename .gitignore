@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# env
+.env
+.env.*
+!.env.example
+
+# build
+dist/
+build/
+coverage/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# local data
+.local/
+*.sqlite
