@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  structure:
+    name: Structure Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify required project structure
+        run: |
+          test -f AGENTS.md
+          test -f README.md
+          test -f docs/architecture.md
+          test -f docs/contracts.md
+          test -f docs/deployment.md
+          test -d apps/web
+          test -d services/agent-runtime
+          test -d packages/contracts
+          test -d deploy
+          test -d scripts
+
+  contracts:
+    name: Contracts Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify contracts layout
+        run: |
+          test -d packages/contracts/schemas
+          test -d packages/contracts/openapi
+          test -d packages/contracts/generated
+
+  frontend:
+    name: Frontend Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify frontend layout
+        run: |
+          test -d apps/web/src/app
+          test -d apps/web/src/features
+          test -d apps/web/src/shared
+
+  backend:
+    name: Backend Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify backend layout
+        run: |
+          test -d services/agent-runtime/app/api
+          test -d services/agent-runtime/app/domain
+          test -d services/agent-runtime/app/runtime
+          test -d services/agent-runtime/app/agents
+          test -d services/agent-runtime/app/tools
+          test -d services/agent-runtime/app/model_gateway
+          test -d services/agent-runtime/app/governance
+          test -d services/agent-runtime/app/observability
+
+  smoke:
+    name: Smoke Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify smoke scripts layout
+        run: |
+          test -d scripts/smoke
+          test -d scripts/load
+          test -d scripts/failure-simulation
