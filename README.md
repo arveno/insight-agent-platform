@@ -54,6 +54,25 @@ Insight Agent Platform 是一个面向企业经营分析场景的 Agent 全栈�
 - Contracts：JSON Schema 校验、OpenAPI 检查、类型生成和 contract test 承载位。
 - Security：secret scan、依赖审计、Governance / SQL Guard / Tool Permission / Sensitive Field 承载位。
 
+## 本地运行
+
+```bash
+pnpm install
+
+pnpm dev
+pnpm dev:backend
+pnpm debug:api
+pnpm debug:health
+pnpm help:scripts
+```
+
+- `pnpm dev`：启动前端。
+- `pnpm dev:backend`：启动 FastAPI 后端。
+- `pnpm debug:api`：打开 FastAPI Swagger Docs。
+- `pnpm debug:health`：检查 `/health`。
+- `pnpm help:scripts`：查看常用命令说明。
+- 当前项目仍是最小可运行基线，不包含真实业务功能。
+
 ## 目录概览
 
 ```text
