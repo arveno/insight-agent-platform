@@ -12,44 +12,44 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 
 ### Frontend
 
-- React
-- TypeScript
-- Vite
-- Ant Design v5
-- Ant Design X
-- ProComponents 按需
-- TanStack Query
-- Zustand
-- ECharts / Ant Design Charts
+- React：前端 UI 框架，负责构建企业级 Web Console 页面。
+- TypeScript：前端类型系统，约束组件、ViewModel、API response 和业务字段。
+- Vite：前端开发与构建工具，负责本地开发服务和静态资源构建。
+- Ant Design v5：企业级基础 UI 组件库，作为本项目统一 UI 设计语言。
+- Ant Design X：AI 交互组件体系，后续用于分析输入、AI 回复、会话式交互等场景。
+- ProComponents 按需：中后台表格、表单、详情页等复杂业务组件的增强能力。
+- TanStack Query：服务端状态管理，负责 API 请求缓存、加载态、错误态和重新获取。
+- Zustand：前端本地 UI 状态管理，负责页面局部状态、面板状态、筛选状态等。
+- ECharts / Ant Design Charts：图表能力，负责指标趋势、经营看板、评估结果和成本趋势展示。
 
 ### Backend
 
-- Python
-- FastAPI
-- LangGraph
-- LangChain
-- LlamaIndex
+- Python：后端主语言，承载 FastAPI 服务、Agent Runtime 和 AI 工程链路。
+- FastAPI：HTTP API 框架，负责接口路由、参数校验、依赖注入和响应输出。
+- LangGraph：Agent Runtime 核心，负责任务状态机、Graph 编排、节点执行和长期运行链路。
+- LangChain：模型调用、Tool Calling、结构化输出等 LLM 能力层。
+- LlamaIndex：Knowledge / RAG 能力层，负责文档解析、索引、检索和知识增强。
 
 ### AI / Agent
 
-- LangGraph：Agent Runtime
-- LangChain：Model / Tool 能力层
-- LlamaIndex：Knowledge / RAG
-- Milvus：主向量库
-- DeepEval / RAGAs：Evaluation
-- LangSmith / Langfuse：Observability
-- 自研 Model Gateway
-- 自研 Tool Registry
-- 自研 Governance / SQL Guard / Policy
+- LangGraph：Agent Runtime，作为多 Agent 编排、状态流转、Human-in-the-loop 和可恢复执行的核心底座。
+- LangChain：Model / Tool 能力层，承接模型调用、工具定义、结构化输出和 Provider 适配。
+- LlamaIndex：Knowledge / RAG 能力层，承接业务文档、知识切片、索引和检索增强。
+- Milvus：主向量库，负责知识库、RAG、Source Evidence 和后续 Memory 检索的向量存储。
+- DeepEval / RAGAs：Evaluation 工具，分别用于 Agent / 报告质量评估和 RAG 检索质量评估。
+- LangSmith / Langfuse：Observability 工具，用于 Trace、调试、评估记录和后续私有化观测预留。
+- 自研 Model Gateway：模型调用唯一入口，统一模型路由、重试、fallback、token、成本、延迟和错误类型。
+- 自研 Tool Registry：Agent 工具调用唯一入口，统一工具 schema、权限、风险等级、trace 和 handler。
+- 自研 Governance / SQL Guard / Policy：企业安全治理层，负责权限、SQL 风险、工具风险、敏感字段和审计。
 
 ### Infrastructure
 
-- Docker
-- CloudBase Run
-- MySQL 8.x
-- Redis
-- SQL migration
-- Queue / Scheduler 预留
+- Docker：后端服务容器化基础，保证 Agent Runtime 可构建、可部署、可回滚。
+- CloudBase Run：当前后端主部署平台，承载 Docker 化后的 FastAPI / LangGraph Agent Runtime。
+- MySQL 8.x：当前主数据库，负责持久化 Workspace、Analysis Run、Memory、Feedback、Evaluation、Report 等业务数据。
+- Redis：缓存与队列基础设施预留，后续承载缓存、异步任务状态、限流和任务队列。
+- SQL migration：数据库结构事实源，所有表结构变更必须通过仓库内 SQL migration 演进。
+- Queue / Scheduler 预留：异步任务和定时任务承载位，后续用于 RAG ingestion、Evaluation、Report 生成、数据质量检查等后台任务。
 
 ## 3. Monorepo 结构
 
