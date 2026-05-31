@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Insight Agent Runtime API
+  version: 0.1.0
+  description: Placeholder OpenAPI contract for the Agent Runtime service.
+paths:
+  /health:
+    get:
+      summary: Health check placeholder
+      operationId: getHealth
+      responses:
+        "200":
+          description: Runtime health status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+            - ok

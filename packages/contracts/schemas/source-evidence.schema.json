@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/source-evidence.schema.json",
+  "title": "SourceEvidence",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sourceEvidenceId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": [
+        "data_table",
+        "metric",
+        "knowledge_document",
+        "knowledge_chunk",
+        "sql_query",
+        "analysis_memory",
+        "decision_memory"
+      ]
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "snippet": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

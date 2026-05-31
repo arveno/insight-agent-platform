@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/bad-case.schema.json",
+  "title": "BadCase",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "badCaseId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "feedbackId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evaluationRunId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failureType": {
+      "type": "string"
+    },
+    "failureReason": {
+      "type": "string"
+    },
+    "expectedBehavior": {
+      "type": "string"
+    },
+    "relatedRule": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "relatedContract": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

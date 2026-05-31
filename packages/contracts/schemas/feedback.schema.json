@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/feedback.schema.json",
+  "title": "Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "feedbackId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "feedbackType": {
+      "type": "string",
+      "enum": [
+        "useful",
+        "not_useful",
+        "incorrect",
+        "sql_error",
+        "source_insufficient",
+        "analysis_shallow",
+        "suggestion_unusable",
+        "format_preference",
+        "manual_correction"
+      ]
+    },
+    "comment": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "correction": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

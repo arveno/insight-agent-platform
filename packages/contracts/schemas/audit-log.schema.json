@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/audit-log.schema.json",
+  "title": "AuditLog",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "auditLogId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "resourceType": {
+      "type": "string"
+    },
+    "resourceId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

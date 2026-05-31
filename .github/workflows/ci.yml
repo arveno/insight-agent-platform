@@ -14,19 +14,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify required project structure
         run: |
-          test -f AGENTS.md
-          test -f README.md
-          test -f docs/architecture.md
-          test -f docs/contracts.md
-          test -f docs/deployment.md
-          test -d apps/web
-          test -d services/agent-runtime
-          test -d packages/contracts
-          test -d deploy
-          test -d scripts
+          required_paths=(
+            AGENTS.md
+            README.md
+            docs/architecture.md
+            docs/contracts.md
+            docs/deployment.md
+            .github/ISSUE_TEMPLATE/task.yml
+            .github/pull_request_template.md
+            apps/web
+            services/agent-runtime
+            packages/contracts
+            deploy
+            scripts
+          )
+
+          for path in "${required_paths[@]}"; do
+            test -e "$path"
+          done
 
   contracts:
-    name: Contracts Placeholder
+    name: Contracts Layout Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,20 +43,90 @@ jobs:
           test -d packages/contracts/schemas
           test -d packages/contracts/openapi
           test -d packages/contracts/generated
+          test -d packages/contracts/generated/typescript
+          test -d packages/contracts/generated/python
+          test -f packages/contracts/package.json
+          test -f packages/contracts/openapi/agent-runtime.openapi.yaml
+
+          for schema in \
+            workspace \
+            analysis-run \
+            run-event \
+            tool-call \
+            model-call \
+            memory-item \
+            feedback \
+            evaluation-run \
+            bad-case \
+            source-evidence \
+            report \
+            decision \
+            audit-log; do
+            test -f "packages/contracts/schemas/${schema}.schema.json"
+          done
 
   frontend:
-    name: Frontend Placeholder
+    name: Frontend Layout Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Verify frontend layout
         run: |
           test -d apps/web/src/app
+          test -d apps/web/src/app/router
+          test -d apps/web/src/app/providers
+          test -d apps/web/src/app/layout
+          test -d apps/web/src/app/theme
+          test -d apps/web/src/pages
           test -d apps/web/src/features
           test -d apps/web/src/shared
 
+          for page in \
+            dashboard \
+            analysis \
+            reports \
+            memory \
+            feedback \
+            evaluation \
+            governance \
+            observability \
+            settings; do
+            test -d "apps/web/src/pages/${page}"
+          done
+
+          for feature in \
+            workspace \
+            data-knowledge \
+            metrics \
+            agent-analysis \
+            memory \
+            feedback \
+            evaluation \
+            model-tools \
+            governance \
+            observability \
+            reports; do
+            for layer in api models mappers components pages hooks; do
+              test -d "apps/web/src/features/${feature}/${layer}"
+            done
+          done
+
+          for shared in \
+            api \
+            ui \
+            layout \
+            charts \
+            theme \
+            hooks \
+            stores \
+            types \
+            utils \
+            constants; do
+            test -d "apps/web/src/shared/${shared}"
+          done
+
   backend:
-    name: Backend Placeholder
+    name: Backend Layout Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,14 +140,91 @@ jobs:
           test -d services/agent-runtime/app/model_gateway
           test -d services/agent-runtime/app/governance
           test -d services/agent-runtime/app/observability
+          test -d services/agent-runtime/app/api/routes
+          test -d services/agent-runtime/app/runtime/nodes
+          test -d services/agent-runtime/app/runtime/edges
+          test -d services/agent-runtime/app/runtime/checkpoints
+          test -d services/agent-runtime/app/model_gateway/providers
+          test -d services/agent-runtime/app/schemas/requests
+          test -d services/agent-runtime/app/schemas/responses
+          test -d services/agent-runtime/app/schemas/dto
+
+          for agent in \
+            orchestrator \
+            data_analyst \
+            knowledge \
+            memory \
+            report \
+            evaluation \
+            governance; do
+            test -d "services/agent-runtime/app/agents/${agent}"
+          done
+
+          for file in \
+            services/agent-runtime/app/tools/registry.py \
+            services/agent-runtime/app/tools/sql_tool.py \
+            services/agent-runtime/app/tools/metric_tool.py \
+            services/agent-runtime/app/tools/rag_tool.py \
+            services/agent-runtime/app/tools/memory_tool.py \
+            services/agent-runtime/app/tools/report_tool.py \
+            services/agent-runtime/app/tools/mcp_adapter.py \
+            services/agent-runtime/app/model_gateway/gateway.py \
+            services/agent-runtime/app/model_gateway/routing.py \
+            services/agent-runtime/app/model_gateway/cost.py \
+            services/agent-runtime/app/model_gateway/errors.py \
+            services/agent-runtime/app/memory/user_memory.py \
+            services/agent-runtime/app/memory/workspace_memory.py \
+            services/agent-runtime/app/memory/analysis_memory.py \
+            services/agent-runtime/app/memory/decision_memory.py \
+            services/agent-runtime/app/evaluation/regression.py \
+            services/agent-runtime/app/governance/policy_engine.py \
+            services/agent-runtime/app/governance/sql_guard.py \
+            services/agent-runtime/app/governance/tool_permission.py \
+            services/agent-runtime/app/governance/data_access.py \
+            services/agent-runtime/app/governance/audit.py \
+            services/agent-runtime/app/observability/trace.py \
+            services/agent-runtime/app/observability/metrics.py \
+            services/agent-runtime/app/observability/logging.py \
+            services/agent-runtime/app/observability/cost.py; do
+            test -f "$file"
+          done
+
+          for infra in \
+            db \
+            repositories \
+            vector_store \
+            cache \
+            queue \
+            scheduler \
+            object_storage \
+            secrets \
+            external_clients \
+            migrations \
+            seed \
+            backup \
+            restore \
+            notifications \
+            data_quality; do
+            test -d "services/agent-runtime/app/infrastructure/${infra}"
+          done
 
   smoke:
-    name: Smoke Placeholder
+    name: Smoke Layout Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Verify smoke scripts layout
         run: |
+          test -d deploy/docker
+          test -d deploy/cloudbase-run
+          test -d scripts/contracts
           test -d scripts/smoke
           test -d scripts/load
           test -d scripts/failure-simulation
+          test -d scripts/deploy
+
+          test -d services/agent-runtime/app/tests/unit
+          test -d services/agent-runtime/app/tests/contract
+          test -d services/agent-runtime/app/tests/integration
+          test -d services/agent-runtime/app/tests/smoke
+          test -d services/agent-runtime/app/tests/failure_simulation

@@ -1,0 +1,15 @@
+{
+  "name": "@insight-agent/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Contracts-first schemas and generated types for Insight Agent Platform.",
+  "type": "module",
+  "files": [
+    "schemas",
+    "openapi",
+    "generated"
+  ],
+  "scripts": {
+    "check": "echo \"contracts layout check placeholder\""
+  }
+}
