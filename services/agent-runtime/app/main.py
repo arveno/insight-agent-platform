@@ -1,10 +1,17 @@
-"""Agent Runtime 入口模块。"""
+"""Agent Runtime FastAPI 入口模块。"""
+
+from fastapi import FastAPI
+
+from app.api.routes import health
+from app.core.config import get_settings
 
 
-def create_app():
-    """创建 FastAPI 应用。
+def create_app() -> FastAPI:
+    """创建最小 FastAPI 应用。"""
+    settings = get_settings()
+    application = FastAPI(title=settings.service_name, version=settings.version)
+    application.include_router(health.router)
+    return application
 
-    职责是固定后端服务入口位置，后续真实 FastAPI 应用必须在已审查通过的 Issue 中实现。
-    当前阶段只保留企业级目录骨架，不在入口中提前实现业务逻辑。
-    """
-    return None
+
+app = create_app()
