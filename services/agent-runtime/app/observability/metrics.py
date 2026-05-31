@@ -1,2 +1,12 @@
-"""Metrics observability placeholder."""
+"""职责：
+承载系统运行指标采集的模块位置。
 
+链路位置：
+上游是 runtime、tools、model_gateway 和 infrastructure；当前模块归集运行指标；下游是监控系统。
+
+边界：
+允许记录延迟、错误率、吞吐和资源指标；不允许在这里定义业务指标口径。
+
+原因：
+运行指标用于平台稳定性观测，必须和业务 metrics domain 分离，避免语义混淆。
+"""

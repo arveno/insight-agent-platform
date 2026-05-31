@@ -2,7 +2,7 @@
   "name": "@insight-agent/contracts",
   "private": true,
   "version": "0.1.0",
-  "description": "Contracts-first schemas and generated types for Insight Agent Platform.",
+  "description": "Insight Agent Platform 的 contracts-first schema 与生成类型事实源。",
   "type": "module",
   "files": [
     "schemas",
@@ -10,6 +10,6 @@
     "generated"
   ],
   "scripts": {
-    "check": "echo \"contracts layout check placeholder\""
+    "check": "echo \"contracts 布局检查占位\""
   }
 }

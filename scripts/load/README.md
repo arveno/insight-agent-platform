@@ -1,5 +1,4 @@
 # Load Scripts
 
-Load test placeholders belong here, including latency, error-rate, and cache
-metrics coverage.
-
+Load Test 脚本放在这里，后续覆盖延迟、错误率、缓存命中率和容量指标。
+当前阶段只固定目录职责，不实现压测逻辑。

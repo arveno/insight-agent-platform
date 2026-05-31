@@ -10,8 +10,15 @@
 
 ## 2. 执行流程
 
+- 需求必须先被拆成 Issue。
 - Issue 是执行合同。
+- Issue 必须基于需求、`AGENTS.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 建立。
+- Issue 建立后不能直接交给 Codex 执行。
+- 必须先进行 Issue 合规审查。
+- Issue 合规审查通过后，Codex 才能执行代码。
+- 未经审查通过的 Issue，不允许进入代码执行阶段。
 - PR 是履约证明。
+- PR 只按已审查通过的 Issue 反查，不重新发明标准。
 - CI 是自动守门。
 - 用户最终决定是否 Merge。
 - Codex 不得绕过 Issue 自由发挥。
@@ -25,7 +32,26 @@
 
 并在 Issue 中摘出本次任务相关规则。
 
-## 3. 总体代码规则
+## 3. Issue 合规审查
+
+Issue 建立后必须先完成合规审查，审查通过后才允许进入 Codex 代码执行阶段。
+
+审查项至少包括：
+
+- 目标是否清楚。
+- 修改范围是否明确。
+- 事实源是否完整，包括需求、`AGENTS.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts`。
+- 是否摘出了本次任务相关规则，而不是只写“遵守文档”。
+- 禁止项是否明确。
+- 验收标准是否可检查。
+- 测试要求是否明确。
+- 是否存在 Codex 自由发挥空间。
+- 是否越过 `architecture` / `contracts` / `AGENTS` 事实源。
+- 是否引入 Mock / Real 双链路、无关依赖、无关重构或业务范围外实现。
+
+审查结论必须明确写入 Issue。未通过审查的 Issue 必须退回补充，不能进入代码执行阶段。
+
+## 4. 总体代码规则
 
 - 采用 monorepo + modular monolith。
 - 采用 Contracts-first。
@@ -36,7 +62,7 @@
 - 不把 demo-only 逻辑混入主链路。
 - 不保留长期兼容字段兜底。
 
-## 4. 前后端字段一致
+## 5. 前后端字段一致
 
 核心业务字段以 `packages/contracts` 为事实源。
 
@@ -55,7 +81,7 @@ status === 'done' || status === 'completed' || status === 'success'
 source.sources || source.evidences || source.references
 ```
 
-## 5. 数据链路
+## 6. 数据链路
 
 固定链路：
 
@@ -76,7 +102,7 @@ External Raw Data
 - UI 直接使用 Tool 原始输出。
 - UI 直接使用 LangGraph 原始 state。
 
-## 6. 前端规则
+## 7. 前端规则
 
 - 前端采用 React / TypeScript / Vite / Ant Design 体系。
 - 不允许引入第二套 UI 组件库。
@@ -86,7 +112,7 @@ External Raw Data
 - 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
 - 设计 token 必须走 `shared/theme`。
 
-## 7. 后端规则
+## 8. 后端规则
 
 后端采用 Python / FastAPI / LangGraph。
 
@@ -114,7 +140,7 @@ External Raw Data
 - 业务代码直接访问数据库连接。
 - 模型直接执行 SQL。
 
-## 8. Tool Registry 规则
+## 9. Tool Registry 规则
 
 所有工具必须注册，并包含：
 
@@ -129,7 +155,7 @@ External Raw Data
 - error type
 - trace event type
 
-## 9. Model Gateway 规则
+## 10. Model Gateway 规则
 
 所有模型调用必须统一走 Model Gateway。
 
@@ -145,7 +171,7 @@ Model Gateway 负责：
 - trace
 - error mapping
 
-## 10. Memory / Feedback / Evaluation 分域
+## 11. Memory / Feedback / Evaluation 分域
 
 - Memory：系统长期记住的信息。
 - Feedback：用户对本次结果的反馈。
@@ -153,7 +179,7 @@ Model Gateway 负责：
 
 三者不得混用。
 
-## 11. Mock 策略
+## 12. Mock 策略
 
 产品没有 Mock 模式。
 
@@ -171,7 +197,7 @@ Model Gateway 负责：
 - mockRun / realRun 双链路。
 - 组件中判断 mock 数据。
 
-## 12. 测试和 CI
+## 13. 测试和 CI
 
 每个任务必须给出对应测试或验证证据。
 
@@ -186,7 +212,7 @@ CI 至少覆盖：
 - frontend build
 - smoke test
 
-## 13. PR 规则
+## 14. PR 规则
 
 PR 必须说明：
 

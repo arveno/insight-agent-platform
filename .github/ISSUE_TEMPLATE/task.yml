@@ -1,66 +1,112 @@
-name: Agent Full-Stack Task
-description: Use this template for every implementation task.
-title: "[Task] "
+name: Agent 全栈任务
+description: 用于所有实现任务。Issue 必须先完成合规审查，通过后才允许 Codex 执行代码。
+title: "[任务] "
 labels: ["task"]
 body:
   - type: textarea
     id: goal
     attributes:
-      label: Goal / 目标
-      description: What problem does this task solve?
+      label: 目标 / Goal
+      description: 请说明本任务要解决的具体问题，以及为什么现在需要处理。
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
-      label: Scope / 修改范围
-      description: List allowed directories, modules, and files.
+      label: 修改范围 / Scope
+      description: 请列出允许修改的目录、模块和文件，并说明哪些范围不能触碰。
     validations:
       required: true
   - type: textarea
     id: fact-sources
     attributes:
-      label: Fact Sources / 事实源
-      description: List relevant rules from AGENTS.md, architecture.md, contracts.md, packages/contracts.
+      label: 事实源 / Fact Sources
+      description: 请列出本任务必须依据的事实源，包括需求、AGENTS.md、架构文档、契约文档和 packages/contracts。
       placeholder: |
-        - AGENTS.md: ...
-        - docs/architecture.md: ...
-        - docs/contracts.md: ...
-        - packages/contracts: ...
+        - 需求来源：
+        - AGENTS.md：
+        - docs/architecture.md：
+        - docs/contracts.md：
+        - packages/contracts：
     validations:
       required: true
   - type: textarea
     id: rules
     attributes:
-      label: Required Rules / 必须遵守的规则
-      description: Copy task-specific rules directly into this issue. Do not just say "follow docs".
+      label: 必须遵守的规则 / Required Rules
+      description: 请把本任务相关规则直接摘到 Issue 中，不要只写“遵守文档”。
     validations:
       required: true
   - type: textarea
     id: forbidden
     attributes:
-      label: Forbidden / 禁止项
-      description: What must not be changed or introduced?
+      label: 禁止项 / Forbidden
+      description: 请明确不能修改、不能新增、不能引入的内容。
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
-      label: Acceptance Criteria / 验收标准
-      description: Concrete, checkable acceptance criteria.
+      label: 验收标准 / Acceptance Criteria
+      description: 请写出具体、可检查、可由 PR 证明的验收标准。
     validations:
       required: true
   - type: textarea
     id: tests
     attributes:
-      label: Test Requirements / 测试要求
-      description: What commands, checks, screenshots, or evidence are required?
+      label: 测试要求 / Test Requirements
+      description: 请说明必须运行的命令、结构检查、截图或其他验证证据。
     validations:
       required: true
   - type: textarea
     id: pr-evidence
     attributes:
-      label: PR Evidence / PR 证据要求
-      description: What must the PR prove?
+      label: PR 证据要求 / PR Evidence
+      description: 请说明 PR 必须证明哪些规则已遵守、哪些结果已验证、是否存在风险或未完成项。
     validations:
       required: true
+  - type: dropdown
+    id: issue-review-status
+    attributes:
+      label: Issue 合规审查状态 / Issue Review Status
+      description: 请选择当前 Issue 是否已经完成代码执行前的合规审查。
+      options:
+        - 待审查 / Pending
+        - 审查通过 / Approved
+        - 审查未通过 / Rejected
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: 审查人 / Reviewer
+      description: 请填写负责 Issue 合规审查的人。未填写审查人时，不允许进入 Codex 执行阶段。
+      placeholder: 例如：@username
+    validations:
+      required: true
+  - type: textarea
+    id: review-result
+    attributes:
+      label: 审查结论 / Review Result
+      description: 请记录审查结论，至少覆盖目标、范围、事实源、规则、禁止项、验收标准、测试要求和是否存在自由发挥空间。
+      placeholder: |
+        - 目标是否清楚：
+        - 修改范围是否明确：
+        - 事实源是否完整：
+        - 是否摘出本次相关规则：
+        - 禁止项是否明确：
+        - 验收标准是否可检查：
+        - 测试要求是否明确：
+        - 是否存在 Codex 自由发挥空间：
+        - 是否越过 architecture / contracts / AGENTS 事实源：
+        - 审查结论：
+    validations:
+      required: true
+  - type: checkboxes
+    id: approved-for-codex-execution
+    attributes:
+      label: 是否允许 Codex 执行 / Approved for Codex Execution
+      description: 只有勾选后，本 Issue 才允许进入 Codex 代码执行阶段。
+      options:
+        - label: 本 Issue 已完成合规审查，并允许 Codex 按已审查通过的 Issue 执行代码。
+          required: true

@@ -2,16 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/source-evidence.schema.json",
   "title": "SourceEvidence",
+  "description": "报告、结论和 RAG 引用的来源证据契约，用于可追溯分析。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "sourceEvidenceId": {
+      "description": "来源证据唯一标识。",
       "type": "string"
     },
     "runId": {
+      "description": "证据所属分析运行标识。",
       "type": "string"
     },
     "sourceType": {
+      "description": "证据来源类型，必须使用 contracts 中定义的 SourceEvidence 来源枚举。",
       "type": "string",
       "enum": [
         "data_table",
@@ -24,23 +28,29 @@
       ]
     },
     "sourceId": {
+      "description": "来源对象标识，例如表、指标、文档、知识切片、SQL 查询或记忆条目。",
       "type": "string"
     },
     "title": {
+      "description": "证据标题，用于报告和 UI 展示。",
       "type": "string"
     },
     "snippet": {
+      "description": "证据摘要或片段，用于说明结论依据。",
       "type": "string"
     },
     "metadata": {
+      "description": "证据扩展元数据，必须保持结构化，不能替代标准字段。",
       "type": "object"
     },
     "confidence": {
+      "description": "证据可信度，取值范围为 0 到 1。",
       "type": "number",
       "minimum": 0,
       "maximum": 1
     },
     "createdAt": {
+      "description": "证据创建时间。",
       "type": "string",
       "format": "date-time"
     }

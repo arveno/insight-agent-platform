@@ -1,7 +1,7 @@
 [project]
 name = "insight-agent-runtime"
 version = "0.1.0"
-description = "Python FastAPI and LangGraph Agent Runtime for Insight Agent Platform."
+description = "Insight Agent Platform 的 Python / FastAPI / LangGraph Agent Runtime。"
 requires-python = ">=3.11"
 dependencies = []
 

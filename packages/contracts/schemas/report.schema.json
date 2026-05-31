@@ -2,37 +2,46 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/report.schema.json",
   "title": "Report",
+  "description": "Agent 生成的正式分析报告契约。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "reportId": {
+      "description": "报告唯一标识。",
       "type": "string"
     },
     "runId": {
+      "description": "生成该报告的分析运行标识。",
       "type": "string"
     },
     "workspaceId": {
+      "description": "报告所属工作区标识。",
       "type": "string"
     },
     "title": {
+      "description": "报告标题。",
       "type": "string"
     },
     "summary": {
+      "description": "报告摘要，用于快速理解主要结论。",
       "type": "string"
     },
     "sections": {
+      "description": "报告章节列表，后续应由 ReportSection 契约承载结构化字段。",
       "type": "array",
       "items": {
         "type": "object"
       }
     },
     "sourceEvidence": {
+      "description": "报告引用的来源证据标识列表。",
       "type": "array",
       "items": {
         "type": "string"
       }
     },
     "createdAt": {
+      "description": "报告创建时间。",
       "type": "string",
       "format": "date-time"
     }

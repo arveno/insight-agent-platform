@@ -2,19 +2,24 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/memory-item.schema.json",
   "title": "MemoryItem",
+  "description": "系统长期记忆条目的契约对象，和 Feedback、Evaluation 分域。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "memoryItemId": {
+      "description": "记忆条目唯一标识。",
       "type": "string"
     },
     "workspaceId": {
+      "description": "记忆所属工作区标识，用于租户隔离和检索范围控制。",
       "type": "string"
     },
     "userId": {
+      "description": "记忆关联用户标识；工作区级记忆也可用于记录创建或归属用户。",
       "type": "string"
     },
     "memoryType": {
+      "description": "记忆类型，必须使用 user、workspace、analysis、decision 中的一个。",
       "type": "string",
       "enum": [
         "user",
@@ -24,9 +29,11 @@
       ]
     },
     "content": {
+      "description": "经过治理和确认后可长期保存的记忆内容。",
       "type": "string"
     },
     "createdAt": {
+      "description": "记忆条目创建时间。",
       "type": "string",
       "format": "date-time"
     }

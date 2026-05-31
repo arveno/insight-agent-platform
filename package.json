@@ -2,11 +2,11 @@
   "name": "insight-agent-platform",
   "private": true,
   "version": "0.1.0",
-  "description": "Enterprise business insight and decision Agent platform.",
+  "description": "企业经营分析与决策 Agent 平台。",
   "scripts": {
     "check:structure": "node scripts/contracts/check-structure.mjs",
-    "check:contracts": "echo \"contracts check placeholder\"",
-    "smoke": "echo \"smoke test placeholder\""
+    "check:contracts": "echo \"contracts 结构检查占位\"",
+    "smoke": "echo \"smoke 检查占位\""
   },
   "engines": {
     "node": ">=22.0.0",

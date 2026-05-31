@@ -2,25 +2,32 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/feedback.schema.json",
   "title": "Feedback",
+  "description": "用户对一次分析结果或报告的反馈契约，不等同于 Evaluation 或 Memory。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "feedbackId": {
+      "description": "反馈唯一标识。",
       "type": "string"
     },
     "workspaceId": {
+      "description": "反馈所属工作区标识。",
       "type": "string"
     },
     "userId": {
+      "description": "提交反馈的用户标识。",
       "type": "string"
     },
     "runId": {
+      "description": "反馈关联的分析运行标识。",
       "type": "string"
     },
     "reportId": {
+      "description": "反馈关联的报告标识。",
       "type": "string"
     },
     "feedbackType": {
+      "description": "反馈类型，必须使用 contracts 中定义的 FeedbackType 枚举。",
       "type": "string",
       "enum": [
         "useful",
@@ -35,18 +42,21 @@
       ]
     },
     "comment": {
+      "description": "用户补充说明；没有补充时为 null。",
       "type": [
         "string",
         "null"
       ]
     },
     "correction": {
+      "description": "用户给出的修正内容；没有修正时为 null。",
       "type": [
         "string",
         "null"
       ]
     },
     "createdAt": {
+      "description": "反馈提交时间。",
       "type": "string",
       "format": "date-time"
     }

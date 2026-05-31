@@ -2,41 +2,52 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/model-call.schema.json",
   "title": "ModelCall",
+  "description": "一次经 Model Gateway 发起的模型调用契约，用于成本、延迟、错误和 trace 归集。",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "modelCallId": {
+      "description": "模型调用唯一标识，用于观测、审计和运行回放。",
       "type": "string"
     },
     "runId": {
+      "description": "模型调用所属分析运行标识。",
       "type": "string"
     },
     "provider": {
+      "description": "模型供应商标识，由 Model Gateway 统一管理。",
       "type": "string"
     },
     "modelId": {
+      "description": "实际调用的模型标识。",
       "type": "string"
     },
     "promptVersionId": {
+      "description": "本次调用使用的提示词版本标识。",
       "type": "string"
     },
     "inputTokens": {
+      "description": "本次调用输入 token 数量。",
       "type": "integer",
       "minimum": 0
     },
     "outputTokens": {
+      "description": "本次调用输出 token 数量。",
       "type": "integer",
       "minimum": 0
     },
     "cost": {
+      "description": "按统一成本口径计算的本次模型调用成本。",
       "type": "number",
       "minimum": 0
     },
     "latencyMs": {
+      "description": "本次模型调用耗时，单位为毫秒。",
       "type": "integer",
       "minimum": 0
     },
     "status": {
+      "description": "模型调用状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
       "type": "string",
       "enum": [
         "pending",
@@ -47,12 +58,14 @@
       ]
     },
     "errorType": {
+      "description": "模型调用失败时的标准错误类型；成功或未结束时为 null。",
       "type": [
         "string",
         "null"
       ]
     },
     "startedAt": {
+      "description": "模型调用开始时间；尚未开始时为 null。",
       "type": [
         "string",
         "null"
@@ -60,6 +73,7 @@
       "format": "date-time"
     },
     "completedAt": {
+      "description": "模型调用结束时间；运行中或尚未结束时为 null。",
       "type": [
         "string",
         "null"

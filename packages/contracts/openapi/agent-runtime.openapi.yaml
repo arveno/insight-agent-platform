@@ -2,15 +2,16 @@ openapi: 3.1.0
 info:
   title: Insight Agent Runtime API
   version: 0.1.0
-  description: Placeholder OpenAPI contract for the Agent Runtime service.
+  description: Agent Runtime 服务的最小 OpenAPI 契约占位，用于固定 contracts-first 的 API 入口。
 paths:
   /health:
     get:
-      summary: Health check placeholder
+      summary: 健康检查
+      description: 返回 Agent Runtime 的基础健康状态，供 smoke test 和部署探活使用。
       operationId: getHealth
       responses:
         "200":
-          description: Runtime health status.
+          description: Runtime 当前可响应健康检查。
           content:
             application/json:
               schema:
@@ -19,9 +20,11 @@ components:
   schemas:
     HealthResponse:
       type: object
+      description: 健康检查响应体。
       additionalProperties: false
       properties:
         status:
           type: string
+          description: 服务健康状态，当前占位只允许 ok。
           enum:
             - ok
