@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/metric-threshold.schema.json",
+  "title": "MetricThreshold",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metricThresholdId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

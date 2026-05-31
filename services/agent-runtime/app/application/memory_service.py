@@ -1,0 +1,1 @@
+"""Memory application service placeholder."""

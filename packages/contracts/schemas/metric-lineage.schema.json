@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/metric-lineage.schema.json",
+  "title": "MetricLineage",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metricLineageId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

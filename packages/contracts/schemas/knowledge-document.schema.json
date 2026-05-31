@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/knowledge-document.schema.json",
+  "title": "KnowledgeDocument",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "knowledgeDocumentId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

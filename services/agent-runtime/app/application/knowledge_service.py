@@ -1,0 +1,1 @@
+"""Knowledge application service placeholder."""

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/tool-definition.schema.json",
+  "title": "ToolDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "toolDefinitionId": {
+      "type": "string"
+    },
+    "toolName": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

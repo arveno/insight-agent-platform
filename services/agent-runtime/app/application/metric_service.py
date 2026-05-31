@@ -1,0 +1,1 @@
+"""Metric application service placeholder."""

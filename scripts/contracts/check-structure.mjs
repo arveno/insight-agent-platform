@@ -2,20 +2,26 @@ import { existsSync } from "node:fs";
 
 const appSections = ["router", "providers", "layout", "theme"];
 const pages = [
+  "workspace",
+  "data-knowledge",
+  "metrics",
   "dashboard",
   "analysis",
   "reports",
   "memory",
   "feedback",
   "evaluation",
+  "model-tools",
   "governance",
   "observability",
-  "settings"
+  "settings",
+  "platform-operations"
 ];
 const features = [
   "workspace",
   "data-knowledge",
   "metrics",
+  "dashboard",
   "agent-analysis",
   "memory",
   "feedback",
@@ -23,7 +29,9 @@ const features = [
   "model-tools",
   "governance",
   "observability",
-  "reports"
+  "reports",
+  "settings",
+  "platform-operations"
 ];
 const featureLayers = ["api", "models", "mappers", "components", "pages", "hooks"];
 const sharedLayers = [
@@ -40,18 +48,45 @@ const sharedLayers = [
 ];
 const contractSchemas = [
   "workspace",
+  "user",
+  "role",
+  "business-domain",
+  "data-source",
+  "data-table",
+  "data-field",
+  "knowledge-document",
+  "knowledge-chunk",
+  "metric",
+  "metric-formula",
+  "metric-threshold",
+  "metric-lineage",
+  "analysis-task",
   "analysis-run",
   "run-event",
   "tool-call",
   "model-call",
+  "source-evidence",
   "memory-item",
   "feedback",
   "evaluation-run",
+  "evaluation-dataset",
+  "evaluation-score",
   "bad-case",
-  "source-evidence",
+  "prompt-version",
+  "tool-definition",
+  "rag-strategy",
+  "model-config",
+  "routing-policy",
   "report",
+  "report-section",
   "decision",
-  "audit-log"
+  "action-suggestion",
+  "audit-log",
+  "permission-policy",
+  "risk-rule",
+  "job",
+  "notification",
+  "data-quality-check"
 ];
 const agents = [
   "orchestrator",
@@ -63,6 +98,21 @@ const agents = [
   "governance"
 ];
 const backendFiles = [
+  "services/agent-runtime/app/application/workspace_service.py",
+  "services/agent-runtime/app/application/iam_service.py",
+  "services/agent-runtime/app/application/data_source_service.py",
+  "services/agent-runtime/app/application/knowledge_service.py",
+  "services/agent-runtime/app/application/metric_service.py",
+  "services/agent-runtime/app/application/analysis_service.py",
+  "services/agent-runtime/app/application/memory_service.py",
+  "services/agent-runtime/app/application/feedback_service.py",
+  "services/agent-runtime/app/application/evaluation_service.py",
+  "services/agent-runtime/app/application/model_tool_service.py",
+  "services/agent-runtime/app/application/governance_service.py",
+  "services/agent-runtime/app/application/observability_service.py",
+  "services/agent-runtime/app/application/report_service.py",
+  "services/agent-runtime/app/application/dashboard_service.py",
+  "services/agent-runtime/app/application/platform_operation_service.py",
   "services/agent-runtime/app/tools/registry.py",
   "services/agent-runtime/app/tools/sql_tool.py",
   "services/agent-runtime/app/tools/metric_tool.py",
@@ -89,6 +139,22 @@ const backendFiles = [
   "services/agent-runtime/app/observability/logging.py",
   "services/agent-runtime/app/observability/cost.py"
 ];
+const domainDirs = [
+  "workspace",
+  "iam",
+  "data_knowledge",
+  "metrics",
+  "analysis",
+  "memory",
+  "feedback",
+  "evaluation",
+  "model_tools",
+  "governance",
+  "observability",
+  "reports",
+  "dashboard",
+  "platform_operations"
+];
 const infrastructureDirs = [
   "db",
   "repositories",
@@ -104,7 +170,9 @@ const infrastructureDirs = [
   "backup",
   "restore",
   "notifications",
-  "data_quality"
+  "data_quality",
+  "quota",
+  "data_lifecycle"
 ];
 const testDirs = ["unit", "contract", "integration", "smoke", "failure_simulation"];
 
@@ -114,6 +182,7 @@ const requiredPaths = [
   "docs/architecture.md",
   "docs/contracts.md",
   "docs/deployment.md",
+  "services/agent-runtime/pyproject.toml",
   "packages/contracts/package.json",
   "packages/contracts/schemas",
   "packages/contracts/openapi/agent-runtime.openapi.yaml",
@@ -125,7 +194,7 @@ const requiredPaths = [
   "services/agent-runtime/app/runtime/checkpoints",
   "services/agent-runtime/app/model_gateway/providers",
   "services/agent-runtime/app/schemas/requests",
-  "services/agent-runtime/app/tests/smoke",
+  "services/agent-runtime/tests/smoke",
   "deploy/docker",
   "deploy/cloudbase-run",
   "scripts/contracts",
@@ -144,10 +213,11 @@ requiredPaths.push(
   ...sharedLayers.map((layer) => `apps/web/src/shared/${layer}`),
   ...contractSchemas.map((schema) => `packages/contracts/schemas/${schema}.schema.json`),
   ...agents.map((agent) => `services/agent-runtime/app/agents/${agent}`),
+  ...domainDirs.map((dir) => `services/agent-runtime/app/domain/${dir}`),
   ...backendFiles,
   ...infrastructureDirs.map((dir) => `services/agent-runtime/app/infrastructure/${dir}`),
   ...["requests", "responses", "dto"].map((dir) => `services/agent-runtime/app/schemas/${dir}`),
-  ...testDirs.map((dir) => `services/agent-runtime/app/tests/${dir}`)
+  ...testDirs.map((dir) => `services/agent-runtime/tests/${dir}`)
 );
 
 const missingPaths = requiredPaths.filter((path) => !existsSync(path));

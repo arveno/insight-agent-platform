@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/knowledge-chunk.schema.json",
+  "title": "KnowledgeChunk",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "knowledgeChunkId": {
+      "type": "string"
+    },
+    "knowledgeDocumentId": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

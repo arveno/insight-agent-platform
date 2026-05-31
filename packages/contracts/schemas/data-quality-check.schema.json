@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/data-quality-check.schema.json",
+  "title": "DataQualityCheck",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "dataQualityCheckId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

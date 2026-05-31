@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/report-section.schema.json",
+  "title": "ReportSection",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "reportSectionId": {
+      "type": "string"
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

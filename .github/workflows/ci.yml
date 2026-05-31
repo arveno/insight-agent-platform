@@ -24,6 +24,7 @@ jobs:
             .github/pull_request_template.md
             apps/web
             services/agent-runtime
+            services/agent-runtime/pyproject.toml
             packages/contracts
             deploy
             scripts
@@ -50,18 +51,45 @@ jobs:
 
           for schema in \
             workspace \
+            user \
+            role \
+            business-domain \
+            data-source \
+            data-table \
+            data-field \
+            knowledge-document \
+            knowledge-chunk \
+            metric \
+            metric-formula \
+            metric-threshold \
+            metric-lineage \
+            analysis-task \
             analysis-run \
             run-event \
             tool-call \
             model-call \
+            source-evidence \
             memory-item \
             feedback \
             evaluation-run \
+            evaluation-dataset \
+            evaluation-score \
             bad-case \
-            source-evidence \
+            prompt-version \
+            tool-definition \
+            rag-strategy \
+            model-config \
+            routing-policy \
             report \
+            report-section \
             decision \
-            audit-log; do
+            action-suggestion \
+            audit-log \
+            permission-policy \
+            risk-rule \
+            job \
+            notification \
+            data-quality-check; do
             test -f "packages/contracts/schemas/${schema}.schema.json"
           done
 
@@ -82,15 +110,20 @@ jobs:
           test -d apps/web/src/shared
 
           for page in \
+            workspace \
+            data-knowledge \
+            metrics \
             dashboard \
             analysis \
             reports \
             memory \
             feedback \
             evaluation \
+            model-tools \
             governance \
             observability \
-            settings; do
+            settings \
+            platform-operations; do
             test -d "apps/web/src/pages/${page}"
           done
 
@@ -98,6 +131,7 @@ jobs:
             workspace \
             data-knowledge \
             metrics \
+            dashboard \
             agent-analysis \
             memory \
             feedback \
@@ -105,7 +139,9 @@ jobs:
             model-tools \
             governance \
             observability \
-            reports; do
+            reports \
+            settings \
+            platform-operations; do
             for layer in api models mappers components pages hooks; do
               test -d "apps/web/src/features/${feature}/${layer}"
             done
@@ -138,6 +174,8 @@ jobs:
           test -d services/agent-runtime/app/agents
           test -d services/agent-runtime/app/tools
           test -d services/agent-runtime/app/model_gateway
+          test -d services/agent-runtime/app/application
+          test -d services/agent-runtime/app/domain
           test -d services/agent-runtime/app/governance
           test -d services/agent-runtime/app/observability
           test -d services/agent-runtime/app/api/routes
@@ -160,7 +198,40 @@ jobs:
             test -d "services/agent-runtime/app/agents/${agent}"
           done
 
+          for domain in \
+            workspace \
+            iam \
+            data_knowledge \
+            metrics \
+            analysis \
+            memory \
+            feedback \
+            evaluation \
+            model_tools \
+            governance \
+            observability \
+            reports \
+            dashboard \
+            platform_operations; do
+            test -d "services/agent-runtime/app/domain/${domain}"
+          done
+
           for file in \
+            services/agent-runtime/app/application/workspace_service.py \
+            services/agent-runtime/app/application/iam_service.py \
+            services/agent-runtime/app/application/data_source_service.py \
+            services/agent-runtime/app/application/knowledge_service.py \
+            services/agent-runtime/app/application/metric_service.py \
+            services/agent-runtime/app/application/analysis_service.py \
+            services/agent-runtime/app/application/memory_service.py \
+            services/agent-runtime/app/application/feedback_service.py \
+            services/agent-runtime/app/application/evaluation_service.py \
+            services/agent-runtime/app/application/model_tool_service.py \
+            services/agent-runtime/app/application/governance_service.py \
+            services/agent-runtime/app/application/observability_service.py \
+            services/agent-runtime/app/application/report_service.py \
+            services/agent-runtime/app/application/dashboard_service.py \
+            services/agent-runtime/app/application/platform_operation_service.py \
             services/agent-runtime/app/tools/registry.py \
             services/agent-runtime/app/tools/sql_tool.py \
             services/agent-runtime/app/tools/metric_tool.py \
@@ -204,7 +275,9 @@ jobs:
             backup \
             restore \
             notifications \
-            data_quality; do
+            data_quality \
+            quota \
+            data_lifecycle; do
             test -d "services/agent-runtime/app/infrastructure/${infra}"
           done
 
@@ -223,8 +296,8 @@ jobs:
           test -d scripts/failure-simulation
           test -d scripts/deploy
 
-          test -d services/agent-runtime/app/tests/unit
-          test -d services/agent-runtime/app/tests/contract
-          test -d services/agent-runtime/app/tests/integration
-          test -d services/agent-runtime/app/tests/smoke
-          test -d services/agent-runtime/app/tests/failure_simulation
+          test -d services/agent-runtime/tests/unit
+          test -d services/agent-runtime/tests/contract
+          test -d services/agent-runtime/tests/integration
+          test -d services/agent-runtime/tests/smoke
+          test -d services/agent-runtime/tests/failure_simulation

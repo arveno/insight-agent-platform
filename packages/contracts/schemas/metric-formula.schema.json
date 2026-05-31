@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/metric-formula.schema.json",
+  "title": "MetricFormula",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metricFormulaId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "formula": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

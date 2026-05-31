@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/metric.schema.json",
+  "title": "Metric",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metricId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

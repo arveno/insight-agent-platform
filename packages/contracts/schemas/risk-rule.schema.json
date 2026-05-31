@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/risk-rule.schema.json",
+  "title": "RiskRule",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "riskRuleId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

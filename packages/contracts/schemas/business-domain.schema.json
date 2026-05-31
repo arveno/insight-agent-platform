@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/business-domain.schema.json",
+  "title": "BusinessDomain",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "businessDomainId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

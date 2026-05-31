@@ -107,10 +107,25 @@ apps/web/src/
 │  ├─ layout/
 │  └─ theme/
 ├─ pages/
+│  ├─ workspace/
+│  ├─ data-knowledge/
+│  ├─ metrics/
+│  ├─ dashboard/
+│  ├─ analysis/
+│  ├─ reports/
+│  ├─ memory/
+│  ├─ feedback/
+│  ├─ evaluation/
+│  ├─ model-tools/
+│  ├─ governance/
+│  ├─ observability/
+│  ├─ settings/
+│  └─ platform-operations/
 ├─ features/
 │  ├─ workspace/
 │  ├─ data-knowledge/
 │  ├─ metrics/
+│  ├─ dashboard/
 │  ├─ agent-analysis/
 │  ├─ memory/
 │  ├─ feedback/
@@ -118,7 +133,9 @@ apps/web/src/
 │  ├─ model-tools/
 │  ├─ governance/
 │  ├─ observability/
-│  └─ reports/
+│  ├─ reports/
+│  ├─ settings/
+│  └─ platform-operations/
 ├─ shared/
 │  ├─ api/
 │  ├─ ui/
@@ -207,6 +224,17 @@ services/agent-runtime/app/
 └─ main.py
 ```
 
+测试目录固定放在服务根目录，避免混入 runtime package code：
+
+```text
+services/agent-runtime/tests/
+├─ unit/
+├─ contract/
+├─ integration/
+├─ smoke/
+└─ failure_simulation/
+```
+
 ### 后端目录职责
 
 - `api`：请求、鉴权、参数校验、响应。
@@ -261,23 +289,30 @@ State + Node + Edge + Tool + Event
 - Evaluation Agent
 - Governance Agent
 
-## 10. 基础设施承载位
+## 10. 基础设施与运维承载位
 
-以下模块必须从第一天保留承载目录：
+以下基础设施模块必须从第一天保留在 `services/agent-runtime/app/infrastructure/`：
 
 - cache
 - queue
 - scheduler
-- migration
+- migrations
 - seed
 - secrets
-- audit
-- cost
 - quota
+- data_lifecycle
 - backup
 - restore
-- notification
+- notifications
 - data_quality
+
+以下跨域能力已有明确承载位置，不放入 `infrastructure`：
+
+- audit：`services/agent-runtime/app/governance/audit.py`
+- cost：`services/agent-runtime/app/observability/cost.py`
+
+以下运维脚本承载位必须从第一天保留在 `scripts/`：
+
 - smoke
 - load
 - failure-simulation

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/data-field.schema.json",
+  "title": "DataField",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "fieldId": {
+      "type": "string"
+    },
+    "tableId": {
+      "type": "string"
+    },
+    "fieldName": {
+      "type": "string"
+    },
+    "dataType": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
