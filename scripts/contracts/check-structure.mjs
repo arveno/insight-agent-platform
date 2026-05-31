@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 
 const appSections = ["router", "providers", "layout", "theme"];
 const pages = [
@@ -46,47 +46,60 @@ const sharedLayers = [
   "utils",
   "constants"
 ];
-const contractSchemas = [
+const contractSchemaPaths = [
+  "packages/contracts/schemas/workspace/workspace.schema.json",
+  "packages/contracts/schemas/workspace/user.schema.json",
+  "packages/contracts/schemas/workspace/role.schema.json",
+  "packages/contracts/schemas/workspace/business-domain.schema.json",
+  "packages/contracts/schemas/data-knowledge/data-source.schema.json",
+  "packages/contracts/schemas/data-knowledge/data-table.schema.json",
+  "packages/contracts/schemas/data-knowledge/data-field.schema.json",
+  "packages/contracts/schemas/data-knowledge/knowledge-document.schema.json",
+  "packages/contracts/schemas/data-knowledge/knowledge-chunk.schema.json",
+  "packages/contracts/schemas/metrics/metric.schema.json",
+  "packages/contracts/schemas/metrics/metric-formula.schema.json",
+  "packages/contracts/schemas/metrics/metric-threshold.schema.json",
+  "packages/contracts/schemas/metrics/metric-lineage.schema.json",
+  "packages/contracts/schemas/analysis/analysis-task.schema.json",
+  "packages/contracts/schemas/analysis/analysis-run.schema.json",
+  "packages/contracts/schemas/analysis/run-event.schema.json",
+  "packages/contracts/schemas/analysis/tool-call.schema.json",
+  "packages/contracts/schemas/analysis/model-call.schema.json",
+  "packages/contracts/schemas/analysis/source-evidence.schema.json",
+  "packages/contracts/schemas/memory/memory-item.schema.json",
+  "packages/contracts/schemas/feedback/feedback.schema.json",
+  "packages/contracts/schemas/evaluation/evaluation-run.schema.json",
+  "packages/contracts/schemas/evaluation/evaluation-dataset.schema.json",
+  "packages/contracts/schemas/evaluation/evaluation-score.schema.json",
+  "packages/contracts/schemas/evaluation/bad-case.schema.json",
+  "packages/contracts/schemas/model-tools/prompt-version.schema.json",
+  "packages/contracts/schemas/model-tools/tool-definition.schema.json",
+  "packages/contracts/schemas/model-tools/rag-strategy.schema.json",
+  "packages/contracts/schemas/model-tools/model-config.schema.json",
+  "packages/contracts/schemas/model-tools/routing-policy.schema.json",
+  "packages/contracts/schemas/governance/audit-log.schema.json",
+  "packages/contracts/schemas/governance/permission-policy.schema.json",
+  "packages/contracts/schemas/governance/risk-rule.schema.json",
+  "packages/contracts/schemas/reports/report.schema.json",
+  "packages/contracts/schemas/reports/report-section.schema.json",
+  "packages/contracts/schemas/reports/decision.schema.json",
+  "packages/contracts/schemas/reports/action-suggestion.schema.json",
+  "packages/contracts/schemas/platform-operations/job.schema.json",
+  "packages/contracts/schemas/platform-operations/notification.schema.json",
+  "packages/contracts/schemas/platform-operations/data-quality-check.schema.json"
+];
+const contractSchemaDomains = [
   "workspace",
-  "user",
-  "role",
-  "business-domain",
-  "data-source",
-  "data-table",
-  "data-field",
-  "knowledge-document",
-  "knowledge-chunk",
-  "metric",
-  "metric-formula",
-  "metric-threshold",
-  "metric-lineage",
-  "analysis-task",
-  "analysis-run",
-  "run-event",
-  "tool-call",
-  "model-call",
-  "source-evidence",
-  "memory-item",
+  "data-knowledge",
+  "metrics",
+  "analysis",
+  "memory",
   "feedback",
-  "evaluation-run",
-  "evaluation-dataset",
-  "evaluation-score",
-  "bad-case",
-  "prompt-version",
-  "tool-definition",
-  "rag-strategy",
-  "model-config",
-  "routing-policy",
-  "report",
-  "report-section",
-  "decision",
-  "action-suggestion",
-  "audit-log",
-  "permission-policy",
-  "risk-rule",
-  "job",
-  "notification",
-  "data-quality-check"
+  "evaluation",
+  "model-tools",
+  "governance",
+  "reports",
+  "platform-operations"
 ];
 const agents = [
   "orchestrator",
@@ -211,7 +224,8 @@ requiredPaths.push(
     featureLayers.map((layer) => `apps/web/src/features/${feature}/${layer}`)
   ),
   ...sharedLayers.map((layer) => `apps/web/src/shared/${layer}`),
-  ...contractSchemas.map((schema) => `packages/contracts/schemas/${schema}.schema.json`),
+  ...contractSchemaDomains.map((domain) => `packages/contracts/schemas/${domain}`),
+  ...contractSchemaPaths,
   ...agents.map((agent) => `services/agent-runtime/app/agents/${agent}`),
   ...domainDirs.map((dir) => `services/agent-runtime/app/domain/${dir}`),
   ...backendFiles,
@@ -221,10 +235,21 @@ requiredPaths.push(
 );
 
 const missingPaths = requiredPaths.filter((path) => !existsSync(path));
+const flatSchemaFiles = readdirSync("packages/contracts/schemas", { withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name.endsWith(".schema.json"))
+  .map((entry) => `packages/contracts/schemas/${entry.name}`);
 
 if (missingPaths.length > 0) {
   console.error("Missing required project structure:");
   for (const path of missingPaths) {
+    console.error(`- ${path}`);
+  }
+  process.exit(1);
+}
+
+if (flatSchemaFiles.length > 0) {
+  console.error("Schema 文件必须按业务域分组，不能平铺在 packages/contracts/schemas 根目录：");
+  for (const path of flatSchemaFiles) {
     console.error(`- ${path}`);
   }
   process.exit(1);

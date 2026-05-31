@@ -48,49 +48,68 @@ jobs:
           test -d packages/contracts/generated/python
           test -f packages/contracts/package.json
           test -f packages/contracts/openapi/agent-runtime.openapi.yaml
+          if find packages/contracts/schemas -maxdepth 1 -type f -name '*.schema.json' | grep -q .; then
+            echo "Schema 文件必须按业务域分组，不能平铺在 packages/contracts/schemas 根目录。"
+            exit 1
+          fi
 
-          for schema in \
+          for domain in \
             workspace \
-            user \
-            role \
-            business-domain \
-            data-source \
-            data-table \
-            data-field \
-            knowledge-document \
-            knowledge-chunk \
-            metric \
-            metric-formula \
-            metric-threshold \
-            metric-lineage \
-            analysis-task \
-            analysis-run \
-            run-event \
-            tool-call \
-            model-call \
-            source-evidence \
-            memory-item \
+            data-knowledge \
+            metrics \
+            analysis \
+            memory \
             feedback \
-            evaluation-run \
-            evaluation-dataset \
-            evaluation-score \
-            bad-case \
-            prompt-version \
-            tool-definition \
-            rag-strategy \
-            model-config \
-            routing-policy \
-            report \
-            report-section \
-            decision \
-            action-suggestion \
-            audit-log \
-            permission-policy \
-            risk-rule \
-            job \
-            notification \
-            data-quality-check; do
-            test -f "packages/contracts/schemas/${schema}.schema.json"
+            evaluation \
+            model-tools \
+            governance \
+            reports \
+            platform-operations; do
+            test -d "packages/contracts/schemas/${domain}"
+          done
+
+          for schema_path in \
+            packages/contracts/schemas/workspace/workspace.schema.json \
+            packages/contracts/schemas/workspace/user.schema.json \
+            packages/contracts/schemas/workspace/role.schema.json \
+            packages/contracts/schemas/workspace/business-domain.schema.json \
+            packages/contracts/schemas/data-knowledge/data-source.schema.json \
+            packages/contracts/schemas/data-knowledge/data-table.schema.json \
+            packages/contracts/schemas/data-knowledge/data-field.schema.json \
+            packages/contracts/schemas/data-knowledge/knowledge-document.schema.json \
+            packages/contracts/schemas/data-knowledge/knowledge-chunk.schema.json \
+            packages/contracts/schemas/metrics/metric.schema.json \
+            packages/contracts/schemas/metrics/metric-formula.schema.json \
+            packages/contracts/schemas/metrics/metric-threshold.schema.json \
+            packages/contracts/schemas/metrics/metric-lineage.schema.json \
+            packages/contracts/schemas/analysis/analysis-task.schema.json \
+            packages/contracts/schemas/analysis/analysis-run.schema.json \
+            packages/contracts/schemas/analysis/run-event.schema.json \
+            packages/contracts/schemas/analysis/tool-call.schema.json \
+            packages/contracts/schemas/analysis/model-call.schema.json \
+            packages/contracts/schemas/analysis/source-evidence.schema.json \
+            packages/contracts/schemas/memory/memory-item.schema.json \
+            packages/contracts/schemas/feedback/feedback.schema.json \
+            packages/contracts/schemas/evaluation/evaluation-run.schema.json \
+            packages/contracts/schemas/evaluation/evaluation-dataset.schema.json \
+            packages/contracts/schemas/evaluation/evaluation-score.schema.json \
+            packages/contracts/schemas/evaluation/bad-case.schema.json \
+            packages/contracts/schemas/model-tools/prompt-version.schema.json \
+            packages/contracts/schemas/model-tools/tool-definition.schema.json \
+            packages/contracts/schemas/model-tools/rag-strategy.schema.json \
+            packages/contracts/schemas/model-tools/model-config.schema.json \
+            packages/contracts/schemas/model-tools/routing-policy.schema.json \
+            packages/contracts/schemas/governance/audit-log.schema.json \
+            packages/contracts/schemas/governance/permission-policy.schema.json \
+            packages/contracts/schemas/governance/risk-rule.schema.json \
+            packages/contracts/schemas/reports/report.schema.json \
+            packages/contracts/schemas/reports/report-section.schema.json \
+            packages/contracts/schemas/reports/decision.schema.json \
+            packages/contracts/schemas/reports/action-suggestion.schema.json \
+            packages/contracts/schemas/platform-operations/job.schema.json \
+            packages/contracts/schemas/platform-operations/notification.schema.json \
+            packages/contracts/schemas/platform-operations/data-quality-check.schema.json; do
+            test -f "$schema_path"
           done
 
   frontend:

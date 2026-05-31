@@ -390,3 +390,40 @@ generated/
 - OpenAPI
 - generated types
 - contract tests
+
+## 16. Schema 分组规则
+
+`packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致。
+
+禁止把核心 schema 长期平铺在 `packages/contracts/schemas/*.schema.json` 下。新增核心对象时，必须先确认所属业务域，再放入对应分组目录。
+
+固定分组如下：
+
+```text
+packages/contracts/schemas/
+├─ workspace/
+├─ data-knowledge/
+├─ metrics/
+├─ analysis/
+├─ memory/
+├─ feedback/
+├─ evaluation/
+├─ model-tools/
+├─ governance/
+├─ reports/
+└─ platform-operations/
+```
+
+当前核心对象分组：
+
+- `workspace`：Workspace、User、Role、BusinessDomain。
+- `data-knowledge`：DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk。
+- `metrics`：Metric、MetricFormula、MetricThreshold、MetricLineage。
+- `analysis`：AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence。
+- `memory`：MemoryItem。
+- `feedback`：Feedback。
+- `evaluation`：EvaluationRun、EvaluationDataset、EvaluationScore、BadCase。
+- `model-tools`：PromptVersion、ToolDefinition、RagStrategy、ModelConfig、RoutingPolicy。
+- `governance`：AuditLog、PermissionPolicy、RiskRule。
+- `reports`：Report、ReportSection、Decision、ActionSuggestion。
+- `platform-operations`：Job、Notification、DataQualityCheck。

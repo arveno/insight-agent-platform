@@ -71,6 +71,23 @@ insight-agent-platform/
 └─ package.json
 ```
 
+`packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致，使核心对象字段有单一事实源和清晰归属。
+
+```text
+packages/contracts/schemas/
+├─ workspace/
+├─ data-knowledge/
+├─ metrics/
+├─ analysis/
+├─ memory/
+├─ feedback/
+├─ evaluation/
+├─ model-tools/
+├─ governance/
+├─ reports/
+└─ platform-operations/
+```
+
 ## 4. 产品一级模块
 
 一级模块固定为：
