@@ -64,6 +64,20 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 - 不把 demo-only 逻辑混入主链路。
 - 不保留长期兼容字段兜底。
 
+### Codex 代码生成硬规则
+
+- Codex 只能在已审查通过的 Issue 范围内写代码。
+- Codex 不允许为了“保险”新增双轨实现。
+- Codex 不允许新增 `oldField || newField`、`mockData || realData`、`status === "done" || status === "success"` 这类兜底代码。
+- Codex 不允许新增无关依赖。
+- Codex 不允许无关重构。
+- Codex 不允许为了炫技做过度抽象。
+- Codex 不允许把一段清晰顺序逻辑拆成大量无意义小函数。
+- 拆函数 / 拆模块只能用于隔离明确职责、减少真实重复、收敛复杂业务链路或让阅读路径更清楚。
+- 后端不得绕过 Repository、Model Gateway、Tool Registry。
+- 前端不得绕过 Contract -> ViewModel -> UI 链路。
+- 代码必须优先清晰、直接、可审查。
+
 ## 5. 前后端字段一致
 
 核心业务字段以 `packages/contracts` 为事实源。

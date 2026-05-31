@@ -204,6 +204,17 @@ API Response
 
 UI 不得直接消费 raw API response。
 
+### 前端职责边界
+
+- `pages` 只做页面编排，不做数据清洗。
+- `features/*/api` 只做请求封装。
+- `features/*/mappers` 只做 Contract -> ViewModel 转换和展示派生。
+- `features/*/models` 定义 ViewModel 和展示模型。
+- `features/*/components` 只展示 ViewModel，不解析 raw API response。
+- `shared` 只放真正跨模块复用内容。
+- 状态标签、风险等级、空态、错误态必须使用 shared UI。
+- UI 必须使用 Ant Design 体系，不引入第二套 UI 组件库。
+
 ## 6. UI 语言
 
 统一使用 Ant Design 体系。
@@ -282,6 +293,19 @@ services/agent-runtime/tests/
 - `observability`：Trace、Metrics、Logging、Cost。
 - `infrastructure`：DB、Repository、Vector Store、Cache、Queue、Scheduler、Object Storage、Secrets、External Clients。
 - `schemas`：API DTO。
+
+### 后端职责边界
+
+- `api` 不写业务逻辑。
+- `application` 只编排业务用例。
+- `domain` 承载业务对象和业务规则。
+- `infrastructure/repositories` 是唯一数据库访问入口。
+- `model_gateway` 是唯一模型调用入口。
+- `tools` / `Tool Registry` 是唯一工具调用入口。
+- `governance` 是权限、SQL Guard、Tool Permission、Audit 的统一入口。
+- 后端 service 不允许直接访问数据库连接。
+- 后端 service 不允许直接调用模型 provider。
+- Agent 不允许直接查库、直接调模型、直接调用外部 API。
 
 ## 8. 依赖方向
 

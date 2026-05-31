@@ -25,10 +25,15 @@ Closes #
 请确认本 PR 只反查已审查通过的 Issue 和仓库事实源，不重新发明标准：
 
 - [ ] 已遵守 AGENTS.md 规则
+- [ ] 已遵守 AGENTS.md 中的代码生成硬规则
 - [ ] 已遵守 docs/workflow.md 流程门禁
 - [ ] 已遵守 docs/architecture.md 边界
+- [ ] 已遵守 docs/architecture.md 中的前后端职责边界
 - [ ] 已遵守 docs/contracts.md 语义
+- [ ] 已遵守 docs/contracts.md 中的 ViewModel / Mapper 规则
 - [ ] 如契约字段变更，已同步 packages/contracts
+- [ ] ViewModel 未重命名核心业务字段
+- [ ] Mapper 未做业务决策或多字段兜底
 - [ ] 未引入 mock / real 双链路
 - [ ] UI 未直接渲染 raw API response
 - [ ] 模型调用未绕过 Model Gateway

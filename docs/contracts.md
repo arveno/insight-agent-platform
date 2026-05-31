@@ -373,7 +373,49 @@ createdAt
 
 Decision 用于记录建议是否被采纳以及后续效果。
 
-## 15. packages/contracts
+## 15. ViewModel / Mapper 规则
+
+- 从 Contract Model 到 Frontend ViewModel，核心业务字段名必须保持一致。
+- ViewModel 只能增加展示派生字段，不允许重命名核心业务字段。
+- 允许增加 `statusLabel`、`durationText`、`costText`、`riskText` 等展示字段。
+- 不允许把 `runId` 改成 `id`。
+- 不允许把 `status` 改成 `state` 或 `currentStatus`。
+- 不允许把 `createdAt` 改成 `time`。
+
+Mapper 只允许做：
+
+- Contract -> ViewModel。
+- 展示派生字段生成。
+- 时间 / 金额 / 状态文案格式化。
+
+Mapper 不允许做：
+
+- 业务决策。
+- 权限判断。
+- 多字段兜底。
+- `oldField || newField`。
+- 修改核心字段语义。
+- 清洗未标准化 raw 数据。
+
+```ts
+// 允许
+type AnalysisRunViewModel = {
+  runId: string;
+  workspaceId: string;
+  status: AnalysisRunStatus;
+  statusLabel: string;
+  durationText: string;
+};
+
+// 禁止
+type AnalysisRunViewModel = {
+  id: string;
+  currentStatus: string;
+  time: string;
+};
+```
+
+## 16. packages/contracts
 
 `packages/contracts` 必须包含：
 
@@ -391,7 +433,7 @@ generated/
 - generated types
 - contract tests
 
-## 16. Schema 分组规则
+## 17. Schema 分组规则
 
 `packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致。
 
