@@ -17,6 +17,7 @@ jobs:
           required_paths=(
             AGENTS.md
             README.md
+            docs/workflow.md
             docs/architecture.md
             docs/contracts.md
             docs/deployment.md

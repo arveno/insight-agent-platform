@@ -21,10 +21,11 @@ body:
     id: fact-sources
     attributes:
       label: 事实源 / Fact Sources
-      description: 请列出本任务必须依据的事实源，包括需求、AGENTS.md、架构文档、契约文档和 packages/contracts。
+      description: 请列出本任务必须依据的事实源，包括需求、AGENTS.md、协作流程、架构文档、契约文档和 packages/contracts。
       placeholder: |
         - 需求来源：
         - AGENTS.md：
+        - docs/workflow.md：
         - docs/architecture.md：
         - docs/contracts.md：
         - packages/contracts：
@@ -100,7 +101,7 @@ body:
         - [ ] 验收标准可检查
         - [ ] 测试要求明确
         - [ ] 没有 Codex 自由发挥空间
-        - [ ] 没有越过 architecture / contracts / AGENTS 事实源
+        - [ ] 没有越过 AGENTS / workflow / architecture / contracts / packages/contracts 事实源
         - [ ] 允许 Codex 执行
 
         审查结论：

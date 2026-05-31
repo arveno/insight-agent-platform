@@ -25,6 +25,7 @@ Closes #
 请确认本 PR 只反查已审查通过的 Issue 和仓库事实源，不重新发明标准：
 
 - [ ] 已遵守 AGENTS.md 规则
+- [ ] 已遵守 docs/workflow.md 流程门禁
 - [ ] 已遵守 docs/architecture.md 边界
 - [ ] 已遵守 docs/contracts.md 语义
 - [ ] 如契约字段变更，已同步 packages/contracts

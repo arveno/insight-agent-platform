@@ -12,13 +12,14 @@
 
 - 需求必须先被拆成 Issue。
 - Issue 是执行合同。
-- Issue 必须基于需求、`AGENTS.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 建立。
+- Issue 必须基于需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 建立。
 - Issue 建立后不能直接交给 Codex 执行。
 - 必须先进行 Issue 合规审查。
-- Issue 合规审查通过后，Codex 才能执行代码。
+- Issue 合规审查通过并明确允许 Codex 执行后，Codex 才能执行代码。
+- Codex 执行前必须确认 Issue 已按 `docs/workflow.md` 完成合规审查。
 - 未经审查通过的 Issue，不允许进入代码执行阶段。
 - PR 是履约证明。
-- PR 只按已审查通过的 Issue 反查，不重新发明标准。
+- PR 只按已审查通过的 Issue 和 `docs/workflow.md` 反查，不重新发明标准。
 - CI 是自动守门。
 - 用户最终决定是否 Merge。
 - Codex 不得绕过 Issue 自由发挥。
@@ -26,6 +27,7 @@
 每个任务必须基于：
 
 - `AGENTS.md`
+- `docs/workflow.md`
 - `docs/architecture.md`
 - `docs/contracts.md`
 - `packages/contracts/*`
@@ -40,13 +42,13 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 
 - 目标是否清楚。
 - 修改范围是否明确。
-- 事实源是否完整，包括需求、`AGENTS.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts`。
+- 事实源是否完整，包括需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts`。
 - 是否摘出了本次任务相关规则，而不是只写“遵守文档”。
 - 禁止项是否明确。
 - 验收标准是否可检查。
 - 测试要求是否明确。
 - 是否存在 Codex 自由发挥空间。
-- 是否越过 `architecture` / `contracts` / `AGENTS` 事实源。
+- 是否越过 `AGENTS` / `workflow` / `architecture` / `contracts` / `packages/contracts` 事实源。
 - 是否引入 Mock / Real 双链路、无关依赖、无关重构或业务范围外实现。
 
 审查结论必须明确写入 Issue。未通过审查的 Issue 必须退回补充，不能进入代码执行阶段。
@@ -225,3 +227,4 @@ PR 必须说明：
 - 风险和未完成事项。
 
 PR 不重新发明标准，只按 Issue 反查。
+PR 审查必须按 `docs/workflow.md` 和已审查通过的 Issue 反查。

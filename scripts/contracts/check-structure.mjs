@@ -192,6 +192,7 @@ const testDirs = ["unit", "contract", "integration", "smoke", "failure_simulatio
 const requiredPaths = [
   "AGENTS.md",
   "README.md",
+  "docs/workflow.md",
   "docs/architecture.md",
   "docs/contracts.md",
   "docs/deployment.md",

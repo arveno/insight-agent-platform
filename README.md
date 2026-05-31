@@ -58,6 +58,14 @@ scripts                  contracts / smoke / load / failure-simulation / deploy 
 .github                  Issue / PR / CI 模板
 ```
 
+## 文档事实源
+
+- `AGENTS.md`：Codex / AI Agent / 人类开发者执行任务时必须遵守的硬规则。
+- `docs/workflow.md`：需求、Issue、Issue 审查、Codex 执行、PR 审查和 Merge 的协作流程事实源。
+- `docs/architecture.md`：系统架构、分层边界和模块职责事实源。
+- `docs/contracts.md`：契约语义、字段命名和跨端数据链路事实源。
+- `docs/deployment.md`：部署承载位和运行环境约束事实源。
+
 ## 当前阶段
 
 当前阶段只初始化企业级项目骨架，不实现完整业务功能。
