@@ -4,7 +4,8 @@ Closes #
 
 ## Issue 审查门禁 / Issue Review Gate
 
-- [ ] Issue 已完成合规审查并明确允许 Codex 执行
+- [ ] 对应 Issue 已完成合规审查
+- [ ] 对应 Issue 已明确允许 Codex 执行
 - [ ] 本 PR 只按已审查通过的 Issue 实现
 - [ ] 本 PR 没有 Issue 外扩展
 - [ ] 如存在 Issue 外扩展，已退回 Issue 重新审查后再执行

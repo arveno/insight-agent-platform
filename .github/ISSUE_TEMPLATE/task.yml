@@ -69,7 +69,7 @@ body:
     id: issue-review-status
     attributes:
       label: Issue 合规审查状态 / Issue Review Status
-      description: 请选择当前 Issue 是否已经完成代码执行前的合规审查。
+      description: 创建 Issue 时默认应为“待审查”。只有审查通过后，才允许进入 Codex 执行阶段。
       options:
         - 待审查 / Pending
         - 审查通过 / Approved
@@ -80,33 +80,29 @@ body:
     id: reviewer
     attributes:
       label: 审查人 / Reviewer
-      description: 请填写负责 Issue 合规审查的人。未填写审查人时，不允许进入 Codex 执行阶段。
-      placeholder: 例如：@username
+      description: Issue 创建时可以填写“待审查”。审查通过前，不允许交给 Codex 执行。
+      placeholder: 例如：待审查 / @username
     validations:
-      required: true
+      required: false
   - type: textarea
     id: review-result
     attributes:
       label: 审查结论 / Review Result
-      description: 请记录审查结论，至少覆盖目标、范围、事实源、规则、禁止项、验收标准、测试要求和是否存在自由发挥空间。
-      placeholder: |
-        - 目标是否清楚：
-        - 修改范围是否明确：
-        - 事实源是否完整：
-        - 是否摘出本次相关规则：
-        - 禁止项是否明确：
-        - 验收标准是否可检查：
-        - 测试要求是否明确：
-        - 是否存在 Codex 自由发挥空间：
-        - 是否越过 architecture / contracts / AGENTS 事实源：
-        - 审查结论：
+      description: Issue 创建时填写“待审查”。审查后需要记录目标、范围、事实源、规则、禁止项、验收标准和测试要求是否合规。
+      value: |
+        审查状态：待审查
+
+        - [ ] 目标清楚
+        - [ ] 修改范围明确
+        - [ ] 事实源完整
+        - [ ] 已摘出本任务相关规则
+        - [ ] 禁止项明确
+        - [ ] 验收标准可检查
+        - [ ] 测试要求明确
+        - [ ] 没有 Codex 自由发挥空间
+        - [ ] 没有越过 architecture / contracts / AGENTS 事实源
+        - [ ] 允许 Codex 执行
+
+        审查结论：
     validations:
-      required: true
-  - type: checkboxes
-    id: approved-for-codex-execution
-    attributes:
-      label: 是否允许 Codex 执行 / Approved for Codex Execution
-      description: 只有勾选后，本 Issue 才允许进入 Codex 代码执行阶段。
-      options:
-        - label: 本 Issue 已完成合规审查，并允许 Codex 按已审查通过的 Issue 执行代码。
-          required: true
+      required: false
