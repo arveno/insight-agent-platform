@@ -55,39 +55,39 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 
 ```text
 insight-agent-platform/
-├─ apps/
-│  └─ web/
-├─ services/
-│  └─ agent-runtime/
-├─ packages/
-│  └─ contracts/
-├─ docs/
-├─ database/
-│  └─ mysql/
-├─ deploy/
-├─ scripts/
-├─ .github/
-├─ AGENTS.md
-├─ README.md
-├─ pnpm-workspace.yaml
-└─ package.json
+├─ apps/                  # 前端应用
+│  └─ web/                # React 前端 Console
+├─ services/              # 后端服务
+│  └─ agent-runtime/      # Python / FastAPI / LangGraph Agent Runtime
+├─ packages/              # 跨端共享包，当前主要是 contracts
+│  └─ contracts/          # JSON Schema / OpenAPI / generated types
+├─ docs/                  # 项目事实源文档
+├─ database/              # MySQL migration / seed / query / diagram 事实源
+│  └─ mysql/              # MySQL 数据库事实源
+├─ deploy/                # Docker / CloudBase Run 部署配置
+├─ scripts/               # 自动化脚本承载位
+├─ .github/               # Issue / PR / CI 模板和工作流
+├─ AGENTS.md              # Codex / AI Agent / 人类开发者执行硬规则
+├─ README.md              # 项目总览
+├─ pnpm-workspace.yaml    # pnpm workspace 配置
+└─ package.json           # monorepo 根 package 配置
 ```
 
 `packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致，使核心对象字段有单一事实源和清晰归属。
 
 ```text
 packages/contracts/schemas/
-├─ workspace/
-├─ data-knowledge/
-├─ metrics/
-├─ analysis/
-├─ memory/
-├─ feedback/
-├─ evaluation/
-├─ model-tools/
-├─ governance/
-├─ reports/
-└─ platform-operations/
+├─ workspace/             # Workspace、User、Role、BusinessDomain
+├─ data-knowledge/        # DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk
+├─ metrics/               # Metric、MetricFormula、MetricThreshold、MetricLineage
+├─ analysis/              # AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence
+├─ memory/                # MemoryItem
+├─ feedback/              # Feedback
+├─ evaluation/            # EvaluationRun、EvaluationDataset、EvaluationScore、BadCase
+├─ model-tools/           # PromptVersion、ToolDefinition、RagStrategy、ModelConfig、RoutingPolicy
+├─ governance/            # AuditLog、PermissionPolicy、RiskRule
+├─ reports/               # Report、ReportSection、Decision、ActionSuggestion
+└─ platform-operations/   # Job、Notification、DataQualityCheck
 ```
 
 `docs/database.md` 是数据库结构、字段命名、表关系、migration 和 Navicat 使用边界事实源。
@@ -95,11 +95,11 @@ packages/contracts/schemas/
 `database/mysql` 是 MySQL SQL 事实源，包含：
 
 ```text
-database/mysql/
-├─ migrations/
-├─ seeds/
-├─ queries/
-└─ diagrams/
+database/mysql/           # MySQL 数据库事实源
+├─ migrations/            # SQL migration，数据库结构事实源
+├─ seeds/                 # 初始化数据和演示数据 SQL
+├─ queries/               # 只读验证 SQL，用于 Navicat、smoke、排障
+└─ diagrams/              # ERD 或 Navicat 导出图，仅辅助理解，不作为事实源
 ```
 
 ## 4. 产品一级模块
@@ -132,53 +132,53 @@ database/mysql/
 
 ```text
 apps/web/src/
-├─ app/
-│  ├─ router/
-│  ├─ providers/
-│  ├─ layout/
-│  └─ theme/
-├─ pages/
-│  ├─ workspace/
-│  ├─ data-knowledge/
-│  ├─ metrics/
-│  ├─ dashboard/
-│  ├─ analysis/
-│  ├─ reports/
-│  ├─ memory/
-│  ├─ feedback/
-│  ├─ evaluation/
-│  ├─ model-tools/
-│  ├─ governance/
-│  ├─ observability/
-│  ├─ settings/
-│  └─ platform-operations/
-├─ features/
-│  ├─ workspace/
-│  ├─ data-knowledge/
-│  ├─ metrics/
-│  ├─ dashboard/
-│  ├─ agent-analysis/
-│  ├─ memory/
-│  ├─ feedback/
-│  ├─ evaluation/
-│  ├─ model-tools/
-│  ├─ governance/
-│  ├─ observability/
-│  ├─ reports/
-│  ├─ settings/
-│  └─ platform-operations/
-├─ shared/
-│  ├─ api/
-│  ├─ ui/
-│  ├─ layout/
-│  ├─ charts/
-│  ├─ theme/
-│  ├─ hooks/
-│  ├─ stores/
-│  ├─ types/
-│  ├─ utils/
-│  └─ constants/
-└─ main.tsx
+├─ app/                   # 路由、全局 Provider、布局和主题入口
+│  ├─ router/             # 路由定义
+│  ├─ providers/          # 全局 Provider
+│  ├─ layout/             # 应用级布局
+│  └─ theme/              # 应用级主题入口
+├─ pages/                 # 页面级入口，只做页面编排
+│  ├─ workspace/          # 企业空间、成员、角色、业务域页面入口
+│  ├─ data-knowledge/     # 数据源、字段字典、业务知识、知识切片页面入口
+│  ├─ metrics/            # 指标定义、公式、口径、阈值、血缘页面入口
+│  ├─ dashboard/          # 经营总览、核心指标、异常和平台质量概览
+│  ├─ analysis/           # 分析页面入口，对应 agent-analysis 业务模块
+│  ├─ reports/            # 分析报告、报告段落、决策建议页面入口
+│  ├─ memory/             # 用户、工作区、分析、决策记忆页面入口
+│  ├─ feedback/           # 用户反馈、人工纠错、采纳 / 未采纳页面入口
+│  ├─ evaluation/         # Bad Case、评估数据集、评估运行和评分页面入口
+│  ├─ model-tools/        # 模型、Prompt、Tool、RAG 策略和路由页面入口
+│  ├─ governance/         # 权限、SQL Guard、Tool Permission、审计页面入口
+│  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率页面入口
+│  ├─ settings/           # 系统设置、环境配置、默认策略
+│  └─ platform-operations/ # Job、通知、数据质量、运维任务页面入口
+├─ features/              # 按业务域组织的前端功能模块
+│  ├─ workspace/          # 企业空间、成员、角色、业务域
+│  ├─ data-knowledge/     # 数据源、字段字典、业务知识、知识切片
+│  ├─ metrics/            # 指标定义、公式、口径、阈值、血缘
+│  ├─ dashboard/          # 经营总览、核心指标、异常和平台质量概览
+│  ├─ agent-analysis/     # Agent 分析工作区、分析任务、运行结果
+│  ├─ memory/             # 用户、工作区、分析、决策记忆
+│  ├─ feedback/           # 用户反馈、人工纠错、采纳 / 未采纳
+│  ├─ evaluation/         # Bad Case、评估数据集、评估运行和评分
+│  ├─ model-tools/        # 模型、Prompt、Tool、RAG 策略和路由
+│  ├─ governance/         # 权限、SQL Guard、Tool Permission、审计
+│  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率
+│  ├─ reports/            # 分析报告、报告段落、决策建议
+│  ├─ settings/           # 系统设置、环境配置、默认策略
+│  └─ platform-operations/ # Job、通知、数据质量、运维任务
+├─ shared/                # 跨业务域复用的 API、UI、布局、图表、hooks、stores、types、utils
+│  ├─ api/                # 跨域 API 基础能力
+│  ├─ ui/                 # 跨域 UI 组件
+│  ├─ layout/             # 跨域布局能力
+│  ├─ charts/             # 跨域图表能力
+│  ├─ theme/              # 设计 token 和主题能力
+│  ├─ hooks/              # 跨域 hooks
+│  ├─ stores/             # 跨域状态承载位
+│  ├─ types/              # 跨域类型
+│  ├─ utils/              # 跨域工具函数
+│  └─ constants/          # 跨域常量
+└─ main.tsx               # 前端入口
 ```
 
 每个 feature 内部推荐包含：
@@ -249,21 +249,41 @@ UI 不得直接消费 raw API response。
 
 ```text
 services/agent-runtime/app/
-├─ api/
-├─ core/
-├─ domain/
-├─ application/
-├─ runtime/
-├─ agents/
-├─ tools/
-├─ model_gateway/
-├─ memory/
-├─ evaluation/
-├─ governance/
-├─ observability/
-├─ infrastructure/
-├─ schemas/
-└─ main.py
+├─ api/                   # HTTP 路由、鉴权、参数校验、响应出口
+├─ core/                  # 配置、日志、错误、安全、常量
+├─ domain/                # 业务对象和业务规则
+├─ application/           # 业务用例编排，不直接查库、不直接调模型
+├─ runtime/               # LangGraph graph、state、nodes、edges、checkpoints
+├─ agents/                # 各类 Agent 职责实现
+├─ tools/                 # Tool Registry 和工具适配
+├─ model_gateway/         # 模型调用唯一入口、provider、routing、cost、errors
+├─ memory/                # Memory 读写策略
+├─ evaluation/            # Evaluator、Dataset、Bad Case、Regression
+├─ governance/            # Policy、SQL Guard、Tool Permission、Data Access、Audit
+├─ observability/         # Trace、Metrics、Logging、Cost
+├─ infrastructure/        # DB、Repository、Vector Store、Cache、Queue、Scheduler、Secrets 等外部依赖
+├─ schemas/               # API DTO，不等同于 domain model
+└─ main.py                # FastAPI 应用入口
+```
+
+`domain` 业务域按产品模块分组：
+
+```text
+services/agent-runtime/app/domain/
+├─ workspace/             # 企业空间基础对象
+├─ iam/                   # 用户、角色、权限、成员关系
+├─ data_knowledge/        # 数据源、表、字段、知识文档
+├─ metrics/               # 指标体系、公式、阈值、血缘
+├─ analysis/              # 分析任务、运行、事件、工具调用、模型调用
+├─ memory/                # 长期记忆对象
+├─ feedback/              # 用户反馈对象
+├─ evaluation/            # 评估、Bad Case、评分对象
+├─ model_tools/           # 模型、Prompt、Tool、RAG 策略对象
+├─ governance/            # 策略、风险、权限、审计对象
+├─ observability/         # 运行轨迹、指标、成本对象
+├─ reports/               # 报告、报告段落、决策建议
+├─ dashboard/             # 经营总览聚合对象
+└─ platform_operations/   # Job、通知、数据质量等运维对象
 ```
 
 测试目录固定放在服务根目录，避免混入 runtime package code：
@@ -368,16 +388,20 @@ State + Node + Edge + Tool + Event
 
 以下运维脚本承载位必须从第一天保留在 `scripts/`：
 
-- verify
-- build
-- package
-- deploy
-- rollback
-- migration
-- smoke
-- load
-- failure-simulation
-- security
+```text
+scripts/
+├─ verify/                # 全局质量检查入口
+├─ build/                 # 前端和后端构建入口
+├─ package/               # 发布产物打包入口
+├─ deploy/                # 部署执行入口
+├─ rollback/              # 回滚入口
+├─ migration/             # 数据库 migration / seed 执行入口
+├─ contracts/             # contracts / schema / OpenAPI 检查入口
+├─ smoke/                 # 部署后最小链路验证
+├─ load/                  # 压测和性能验证
+├─ failure-simulation/    # 失败场景模拟
+└─ security/              # 安全检查入口
+```
 
 ## 11. Mock 策略
 
