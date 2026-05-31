@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/role.schema.json",
+  "title": "Role",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "roleId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

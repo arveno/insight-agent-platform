@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/routing-policy.schema.json",
+  "title": "RoutingPolicy",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "routingPolicyId": {
+      "type": "string"
+    },
+    "modelConfigId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

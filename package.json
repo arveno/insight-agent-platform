@@ -1,0 +1,35 @@
+{
+  "name": "insight-agent-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "企业经营分析与决策 Agent 平台。",
+  "scripts": {
+    "check:structure": "node scripts/contracts/check-structure.mjs",
+    "check:contracts": "echo \"contracts 结构检查占位\"",
+    "verify": "pnpm check:structure && pnpm format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:web": "pnpm --filter @insight-agent/web lint",
+    "typecheck:web": "pnpm --filter @insight-agent/web typecheck",
+    "test:web": "pnpm --filter @insight-agent/web test",
+    "e2e:web": "pnpm --filter @insight-agent/web e2e",
+    "lint:backend": "echo \"backend lint 由 uv / ruff 承载，真实命令在后端工具链实现时接入\"",
+    "format:backend": "echo \"backend format 由 uv / ruff 承载，真实命令在后端工具链实现时接入\"",
+    "typecheck:backend": "echo \"backend typecheck 由 mypy 承载，真实命令在后端工具链实现时接入\"",
+    "test:backend": "echo \"backend test 由 pytest 承载，真实命令在后端工具链实现时接入\"",
+    "smoke": "echo \"smoke 检查占位\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

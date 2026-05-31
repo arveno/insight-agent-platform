@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/notification.schema.json",
+  "title": "Notification",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "notificationId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

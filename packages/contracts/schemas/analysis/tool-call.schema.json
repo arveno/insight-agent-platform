@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/tool-call.schema.json",
+  "title": "ToolCall",
+  "description": "Agent 通过 Tool Registry 发起的一次受控工具调用契约。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "toolCallId": {
+      "description": "工具调用唯一标识，用于审计、trace 和运行回放。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "工具调用所属分析运行标识。",
+      "type": "string"
+    },
+    "toolName": {
+      "description": "在 Tool Registry 中登记的工具名称。",
+      "type": "string"
+    },
+    "input": {
+      "description": "符合工具输入 schema 的结构化入参。",
+      "type": "object"
+    },
+    "output": {
+      "description": "符合工具输出 schema 的结构化结果；调用失败或未完成时可为 null。",
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "status": {
+      "description": "工具调用状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "pending",
+        "running",
+        "succeeded",
+        "failed",
+        "skipped"
+      ]
+    },
+    "riskLevel": {
+      "description": "工具调用风险等级，必须使用 contracts 中定义的 RiskLevel 枚举。",
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "permission": {
+      "description": "执行该工具所需的权限标识，由治理链路判断。",
+      "type": "string"
+    },
+    "errorType": {
+      "description": "工具调用失败时的标准错误类型；成功或未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "startedAt": {
+      "description": "工具调用开始时间；尚未开始时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "工具调用结束时间；运行中或尚未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}

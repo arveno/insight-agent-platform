@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/decision.schema.json",
+  "title": "Decision",
+  "description": "基于报告形成的决策记录契约，用于追踪建议采纳和后续效果。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "decisionId": {
+      "description": "决策唯一标识。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "决策所属工作区标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "决策关联的分析运行标识。",
+      "type": "string"
+    },
+    "reportId": {
+      "description": "决策关联的报告标识。",
+      "type": "string"
+    },
+    "title": {
+      "description": "决策标题或简要描述。",
+      "type": "string"
+    },
+    "status": {
+      "description": "决策状态，用于表示建议、采纳、拒绝或后续执行状态。",
+      "type": "string"
+    },
+    "createdAt": {
+      "description": "决策记录创建时间。",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

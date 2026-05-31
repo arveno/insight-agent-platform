@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/action-suggestion.schema.json",
+  "title": "ActionSuggestion",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "actionSuggestionId": {
+      "type": "string"
+    },
+    "decisionId": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

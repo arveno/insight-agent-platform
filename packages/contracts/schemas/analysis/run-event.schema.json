@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/run-event.schema.json",
+  "title": "RunEvent",
+  "description": "Agent Runtime 在运行过程中产生的标准事件契约，不等同于前端 timeline ViewModel。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "description": "运行事件唯一标识，用于定位 runtime 中的单个节点、工具或状态事件。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "事件所属分析运行标识，用于把事件挂回 AnalysisRun。",
+      "type": "string"
+    },
+    "eventType": {
+      "description": "事件类型，用于区分节点执行、工具调用、模型调用、审批、错误等 runtime 事件。",
+      "type": "string"
+    },
+    "status": {
+      "description": "事件执行状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "pending",
+        "running",
+        "succeeded",
+        "failed",
+        "skipped"
+      ]
+    },
+    "nodeName": {
+      "description": "产生该事件的 LangGraph 节点名称。",
+      "type": "string"
+    },
+    "agentName": {
+      "description": "产生该事件的 Agent 名称，用于观测和责任边界定位。",
+      "type": "string"
+    },
+    "toolName": {
+      "description": "事件关联的工具名称；非工具事件时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "startedAt": {
+      "description": "事件开始时间；尚未开始时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "事件结束时间；运行中或尚未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}

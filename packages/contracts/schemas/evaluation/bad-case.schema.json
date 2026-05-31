@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/bad-case.schema.json",
+  "title": "BadCase",
+  "description": "由反馈或评估沉淀的问题案例契约，用于后续回归和改进。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "badCaseId": {
+      "description": "Bad Case 唯一标识。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "Bad Case 所属工作区标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "Bad Case 关联的分析运行标识。",
+      "type": "string"
+    },
+    "feedbackId": {
+      "description": "关联的用户反馈标识；不是由反馈产生时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evaluationRunId": {
+      "description": "关联的评估运行标识；不是由评估产生时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failureType": {
+      "description": "失败类型，用于分类问题来源和改进方向。",
+      "type": "string"
+    },
+    "failureReason": {
+      "description": "失败原因的结构化说明。",
+      "type": "string"
+    },
+    "expectedBehavior": {
+      "description": "期望行为，用于后续回归评估。",
+      "type": "string"
+    },
+    "relatedRule": {
+      "description": "关联的规则或治理条目；没有关联时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "relatedContract": {
+      "description": "关联的契约对象或字段；没有关联时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "description": "Bad Case 创建时间。",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@insight-agent/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Insight Agent Platform 的 contracts-first schema 与生成类型事实源。",
+  "type": "module",
+  "files": [
+    "schemas",
+    "openapi",
+    "generated"
+  ],
+  "scripts": {
+    "check": "echo \"contracts 布局检查占位\""
+  }
+}

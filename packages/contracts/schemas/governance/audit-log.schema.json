@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/audit-log.schema.json",
+  "title": "AuditLog",
+  "description": "治理审计日志契约，用于记录权限、工具、数据访问和策略命中事实。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "auditLogId": {
+      "description": "审计日志唯一标识。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "审计事件所属工作区标识。",
+      "type": "string"
+    },
+    "userId": {
+      "description": "触发审计事件的用户标识。",
+      "type": "string"
+    },
+    "action": {
+      "description": "被审计的动作，例如访问、调用、拒绝或审批。",
+      "type": "string"
+    },
+    "resourceType": {
+      "description": "被访问或操作的资源类型。",
+      "type": "string"
+    },
+    "resourceId": {
+      "description": "被访问或操作的资源标识。",
+      "type": "string"
+    },
+    "createdAt": {
+      "description": "审计事件创建时间。",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

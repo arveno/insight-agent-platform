@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/analysis-run.schema.json",
+  "title": "AnalysisRun",
+  "description": "一次 Agent 分析运行的契约对象，用于串联任务、事件、工具、模型、报告和评估结果。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "description": "分析运行的全局唯一标识，贯穿 runtime、事件、工具调用、模型调用和报告链路。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "运行所属工作区标识，用于租户隔离、权限判断和数据范围控制。",
+      "type": "string"
+    },
+    "userId": {
+      "description": "发起本次分析运行的用户标识，用于权限、审计和个性化上下文。",
+      "type": "string"
+    },
+    "analysisTaskId": {
+      "description": "本次运行对应的分析任务标识，用于把用户请求和实际执行实例关联起来。",
+      "type": "string"
+    },
+    "status": {
+      "description": "分析运行生命周期状态，必须使用 contracts 中定义的 AnalysisRunStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "created",
+        "planning",
+        "running",
+        "waiting_approval",
+        "completed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "startedAt": {
+      "description": "运行实际开始时间；尚未开始时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "运行结束时间；运行中、等待审批或尚未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}

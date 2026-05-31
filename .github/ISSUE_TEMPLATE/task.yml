@@ -1,0 +1,113 @@
+name: Agent 全栈任务
+description: 用于所有实现任务。Issue 必须先完成合规审查，通过后才允许 Codex 执行代码。
+title: "[任务] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标 / Goal
+      description: 请说明本任务要解决的具体问题，以及为什么现在需要处理。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 修改范围 / Scope
+      description: 请列出允许修改的目录、模块和文件，并说明哪些范围不能触碰。
+    validations:
+      required: true
+  - type: textarea
+    id: fact-sources
+    attributes:
+      label: 事实源 / Fact Sources
+      description: 请列出本任务必须依据的事实源，包括需求、AGENTS.md、协作流程、架构文档、契约文档、数据库文档和 packages/contracts。
+      placeholder: |
+        - 需求来源：
+        - AGENTS.md：
+        - docs/workflow.md：
+        - docs/architecture.md：
+        - docs/contracts.md：
+        - docs/database.md：
+        - packages/contracts：
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: 必须遵守的规则 / Required Rules
+      description: 请把本任务相关规则直接摘到 Issue 中，不要只写“遵守文档”。
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: 禁止项 / Forbidden
+      description: 请明确不能修改、不能新增、不能引入的内容。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准 / Acceptance Criteria
+      description: 请写出具体、可检查、可由 PR 证明的验收标准。
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: 测试要求 / Test Requirements
+      description: 请说明必须运行的命令、结构检查、截图或其他验证证据。
+    validations:
+      required: true
+  - type: textarea
+    id: pr-evidence
+    attributes:
+      label: PR 证据要求 / PR Evidence
+      description: 请说明 PR 必须证明哪些规则已遵守、哪些结果已验证、是否存在风险或未完成项。
+    validations:
+      required: true
+  - type: dropdown
+    id: issue-review-status
+    attributes:
+      label: Issue 合规审查状态 / Issue Review Status
+      description: 创建 Issue 时默认应为“待审查”。只有审查通过后，才允许进入 Codex 执行阶段。
+      options:
+        - 待审查 / Pending
+        - 审查通过 / Approved
+        - 审查未通过 / Rejected
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: 审查人 / Reviewer
+      description: Issue 创建时可以填写“待审查”。审查通过前，不允许交给 Codex 执行。
+      placeholder: 例如：待审查 / @username
+    validations:
+      required: false
+  - type: textarea
+    id: review-result
+    attributes:
+      label: 审查结论 / Review Result
+      description: Issue 创建时填写“待审查”。审查后需要记录目标、范围、事实源、规则、禁止项、验收标准和测试要求是否合规。
+      value: |
+        审查状态：待审查
+
+        - [ ] 目标清楚
+        - [ ] 修改范围明确
+        - [ ] 事实源完整
+        - [ ] 已摘出本任务相关规则
+        - [ ] 是否摘出本任务相关代码规则和字段链路规则：
+        - [ ] 是否列出本任务需要运行的工具命令：
+        - [ ] 是否确认没有引入未审查的新工具或新依赖：
+        - [ ] 禁止项明确
+        - [ ] 验收标准可检查
+        - [ ] 测试要求明确
+        - [ ] 没有 Codex 自由发挥空间
+        - [ ] 没有越过 AGENTS / workflow / architecture / contracts / packages/contracts 事实源
+        - [ ] 允许 Codex 执行
+
+        审查结论：
+    validations:
+      required: false

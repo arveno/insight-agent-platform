@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/analysis-task.schema.json",
+  "title": "AnalysisTask",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "analysisTaskId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

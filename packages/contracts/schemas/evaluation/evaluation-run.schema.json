@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/evaluation-run.schema.json",
+  "title": "EvaluationRun",
+  "description": "一次系统评估任务的契约对象，用于质量验证和回归检查。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "evaluationRunId": {
+      "description": "评估运行唯一标识。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "评估所属工作区标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "被评估的分析运行标识。",
+      "type": "string"
+    },
+    "datasetId": {
+      "description": "本次评估使用的数据集标识。",
+      "type": "string"
+    },
+    "status": {
+      "description": "评估状态，必须使用 contracts 中定义的 EvaluationStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "queued",
+        "running",
+        "passed",
+        "failed",
+        "needs_review"
+      ]
+    },
+    "score": {
+      "description": "评估得分；评估未完成或不适用时为 null。",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "failureReason": {
+      "description": "评估失败或未通过时的原因说明；无失败原因时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "description": "评估任务创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "评估任务完成时间；未完成时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}

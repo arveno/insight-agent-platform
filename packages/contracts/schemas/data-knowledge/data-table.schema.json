@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/data-table.schema.json",
+  "title": "DataTable",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "tableId": {
+      "type": "string"
+    },
+    "dataSourceId": {
+      "type": "string"
+    },
+    "tableName": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

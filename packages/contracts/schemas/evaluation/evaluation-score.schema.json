@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/evaluation-score.schema.json",
+  "title": "EvaluationScore",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "evaluationScoreId": {
+      "type": "string"
+    },
+    "evaluationRunId": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
