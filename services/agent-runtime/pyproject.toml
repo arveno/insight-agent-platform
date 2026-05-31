@@ -5,6 +5,33 @@ description = "Insight Agent Platform 的 Python / FastAPI / LangGraph Agent Run
 requires-python = ">=3.11"
 dependencies = []
 
+[tool.uv]
+# Python 依赖 / 环境管理主线固定为 uv，不建立 requirements.txt 双轨。
+package = false
+
 [tool.pytest.ini_options]
 # Runtime tests live at services/agent-runtime/tests, outside app package code.
 testpaths = ["tests"]
+pythonpath = ["app"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["app", "tests"]
+mypy_path = "app"
+strict = true
+warn_unused_configs = true
+ignore_missing_imports = true

@@ -78,6 +78,20 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 - 前端不得绕过 Contract -> ViewModel -> UI 链路。
 - 代码必须优先清晰、直接、可审查。
 
+### 固定工具链规则
+
+- Codex 不允许自行替换已固定工具链。
+- 包管理固定使用 pnpm，不允许引入 npm / yarn 双轨。
+- Python 环境 / 依赖管理固定使用 uv，不允许引入 pip requirements 双轨。
+- 前端质量检查使用 ESLint，格式化使用 Prettier。
+- ESLint 不接入 `eslint-plugin-prettier`，不把 Prettier 当 ESLint rule 跑。
+- 前端类型检查使用 TypeScript / `tsc`。
+- 前端单元测试和组件测试使用 Vitest / React Testing Library。
+- 前端 E2E 和手机浏览器响应式验证使用 Playwright。
+- 后端 lint / format 使用 Ruff。
+- 后端类型检查使用 mypy。
+- 后端测试使用 pytest。
+
 ## 5. 前后端字段一致
 
 核心业务字段以 `packages/contracts` 为事实源。

@@ -187,6 +187,14 @@ build -> package -> deploy -> smoke -> rollback
 - `scripts/smoke/`
 - `scripts/rollback/`
 
+部署前质量门禁必须逐步纳入：
+
+```text
+verify -> build -> package -> smoke -> security
+```
+
+CI 当前仍可只做结构守门，不自动部署生产；但命令入口已经固定，后续 Issue 只能在既有入口内替换真实实现。
+
 ## 14. 数据库自动化
 
 数据库自动化链路固定为：

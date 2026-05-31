@@ -34,6 +34,8 @@ Closes #
 - [ ] 如契约字段变更，已同步 packages/contracts
 - [ ] ViewModel 未重命名核心业务字段
 - [ ] Mapper 未做业务决策或多字段兜底
+- [ ] 已使用项目固定工具链
+- [ ] 未引入未审查的新工具或新依赖
 - [ ] 未引入 mock / real 双链路
 - [ ] UI 未直接渲染 raw API response
 - [ ] 模型调用未绕过 Model Gateway
@@ -47,6 +49,8 @@ Closes #
 ```text
 
 ```
+
+- [ ] 已提供相关 lint / format / typecheck / test / smoke / security 证据，或说明当前任务为何不适用
 
 ## 风险与后续 / Risks and Follow-ups
 

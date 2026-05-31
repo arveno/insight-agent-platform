@@ -51,6 +51,22 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - SQL migration：数据库结构事实源，所有表结构变更必须通过仓库内 SQL migration 演进。
 - Queue / Scheduler 预留：异步任务和定时任务承载位，后续用于 RAG ingestion、Evaluation、Report 生成、数据质量检查等后台任务。
 
+### 工具链与质量门禁
+
+- pnpm：前端和 monorepo 包管理唯一主线。
+- ESLint：前端代码质量、潜在问题和规则检查。
+- Prettier：纯格式化工具，通过 `eslint-config-prettier` 避免和 ESLint 格式规则冲突。
+- TypeScript / `tsc`：前端类型检查入口。
+- Vitest：前端单元测试入口。
+- React Testing Library：前端组件测试入口。
+- Playwright：E2E、手机浏览器响应式验证入口。
+- uv：Python 环境 / 依赖管理唯一主线。
+- Ruff：Python lint / format 入口。
+- mypy：Python 类型检查入口。
+- pytest：Python 测试和 contract test 入口。
+- Contracts：JSON Schema 校验、OpenAPI 检查、TypeScript 类型生成和 Python DTO 承载方向，不建立自动生成双轨。
+- Security：secret scan、依赖审计、Governance / SQL Guard / Tool Permission / Sensitive Field 承载方向。
+
 ## 3. Monorepo 结构
 
 ```text

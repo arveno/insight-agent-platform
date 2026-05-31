@@ -47,6 +47,13 @@ Insight Agent Platform 是一个面向企业经营分析场景的 Agent 全栈�
 - 不保留 Mock / Real 双链路。
 - Issue 是执行合同，PR 是履约证明，CI 是自动守门。
 
+## 工具链入口
+
+- Frontend：pnpm / ESLint / Prettier / TypeScript / Vitest / React Testing Library / Playwright。
+- Backend：uv / Ruff / mypy / pytest。
+- Contracts：JSON Schema 校验、OpenAPI 检查、类型生成和 contract test 承载位。
+- Security：secret scan、依赖审计、Governance / SQL Guard / Tool Permission / Sensitive Field 承载位。
+
 ## 目录概览
 
 ```text
