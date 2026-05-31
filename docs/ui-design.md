@@ -36,6 +36,28 @@ UI 开发流程固定为：
 - 静态 UI 骨架不得形成 Mock / Real 双链路。
 - 接业务数据和真实功能必须在后续已审查通过的 Issue 中执行。
 
+## UI 事实源变更门禁
+
+`docs/ui-design.md` 是 UI 设计唯一事实源。
+
+以下变更必须先更新 `docs/ui-design.md`，再进入页面实现：
+
+- 新增页面。
+- 修改页面路由。
+- 修改页面区域。
+- 修改模块入口。
+- 修改 `shared/ui` 组件清单。
+- 修改桌面端布局规则。
+- 修改手机浏览器布局规则。
+
+门禁规则：
+
+1. 页面实现 PR 不能临时发明页面结构。
+2. 页面实现 PR 不能绕过对应页面蓝图。
+3. 如果实现时发现蓝图不够用，必须停止实现，先回到 Issue 补充 UI 事实源。
+4. UI 设计事实源变更也必须通过 Issue 审查，不能用口头约束覆盖。
+5. 后续功能 Issue 必须引用对应页面蓝图、关联 contracts、前端落点和禁止项。
+
 ## 3. 统一 UI 设计语言
 
 统一 UI 设计语言固定如下：
@@ -252,11 +274,15 @@ Console 导航入口与页面聚合关系：
 - shared 组件不得调用模型、Tool 或 LangGraph Runtime。
 - shared 组件只消费明确的 ViewModel、枚举或 UI State。
 
-## 11. 状态规范
+## 11. 状态分层规范
 
-状态必须来自 contracts，不允许自由字符串。
+UI 状态分为业务状态、页面异步状态、操作反馈状态和权限态。四类状态不得混用。
 
-固定状态源：
+### 11.1 业务状态
+
+业务状态必须来自 contracts 枚举，不允许自由字符串。
+
+固定业务状态源：
 
 - `AnalysisRunStatus`：`created`、`planning`、`running`、`waiting_approval`、`completed`、`failed`、`cancelled`。
 - `RunEventStatus`：`pending`、`running`、`succeeded`、`failed`、`skipped`。
@@ -264,21 +290,59 @@ Console 导航入口与页面聚合关系：
 - `RiskLevel`：`low`、`medium`、`high`、`critical`。
 - `FeedbackType`：`useful`、`not_useful`、`incorrect`、`sql_error`、`source_insufficient`、`analysis_shallow`、`suggestion_unusable`、`format_preference`、`manual_correction`。
 
-展示规则：
+业务状态展示规则：
 
 - 状态展示统一使用 `StatusTag`。
 - 风险展示统一使用 `RiskBadge`。
 - 状态文案和颜色映射在 shared 层集中定义。
 - ViewModel 可以增加 `statusLabel`、`durationText`、`costText`、`riskText` 等展示派生字段。
 - ViewModel 不得把 `runId` 改成 `id`，不得把 `status` 改成 `state` 或 `currentStatus`。
+- 不允许 `done` / `success` / `completed` 多字段兜底。
 
-禁止：
+业务状态禁止：
 
 ```ts
 run.id || run.runId || run.analysisRunId
 status === "done" || status === "completed" || status === "success"
 source.sources || source.evidences || source.references
 ```
+
+### 11.2 页面异步状态
+
+页面异步状态用于表达页面或组件取数过程，不等于业务状态。
+
+固定规则：
+
+- `loading` 使用 `LoadingState`。
+- `empty` 使用 `EmptyState`。
+- `error` 使用 `ErrorState`。
+- 页面级 loading / empty / error 必须由 shared UI 统一承载。
+- 不允许各页面自写一套加载、空态、错误态。
+- 不允许把页面异步状态写入 Contract Model。
+
+### 11.3 操作反馈状态
+
+操作反馈状态用于表达用户操作后的 UI 反馈，不等于业务状态，也不是新的 contract 业务枚举。
+
+固定规则：
+
+- `success` / `warning` / `info` / `error` 属于 UI 操作反馈。
+- 操作反馈必须通过 `shared/ui` 封装或 Ant Design 反馈能力的统一封装使用。
+- 不允许页面自定义状态色、提示样式或自由字符串状态体系。
+- `warning` 必须用于风险、权限、数据不完整、证据不足、操作影响等提示场景。
+- `success` 只表示用户操作完成，不得替代业务状态 `completed` / `passed` / `succeeded`。
+- 操作反馈文案不得改变 Contract 字段语义。
+
+### 11.4 权限态
+
+权限态来自 Role / PermissionPolicy / Governance 结果。
+
+固定规则：
+
+- UI 只展示禁用态、只读态、权限空态或审批入口。
+- UI 不做权限业务决策。
+- 无权限时不得泄漏业务数据、模型输出、Tool 输出或敏感字段。
+- 权限提示可使用操作反馈 `warning`，但不得将 `warning` 写成业务状态。
 
 ## 12. 图表规范
 
@@ -821,20 +885,22 @@ Source Evidence 展示规则：
 后续 UI 实现 PR 必须满足：
 
 1. 引用本文件和对应页面蓝图。
-2. 符合 `Contract -> ViewModel -> UI` 链路。
-3. 页面只做编排，不写业务清洗。
-4. 组件只消费 ViewModel 和 UI State。
-5. API response 必须先通过 mapper 转成 ViewModel。
-6. UI 不直接消费 raw API response。
-7. UI 不直接使用数据库字段。
-8. UI 不直接使用模型原始输出、Tool 原始输出或 LangGraph raw state。
-9. 状态标签、风险等级、空态、错误态、加载态使用 `shared/ui`。
-10. 设计 token 走 `shared/theme`。
-11. 使用 Ant Design 体系，不引入第二套 UI 组件库。
-12. 支持桌面端和手机浏览器。
-13. 没有 Mock / Real 双链路。
-14. 没有无关依赖、无关重构或业务范围外实现。
-15. 没有改变当前最终工程骨架。
+2. 遵守 UI 事实源变更门禁，不临时发明页面结构。
+3. 符合 `Contract -> ViewModel -> UI` 链路。
+4. 页面只做编排，不写业务清洗。
+5. 组件只消费 ViewModel 和 UI State。
+6. API response 必须先通过 mapper 转成 ViewModel。
+7. UI 不直接消费 raw API response。
+8. UI 不直接使用数据库字段。
+9. UI 不直接使用模型原始输出、Tool 原始输出或 LangGraph raw state。
+10. 业务状态、页面异步状态、操作反馈状态和权限态必须分层处理。
+11. 状态标签、风险等级、空态、错误态、加载态使用 `shared/ui`。
+12. 设计 token 走 `shared/theme`。
+13. 使用 Ant Design 体系，不引入第二套 UI 组件库。
+14. 支持桌面端和手机浏览器。
+15. 没有 Mock / Real 双链路。
+16. 没有无关依赖、无关重构或业务范围外实现。
+17. 没有改变当前最终工程骨架。
 
 ## 22. UI PR 证据要求
 
