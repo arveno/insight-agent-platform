@@ -1,0 +1,16 @@
+{
+  "name": "insight-agent-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Enterprise business insight and decision Agent platform.",
+  "scripts": {
+    "check:structure": "node scripts/contracts/check-structure.mjs",
+    "check:contracts": "echo \"contracts check placeholder\"",
+    "smoke": "echo \"smoke test placeholder\""
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
