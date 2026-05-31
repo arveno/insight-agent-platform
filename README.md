@@ -28,6 +28,7 @@ Insight Agent Platform 是一个面向企业经营分析场景的 Agent 全栈�
 
 - Frontend：React / TypeScript / Vite / Ant Design / Ant Design X / TanStack Query / Zustand / ECharts
 - Backend：Python / FastAPI / LangGraph / LangChain / LlamaIndex
+- Database：MySQL 8.x
 - Vector Store：Milvus，Qdrant 作为备选
 - Evaluation：DeepEval / RAGAs / LangSmith Dataset
 - Observability：自建 Run Trace / LangSmith / Langfuse 备选 / OpenTelemetry 预留
@@ -53,8 +54,9 @@ apps/web                 React 前端 Console
 services/agent-runtime   Python / FastAPI / LangGraph 后端
 packages/contracts       JSON Schema / OpenAPI / generated types
 docs                     少量事实源文档
+database                 MySQL migration / seed / query / diagram 事实源
 deploy                   Docker / CloudBase Run 部署配置
-scripts                  contracts / smoke / load / failure-simulation / deploy 脚本
+scripts                  verify / build / package / deploy / rollback / migration / contracts / smoke / load / failure-simulation / security 脚本
 .github                  Issue / PR / CI 模板
 ```
 
@@ -64,6 +66,7 @@ scripts                  contracts / smoke / load / failure-simulation / deploy 
 - `docs/workflow.md`：需求、Issue、Issue 审查、Codex 执行、PR 审查和 Merge 的协作流程事实源。
 - `docs/architecture.md`：系统架构、分层边界和模块职责事实源。
 - `docs/contracts.md`：契约语义、字段命名和跨端数据链路事实源。
+- `docs/database.md`：MySQL 数据库结构、字段命名、表关系、migration、Navicat 使用边界事实源。
 - `docs/deployment.md`：部署承载位和运行环境约束事实源。
 
 ## 当前阶段

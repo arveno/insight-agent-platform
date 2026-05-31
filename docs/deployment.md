@@ -8,9 +8,13 @@
 
 - Frontend：静态资源部署。
 - Agent Runtime：Python / FastAPI / LangGraph，Docker 化后部署到 CloudBase Run。
-- Database：CloudBase MySQL 或 PostgreSQL，通过 repository 层隔离。
+- Database：MySQL 8.x，通过 repository 层隔离。
 - Vector Store：Milvus。
 - Cache / Queue：Redis。
+
+当前主部署链路是 CloudBase Run + Docker。CloudBase Functions 不作为当前主部署链路，不建立 CloudBase Functions 与 CloudBase Run 双部署主线。
+
+前端部署方向是静态资源 / EdgeOne Pages 或腾讯云静态托管。
 
 ## 2. 环境变量
 
@@ -61,21 +65,29 @@ deploy/cloudbase-run/
 
 CloudBase 仅作为部署平台 / 云资源选项，不作为 Agent Runtime 架构核心。
 
+CloudBase Functions 不作为当前主部署链路。
+
 ## 6. 数据库迁移
 
-数据库迁移必须使用迁移工具管理。
+数据库迁移必须使用仓库内 SQL migration 管理。
 
-推荐：
+迁移事实源：
 
 ```text
-Alembic
+database/mysql/migrations/
 ```
 
-禁止手工修改生产数据库结构而不记录迁移。
+Navicat 可以执行已审查 migration，但不能手工修改生产数据库结构而不记录迁移。
 
 ## 7. Seed 数据
 
-演示数据通过 seed 脚本创建。
+演示数据通过 seed SQL 创建。
+
+Seed 事实源：
+
+```text
+database/mysql/seeds/
+```
 
 允许：
 
@@ -157,4 +169,51 @@ scripts/failure-simulation/
 
 CI 初始阶段只做守门，不自动部署生产。
 
-后续部署自动化必须作为独立 Issue 实现。
+后续自动部署必须通过已审查 Issue 逐步实现，但目录和职责现在已经固定。
+
+## 13. 部署自动化分层
+
+最终部署自动化分层固定为：
+
+```text
+build -> package -> deploy -> smoke -> rollback
+```
+
+承载位：
+
+- `scripts/build/`
+- `scripts/package/`
+- `scripts/deploy/`
+- `scripts/smoke/`
+- `scripts/rollback/`
+
+## 14. 数据库自动化
+
+数据库自动化链路固定为：
+
+```text
+migration -> seed -> query verify
+```
+
+承载位：
+
+- `scripts/migration/`
+- `database/mysql/migrations/`
+- `database/mysql/seeds/`
+- `database/mysql/queries/`
+
+## 15. 安全检查
+
+安全检查入口固定为：
+
+```text
+security check
+```
+
+承载位：
+
+```text
+scripts/security/
+```
+
+后续承载密钥泄露检查、SQL Guard、Tool Permission、敏感字段和依赖安全检查。

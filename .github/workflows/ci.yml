@@ -18,6 +18,7 @@ jobs:
             AGENTS.md
             README.md
             docs/workflow.md
+            docs/database.md
             docs/architecture.md
             docs/contracts.md
             docs/deployment.md
@@ -27,8 +28,31 @@ jobs:
             services/agent-runtime
             services/agent-runtime/pyproject.toml
             packages/contracts
+            database
+            database/mysql
+            database/mysql/README.md
+            database/mysql/migrations
+            database/mysql/migrations/README.md
+            database/mysql/seeds
+            database/mysql/seeds/README.md
+            database/mysql/queries
+            database/mysql/queries/README.md
+            database/mysql/diagrams
+            database/mysql/diagrams/README.md
             deploy
             scripts
+            scripts/verify
+            scripts/verify/README.md
+            scripts/build
+            scripts/build/README.md
+            scripts/package
+            scripts/package/README.md
+            scripts/rollback
+            scripts/rollback/README.md
+            scripts/migration
+            scripts/migration/README.md
+            scripts/security
+            scripts/security/README.md
           )
 
           for path in "${required_paths[@]}"; do
@@ -311,10 +335,22 @@ jobs:
           test -d deploy/docker
           test -d deploy/cloudbase-run
           test -d scripts/contracts
+          test -d scripts/verify
+          test -d scripts/build
+          test -d scripts/package
           test -d scripts/smoke
           test -d scripts/load
           test -d scripts/failure-simulation
           test -d scripts/deploy
+          test -d scripts/rollback
+          test -d scripts/migration
+          test -d scripts/security
+
+          test -d database/mysql
+          test -d database/mysql/migrations
+          test -d database/mysql/seeds
+          test -d database/mysql/queries
+          test -d database/mysql/diagrams
 
           test -d services/agent-runtime/tests/unit
           test -d services/agent-runtime/tests/contract

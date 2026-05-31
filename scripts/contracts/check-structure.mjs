@@ -188,11 +188,39 @@ const infrastructureDirs = [
   "data_lifecycle"
 ];
 const testDirs = ["unit", "contract", "integration", "smoke", "failure_simulation"];
+const databasePaths = [
+  "database",
+  "database/mysql",
+  "database/mysql/README.md",
+  "database/mysql/migrations",
+  "database/mysql/migrations/README.md",
+  "database/mysql/seeds",
+  "database/mysql/seeds/README.md",
+  "database/mysql/queries",
+  "database/mysql/queries/README.md",
+  "database/mysql/diagrams",
+  "database/mysql/diagrams/README.md"
+];
+const scriptAutomationPaths = [
+  "scripts/verify",
+  "scripts/verify/README.md",
+  "scripts/build",
+  "scripts/build/README.md",
+  "scripts/package",
+  "scripts/package/README.md",
+  "scripts/rollback",
+  "scripts/rollback/README.md",
+  "scripts/migration",
+  "scripts/migration/README.md",
+  "scripts/security",
+  "scripts/security/README.md"
+];
 
 const requiredPaths = [
   "AGENTS.md",
   "README.md",
   "docs/workflow.md",
+  "docs/database.md",
   "docs/architecture.md",
   "docs/contracts.md",
   "docs/deployment.md",
@@ -232,7 +260,9 @@ requiredPaths.push(
   ...backendFiles,
   ...infrastructureDirs.map((dir) => `services/agent-runtime/app/infrastructure/${dir}`),
   ...["requests", "responses", "dto"].map((dir) => `services/agent-runtime/app/schemas/${dir}`),
-  ...testDirs.map((dir) => `services/agent-runtime/tests/${dir}`)
+  ...testDirs.map((dir) => `services/agent-runtime/tests/${dir}`),
+  ...databasePaths,
+  ...scriptAutomationPaths
 );
 
 const missingPaths = requiredPaths.filter((path) => !existsSync(path));

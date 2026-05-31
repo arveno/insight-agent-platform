@@ -46,9 +46,9 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 
 - Docker
 - CloudBase Run
-- PostgreSQL 或 CloudBase MySQL
+- MySQL 8.x
 - Redis
-- Alembic
+- SQL migration
 - Queue / Scheduler 预留
 
 ## 3. Monorepo 结构
@@ -62,6 +62,8 @@ insight-agent-platform/
 ├─ packages/
 │  └─ contracts/
 ├─ docs/
+├─ database/
+│  └─ mysql/
 ├─ deploy/
 ├─ scripts/
 ├─ .github/
@@ -86,6 +88,18 @@ packages/contracts/schemas/
 ├─ governance/
 ├─ reports/
 └─ platform-operations/
+```
+
+`docs/database.md` 是数据库结构、字段命名、表关系、migration 和 Navicat 使用边界事实源。
+
+`database/mysql` 是 MySQL SQL 事实源，包含：
+
+```text
+database/mysql/
+├─ migrations/
+├─ seeds/
+├─ queries/
+└─ diagrams/
 ```
 
 ## 4. 产品一级模块
@@ -330,9 +344,16 @@ State + Node + Edge + Tool + Event
 
 以下运维脚本承载位必须从第一天保留在 `scripts/`：
 
+- verify
+- build
+- package
+- deploy
+- rollback
+- migration
 - smoke
 - load
 - failure-simulation
+- security
 
 ## 11. Mock 策略
 
