@@ -1,0 +1,66 @@
+name: Agent Full-Stack Task
+description: Use this template for every implementation task.
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal / 目标
+      description: What problem does this task solve?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / 修改范围
+      description: List allowed directories, modules, and files.
+    validations:
+      required: true
+  - type: textarea
+    id: fact-sources
+    attributes:
+      label: Fact Sources / 事实源
+      description: List relevant rules from AGENTS.md, architecture.md, contracts.md, packages/contracts.
+      placeholder: |
+        - AGENTS.md: ...
+        - docs/architecture.md: ...
+        - docs/contracts.md: ...
+        - packages/contracts: ...
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Required Rules / 必须遵守的规则
+      description: Copy task-specific rules directly into this issue. Do not just say "follow docs".
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden / 禁止项
+      description: What must not be changed or introduced?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria / 验收标准
+      description: Concrete, checkable acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test Requirements / 测试要求
+      description: What commands, checks, screenshots, or evidence are required?
+    validations:
+      required: true
+  - type: textarea
+    id: pr-evidence
+    attributes:
+      label: PR Evidence / PR 证据要求
+      description: What must the PR prove?
+    validations:
+      required: true
