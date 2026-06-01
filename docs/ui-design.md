@@ -1,20 +1,22 @@
-# UI 与 Figma 工作流事实源
+# UI Blueprint 与 Production UI Shell 工作流事实源
 
-本文档是 Insight Agent Platform 的 UI 与 Figma 工作流事实源，定义 UI 设计流程、Figma 线稿流程、功能覆盖矩阵、设计交接和 UI PR 审查规则。
+本文档是 Insight Agent Platform 的 UI Blueprint 与 Production UI Shell 工作流事实源，定义 UI 设计流程、Wireframe Blueprint、功能覆盖矩阵、视觉规范、生产级页面骨架交接和 UI PR 审查规则。
 
-本文件不实现页面代码，不创建 Figma 文件，不接 API，不接数据库，不实现真实 Agent Run。
+本文件不实现页面代码，不创建外部设计工具文件，不接 API，不接数据库，不实现真实 Agent Run。
 
 ## 1. 目标
 
-`docs/ui-design.md` 的目标是约束 UI 设计、Figma 设计、GitHub Issue、PR 和 Code 之间的事实源关系。
+`docs/ui-design.md` 的目标是约束 UI Blueprint、AI Visual Reference、Ant Design Theme / Visual Specification、Production UI Shell、GitHub Issue、PR 和 Code 之间的事实源关系。
 
 固定目标：
 
-- 明确 UI / Figma / Issue / PR / Code 的职责边界。
+- 明确 UI Blueprint / AI Visual Reference / Production UI Shell / Issue / PR / Code 的职责边界。
 - 明确 `docs/ui-design.md` 只承载规则、流程和审查标准，不承载所有页面详细结构。
-- 明确 Figma Wireframe 承载页面结构、入口、区域、跳转、Web / Mobile Browser 线稿和交互原型。
-- 明确 Figma Visual Design 承载最终视觉效果、组件状态和响应式效果。
-- 明确 Design-to-Code、Dev Handoff 和 PR 证据要求。
+- 明确 Wireframe Blueprint 承载页面结构、入口、区域、跳转、Web / Mobile Browser 线稿和交互原型。
+- 明确 AI Visual Reference 只能提供视觉方向，不作为页面结构事实源、产品能力事实源或最终开发稿。
+- 明确 Ant Design Theme / Visual Specification 承载可落地的视觉规范、组件状态、响应式效果和 token 映射。
+- 明确 Production UI Shell 是生产级页面骨架，不是临时原型、Demo 页面或一次性静态页面。
+- 明确 Design-to-Code、Blueprint-to-Code Handoff 和 PR 证据要求。
 - 保持当前 monorepo、modular monolith、contracts-first、React / TypeScript / Vite / Ant Design、FastAPI / LangGraph 架构不变。
 
 ## 2. UI 事实源层级
@@ -22,50 +24,58 @@
 事实源层级固定如下：
 
 ```text
-architecture / contracts / database
-= 系统能力、数据对象、字段语义事实源
+product-design / architecture / contracts / database
+= 产品能力、系统能力、数据对象、字段语义和数据库边界事实源
 
 docs/ui-design.md
-= UI 流程、设计语言、Figma 线稿流程、功能覆盖矩阵、设计交接和审查规则事实源
+= UI Blueprint、设计语言、视觉规范、Production UI Shell、设计交接和审查规则事实源
 
-Figma Wireframe
+Issue #11 功能覆盖矩阵
+= 功能覆盖、入口、承接页面、Web / Mobile Browser 展示方式和 contracts 对齐事实源
+
+Issue #12 IA / User Flow
+= 信息架构、页面职责、页面流转、跨页面入口和 Mobile Browser 流转事实源
+
+Issue #13 Wireframe Blueprint
 = 页面结构、入口、区域、跳转、Web / Mobile Browser 线稿和交互原型事实源
 
-Figma Visual Design
-= 最终视觉效果、组件状态、响应式效果事实源
+AI Visual Reference
+= 视觉方向参考，不是页面结构事实源、产品能力事实源或最终开发稿
 
-GitHub Issue
-= 执行边界事实源
+Ant Design Theme / Visual Specification
+= 可落地视觉规范、组件状态、响应式效果、图表样式和 token 映射事实源
 
-PR
-= 履约证明
+Production UI Shell
+= 最终路由、AppShell、页面职责、区域布局、组件边界、状态展示、响应式规则和视觉基线事实源
 
-Code
-= 最终工程实现事实源
+GitHub Issue / PR / Code
+= 执行边界、履约证明和最终工程实现事实源
 ```
 
 冲突处理：
 
-- Figma 不得推翻 `docs/architecture.md`、`docs/contracts.md`、`docs/database.md` 或 `packages/contracts`。
-- Figma 不得静默覆盖 `docs/ui-design.md`。
+- Wireframe Blueprint 不得推翻 `docs/product-design.md`、`docs/architecture.md`、`docs/contracts.md`、`docs/database.md` 或 `packages/contracts`。
+- AI Visual Reference、外部设计工具、截图或视觉偏好不得推翻产品能力、IA、页面职责、contracts 或稳定 UI 槽位。
+- Production UI Shell 不得绕过 `Contract -> ViewModel -> UI`、`shared/ui` 或 `shared/theme`。
 - Code 不得绕过 GitHub Issue 和 PR 证据要求。
-- 如果 Figma、文档、Issue、PR、Code 之间发生冲突，必须回到 Issue 审查。
+- 如果 Blueprint、视觉参考、文档、Issue、PR、Code 之间发生冲突，必须回到 Issue 审查。
 - Issue #8 和 PR #9 只能作为历史背景，不作为当前执行依据。
 
 ## 3. UI 设计流程
 
-UI/Figma 工作流固定为：
+UI / 视觉工作流固定为：
 
 ```text
 docs/ui-design.md
 -> Function Coverage Matrix
 -> Information Architecture
 -> User Flows
--> Figma Wireframe
--> Wireframe Review
--> Figma Visual Design
+-> Wireframe Blueprint
+-> Blueprint Review
+-> AI Visual Reference
+-> Ant Design Theme / Visual Specification
+-> Production UI Shell
 -> Design-to-Code Check
--> Dev Handoff
 -> GitHub Issue
 -> PR
 -> Code
@@ -77,10 +87,13 @@ docs/ui-design.md
 - Function Coverage Matrix 先确认功能覆盖、入口和 contracts 对齐。
 - Information Architecture 先确定一级导航、模块分组、页面归属和跨页面关系。
 - User Flows 先确定主任务路径、异常路径和审批 / 反馈路径。
-- Figma Wireframe 先确定页面结构，不直接进入高保真。
-- Figma Visual Design 必须基于已定稿 Wireframe。
+- Wireframe Blueprint 先确定页面结构，不直接进入视觉规范或页面实现。
+- Blueprint Review 必须先确认页面职责、区域边界、Web / Mobile Browser 承接方式和状态覆盖。
+- AI Visual Reference 只能辅助视觉方向，不得修改 Wireframe Blueprint 的页面结构。
+- Ant Design Theme / Visual Specification 必须把视觉方向收敛为 Ant Design、Ant Design X、ProComponents、ECharts、`shared/ui` 和 `shared/theme` 可落地规范。
+- Production UI Shell 必须基于已审查通过的 Blueprint 和 Visual Specification。
 - Design-to-Code Check 必须先判断可实现性，再进入开发 Issue。
-- Dev Handoff 必须提供具体 Page / Frame / 版本或更新时间。
+- Production UI Shell Handoff 必须提供 Wireframe Blueprint 引用、AI Visual Reference 参考说明、Ant Design token / `shared/ui` / `shared/theme` 映射和运行说明或截图。
 - Code 只能按已审查通过的 Issue 执行。
 
 ## 4. 统一 UI 设计语言
@@ -126,7 +139,7 @@ Mobile Browser 规则：
 - 右侧辅助区改为 Drawer、Tabs 或详情页。
 - 表格优先卡片化；确需表格时允许横向滚动，但必须保留主字段和状态。
 - 复杂任务拆分为 Steps、Tabs、Collapse 或分段表单。
-- Mobile Browser 设计必须在 Figma Wireframe 和 Visual Design 中独立表达。
+- Mobile Browser 设计必须在 Wireframe Blueprint、Ant Design Visual Specification 和 Production UI Shell 中独立表达。
 
 禁止：
 
@@ -160,7 +173,7 @@ Mobile 展示方式
 - 每个功能必须说明 Web 展示方式和 Mobile 展示方式。
 - 每个功能必须说明可复用组件候选，例如 `shared/ui`、`shared/layout`、`shared/theme`、`shared/charts`。
 - 每个功能必须对齐 `packages/contracts` 中的业务对象。
-- 不能用 Figma 页面数量替代功能覆盖检查。
+- 不能用外部设计工具的页面数量替代功能覆盖检查。
 - 如果发现功能没有承接页面，必须先更新矩阵和 Issue，不能直接补页面代码。
 
 矩阵覆盖范围至少包括：
@@ -183,49 +196,47 @@ Mobile 展示方式
 - Admin / Settings
 - Platform Operations
 
-## 7. Figma 文件结构规范
+## 7. Wireframe Blueprint 输出规范
 
-正式 Figma 文件建议命名为：
+Wireframe Blueprint 是页面结构事实源，应以已审查通过的 Issue 评论、Review Packet 或仓库允许范围内的交付物承载。不得新增未审查的 UI 文档，不得把外部设计工具作为必经事实源。
 
-```text
-Insight Agent Platform - Wireframe & Design
-```
-
-Figma Page 结构固定为：
+Blueprint 输出结构固定为：
 
 ```text
-00 Cover / Rules
+00 Foundation / Rules
 01 Function Coverage Matrix
 02 Information Architecture
 03 User Flows
-04 Web Wireframes
-05 Mobile Browser Wireframes
+04 Web Wireframe Blueprints
+05 Mobile Browser Wireframe Blueprints
 06 Shared Regions & Components
 07 Interaction States
-08 Visual Design
-09 Dev Handoff
+08 AI Visual Reference Notes
+09 Ant Design Theme / Visual Specification
+10 Production UI Shell Handoff
 Archive
 ```
 
-Page 使用规则：
+输出使用规则：
 
-- `00 Cover / Rules` 记录设计范围、版本、负责人、状态和关键规则链接。
+- `00 Foundation / Rules` 记录设计范围、负责人、状态和关键规则链接。
 - `01 Function Coverage Matrix` 对应本文档的功能覆盖矩阵字段。
 - `02 Information Architecture` 承载导航、模块、页面分组和信息层级。
 - `03 User Flows` 承载主路径、异常路径、审批路径、反馈路径和跳转关系。
-- `04 Web Wireframes` 承载 Web 低保真线稿。
-- `05 Mobile Browser Wireframes` 承载手机浏览器低保真线稿。
+- `04 Web Wireframe Blueprints` 承载 Web 低保真线稿。
+- `05 Mobile Browser Wireframe Blueprints` 承载手机浏览器低保真线稿。
 - `06 Shared Regions & Components` 承载可复用区域和组件抽象候选。
 - `07 Interaction States` 承载 loading、empty、error、success、warning、权限态、风险态和禁用态。
-- `08 Visual Design` 承载高保真视觉稿。
-- `09 Dev Handoff` 承载组件映射、token 映射、状态覆盖和可实现性检查结果。
+- `08 AI Visual Reference Notes` 只记录视觉方向和参考约束，不承载结构事实源。
+- `09 Ant Design Theme / Visual Specification` 承载可落地视觉规范、token、组件状态和响应式规则。
+- `10 Production UI Shell Handoff` 承载组件映射、token 映射、状态覆盖、运行说明和可实现性检查结果。
 - `Archive` 仅存放历史方案，不作为当前执行事实源。
 
-## 8. Figma Wireframe 线稿标准
+## 8. Wireframe Blueprint 标准
 
-Figma Wireframe 不是随意草图。Wireframe 是页面结构事实源。
+Wireframe Blueprint 不是随意草图。Wireframe Blueprint 是页面结构事实源。
 
-Wireframe 必须决定：
+Wireframe Blueprint 必须决定：
 
 - 页面职责。
 - 功能归属。
@@ -239,14 +250,14 @@ Wireframe 必须决定：
 - Drawer / Modal / Tabs 使用规则。
 - loading / empty / error / permission / risk 等状态位置。
 
-Wireframe 定稿规则：
+Wireframe Blueprint 定稿规则：
 
-- Wireframe 定稿后，高保真设计不得随意修改页面结构。
-- Wireframe 定稿后，代码实现不得随意修改页面结构。
-- 如果高保真或代码阶段发现结构不合理，必须回到 Issue 和 Wireframe 审查。
-- Wireframe 不能改变 `docs/architecture.md` 的模块边界。
-- Wireframe 不能改变 `docs/contracts.md` 和 `packages/contracts` 的字段语义。
-- Wireframe 不承载 mock / real 双链路。
+- Wireframe Blueprint 定稿后，视觉规范不得随意修改页面结构。
+- Wireframe Blueprint 定稿后，代码实现不得随意修改页面结构。
+- 如果视觉规范、Production UI Shell 或代码阶段发现结构不合理，必须回到 Issue 和 Blueprint 审查。
+- Wireframe Blueprint 不能改变 `docs/architecture.md` 的模块边界。
+- Wireframe Blueprint 不能改变 `docs/contracts.md` 和 `packages/contracts` 的字段语义。
+- Wireframe Blueprint 不承载 mock / real 双链路。
 
 ## 9. 信息架构 IA 标准
 
@@ -413,11 +424,19 @@ Interaction States 必须覆盖业务状态、页面异步状态、操作反馈�
 - UI 只展示禁用态、只读态、权限空态或审批入口。
 - UI 不做权限业务决策。
 
-## 15. Figma Visual Design 高保真标准
+## 15. AI Visual Reference 与 Ant Design Visual Specification
 
-Figma Visual Design 是最终视觉效果事实源，但不能推翻架构和 contracts。
+AI Visual Reference 用于提供专业视觉效果方向，但不是页面结构事实源、产品能力事实源、最终开发稿或交付门禁。
 
-高保真设计必须遵守：
+AI Visual Reference 规则：
+
+- 只能表达视觉方向、氛围、密度、信息层级感和参考风格。
+- 不得改变产品主线、IA、页面职责、contracts、稳定 UI 槽位或 Wireframe Blueprint。
+- 不得作为外部设计工具或截图偏好推翻事实源的依据。
+- 不得替代 Ant Design Theme / Visual Specification。
+- 不得要求引入第二套 UI 组件库或不可落地的复杂动效。
+
+Ant Design Theme / Visual Specification 是视觉落地规范，必须遵守：
 
 ```text
 Ant Design v5
@@ -428,7 +447,7 @@ shared/ui
 shared/theme
 ```
 
-高保真设计必须覆盖：
+Ant Design Visual Specification 必须覆盖：
 
 - Web 视觉效果。
 - Mobile Browser 视觉效果。
@@ -440,31 +459,36 @@ shared/theme
 - token 映射。
 - 基础可访问性要求。
 
-高保真设计禁止：
+Ant Design Visual Specification 禁止：
 
 - 不引入第二套 UI 组件库。
 - 不引入无法落地的复杂动效。
-- 不改变 Wireframe 已审查通过的页面结构。
+- 不改变 Wireframe Blueprint 已审查通过的页面结构。
 - 不改变 contracts 字段语义。
 - 不把视觉偏好作为架构调整理由。
 
-## 16. Figma 版本与交接证据门禁
+## 16. Production UI Shell 定义
 
-Figma 是外部设计事实源，必须通过 Issue / PR 记录具体链接和版本信息后才能进入执行链路。
+Production UI Shell 是按最终工程标准实现的生产级页面骨架，不是临时原型、Demo 页面或一次性静态页面。
 
-门禁规则：
+Production UI Shell 包含最终路由、AppShell、页面职责、区域布局、组件边界、状态展示、响应式规则和视觉基线。
 
-1. 每个使用 Figma 的 Issue 必须记录 Figma 文件链接、Page、Frame、设计阶段、版本或更新时间。
-2. PR 不能只写“按 Figma 实现”，必须写清具体 Figma Page / Frame / 版本或更新时间。
-3. 如果 Figma 修改影响页面结构、入口、区域划分、交互、响应式规则、shared/ui 组件边界或 Design-to-Code 判断，必须回到 Issue 重新审查。
-4. Figma 不得静默覆盖 `docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 或 `packages/contracts`。
-5. Figma Dev Handoff 必须包含 Web / Mobile Browser 设计、状态覆盖、组件映射、Design Token 映射和可实现性检查结果。
-6. 如 Figma 与代码实现不一致，PR 必须说明差异原因，并回到 Issue 审查后再继续。
-7. Archive 中的 Figma frame 不能作为当前执行依据。
+当前阶段可以使用 fixture / static ViewModel 数据驱动页面，但 fixture 只是临时数据来源，不代表页面是临时方案。
+
+后续真实功能接入时，必须复用 Production UI Shell 的页面结构、组件体系和 ViewModel 边界，只替换数据来源和业务执行链路，不得重写页面、不新增 mock / real 双链路、不绕过 contracts / ViewModel / shared/ui / shared/theme。
+
+Production UI Shell 必须满足：
+
+- 路由和 AppShell 与最终工程方向一致。
+- 页面只做编排，不写业务清洗。
+- 组件只消费 ViewModel 和 UI State。
+- 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
+- 设计 token 必须走 `shared/theme`。
+- fixture / static ViewModel 只能作为当前阶段临时数据来源，不得进入长期业务链路。
 
 ## 17. Design-to-Code 可实现性检查
 
-Design-to-Code 检查必须在 Dev Handoff 和代码实现前完成。
+Design-to-Code 检查必须在 Production UI Shell Handoff 和代码实现前完成。
 
 检查项固定为：
 
@@ -474,45 +498,51 @@ Design-to-Code 检查必须在 Dev Handoff 和代码实现前完成。
 是否图表能用 ECharts / Ant Design Charts 实现
 是否状态齐全
 是否 Web / Mobile Browser 都有设计
+是否符合 Wireframe Blueprint
+是否符合 Ant Design Theme / Visual Specification
 是否符合 docs/ui-design.md
 是否符合 architecture / contracts
 是否没有第二套 UI 体系
 是否没有复杂不可控动效
-是否满足基础可访问性要求
-是否可以进入 ready for dev
+是否 Production UI Shell 可以进入 ready for dev
 ```
 
 检查结果必须写入对应 Issue 或 PR。
 
 不满足 ready for dev 时，不允许进入代码实现。
 
-## 18. Figma Dev Handoff 交接规则
+## 18. Production UI Shell Handoff / Blueprint-to-Code 交接规则
 
-Dev Handoff 是设计进入实现前的交接事实源。
+Production UI Shell Handoff 是 Blueprint 和视觉规范进入实现前的交接事实源。
 
-Dev Handoff 必须包含：
+Production UI Shell Handoff 必须包含：
 
-- Figma 文件链接。
-- Page。
-- Frame。
-- 设计阶段。
-- 版本或更新时间。
-- Web 设计入口。
-- Mobile Browser 设计入口。
+- Wireframe Blueprint 引用。
+- AI Visual Reference 是否仅作为参考。
+- Ant Design Theme / Visual Specification 引用。
+- 路由与 AppShell 说明。
+- 页面职责和区域布局。
 - 组件映射。
 - Design Token 映射。
+- `shared/ui`、`shared/layout`、`shared/theme`、`shared/charts` 映射。
 - 图表实现映射。
 - 状态覆盖清单。
+- Web / Mobile Browser 响应式规则。
 - 权限态和风险态说明。
+- fixture / static ViewModel 数据来源说明。
+- Production UI Shell 截图或运行说明。
 - Design-to-Code 检查结果。
 - 已知差异和不可实现项。
 
-Dev Handoff 禁止：
+Production UI Shell Handoff 禁止：
 
-- 不允许只写“按 Figma 实现”。
-- 不允许缺少 Page / Frame / 版本或更新时间。
+- 不允许只写“按视觉参考实现”。
+- 不允许缺少 Wireframe Blueprint 引用。
+- 不允许把 AI Visual Reference 写成结构事实源。
 - 不允许跳过 Web 或 Mobile Browser 任一端。
 - 不允许跳过状态覆盖。
+- 不允许把 Production UI Shell 写成临时原型。
+- 不允许把 fixture 数据写成长期业务链路。
 - 不允许绕过 Issue 审查。
 
 ## 19. UI PR 审查标准
@@ -525,18 +555,22 @@ PR 必须说明：
 关联 Issue：
 实现内容：
 修改范围：
-是否只新增 docs/ui-design.md：
+是否只修改 Issue 允许的文件：
 是否修改业务代码：
 是否新增其他 UI 文档：
-是否明确 UI / Figma / Code 事实源层级：
+是否明确 UI Blueprint / Production UI Shell / Code 事实源层级：
 是否明确功能覆盖矩阵规则：
-是否明确 Figma 文件结构：
-是否明确 Wireframe 线稿标准：
-是否明确 Visual Design 高保真标准：
-是否明确 Figma 文件链接、Page、Frame、版本或更新时间：
+是否明确 Wireframe Blueprint 输出规范：
+是否明确 Wireframe Blueprint 标准：
+是否明确 AI Visual Reference 只是参考：
+是否明确 Ant Design Theme / Visual Specification 是视觉落地规范：
+是否明确 Production UI Shell 是生产级页面骨架：
+是否提供 Wireframe Blueprint 引用：
+是否提供 AI Visual Reference 参考说明：
+是否提供 Ant Design Theme / token / shared/ui 映射：
+是否提供 Production UI Shell 截图或运行说明：
 是否明确 Design-to-Code 检查：
-是否明确 Figma Dev Handoff：
-是否提供具体 Figma Page / Frame / 版本或更新时间：
+是否明确 Production UI Shell Handoff：
 是否引入 Mock / Real 双链路：
 是否改变当前最终工程骨架：
 已运行的命令或检查：
@@ -546,8 +580,8 @@ PR 必须说明：
 本 Issue 对应 PR 的最小检查为：
 
 ```text
-git diff -- docs/ui-design.md
-git diff --check -- docs/ui-design.md
+git diff -- docs/ui-design.md docs/product-design.md
+git diff --check -- docs/ui-design.md docs/product-design.md
 ```
 
 纯文档事实源任务不要求运行前端构建、后端测试或数据库 migration，但 PR 必须说明原因。
@@ -568,7 +602,9 @@ git diff --check -- docs/ui-design.md
 不新增多个 UI 文档
 不写 mock / real 双链路
 不借本任务调整当前最终工程骨架
-不让 Figma 成为可以推翻 architecture / contracts 的事实源
+不让 AI Visual Reference、外部设计工具、截图或视觉偏好成为可以推翻 product-design / architecture / contracts 的事实源
+不让 Production UI Shell 成为临时原型
+不让 fixture / static ViewModel 数据成为长期业务链路
 不让 Codex 自由新增页面、模块或组件体系
 不把 docs/ui-design.md 写成所有页面细节大百科
 ```

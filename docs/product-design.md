@@ -7,7 +7,7 @@
 - `docs/architecture.md` 定义系统骨架、模块、目录职责、技术边界和依赖方向。
 - `docs/contracts.md` 与 `packages/contracts` 定义业务对象、字段语义、状态、ID 和契约。
 - `docs/database.md` 定义数据库结构、字段命名、migration 和数据库边界。
-- `docs/ui-design.md` 定义 UI / Figma 工作流、线稿、高保真、交接和审查规则。
+- `docs/ui-design.md` 定义 UI Blueprint、AI Visual Reference、Ant Design Theme / Visual Specification、Production UI Shell、交接和审查规则。
 - `docs/product-design.md` 只定义产品能力、问题域、任务主线、功能边界和体验目标。
 
 ## 1. 目标与定位
@@ -19,7 +19,7 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 - 产品能力必须落入 `docs/architecture.md` 定义的 17 个一级模块。
 - 产品能力必须能够回到 `docs/contracts.md` 和 `packages/contracts` 中的业务对象，或显式标记为待确认对象。
 - 产品增强不能以 UI 方便为理由改变 architecture / contracts / database 事实源。
-- UI / Figma 定稿后，导航结构、页面职责、主要入口和核心区域原则上不因后续功能增强反复推翻。
+- UI 结构与 Production UI Shell 定稿后，导航结构、页面职责、主要入口和核心区域原则上不因后续功能增强反复推翻。
 - 后续功能优化、企业痛点补充、通用体验增强，应优先落在既定页面结构和扩展槽位内。
 - 如果新增能力会改变 IA、页面职责、导航结构或核心区域，必须先回到 product-design / architecture / ui-design 对应事实源审查。
 
@@ -311,7 +311,7 @@ Analysis
 6. 如果会改变 IA、页面职责、导航结构或核心区域，必须先更新 product-design / architecture / ui-design 对应事实源并重新审查。
 7. 如果会新增或改变核心业务对象、字段、状态或 ID，必须先进入 contracts / packages/contracts 事实源审查。
 8. 如果涉及数据库结构，必须先进入 database / migration 审查。
-9. 如果涉及 Figma，必须按 `docs/ui-design.md` 记录 Figma 文件链接、Page、Frame、设计阶段、版本或更新时间。
+9. 如果涉及 AI Visual Reference / Ant Design Theme / Production UI Shell，必须按 `docs/ui-design.md` 记录 Wireframe Blueprint 引用、AI Visual Reference 是否仅作为参考、Ant Design token / `shared/ui` / `shared/theme` 映射，以及 Production UI Shell 截图或运行说明。
 10. Issue 只能作为执行边界，不能替代产品能力事实源。
 
 ## 11. 不做什么
@@ -328,7 +328,9 @@ Analysis
 - 不和 `docs/ui-design.md` 职责重叠。
 - 不把 `docs/product-design.md` 写成页面说明书。
 - 不把 Issue 作为产品设计源头。
-- 不把 Figma 作为可以推翻产品能力事实源的依据。
+- 不把 AI Visual Reference、外部设计工具、截图或视觉偏好作为可以推翻产品能力事实源的依据。
+- 不把 AI Visual Reference 作为页面结构事实源；它只能提供视觉方向，不得改变产品主线、IA、页面职责、contracts 或稳定 UI 槽位。
+- 不把 Production UI Shell 当作临时原型；它是正式页面骨架，后续真实功能必须在其页面结构、组件体系和 ViewModel 边界基础上接入。
 - 不允许 mock / real 双链路、old / new 双轨或兼容字段兜底成为产品能力设计的一部分。
 
 ## 12. Issue 引用规则
@@ -351,9 +353,9 @@ Analysis
 
 - 是否影响 `docs/architecture.md` 的一级模块、目录职责或依赖方向。
 - 是否影响 `docs/contracts.md` 或 `packages/contracts` 的业务对象、字段语义、状态或 ID。
-- 是否影响 `docs/ui-design.md` 的 IA、页面职责、线稿、Figma 交接或 PR 证据规则。
+- 是否影响 `docs/ui-design.md` 的 IA、页面职责、Wireframe Blueprint、Production UI Shell Handoff 或 PR 证据规则。
 - 是否改变既定页面稳定槽位。
-- 是否涉及 Figma 文件、Page、Frame、版本或更新时间。
+- 是否涉及 AI Visual Reference、Ant Design Theme / Visual Specification 或 Production UI Shell。
 - 是否涉及业务代码、数据库、后端 runtime、Model Gateway、Tool Registry、Evaluation 或 RAG。
 
 如果某个功能增强会改变 IA、页面职责、导航结构或核心区域，必须先回到 product-design / architecture / ui-design 事实源审查。
