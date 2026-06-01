@@ -271,6 +271,7 @@ Analysis
 | Observability | Run Trace；Tool / Model Trace；成本 / 延迟 / 错误率图表；外部 trace 映射入口；详情 Drawer | Trace、模型成本与延迟、失败定位、Model Gateway runtime / quota / fallback | 配置管理、业务报告阅读、原始 provider 响应 |
 | Governance | PermissionPolicy；RiskRule；SQL Guard；Tool Permission；Audit Log；敏感字段规则提示 | 权限、审计、SQL Guard、工具风险、敏感字段 | Tool 定义维护、模型路由配置、业务权限决策实现 |
 | Evaluation | Dataset；EvaluationRun；Score；BadCase；Rubric / rule；Dataset item 详情 | 评估、Bad Case、反馈闭环、检索质量入口 | 模型调用执行、RAG 执行、Feedback 主列表 |
+| Memory | Memory 列表；Memory 类型筛选；关联对象详情；Memory 使用痕迹入口；Analysis / Trace 跳转入口 | MemoryItem 查看、关联 run / decision、Memory 使用痕迹、上下文追问入口 | Feedback 主列表、Evaluation 执行、Memory 写入决策 |
 | Feedback | Feedback 列表；反馈类型筛选；人工纠错详情；BadCase 跳转 | 用户反馈、纠错、闭环入口 | Memory 写入决策、Evaluation 执行 |
 | Platform Operations | Job Tabs；Notification；DataQualityCheck；Deployment / smoke / migration 只读状态；详情 Drawer | 长任务状态、失败恢复、数据质量、部署健康 | 业务执行逻辑、手工改数据库、设计工作流 |
 | Settings | 设置分组；浏览器可见环境配置；默认策略入口；风险提示 | 默认策略入口、只读配置摘要、Settings 聚合对象 | 密钥展示、权限决策、模型路由执行 |
