@@ -23,11 +23,12 @@
 - CI 是自动守门。
 - 用户最终决定是否 Merge。
 - Codex 不得绕过 Issue 自由发挥。
-- 复杂任务必须优先使用父 Issue / sub-issue / 必要时 sub-sub-issue 管理。
+- 复杂任务必须按 parent issue / sub-issue / 必要时 sub-sub-issue 拆分；简单任务可使用 standalone issue。
 - Comment 只用于过程记录、状态更新、链接和简短说明，不承载长期正式产出、正式验收结构或事实源。
 - Codex 不得用 comment 承载正式产出。
-- Codex 不得自行批准 Issue、勾选人工 Review Checklist、声明用户可以 merge 或声明可以进入下一阶段。
-- Codex 自检必须和人工审核分离。
+- Codex 不得自行判断 Issue / PR 是否通过、勾选人工 Review Checklist、声明用户可以 merge 或声明可以进入下一阶段。
+- Codex 可以按 ChatGPT / 人工明确 prompt 代写 Issue Review Status、Review Result 或勾选项，但不得自行作出审核判断。
+- Codex 只读自检和 Codex 执行报告必须和人工审核分离。
 
 每个任务必须基于：
 
@@ -73,10 +74,10 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 
 - Codex 只能在已审查通过的 Issue 范围内写代码。
 - Codex 执行前必须确认 Issue 已是 Approved，且审查结论明确允许 Codex 执行。
-- Codex 不得自行把 Pending Issue 改为 Approved。
+- Codex 不得自行判断 Pending Issue 可以改为 Approved；只能按 ChatGPT / 人工明确 prompt 代写审查状态。
 - Codex 必须优先使用 parent issue / sub-issue 管理复杂任务；只有 sub-issue 仍然过大或存在多个独立执行 / 审核对象时，才使用 sub-sub-issue。
 - Codex 不得用 comment 承载正式产出。
-- Codex 可以填写执行结果、自检声明、已运行检查、修改范围、风险和未完成事项，但不得自行勾选人工 Review Checklist。
+- Codex 可以填写执行报告、已运行检查、修改范围、风险和未完成事项，但不得自行勾选人工 Review Checklist。
 - Codex 不允许为了“保险”新增双轨实现。
 - Codex 不允许新增 `oldField || newField`、`mockData || realData`、`status === "done" || status === "success"` 这类兜底代码。
 - Codex 不允许新增无关依赖。
@@ -87,7 +88,7 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 - 后端不得绕过 Repository、Model Gateway、Tool Registry。
 - 前端不得绕过 Contract -> ViewModel -> UI 链路。
 - 代码必须优先清晰、直接、可审查。
-- Codex 自检必须和人工审核分离，不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
+- Codex 只读自检和执行报告必须和人工审核分离，不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
 
 ### 固定工具链规则
 

@@ -19,11 +19,12 @@
 需求输入
 -> 需求分析 / 任务拆解
 -> 创建 Issue
--> Issue 合规审查
--> Issue 审查通过
+-> Issue Pending
+-> ChatGPT / 人工审核 Issue
+-> Issue Approved
 -> Codex 执行
 -> 创建 PR
--> PR 按 Issue 反查
+-> ChatGPT / 人工审核 PR
 -> CI / 测试 / 契约检查
 -> 用户最终 Merge
 ```
@@ -47,7 +48,6 @@ Issue 必须包含：
 - Issue 层级：parent issue、sub-issue、sub-sub-issue 或 standalone issue。
 - Parent Issue：sub-issue / sub-sub-issue 必须填写。
 - Sub-issue Plan：说明是否拆分、拆分原因和目录。
-- Comment Usage：明确 comment 只用于过程记录、状态更新、链接、简短说明和历史记录。
 - 事实源。
 - 必须遵守的规则。
 - 禁止项。
@@ -125,8 +125,9 @@ Code
 - 审核权最终掌握在用户手里。
 - 只有经过人工或 ChatGPT 辅助审查后，Issue 才能改为“审查通过 / Approved”。
 - 只有 Issue 已 Approved，并明确允许 Codex 执行后，Codex 才能开始写代码。
-- Codex 不得自行批准 Issue。
+- Codex 不得自行判断 Issue 是否通过。
 - Codex 不得自行把 Pending Issue 改为 Approved。
+- Codex 可以按 ChatGPT / 人工明确 prompt 代写 Issue Review Status、Review Result 或勾选项。
 - Codex 不得自行勾选 Issue 审查清单。
 
 审查项必须包括：
@@ -155,11 +156,24 @@ Code
 - Codex 发现 Issue 不清楚时，必须停止执行，说明问题，退回 Issue 补充。
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
 - Codex 不得把 comment 当正式产出。
-- Codex 可以填写执行结果、自检声明、已运行检查、修改范围、风险和未完成事项。
-- Codex 自检必须和人工审核分离。
+- Codex 可以填写执行报告、已运行检查、修改范围、风险和未完成事项。
 - Codex 不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
+
+Codex 只读自检 / Codex Read-only Self-check：
+
+```text
+在 ChatGPT 制定计划前，Codex 只读查看仓库现状并回报事实，不修改代码、不创建 Issue、不创建 PR。
+```
+
+Codex Execution Report：
+
+```text
+Codex 执行已审查 Issue 后，回报执行结果、修改范围、检查命令、风险和未完成事项。
+```
+
+以上两者都不是人工审核结论，不能替代 ChatGPT / 人工审核。
 
 ## 8. PR 创建阶段
 
@@ -180,11 +194,11 @@ PR 是履约证明，不是重新解释需求的地方。
 PR Body 必须区分：
 
 ```text
-Codex Self-check / Codex 自检声明
+Codex Execution Report / Codex 执行报告
 Review Checklist / 审查清单
 ```
 
-Codex Self-check 可以由 Codex 填写，用于说明执行结果、修改范围、已运行检查、风险和未完成事项。
+Codex Execution Report 可以由 Codex 填写，用于说明执行结果、修改范围、已运行检查、风险和未完成事项。
 
 Review Checklist 只能由人工或 ChatGPT 辅助审核后勾选。Codex 创建 PR 时不得自行勾选 Review Checklist。
 
