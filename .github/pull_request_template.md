@@ -52,11 +52,11 @@ Codex 可以填写本节，用于说明执行结果、修改范围、已运行�
 
 不适用检查及原因：
 
-*
+-
 
 ## 风险与后续 / Risks and Follow-up
 
-*
+-
 
 ## Review Checklist / 审查清单
 
