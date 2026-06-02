@@ -10,7 +10,7 @@
 
 固定目标：
 
-- 明确 UI Blueprint / AI Visual Reference / Production UI Shell / Issue / PR / Code 的职责边界。
+- 明确 UI Blueprint / AI Visual Reference / Production UI Shell / parent issue / sub-issue / PR / Code 的职责边界。
 - 明确 `docs/ui-design.md` 只承载规则、流程和审查标准，不承载所有页面详细结构。
 - 明确 Wireframe Blueprint 承载页面结构、入口、区域、跳转、Web / Mobile Browser 线稿和交互原型。
 - 明确 AI Visual Reference 只能提供视觉方向，不作为页面结构事实源、产品能力事实源或最终开发稿。
@@ -48,8 +48,8 @@ Ant Design Theme / Visual Specification
 Production UI Shell
 = 最终路由、AppShell、页面职责、区域布局、组件边界、状态展示、响应式规则和视觉基线事实源
 
-GitHub Issue / PR / Code
-= 执行边界、履约证明和最终工程实现事实源
+GitHub parent issue / sub-issue / PR / Code
+= 执行边界、独立产出或审核对象、履约证明和最终工程实现事实源
 ```
 
 冲突处理：
@@ -95,6 +95,8 @@ docs/ui-design.md
 - Design-to-Code Check 必须先判断可实现性，再进入开发 Issue。
 - Production UI Shell Handoff 必须提供 Wireframe Blueprint 引用、AI Visual Reference 参考说明、Ant Design token / `shared/ui` / `shared/theme` 映射和运行说明或截图。
 - Code 只能按已审查通过的 Issue 执行。
+- 阶段性 Blueprint 如果包含多个独立页面、流程或审核对象，必须通过父 Issue + sub-issue / 必要时 sub-sub-issue 管理。
+- 父 Issue comment 只用于过程记录、状态更新和链接，不承载长期正式 Blueprint 产出或验收结构。
 
 ## 4. 统一 UI 设计语言
 
@@ -198,7 +200,9 @@ Mobile 展示方式
 
 ## 7. Wireframe Blueprint 输出规范
 
-Wireframe Blueprint 是页面结构事实源，应以已审查通过的 Issue 评论、Review Packet 或仓库允许范围内的交付物承载。不得新增未审查的 UI 文档，不得把外部设计工具作为必经事实源。
+Wireframe Blueprint 是页面结构事实源，应以已审查通过的父 Issue + sub-issue / 必要时 sub-sub-issue、Review Packet 或仓库允许范围内的交付物承载。不得新增未审查的 UI 文档，不得把外部设计工具作为必经事实源。
+
+Wireframe Blueprint 不应长期由父 Issue comment 承载。父 Issue comment 只做状态记录、过程说明和链接；如果早期已把正式 Blueprint 输出在 comment 中，后续必须通过 sub-issue / 文档 / PR 重新结构化，不能长期依赖 comment。
 
 Blueprint 输出结构固定为：
 

@@ -19,11 +19,12 @@
 需求输入
 -> 需求分析 / 任务拆解
 -> 创建 Issue
--> Issue 合规审查
--> Issue 审查通过
+-> Issue Pending
+-> ChatGPT / 人工审核 Issue
+-> Issue Approved
 -> Codex 执行
 -> 创建 PR
--> PR 按 Issue 反查
+-> ChatGPT / 人工审核 PR
 -> CI / 测试 / 契约检查
 -> 用户最终 Merge
 ```
@@ -44,6 +45,9 @@ Issue 必须包含：
 - 目标。
 - 背景 / 需求来源。
 - 修改范围。
+- Issue 层级：parent issue、sub-issue、sub-sub-issue 或 standalone issue。
+- Parent Issue：sub-issue / sub-sub-issue 必须填写。
+- Sub-issue Plan：说明是否拆分、拆分原因和目录。
 - 事实源。
 - 必须遵守的规则。
 - 禁止项。
@@ -64,13 +68,67 @@ Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format
 
 Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”，必须摘出本次任务相关规则。
 
+### 5.1 Issue 层级
+
+Issue 层级按任务复杂度决定，不预设固定层级。
+
+```text
+父 Issue：
+承载一个阶段 / 一个大目标 / 一个可管理的业务闭环。
+负责阶段目标、背景、事实源、范围、sub-issue 目录、总体验收标准和关闭条件。
+
+sub-issue：
+承载父 Issue 下可独立执行、独立审核、独立验收的产出块或审查块。
+
+sub-sub-issue：
+只在 sub-issue 仍然过大，或存在多个独立执行 / 审核对象时使用。
+
+standalone issue：
+只用于能一次说清楚、一次完成、一次审核的独立任务。
+```
+
+### 5.2 拆分判断规则
+
+- 能用一个 Issue 说清楚、一次完成、一次审核的，不拆。
+- 一个阶段包含多个独立产出，就拆 sub-issue。
+- 一个 sub-issue 内部又有多个独立页面、流程、模块或审核对象，再拆 sub-sub-issue。
+- 不为了流程而流程。
+- 不预设固定几级 sub-issue。
+
+### 5.3 Comment 和正式产出承载规则
+
+Comment 只用于过程记录、状态更新、链接、简短说明和历史记录。
+
+明确禁止：
+
+- Comment 承载长期正式产出。
+- Comment 承载长期验收结构。
+- Comment 作为事实源。
+
+正式产出优先进入：
+
+```text
+docs
+Issue Body
+sub-issue Body
+PR
+Code
+```
+
+如果早期已经把正式内容输出在 comment 中，后续应通过 sub-issue / 文档 / PR 重新结构化，不能长期依赖 comment。
+
 ## 6. Issue 合规审查阶段
 
-- Issue 创建后默认是“待审查”。
+- Issue 创建后默认是“待审查 / Pending”。
 - Issue 创建后不能直接交给 Codex 执行。
 - 用户本人或 ChatGPT 可以辅助审查。
 - 审核权最终掌握在用户手里。
-- 只有 Issue 审查通过，并明确允许 Codex 执行后，Codex 才能开始写代码。
+- 只有经过人工或 ChatGPT 辅助审查后，Issue 才能改为“审查通过 / Approved”。
+- 只有 Issue 已 Approved，并明确允许 Codex 执行后，Codex 才能开始写代码。
+- Codex 不得自行判断 Issue 是否通过。
+- Codex 不得自行把 Pending Issue 改为 Approved。
+- Codex 可以按 ChatGPT / 人工明确 prompt 代写 Issue Review Status、Review Result 或勾选项。
+- Codex 不得自行勾选 Issue 审查清单。
 
 审查项必须包括：
 
@@ -97,8 +155,25 @@ Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”�
 - Codex 不能新增无关依赖、无关目录、无关抽象或无关重构。
 - Codex 发现 Issue 不清楚时，必须停止执行，说明问题，退回 Issue 补充。
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
+- Codex 不得把 comment 当正式产出。
+- Codex 可以填写执行报告、已运行检查、修改范围、风险和未完成事项。
+- Codex 不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
+
+Codex 只读自检 / Codex Read-only Self-check：
+
+```text
+在 ChatGPT 制定计划前，Codex 只读查看仓库现状并回报事实，不修改代码、不创建 Issue、不创建 PR。
+```
+
+Codex Execution Report：
+
+```text
+Codex 执行已审查 Issue 后，回报执行结果、修改范围、检查命令、风险和未完成事项。
+```
+
+以上两者都不是人工审核结论，不能替代 ChatGPT / 人工审核。
 
 ## 8. PR 创建阶段
 
@@ -116,6 +191,17 @@ PR 必须提供对应工具命令的执行结果；如某类命令不适用，�
 
 PR 是履约证明，不是重新解释需求的地方。
 
+PR Body 必须区分：
+
+```text
+Codex Execution Report / Codex 执行报告
+Review Checklist / 审查清单
+```
+
+Codex Execution Report 可以由 Codex 填写，用于说明执行结果、修改范围、已运行检查、风险和未完成事项。
+
+Review Checklist 只能由人工或 ChatGPT 辅助审核后勾选。Codex 创建 PR 时不得自行勾选 Review Checklist。
+
 ## 9. PR 审查阶段
 
 PR 审查必须按 Issue 反查：
@@ -131,6 +217,8 @@ PR 审查必须按 Issue 反查：
 - 是否需要退回 Issue 重新审查。
 
 PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓库事实源判断是否合格。
+
+PR 审查结论只能由人工或 ChatGPT 辅助审核后形成。Codex 不得自行声明“用户可以 merge”或“可以进入下一阶段”。
 
 ## 10. 退回机制
 
