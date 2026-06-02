@@ -17,6 +17,47 @@ body:
       description: 请列出允许修改的目录、模块和文件，并说明哪些范围不能触碰。
     validations:
       required: true
+  - type: dropdown
+    id: issue-level
+    attributes:
+      label: Issue 层级 / Issue Level
+      description: 请按任务复杂度选择层级；不预设固定几级 sub-issue。
+      options:
+        - standalone issue
+        - parent issue
+        - sub-issue
+        - sub-sub-issue
+    validations:
+      required: true
+  - type: input
+    id: parent-issue
+    attributes:
+      label: Parent Issue
+      description: sub-issue / sub-sub-issue 必须填写 Parent Issue，例如 #31；standalone issue 或 parent issue 可写“不适用”。
+      placeholder: "#"
+    validations:
+      required: false
+  - type: textarea
+    id: sub-issue-plan
+    attributes:
+      label: Sub-issue Plan
+      description: 请说明是否需要 sub-issue / sub-sub-issue；能一次完成和审核的任务写“不拆”。
+      placeholder: |
+        - 是否需要拆分：
+        - 拆分原因：
+        - sub-issue / sub-sub-issue 目录：
+    validations:
+      required: false
+  - type: textarea
+    id: comment-usage
+    attributes:
+      label: Comment Usage
+      description: Comment 只用于过程记录、状态更新、链接、简短说明和历史记录；不承载长期正式产出、长期验收结构或事实源。
+      value: |
+        comment 只用于过程记录、状态更新、链接、简短说明和历史记录。
+        comment 不承载长期正式产出，不承载长期验收结构，不作为事实源。
+    validations:
+      required: true
   - type: textarea
     id: fact-sources
     attributes:
@@ -71,7 +112,7 @@ body:
     id: issue-review-status
     attributes:
       label: Issue 合规审查状态 / Issue Review Status
-      description: 创建 Issue 时默认应为“待审查”。只有审查通过后，才允许进入 Codex 执行阶段。
+      description: 创建 Issue 时默认应为“待审查 / Pending”。只有人工或 ChatGPT 辅助审查通过后，才允许改为“审查通过 / Approved”并进入 Codex 执行阶段；Codex 不得自行批准 Issue。
       options:
         - 待审查 / Pending
         - 审查通过 / Approved
@@ -90,9 +131,11 @@ body:
     id: review-result
     attributes:
       label: 审查结论 / Review Result
-      description: Issue 创建时填写“待审查”。审查后需要记录目标、范围、事实源、规则、禁止项、验收标准和测试要求是否合规。
+      description: Issue 创建时填写“待审查”。以下审查清单只能由人工或 ChatGPT 辅助审核后勾选；Codex 创建 Issue 时不得自行勾选审查通过项，不得自行把 Pending 改为 Approved。
       value: |
         审查状态：待审查
+
+        以下审查清单只能由人工或 ChatGPT 辅助审核后勾选；Codex 创建 Issue 时不得自行勾选。
 
         - [ ] 目标清楚
         - [ ] 修改范围明确

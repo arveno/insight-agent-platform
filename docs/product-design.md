@@ -357,9 +357,17 @@ Analysis
 - 是否改变既定页面稳定槽位。
 - 是否涉及 AI Visual Reference、Ant Design Theme / Visual Specification 或 Production UI Shell。
 - 是否涉及业务代码、数据库、后端 runtime、Model Gateway、Tool Registry、Evaluation 或 RAG。
+- Issue 层级是 parent issue、sub-issue、sub-sub-issue 还是 standalone issue。
+- 如果属于 sub-issue / sub-sub-issue，必须说明 Parent Issue。
+- 是否存在多个独立页面、流程、模块、体验目标或验收对象。
+- 正式设计结果承载位置，不能长期沉淀在 comment 中。
 
 如果某个功能增强会改变 IA、页面职责、导航结构或核心区域，必须先回到 product-design / architecture / ui-design 事实源审查。
 
 如果某个功能增强只是在既定槽位内从 L0 / L1 升级到 L2，且不改变 contracts、architecture 或 ui-design，可以在对应已审查 Issue 内执行。
 
 如果某个功能增强要进入 L3 / L4，必须明确闭环证据、状态、权限、审计、测试要求和 PR 证据，不能用口头约束替代仓库事实源。
+
+如果功能增强涉及多个页面、模块、流程、体验目标或独立验收项，应拆成 sub-issue。若 sub-issue 内部仍存在多个独立执行 / 审核对象，再拆 sub-sub-issue。不预设固定层级，不为了流程而流程。
+
+功能 Issue 不得把正式设计结果长期沉淀在 comment 中。Comment 只用于过程记录、状态更新、链接和简短说明；正式产出应优先进入 docs、Issue Body、sub-issue Body、PR 或 Code。
