@@ -29,6 +29,26 @@
 -> 用户最终 Merge
 ```
 
+代码 / 仓库变更路径：
+
+```text
+Approved Issue
+-> Codex 执行
+-> PR
+-> ChatGPT / 人工反向审核 PR
+-> 用户 merge
+```
+
+无 PR 设计 / 文档 / 审核路径：
+
+```text
+Approved Issue
+-> Codex 写回 Issue / sub-issue Body
+-> ChatGPT / 人工反向审核 Issue 执行结果
+-> Codex 按明确审核结论收口
+-> 用户确认进入下一阶段
+```
+
 任何节点未完成时，不允许跳到后续节点。
 
 ## 4. 需求分析阶段
@@ -150,6 +170,7 @@ Code
 ## 7. Codex 执行阶段
 
 - Codex 只能执行已审查通过的 Issue。
+- Codex 执行已批准任务动作，包括但不限于：创建 Issue、更新 Issue Body、创建 sub-issue、写回执行结果、创建 PR、修改代码、运行检查、按 ChatGPT / 人工审核结论收口 Issue。
 - Codex 只能在 Issue 允许范围内修改。
 - Codex 不能自由发挥。
 - Codex 不能新增无关依赖、无关目录、无关抽象或无关重构。
@@ -157,6 +178,10 @@ Code
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
 - Codex 不得把 comment 当正式产出。
 - Codex 可以填写执行报告、已运行检查、修改范围、风险和未完成事项。
+- Codex 不能自己审核。
+- Codex 不能自己判断通过。
+- Codex 不能自己推进下一阶段。
+- Codex 不能把执行结果当审核结论。
 - Codex 不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
@@ -202,7 +227,24 @@ Codex Execution Report 可以由 Codex 填写，用于说明执行结果、修�
 
 Review Checklist 只能由人工或 ChatGPT 辅助审核后勾选。Codex 创建 PR 时不得自行勾选 Review Checklist。
 
-## 9. PR 审查阶段
+## 9. Issue 执行结果审查阶段
+
+无 PR 任务完成后，ChatGPT / 人工必须按 Approved Issue 反向审核 Issue Body / sub-issue Body 的执行结果。
+
+审核内容包括：
+
+- 是否只做了 Issue 允许的事。
+- 是否触碰禁止项。
+- 是否越过事实源。
+- 是否完成验收标准。
+- 是否需要回退上游 Issue。
+- 是否可以收口 parent issue。
+- 是否可以进入下一阶段待审查准备。
+
+Codex 可以按明确审核结论代写 Review Status、勾选 Acceptance Criteria、追加 Final Review Summary、关闭 Issue。
+Codex 不得自行产生审核结论。
+
+## 10. PR 审查阶段
 
 PR 审查必须按 Issue 反查：
 
@@ -220,7 +262,7 @@ PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓�
 
 PR 审查结论只能由人工或 ChatGPT 辅助审核后形成。Codex 不得自行声明“用户可以 merge”或“可以进入下一阶段”。
 
-## 10. 退回机制
+## 11. 退回机制
 
 - Issue 不合格：退回 Issue 补充，不进入 Codex 执行。
 - Issue 范围变化：先更新 Issue，再重新审查。
@@ -229,7 +271,7 @@ PR 审查结论只能由人工或 ChatGPT 辅助审核后形成。Codex 不得�
 - CI 失败：修复后重新验证，不允许带失败合并。
 - Codex 自由发挥：判定不通过，要求回到 Issue 范围内重做。
 
-## 11. Merge 条件
+## 12. Merge 条件
 
 Merge 必须同时满足：
 
@@ -241,7 +283,18 @@ Merge 必须同时满足：
 - 测试 / 验证证据完整。
 - 用户最终确认。
 
-## 12. 禁止跳步
+## 13. 无 PR parent issue 关闭条件
+
+无 PR 的 parent issue 关闭必须满足：
+
+- 所有 sub-issue 已完成执行结果审核。
+- 无阻塞问题。
+- 不需要回退上游 Issue。
+- 未自动推进下一阶段。
+- Final Review Summary 已写入 parent issue。
+- 用户最终确认。
+
+## 14. 禁止跳步
 
 明确禁止：
 
