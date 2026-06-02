@@ -126,6 +126,14 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 
 Web 与 Mobile Browser 是同一产品链路的不同布局，不允许形成双实现主线。
 
+Web / Mobile Browser 的关系固定为：
+
+```text
+同一产品能力、同一业务事实源、同一设计系统、不同端侧体验编排。
+```
+
+Web / Mobile Browser 不允许形成两套业务体系。
+
 Web 规则：
 
 - 左侧导航和顶部 Header 由 AppShell 承载。
@@ -143,11 +151,24 @@ Mobile Browser 规则：
 - 复杂任务拆分为 Steps、Tabs、Collapse 或分段表单。
 - Mobile Browser 设计必须在 Wireframe Blueprint、Ant Design Visual Specification 和 Production UI Shell 中独立表达。
 
+允许：
+
+- WebComposition / MobileComposition 分开。
+- Web 使用高密度工作台布局。
+- Mobile 使用单列、卡片化、Drawer / Tabs / Collapse。
+- RightAssistPanel 在 Mobile 中降级为 Drawer / Tabs / Detail page。
+- Table 在 Mobile 中降级为 CardList / 简化表格 / 必要横向滚动。
+- 高风险操作在 Mobile 中降级为只读、轻操作或明确确认。
+
 禁止：
 
 - 不允许 Web 有设计而 Mobile Browser 无承接方式。
+- 不允许把 Mobile 当作 Web 缩小版。
+- 不允许为 Mobile 建立单独业务模型。
+- 不允许为 Mobile 建立单独 contracts / ViewModel / API / mapper / store / formatter。
 - 不允许为 Mobile Browser 建立 mock / real 双链路。
-- 不允许因为移动端空间不足而删除必要状态、权限或证据入口。
+- 不允许因为移动端空间不足而删除必要状态、权限、风险、Evidence、Trace、Report 入口。
+- 不允许让 Web / Mobile 使用不同 Icon System、状态色、风险色或主题体系。
 
 ## 6. 功能覆盖矩阵规则
 
@@ -478,6 +499,22 @@ Production UI Shell 是按最终工程标准实现的生产级页面骨架，不
 Production UI Shell 包含最终路由、AppShell、页面职责、区域布局、组件边界、状态展示、响应式规则和视觉基线。
 
 当前阶段可以使用 fixture / static ViewModel 数据驱动页面，但 fixture 只是临时数据来源，不代表页面是临时方案。
+
+Production UI Shell 后续实现时，应允许 Web / Mobile 有不同页面编排，但必须共享同一套业务模型和设计系统。
+
+推荐实现方向：
+
+```text
+shared ViewModel
+shared/ui
+shared/layout
+shared/theme
+shared/charts
+WebComposition
+MobileComposition
+```
+
+实现阶段不得把双端体验编排演变成双业务链路。
 
 后续真实功能接入时，必须复用 Production UI Shell 的页面结构、组件体系和 ViewModel 边界，只替换数据来源和业务执行链路，不得重写页面、不新增 mock / real 双链路、不绕过 contracts / ViewModel / shared/ui / shared/theme。
 

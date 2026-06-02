@@ -231,6 +231,43 @@ UI 不得直接消费 raw API response。
 - 状态标签、风险等级、空态、错误态必须使用 shared UI。
 - UI 必须使用 Ant Design 体系，不引入第二套 UI 组件库。
 
+### Web / Mobile 编排边界
+
+前端必须遵守：
+
+```text
+业务链路单轨，展示编排双端。
+```
+
+Web 和 Mobile Browser 可以有不同的页面编排和交互承接：
+
+- Web 可以使用 Left Nav、Header、Main Content、Right Assist Panel、多列表格和高密度图表。
+- Mobile Browser 可以使用 Navigation Drawer、单列布局、卡片化、Tabs、Collapse、Drawer 和轻操作 / 只读降级。
+
+但 Web 和 Mobile Browser 必须共享：
+
+- contracts
+- Feature Mapper
+- ViewModel
+- shared/ui
+- shared/layout
+- shared/theme
+- Icon System
+- StatusTag / RiskBadge
+- 权限 / 风险 / Evidence / Trace / Report 语义
+- Open in Analysis with context 的上下文规则
+
+禁止：
+
+- 为 Mobile Browser 单独建立 contracts。
+- 为 Mobile Browser 单独建立 store / 业务状态。
+- 为 Mobile Browser 单独建立 API 链路。
+- 为 Mobile Browser 单独建立 formatter / mapper。
+- 为 Mobile Browser 建立 mock / real 双链路。
+- 用大量 `isMobile ? ... : ...` 堆在同一个巨大组件里。
+- 把 Web 复杂表格直接缩小为 Mobile 页面。
+- 因为 Mobile 空间不足删除必要状态、权限、风险、Evidence 或 Trace 入口。
+
 ## 6. UI 语言
 
 统一使用 Ant Design 体系。
