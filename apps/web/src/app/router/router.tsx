@@ -1,10 +1,8 @@
-import type { ItemType } from "antd/es/menu/interface";
-
-import type { I18nMessageKey } from "../../shared";
+import type { I18nMessageKey, NavigationItem } from "../../shared";
 
 type Translate = (key: I18nMessageKey) => string;
 
-export function createPrimaryNavigation(t: Translate): ItemType[] {
+export function createPrimaryNavigation(t: Translate): NavigationItem[] {
   return [
     { key: "dashboard", label: t("nav.dashboard") },
     { key: "analysis", label: t("nav.analysis") },
