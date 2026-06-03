@@ -37,11 +37,23 @@ const evaluationRun = {
 export const evaluationStaticViewModel: EvaluationViewModel = {
   badCases: [badCase],
   datasetItems: [
-    { description: "DatasetItem 为 Gap，只提供静态摘要。", key: "dataset-item-gap", label: "Dataset item", status: warningStatus, value: "待确认 / Gap" }
+    {
+      description: "DatasetItem 为 Gap，只提供静态摘要。",
+      key: "dataset-item-gap",
+      label: "Dataset item",
+      status: warningStatus,
+      value: "待确认 / Gap"
+    }
   ],
   evaluationDatasets: [dataset],
   evaluationOverview: [
-    { description: "Evaluation 是系统质量评估，不等于用户 Feedback。", key: "evaluation-overview", label: "评估概览", status: readyStatus, value: "86/100" }
+    {
+      description: "Evaluation 是系统质量评估，不等于用户 Feedback。",
+      key: "evaluation-overview",
+      label: "评估概览",
+      status: readyStatus,
+      value: "86/100"
+    }
   ],
   evaluationRuns: [evaluationRun],
   evaluationState: defaultStateCoverage.ready,
@@ -49,40 +61,82 @@ export const evaluationStaticViewModel: EvaluationViewModel = {
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:18:00+08:00",
   mainSections: [
-    { description: "Bad Case、Dataset 和 Run 摘要。", key: "evaluation-overview", status: readyStatus, title: "Evaluation Overview" },
-    { description: "Score、Rubric 和 Feedback / Report 关联入口。", key: "score-reference", status: readyStatus, title: "Score & References" }
+    {
+      descriptionKey: "page.evaluation.section.evaluationOverview.description",
+      key: "evaluation-overview",
+      status: readyStatus,
+      titleKey: "page.evaluation.section.evaluationOverview.title"
+    },
+    {
+      descriptionKey: "page.evaluation.section.scoreReference.description",
+      key: "score-reference",
+      status: readyStatus,
+      titleKey: "page.evaluation.section.scoreReference.title"
+    }
   ],
   metricCards: [
-    { key: "quality-score", label: "质量分", risk: warningRisk, status: readyStatus, trendText: "较上周 +2", valueText: "86" }
+    {
+      key: "quality-score",
+      label: "质量分",
+      risk: warningRisk,
+      status: readyStatus,
+      trendText: "较上周 +2",
+      valueText: "86"
+    }
   ],
   modelReportFeedbackReferences: [
-    { description: "关联 Feedback 和 Reports，不承接主列表。", key: "eval-report-feedback-ref", label: "闭环引用", linkTo: "feedback", status: readyStatus, value: "4 refs" }
+    {
+      description: "关联 Feedback 和 Reports，不承接主列表。",
+      key: "eval-report-feedback-ref",
+      label: "闭环引用",
+      linkTo: "feedback",
+      status: readyStatus,
+      value: "4 refs"
+    }
   ],
-  pageDescription: "Bad Case、评估数据集、评估运行、评分和闭环引用的静态数据。",
+  pageDescriptionKey: "page.evaluation.description",
   pageKey: "evaluation",
-  pageTitle: "Evaluation",
+  pageTitleKey: "page.evaluation.title",
   permissionSummary: defaultPermissionSummary,
   primaryAction: {
     disabled: true,
     intent: "disabled",
     key: "evaluation-run-disabled",
-    label: "执行评估",
-    description: "静态 UI 阶段不执行真实 Evaluation。"
+    labelKey: "action.evaluationRunDisabled.label",
+    descriptionKey: "action.evaluationRunDisabled.description"
   },
   readonlyState: defaultReadonlyState,
   rightAssistSummary: createRightAssistSummary(
     "evaluation-right-assist",
-    "Evaluation 辅助摘要",
-    "承接 selected bad case、dataset、evaluation run、score 和闭环引用。"
+    "page.evaluation.rightAssist.title",
+    "page.evaluation.rightAssist.description"
   ),
   rubrics: [
-    { description: "Rubric 为 Surface Contract Gap。", key: "rubric-gap", label: "Rubric", status: warningStatus, value: "待确认 / Gap" }
+    {
+      description: "Rubric 为 Surface Contract Gap。",
+      key: "rubric-gap",
+      label: "Rubric",
+      status: warningStatus,
+      value: "待确认 / Gap"
+    }
   ],
   scoreSummary: [
-    { description: "评分摘要只作为静态展示输入。", key: "score-summary", label: "Score", risk: warningRisk, status: readyStatus, value: "86" }
+    {
+      description: "评分摘要只作为静态展示输入。",
+      key: "score-summary",
+      label: "Score",
+      risk: warningRisk,
+      status: readyStatus,
+      value: "86"
+    }
   ],
   secondaryActions: [
-    { intent: "navigation", key: "evaluation-open-feedback", label: "查看反馈", targetRoute: "feedback" }
+    {
+      intent: "navigation",
+      key: "evaluation-open-feedback",
+      labelKey: "action.evaluationOpenFeedback.label",
+      targetRoute: "feedback"
+    }
   ],
   selectedBadCase: badCase,
   selectedDataset: dataset,
@@ -96,6 +150,12 @@ export const evaluationStaticViewModel: EvaluationViewModel = {
   },
   stateCoverage: defaultStateCoverage,
   summaryCards: [
-    { description: "评估静态摘要。", key: "evaluation-summary", label: "评估运行", status: readyStatus, value: "5" }
+    {
+      description: "评估静态摘要。",
+      key: "evaluation-summary",
+      label: "评估运行",
+      status: readyStatus,
+      value: "5"
+    }
   ]
 };

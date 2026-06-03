@@ -1,50 +1,55 @@
 import type { AppShellNavigationGroupViewModel, AppShellStaticViewModel } from "../models";
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage } from "./staticStateFixtures";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage
+} from "./staticStateFixtures";
 
 const webNavigationGroups: AppShellNavigationGroupViewModel[] = [
   {
     items: [
-      { key: "dashboard", label: "Dashboard" },
-      { key: "analysis", label: "Analysis" },
-      { key: "reports", label: "Reports" }
+      { key: "dashboard", labelKey: "nav.dashboard" },
+      { key: "analysis", labelKey: "nav.analysis" },
+      { key: "reports", labelKey: "nav.reports" }
     ],
     key: "default-analysis",
-    label: "Default & Analysis"
+    labelKey: "nav.group.defaultAnalysis"
   },
   {
     items: [
-      { key: "data-knowledge", label: "Data & Knowledge" },
-      { key: "metrics", label: "Metrics" }
+      { key: "data-knowledge", labelKey: "nav.dataKnowledge" },
+      { key: "metrics", labelKey: "nav.metrics" }
     ],
     key: "data-metrics",
-    label: "Data & Metrics"
+    labelKey: "nav.group.dataMetrics"
   },
   {
     items: [
-      { key: "model-tools", label: "Models & Tools" },
-      { key: "observability", label: "Observability" }
+      { key: "model-tools", labelKey: "nav.modelTools" },
+      { key: "observability", labelKey: "nav.observability" }
     ],
     key: "model-observe",
-    label: "Model & Observe"
+    labelKey: "nav.group.modelObserve"
   },
   {
     items: [
-      { key: "governance", label: "Governance", badgeText: "Risk" },
-      { key: "evaluation", label: "Evaluation" },
-      { key: "feedback", label: "Feedback" },
-      { key: "memory", label: "Memory" }
+      { key: "governance", labelKey: "nav.governance", badgeTextKey: "nav.badge.risk" },
+      { key: "evaluation", labelKey: "nav.evaluation" },
+      { key: "feedback", labelKey: "nav.feedback" },
+      { key: "memory", labelKey: "nav.memory" }
     ],
     key: "governance-quality",
-    label: "Governance & Quality"
+    labelKey: "nav.group.governanceQuality"
   },
   {
     items: [
-      { key: "platform-operations", label: "Platform Operations" },
-      { key: "settings", label: "Settings" },
-      { key: "workspace", label: "Workspace" }
+      { key: "platform-operations", labelKey: "nav.platformOperations" },
+      { key: "settings", labelKey: "nav.settings" },
+      { key: "workspace", labelKey: "nav.workspace" }
     ],
     key: "platform",
-    label: "Platform"
+    labelKey: "nav.group.platform"
   }
 ];
 
@@ -60,41 +65,41 @@ export const appShellStaticViewModel: AppShellStaticViewModel = {
     userId: "user-ada"
   },
   environmentSummary: {
-    label: "Production UI Shell",
-    message: "静态 ViewModel 数据层，不接真实环境配置或密钥。"
+    labelKey: "app.environment.summary.label",
+    messageKey: "app.environment.summary.message"
   },
   globalFeedback: {
-    message: "全局反馈入口已预留为静态 UI State。",
+    messageKey: "app.globalFeedback.idle.message",
     status: "idle"
   },
   headerActions: [
     {
       intent: "navigation",
       key: "open-settings",
-      label: "Settings",
+      labelKey: "settings",
       targetRoute: "settings"
     },
     {
       intent: "secondary",
       key: "language",
-      label: "Language: zh-CN"
+      labelKey: "language"
     },
     {
       intent: "secondary",
       key: "theme",
-      label: "Theme: Light"
+      labelKey: "theme"
     }
   ],
   localePreference: {
     key: "locale",
-    label: "Locale",
+    labelKey: "language",
     value: "zh-CN"
   },
   mobileNavigation: [
-    { ...webNavigationGroups[0], key: "primary", label: "Primary" },
-    { ...webNavigationGroups[1], key: "work", label: "Work" },
-    { ...webNavigationGroups[2], key: "ai-platform", label: "AI Platform" },
-    { ...webNavigationGroups[3], key: "quality-control", label: "Quality & Control" },
+    { ...webNavigationGroups[0], key: "primary", labelKey: "nav.group.primary" },
+    { ...webNavigationGroups[1], key: "work", labelKey: "nav.group.work" },
+    { ...webNavigationGroups[2], key: "ai-platform", labelKey: "nav.group.aiPlatform" },
+    { ...webNavigationGroups[3], key: "quality-control", labelKey: "nav.group.qualityControl" },
     webNavigationGroups[4]
   ],
   navigationGroups: webNavigationGroups,
@@ -102,13 +107,13 @@ export const appShellStaticViewModel: AppShellStaticViewModel = {
   readonlyState: defaultReadonlyState,
   rightAssistPanel: createRightAssistSummary(
     "global-right-assist",
-    "全局辅助面板摘要",
-    "承接页面传入的 Evidence、Trace、Report、Audit、Job、Risk 和 Decision 摘要。"
+    "app.rightAssist.global.title",
+    "app.rightAssist.global.description"
   ),
   shellState: defaultStateCoverage,
   themePreference: {
     key: "theme",
-    label: "Theme",
+    labelKey: "theme",
     value: "light"
   },
   workspace: {

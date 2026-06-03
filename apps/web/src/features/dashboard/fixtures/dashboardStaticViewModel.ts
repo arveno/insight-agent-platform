@@ -12,10 +12,10 @@ import type { DashboardViewModel } from "../models";
 export const dashboardStaticViewModel: DashboardViewModel = {
   analysisEntrances: [
     {
-      description: "携带经营风险、指标和证据上下文进入 Analysis。",
+      descriptionKey: "action.dashboardOpenAnalysis.description",
       intent: "primary",
       key: "dashboard-open-analysis",
-      label: "Open in Analysis with context",
+      labelKey: "action.dashboardOpenAnalysis.label",
       targetRoute: "analysis"
     }
   ],
@@ -74,28 +74,28 @@ export const dashboardStaticViewModel: DashboardViewModel = {
   lastUpdatedAt: "2026-06-03T18:00:00+08:00",
   mainSections: [
     {
-      description: "展示经营健康摘要、风险数量和更新时间。",
+      descriptionKey: "page.dashboard.section.businessOverview.description",
       key: "business-overview",
       status: readyStatus,
-      title: "Business Overview"
+      titleKey: "page.dashboard.section.businessOverview.title"
     },
     {
-      description: "展示核心经营指标、趋势和证据数量。",
+      descriptionKey: "page.dashboard.section.keyMetrics.description",
       key: "key-metrics",
       status: readyStatus,
-      title: "Key Metrics Summary"
+      titleKey: "page.dashboard.section.keyMetrics.title"
     },
     {
-      description: "展示异常发现、风险等级和 Analysis 入口。",
+      descriptionKey: "page.dashboard.section.riskAnomaly.description",
       key: "risk-anomaly",
       status: readyStatus,
-      title: "Risk & Anomaly Summary"
+      titleKey: "page.dashboard.section.riskAnomaly.title"
     }
   ],
   metricCards: [],
-  pageDescription: "经营状态、异常风险、平台质量和后续分析入口的静态总览。",
+  pageDescriptionKey: "page.dashboard.description",
   pageKey: "dashboard",
-  pageTitle: "Dashboard",
+  pageTitleKey: "page.dashboard.title",
   permissionSummary: defaultPermissionSummary,
   platformQualitySummary: [
     {
@@ -111,7 +111,7 @@ export const dashboardStaticViewModel: DashboardViewModel = {
   primaryAction: {
     intent: "primary",
     key: "dashboard-primary-analysis",
-    label: "进入分析工作区",
+    labelKey: "action.dashboardPrimaryAnalysis.label",
     targetRoute: "analysis"
   },
   readonlyState: defaultReadonlyState,
@@ -127,8 +127,8 @@ export const dashboardStaticViewModel: DashboardViewModel = {
   ],
   rightAssistSummary: createRightAssistSummary(
     "dashboard-right-assist",
-    "Dashboard 辅助摘要",
-    "选中的指标、风险、证据和分析上下文会传入 #73 RightAssistPanel。"
+    "page.dashboard.rightAssist.title",
+    "page.dashboard.rightAssist.description"
   ),
   riskSummary: [
     {
@@ -144,13 +144,13 @@ export const dashboardStaticViewModel: DashboardViewModel = {
     {
       intent: "navigation",
       key: "dashboard-open-metrics",
-      label: "查看指标定义",
+      labelKey: "action.dashboardOpenMetrics.label",
       targetRoute: "metrics"
     },
     {
       intent: "navigation",
       key: "dashboard-open-reports",
-      label: "查看报告",
+      labelKey: "action.dashboardOpenReports.label",
       targetRoute: "reports"
     }
   ],

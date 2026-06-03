@@ -31,26 +31,42 @@ export const reportsStaticViewModel: ReportsViewModel = {
   followUpContext: {
     intent: "navigation",
     key: "report-follow-up",
-    label: "基于报告继续追问",
+    labelKey: "action.reportFollowUp.label",
     targetRoute: "analysis"
   },
-  gapNote: "Report reader state、Feedback submit state、Follow-up context 为 Surface Contract Gap。",
+  gapNote:
+    "Report reader state、Feedback submit state、Follow-up context 为 Surface Contract Gap。",
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:05:00+08:00",
   mainSections: [
-    { description: "展示报告列表和当前报告摘要。", key: "report-list", status: readyStatus, title: "Report List" },
-    { description: "展示正式报告阅读区，不展示模型原始输出。", key: "report-reader", status: readyStatus, title: "Report Reader" },
-    { description: "展示段落证据、决策建议、反馈和 Follow-up 入口。", key: "report-section", status: readyStatus, title: "ReportSection" }
+    {
+      descriptionKey: "page.reports.section.reportList.description",
+      key: "report-list",
+      status: readyStatus,
+      titleKey: "page.reports.section.reportList.title"
+    },
+    {
+      descriptionKey: "page.reports.section.reportReader.description",
+      key: "report-reader",
+      status: readyStatus,
+      titleKey: "page.reports.section.reportReader.title"
+    },
+    {
+      descriptionKey: "page.reports.section.reportSection.description",
+      key: "report-section",
+      status: readyStatus,
+      titleKey: "page.reports.section.reportSection.title"
+    }
   ],
   metricCards: [],
-  pageDescription: "正式报告阅读、证据追溯、决策建议、反馈和结果追问入口的静态数据。",
+  pageDescriptionKey: "page.reports.description",
   pageKey: "reports",
-  pageTitle: "Reports",
+  pageTitleKey: "page.reports.title",
   permissionSummary: defaultPermissionSummary,
   primaryAction: {
     intent: "navigation",
     key: "reports-open-analysis",
-    label: "基于报告追问",
+    labelKey: "action.reportsOpenAnalysis.label",
     targetRoute: "analysis"
   },
   readonlyState: defaultReadonlyState,
@@ -84,12 +100,22 @@ export const reportsStaticViewModel: ReportsViewModel = {
   reportsState: defaultStateCoverage.ready,
   rightAssistSummary: createRightAssistSummary(
     "reports-right-assist",
-    "Reports 辅助摘要",
-    "承接 selected report、ReportSection、Evidence、Decision、Feedback 和 Follow-up 上下文。"
+    "page.reports.rightAssist.title",
+    "page.reports.rightAssist.description"
   ),
   secondaryActions: [
-    { intent: "navigation", key: "reports-open-feedback", label: "查看反馈", targetRoute: "feedback" },
-    { intent: "navigation", key: "reports-open-evaluation", label: "查看评估", targetRoute: "evaluation" }
+    {
+      intent: "navigation",
+      key: "reports-open-feedback",
+      labelKey: "action.reportsOpenFeedback.label",
+      targetRoute: "feedback"
+    },
+    {
+      intent: "navigation",
+      key: "reports-open-evaluation",
+      labelKey: "action.reportsOpenEvaluation.label",
+      targetRoute: "evaluation"
+    }
   ],
   selectedReport: {
     evidenceCount: 5,

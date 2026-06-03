@@ -55,16 +55,37 @@ export const platformOperationsStaticViewModel: PlatformOperationsViewModel = {
   implementationStatus: "gap",
   jobs: [job],
   jobTabs: [
-    { count: 1, key: "jobs", label: "Jobs", status: "ready" },
-    { count: 1, key: "quality", label: "Data Quality", status: "warning" }
+    { count: 1, key: "jobs", labelKey: "page.platformOperations.tab.jobs.label", status: "ready" },
+    {
+      count: 1,
+      key: "quality",
+      labelKey: "page.platformOperations.tab.quality.label",
+      status: "warning"
+    }
   ],
   lastUpdatedAt: "2026-06-03T18:24:00+08:00",
   mainSections: [
-    { description: "Job Tabs、Notification 和 DataQualityCheck 摘要。", key: "jobs-quality", status: readyStatus, title: "Jobs & Quality" },
-    { description: "Deployment、smoke、migration 只读状态。", key: "ops-status", status: readyStatus, title: "Operations Status" }
+    {
+      descriptionKey: "page.platformOperations.section.jobsQuality.description",
+      key: "jobs-quality",
+      status: readyStatus,
+      titleKey: "page.platformOperations.section.jobsQuality.title"
+    },
+    {
+      descriptionKey: "page.platformOperations.section.opsStatus.description",
+      key: "ops-status",
+      status: readyStatus,
+      titleKey: "page.platformOperations.section.opsStatus.title"
+    }
   ],
   metricCards: [
-    { key: "job-health", label: "Job 健康", risk: warningRisk, status: readyStatus, valueText: "1 warning" }
+    {
+      key: "job-health",
+      label: "Job 健康",
+      risk: warningRisk,
+      status: readyStatus,
+      valueText: "1 warning"
+    }
   ],
   migrationStatus: {
     description: "MigrationResult 待确认 / Gap。",
@@ -74,29 +95,41 @@ export const platformOperationsStaticViewModel: PlatformOperationsViewModel = {
     value: "待确认 / Gap"
   },
   notifications: [notification],
-  pageDescription: "Job、通知、数据质量、部署、smoke 和 migration 只读状态的静态数据。",
+  pageDescriptionKey: "page.platformOperations.description",
   pageKey: "platform-operations",
-  pageTitle: "Platform Operations",
+  pageTitleKey: "page.platformOperations.title",
   permissionSummary: defaultPermissionSummary,
   platformOperationsOverview: [
-    { description: "平台运维状态只读摘要。", key: "platform-overview", label: "运维状态", risk: warningRisk, status: readyStatus, value: "attention" }
+    {
+      description: "平台运维状态只读摘要。",
+      key: "platform-overview",
+      label: "运维状态",
+      risk: warningRisk,
+      status: readyStatus,
+      value: "attention"
+    }
   ],
   platformOperationsState: defaultStateCoverage.ready,
   primaryAction: {
     disabled: true,
     intent: "disabled",
     key: "platform-run-job-disabled",
-    label: "执行 Job",
-    description: "静态 UI 阶段不执行 Job。"
+    labelKey: "action.platformRunJobDisabled.label",
+    descriptionKey: "action.platformRunJobDisabled.description"
   },
   readonlyState: defaultReadonlyState,
   rightAssistSummary: createRightAssistSummary(
     "platform-operations-right-assist",
-    "Platform Operations 辅助摘要",
-    "承接 selected job、notification、data quality、deployment、smoke 和 migration 摘要。"
+    "page.platformOperations.rightAssist.title",
+    "page.platformOperations.rightAssist.description"
   ),
   secondaryActions: [
-    { intent: "navigation", key: "platform-open-dashboard", label: "回到 Dashboard", targetRoute: "dashboard" }
+    {
+      intent: "navigation",
+      key: "platform-open-dashboard",
+      labelKey: "action.platformOpenDashboard.label",
+      targetRoute: "dashboard"
+    }
   ],
   selectedDataQualityCheck: dataQualityCheck,
   selectedJob: job,
@@ -110,6 +143,13 @@ export const platformOperationsStaticViewModel: PlatformOperationsViewModel = {
   },
   stateCoverage: defaultStateCoverage,
   summaryCards: [
-    { description: "运维静态摘要。", key: "platform-summary", label: "任务", risk: warningRisk, status: readyStatus, value: "6" }
+    {
+      description: "运维静态摘要。",
+      key: "platform-summary",
+      label: "任务",
+      risk: warningRisk,
+      status: readyStatus,
+      value: "6"
+    }
   ]
 };

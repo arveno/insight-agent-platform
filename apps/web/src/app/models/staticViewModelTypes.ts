@@ -33,24 +33,25 @@ export type StaticActionIntent = "primary" | "secondary" | "navigation" | "reado
 
 export type StaticActionViewModel = {
   description?: string;
+  descriptionKey?: string;
   disabled?: boolean;
   gapNote?: string;
   implementationStatus?: StaticImplementationStatus;
   intent: StaticActionIntent;
   key: string;
-  label: string;
+  labelKey: string;
   targetRoute?: StaticRouteKey;
 };
 
 export type StaticTabViewModel = {
   count?: number;
   key: string;
-  label: string;
+  labelKey: string;
   status?: StaticStateKind;
 };
 
 export type StaticStatusViewModel = {
-  label: string;
+  labelKey: string;
   reason?: string;
   status: StaticStateKind;
 };
@@ -58,7 +59,8 @@ export type StaticStatusViewModel = {
 export type StaticRiskViewModel = {
   level: StaticRiskLevel;
   reason?: string;
-  title: string;
+  title?: string;
+  titleKey?: string;
 };
 
 export type StaticSummaryItemViewModel = {
@@ -83,10 +85,10 @@ export type StaticMetricCardViewModel = {
 };
 
 export type StaticSectionViewModel = {
-  description: string;
+  descriptionKey: string;
   key: string;
   status: StaticStatusViewModel;
-  title: string;
+  titleKey: string;
 };
 
 export type StaticEvidenceEntranceViewModel = {
@@ -156,8 +158,8 @@ export type StaticReadonlyStateViewModel = {
 export type StaticPageStateViewModel = {
   action?: StaticActionViewModel;
   kind: StaticStateKind;
-  message: string;
-  title: string;
+  messageKey: string;
+  titleKey: string;
 };
 
 export type StaticPageStateCoverageViewModel = {
@@ -172,13 +174,13 @@ export type StaticPageStateCoverageViewModel = {
 };
 
 export type StaticRightAssistSummaryViewModel = {
-  description: string;
+  descriptionKey: string;
   evidence: StaticEvidenceEntranceViewModel[];
   key: string;
   links: StaticActionViewModel[];
   risk: StaticRiskViewModel;
   status: StaticStatusViewModel;
-  title: string;
+  titleKey: string;
   traces?: StaticTraceEntranceViewModel[];
 };
 
@@ -188,9 +190,9 @@ export type StaticPageViewModelBase = {
   lastUpdatedAt: string;
   mainSections: StaticSectionViewModel[];
   metricCards: StaticMetricCardViewModel[];
-  pageDescription: string;
+  pageDescriptionKey: string;
   pageKey: StaticRouteKey;
-  pageTitle: string;
+  pageTitleKey: string;
   permissionSummary: StaticPermissionSummaryViewModel;
   primaryAction: StaticActionViewModel;
   readonlyState: StaticReadonlyStateViewModel;

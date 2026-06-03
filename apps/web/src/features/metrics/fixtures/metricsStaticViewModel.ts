@@ -22,32 +22,52 @@ const selectedMetric = {
 export const metricsStaticViewModel: MetricsViewModel = {
   analysisEntrances: [
     {
-      description: "携带 metric / anomaly context 进入 Analysis。",
+      descriptionKey: "action.metricOpenAnalysis.description",
       intent: "navigation",
       key: "metric-open-analysis",
-      label: "分析指标异常",
+      labelKey: "action.metricOpenAnalysis.label",
       targetRoute: "analysis"
     }
   ],
   anomalyEntrances: [
     {
-      description: "异常上下文待确认 / Gap，仅作为静态入口。",
+      descriptionKey: "action.metricAnomalyEntry.description",
       intent: "navigation",
       key: "metric-anomaly-entry",
-      label: "异常追问",
+      labelKey: "action.metricAnomalyEntry.label",
       targetRoute: "analysis"
     }
   ],
   dashboardEntrances: [
-    { intent: "navigation", key: "metric-open-dashboard", label: "回到经营总览", targetRoute: "dashboard" }
+    {
+      intent: "navigation",
+      key: "metric-open-dashboard",
+      labelKey: "action.metricOpenDashboard.label",
+      targetRoute: "dashboard"
+    }
   ],
   gapNote: "MetricFormula、MetricThreshold、MetricLineage detail 和 anomaly context 为 Gap。",
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:10:00+08:00",
   mainSections: [
-    { description: "指标目录、筛选和 selected metric 摘要。", key: "metric-catalog", status: readyStatus, title: "Metric Catalog" },
-    { description: "指标公式、阈值和风险摘要。", key: "formula-threshold", status: readyStatus, title: "Formula & Threshold" },
-    { description: "血缘、证据、Dashboard 和 Analysis 入口。", key: "lineage-evidence", status: readyStatus, title: "Lineage & Evidence" }
+    {
+      descriptionKey: "page.metrics.section.metricCatalog.description",
+      key: "metric-catalog",
+      status: readyStatus,
+      titleKey: "page.metrics.section.metricCatalog.title"
+    },
+    {
+      descriptionKey: "page.metrics.section.formulaThreshold.description",
+      key: "formula-threshold",
+      status: readyStatus,
+      titleKey: "page.metrics.section.formulaThreshold.title"
+    },
+    {
+      descriptionKey: "page.metrics.section.lineageEvidence.description",
+      key: "lineage-evidence",
+      status: readyStatus,
+      titleKey: "page.metrics.section.lineageEvidence.title"
+    }
   ],
   metricCards: [
     {
@@ -90,14 +110,14 @@ export const metricsStaticViewModel: MetricsViewModel = {
     }
   ],
   metricsState: defaultStateCoverage.ready,
-  pageDescription: "指标定义、公式、阈值、血缘、证据和异常入口的静态数据。",
+  pageDescriptionKey: "page.metrics.description",
   pageKey: "metrics",
-  pageTitle: "Metrics",
+  pageTitleKey: "page.metrics.title",
   permissionSummary: defaultPermissionSummary,
   primaryAction: {
     intent: "navigation",
     key: "metrics-open-analysis",
-    label: "用指标上下文分析",
+    labelKey: "action.metricsOpenAnalysis.label",
     targetRoute: "analysis"
   },
   readonlyState: defaultReadonlyState,
@@ -113,15 +133,26 @@ export const metricsStaticViewModel: MetricsViewModel = {
   ],
   rightAssistSummary: createRightAssistSummary(
     "metrics-right-assist",
-    "Metrics 辅助摘要",
-    "承接 selected metric、formula、threshold、lineage、evidence 和 anomaly context。"
+    "page.metrics.rightAssist.title",
+    "page.metrics.rightAssist.description"
   ),
   secondaryActions: [
-    { intent: "navigation", key: "metrics-open-dashboard", label: "查看总览", targetRoute: "dashboard" }
+    {
+      intent: "navigation",
+      key: "metrics-open-dashboard",
+      labelKey: "action.metricsOpenDashboard.label",
+      targetRoute: "dashboard"
+    }
   ],
   selectedMetric,
   stateCoverage: defaultStateCoverage,
   summaryCards: [
-    { description: "指标目录静态总数。", key: "metric-count", label: "指标", status: readyStatus, value: "24" }
+    {
+      description: "指标目录静态总数。",
+      key: "metric-count",
+      label: "指标",
+      status: readyStatus,
+      value: "24"
+    }
   ]
 };

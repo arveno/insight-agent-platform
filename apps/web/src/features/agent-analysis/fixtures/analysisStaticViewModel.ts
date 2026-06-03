@@ -40,30 +40,45 @@ export const analysisStaticViewModel: AnalysisViewModel = {
   },
   evidenceEntrances: sharedEvidenceEntrances,
   followUpDraft: {
-    description: "基于当前结果继续追问，不覆盖原 run。",
+    descriptionKey: "action.analysisFollowUp.description",
     intent: "primary",
     key: "analysis-follow-up",
-    label: "继续追问"
+    labelKey: "action.analysisFollowUp.label"
   },
   gapNote: "Analysis 聚合 ViewModel、streaming、approval、retry 均为 Surface Contract Gap。",
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:02:00+08:00",
   mainSections: [
-    { description: "承接主动分析输入和上下文 chip。", key: "analysis-input", status: readyStatus, title: "Analysis Input" },
-    { description: "展示当前 Run 生命周期状态。", key: "run-status", status: readyStatus, title: "Run Status" },
-    { description: "展示结果预览、Evidence、Trace、Report 和 Follow-up 入口。", key: "result-preview", status: readyStatus, title: "Result Preview" }
+    {
+      descriptionKey: "page.analysis.section.analysisInput.description",
+      key: "analysis-input",
+      status: readyStatus,
+      titleKey: "page.analysis.section.analysisInput.title"
+    },
+    {
+      descriptionKey: "page.analysis.section.runStatus.description",
+      key: "run-status",
+      status: readyStatus,
+      titleKey: "page.analysis.section.runStatus.title"
+    },
+    {
+      descriptionKey: "page.analysis.section.resultPreview.description",
+      key: "result-preview",
+      status: readyStatus,
+      titleKey: "page.analysis.section.resultPreview.title"
+    }
   ],
   metricCards: [],
-  pageDescription: "主动分析、异常追问、结果追问和上下文分析的静态工作区数据。",
+  pageDescriptionKey: "page.analysis.description",
   pageKey: "analysis",
-  pageTitle: "Analysis",
+  pageTitleKey: "page.analysis.title",
   permissionSummary: defaultPermissionSummary,
   primaryAction: {
     disabled: true,
     intent: "disabled",
     key: "analysis-submit-disabled",
-    label: "提交分析",
-    description: "静态 ViewModel 阶段不执行真实 Agent Run。"
+    labelKey: "action.analysisSubmitDisabled.label",
+    descriptionKey: "action.analysisSubmitDisabled.description"
   },
   readonlyState: defaultReadonlyState,
   reportEntrances: [
@@ -95,8 +110,8 @@ export const analysisStaticViewModel: AnalysisViewModel = {
   },
   rightAssistSummary: createRightAssistSummary(
     "analysis-right-assist",
-    "Analysis 辅助摘要",
-    "承接当前 run、Evidence、Trace、Report、Risk、Decision 和 Follow-up 上下文。"
+    "page.analysis.rightAssist.title",
+    "page.analysis.rightAssist.description"
   ),
   runList: [
     {
@@ -116,8 +131,18 @@ export const analysisStaticViewModel: AnalysisViewModel = {
     value: "completed"
   },
   secondaryActions: [
-    { intent: "navigation", key: "analysis-open-reports", label: "查看报告", targetRoute: "reports" },
-    { intent: "navigation", key: "analysis-open-observability", label: "查看 Trace", targetRoute: "observability" }
+    {
+      intent: "navigation",
+      key: "analysis-open-reports",
+      labelKey: "action.analysisOpenReports.label",
+      targetRoute: "reports"
+    },
+    {
+      intent: "navigation",
+      key: "analysis-open-observability",
+      labelKey: "action.analysisOpenObservability.label",
+      targetRoute: "observability"
+    }
   ],
   selectedRun: {
     description: "当前选中 Run 摘要。",

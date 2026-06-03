@@ -10,12 +10,12 @@ import type {
 } from "../models";
 
 export const readyStatus: StaticStatusViewModel = {
-  label: "Ready",
+  labelKey: "state.ready.default.label",
   status: "ready"
 };
 
 export const warningStatus: StaticStatusViewModel = {
-  label: "待确认 / Gap",
+  labelKey: "state.warning.gap.label",
   reason: "该字段来自 Surface Contract 的 Gap 标记，只作为静态展示状态。",
   status: "warning"
 };
@@ -23,7 +23,7 @@ export const warningStatus: StaticStatusViewModel = {
 export const warningRisk: StaticRiskViewModel = {
   level: "medium",
   reason: "Surface Contract 标记该区域需要保留风险提示入口。",
-  title: "需要关注"
+  titleKey: "risk.medium.title"
 };
 
 export const defaultPermissionSummary: StaticPermissionSummaryViewModel = {
@@ -40,43 +40,43 @@ export const defaultReadonlyState: StaticReadonlyStateViewModel = {
 export const defaultStateCoverage: StaticPageStateCoverageViewModel = {
   disabled: {
     kind: "disabled",
-    message: "当前入口只作为静态承接位展示。",
-    title: "入口已禁用"
+    messageKey: "state.disabled.default.message",
+    titleKey: "state.disabled.default.title"
   },
   empty: {
     kind: "empty",
-    message: "当前 Surface 没有可展示的静态数据。",
-    title: "暂无数据"
+    messageKey: "state.empty.default.message",
+    titleKey: "state.empty.default.title"
   },
   error: {
     kind: "error",
-    message: "静态数据层保留错误态输入，不接真实错误源。",
-    title: "加载失败"
+    messageKey: "state.error.default.message",
+    titleKey: "state.error.default.title"
   },
   loading: {
     kind: "loading",
-    message: "静态数据层保留加载态输入，不创建异步数据源。",
-    title: "加载中"
+    messageKey: "state.loading.default.message",
+    titleKey: "state.loading.default.title"
   },
   ready: {
     kind: "ready",
-    message: "页面静态 ViewModel 已准备就绪。",
-    title: "已就绪"
+    messageKey: "state.ready.default.message",
+    titleKey: "state.ready.default.title"
   },
   risk: {
     kind: "risk",
-    message: "当前区域存在需要用户关注的风险摘要。",
-    title: "存在风险"
+    messageKey: "state.risk.default.message",
+    titleKey: "state.risk.default.title"
   },
   success: {
     kind: "success",
-    message: "轻操作反馈已由静态 UI State 承接。",
-    title: "操作已承接"
+    messageKey: "state.success.default.message",
+    titleKey: "state.success.default.title"
   },
   warning: {
     kind: "warning",
-    message: "该提示只用于 UI Shell 阶段展示，不代表真实业务告警。",
-    title: "注意"
+    messageKey: "state.warning.default.message",
+    titleKey: "state.warning.default.title"
   }
 };
 
@@ -114,27 +114,31 @@ export const sharedTraceEntrances: StaticTraceEntranceViewModel[] = [
     latencyText: "420ms",
     risk: {
       level: "low",
-      title: "低风险"
+      titleKey: "risk.low.title"
     },
     status: readyStatus,
     title: "Tool 权限检查 Trace"
   }
 ];
 
-export const createRightAssistSummary = (key: string, title: string, description: string): StaticRightAssistSummaryViewModel => ({
-  description,
+export const createRightAssistSummary = (
+  key: string,
+  titleKey: string,
+  descriptionKey: string
+): StaticRightAssistSummaryViewModel => ({
+  descriptionKey,
   evidence: sharedEvidenceEntrances,
   key,
   links: [
     {
       intent: "navigation",
       key: `${key}-open-analysis`,
-      label: "Open in Analysis with context",
+      labelKey: "action.openInAnalysisWithContext.label",
       targetRoute: "analysis"
     }
   ],
   risk: warningRisk,
   status: readyStatus,
-  title,
+  titleKey,
   traces: sharedTraceEntrances
 });

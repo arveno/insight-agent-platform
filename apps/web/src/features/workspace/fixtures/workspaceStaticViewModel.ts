@@ -39,39 +39,66 @@ export const workspaceStaticViewModel: WorkspaceViewModel = {
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:28:00+08:00",
   mainSections: [
-    { description: "Workspace 总览和 Header selector 详情。", key: "workspace-overview", status: readyStatus, title: "Workspace Overview" },
-    { description: "成员、角色和业务域静态摘要。", key: "members-roles-domains", status: readyStatus, title: "Members / Roles / Domains" }
+    {
+      descriptionKey: "page.workspace.section.workspaceOverview.description",
+      key: "workspace-overview",
+      status: readyStatus,
+      titleKey: "page.workspace.section.workspaceOverview.title"
+    },
+    {
+      descriptionKey: "page.workspace.section.membersRolesDomains.description",
+      key: "members-roles-domains",
+      status: readyStatus,
+      titleKey: "page.workspace.section.membersRolesDomains.title"
+    }
   ],
   members: [member],
   metricCards: [
-    { key: "workspace-member-count", label: "成员数", risk: warningRisk, status: readyStatus, valueText: "18" }
+    {
+      key: "workspace-member-count",
+      label: "成员数",
+      risk: warningRisk,
+      status: readyStatus,
+      valueText: "18"
+    }
   ],
-  pageDescription: "Workspace 总览、成员、角色、业务域和 Header workspace selector 的静态数据。",
+  pageDescriptionKey: "page.workspace.description",
   pageKey: "workspace",
-  pageTitle: "Workspace",
+  pageTitleKey: "page.workspace.title",
   permissionSummary: defaultPermissionSummary,
   primaryAction: {
     intent: "navigation",
     key: "workspace-open-settings",
-    label: "打开设置",
+    labelKey: "action.workspaceOpenSettings.label",
     targetRoute: "settings"
   },
   readonlyState: defaultReadonlyState,
   rightAssistSummary: createRightAssistSummary(
     "workspace-right-assist",
-    "Workspace 辅助摘要",
-    "承接 workspace、member、role、business domain 和 selector 摘要。"
+    "page.workspace.rightAssist.title",
+    "page.workspace.rightAssist.description"
   ),
   roles: [role],
   secondaryActions: [
-    { intent: "navigation", key: "workspace-open-governance", label: "查看治理", targetRoute: "governance" }
+    {
+      intent: "navigation",
+      key: "workspace-open-governance",
+      labelKey: "action.workspaceOpenGovernance.label",
+      targetRoute: "governance"
+    }
   ],
   selectedBusinessDomain: businessDomain,
   selectedMember: member,
   selectedRole: role,
   stateCoverage: defaultStateCoverage,
   summaryCards: [
-    { description: "Workspace 静态摘要。", key: "workspace-summary", label: "业务域", status: readyStatus, value: "6" }
+    {
+      description: "Workspace 静态摘要。",
+      key: "workspace-summary",
+      label: "业务域",
+      status: readyStatus,
+      value: "6"
+    }
   ],
   workspaceContext: {
     description: "Header workspace selector 的全局上下文输入。",
@@ -81,7 +108,13 @@ export const workspaceStaticViewModel: WorkspaceViewModel = {
     value: "workspace-north-star"
   },
   workspaceOverview: [
-    { description: "Workspace 详情、成员、角色和业务域主承接页。", key: "workspace-overview-card", label: "Workspace", status: readyStatus, value: "North Star" }
+    {
+      description: "Workspace 详情、成员、角色和业务域主承接页。",
+      key: "workspace-overview-card",
+      label: "Workspace",
+      status: readyStatus,
+      value: "North Star"
+    }
   ],
   workspaceSelectorDetail: {
     description: "Selector detail 只作为静态展示输入。",

@@ -9,22 +9,22 @@ import type {
 } from "./staticViewModelTypes";
 
 export type AppShellNavigationItemViewModel = {
-  badgeText?: string;
+  badgeTextKey?: string;
   disabled?: boolean;
   key: StaticRouteKey;
-  label: string;
+  labelKey: string;
   status?: StaticStatusViewModel;
 };
 
 export type AppShellNavigationGroupViewModel = {
   items: AppShellNavigationItemViewModel[];
   key: string;
-  label: string;
+  labelKey: string;
 };
 
 export type AppShellPreferenceViewModel = {
   key: string;
-  label: string;
+  labelKey: string;
   value: string;
 };
 
@@ -36,11 +36,11 @@ export type AppShellStaticViewModel = {
     userId: string;
   };
   environmentSummary: {
-    label: string;
-    message: string;
+    labelKey: string;
+    messageKey: string;
   };
   globalFeedback: {
-    message: string;
+    messageKey: string;
     status: "idle" | "success" | "warning" | "error";
   };
   headerActions: StaticActionViewModel[];
