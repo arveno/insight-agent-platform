@@ -1,0 +1,18 @@
+export type IconName =
+  | "analysis"
+  | "dashboard"
+  | "data"
+  | "evaluation"
+  | "feedback"
+  | "governance"
+  | "language"
+  | "memory"
+  | "metrics"
+  | "models"
+  | "observability"
+  | "operations"
+  | "reports"
+  | "settings"
+  | "theme"
+  | "user"
+  | "workspace";
