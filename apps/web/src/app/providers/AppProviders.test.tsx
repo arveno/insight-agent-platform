@@ -1,0 +1,40 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { AppIcon, useI18n } from "../../shared";
+import { useAppTheme } from "../theme";
+import { AppProviders } from "./AppProviders";
+
+afterEach(cleanup);
+
+function ProviderProbe() {
+  const { locale, t } = useI18n();
+  const { themeMode } = useAppTheme();
+  const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
+
+  return (
+    <div>
+      <span>{t("appName")}</span>
+      <span>{locale}</span>
+      <span>{themeMode}</span>
+      <span>{themeModeLabel}</span>
+      <AppIcon name="settings" title={t("settings")} />
+    </div>
+  );
+}
+
+describe("AppProviders", () => {
+  it("provides the default i18n, theme, and icon foundations", () => {
+    render(
+      <AppProviders>
+        <ProviderProbe />
+      </AppProviders>
+    );
+
+    expect(screen.getByText("Insight Agent")).toBeTruthy();
+    expect(screen.getByText("zh-CN")).toBeTruthy();
+    expect(screen.getByText("light")).toBeTruthy();
+    expect(screen.getByText("浅色")).toBeTruthy();
+    expect(screen.getByLabelText("设置").textContent).toBe("S");
+  });
+});

@@ -1,36 +1,57 @@
-import { Layout, Menu, Typography } from "antd";
+import { Layout, Menu, Space, Typography } from "antd";
 
-import { primaryNavigation } from "../router/router";
+import { createPrimaryNavigation } from "../router/router";
+import { useAppTheme } from "../theme";
+import { AppIcon, useI18n } from "../../shared";
+import { shellThemeTokens } from "../../shared/theme";
 
 const { Header, Sider, Content } = Layout;
 
 export function AppShell() {
+  const { locale, t } = useI18n();
+  const { themeMode } = useAppTheme();
+  const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
+  const primaryNavigation = createPrimaryNavigation(t);
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider width={260} theme="light">
+      <Sider width={shellThemeTokens.siderWidth} theme="light">
         <div style={{ padding: 20 }}>
-          <Typography.Text strong>Insight Agent</Typography.Text>
+          <Typography.Text strong>{t("appName")}</Typography.Text>
         </div>
         <Menu mode="inline" defaultSelectedKeys={["dashboard"]} items={primaryNavigation} />
       </Sider>
       <Layout>
         <Header
           style={{
-            background: "#fff",
-            borderBottom: "1px solid #f0f0f0",
+            background: shellThemeTokens.colorBgContainer,
+            borderBottom: `1px solid ${shellThemeTokens.colorBorder}`,
+            display: "flex",
+            height: shellThemeTokens.headerHeight,
+            justifyContent: "space-between",
             padding: "0 24px"
           }}
         >
-          <Typography.Text strong>顶部 Header 占位</Typography.Text>
+          <Typography.Text strong>{t("app.headerPlaceholder")}</Typography.Text>
+          <Space size={20}>
+            <Typography.Text type="secondary">
+              <AppIcon name="language" title={t("language")} />
+              {t("language")}: {locale}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              <AppIcon name="theme" title={t("theme")} />
+              {t("theme")}: {themeModeLabel}
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              <AppIcon name="settings" title={t("settings")} />
+              {t("settings")}
+            </Typography.Text>
+          </Space>
         </Header>
         <Content style={{ padding: 32 }}>
-          <Typography.Title level={1}>Insight Agent Platform</Typography.Title>
-          <Typography.Paragraph style={{ fontSize: 18 }}>
-            企业经营分析与决策 Agent 平台
-          </Typography.Paragraph>
-          <Typography.Paragraph type="secondary">
-            主内容区占位：后续功能必须在已审查通过的 Issue 范围内接入。
-          </Typography.Paragraph>
+          <Typography.Title level={1}>{t("app.productTitle")}</Typography.Title>
+          <Typography.Paragraph style={{ fontSize: 18 }}>{t("app.mainDescription")}</Typography.Paragraph>
+          <Typography.Paragraph type="secondary">{t("app.mainPlaceholder")}</Typography.Paragraph>
         </Content>
       </Layout>
     </Layout>
