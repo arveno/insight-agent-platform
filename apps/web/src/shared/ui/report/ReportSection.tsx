@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import { RiskBadge, type RiskBadgeProps } from "./RiskBadge";
+import { RiskBadge, type RiskBadgeProps } from "../status";
 
 export type ReportSectionProps = {
   actions?: ReactNode;

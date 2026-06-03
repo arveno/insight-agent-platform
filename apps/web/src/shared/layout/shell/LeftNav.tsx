@@ -13,7 +13,7 @@ export type NavigationItem = {
 export type NavigationGroup = {
   items: NavigationItem[];
   key: string;
-  label: ReactNode;
+  label?: ReactNode;
 };
 
 export type LeftNavProps = {
@@ -43,12 +43,20 @@ function createMenuItem(item: NavigationItem): MenuItemType {
  * 组件不新增路由、不删除低频入口，也不维护独立导航事实源。
  */
 export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
-  const items: ItemType[] = groups.map((group) => ({
-    children: group.items.map(createMenuItem),
-    key: group.key,
-    label: group.label,
-    type: "group"
-  }));
+  const items = groups.reduce<ItemType[]>((result, group) => {
+    if (!group.label) {
+      result.push(...group.items.map(createMenuItem));
+      return result;
+    }
+
+    result.push({
+      children: group.items.map(createMenuItem),
+      key: group.key,
+      label: group.label,
+      type: "group"
+    });
+    return result;
+  }, []);
 
   return (
     <Menu

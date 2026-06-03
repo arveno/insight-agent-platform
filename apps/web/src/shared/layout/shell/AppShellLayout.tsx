@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Layout } from "antd";
 
-import { shellThemeTokens } from "../theme";
+import { shellThemeTokens } from "../../theme";
 
 const { Content, Header, Sider } = Layout;
 

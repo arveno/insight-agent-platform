@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { Card, List, Space, Typography } from "antd";
 
-import { EmptyState, type EmptyStateProps } from "./EmptyState";
-import { RiskBadge, type RiskBadgeProps } from "./RiskBadge";
-import { StatusTag, type StatusTagProps } from "./StatusTag";
+import { EmptyState, type EmptyStateProps } from "../feedback";
+import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
 
 export type CardListItem = {
   actions?: ReactNode;
