@@ -1,0 +1,1 @@
+export { platformOperationsStaticViewModel } from "./platformOperationsStaticViewModel";

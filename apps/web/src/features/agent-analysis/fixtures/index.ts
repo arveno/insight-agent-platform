@@ -1,0 +1,1 @@
+export { analysisStaticViewModel } from "./analysisStaticViewModel";

@@ -1,0 +1,1 @@
+export { modelToolsStaticViewModel } from "./modelToolsStaticViewModel";

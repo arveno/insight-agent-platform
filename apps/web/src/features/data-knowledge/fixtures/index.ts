@@ -1,0 +1,1 @@
+export { dataKnowledgeStaticViewModel } from "./dataKnowledgeStaticViewModel";

@@ -1,0 +1,1 @@
+export { settingsStaticViewModel } from "./settingsStaticViewModel";

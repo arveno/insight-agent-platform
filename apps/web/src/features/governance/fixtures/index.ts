@@ -1,0 +1,1 @@
+export { governanceStaticViewModel } from "./governanceStaticViewModel";
