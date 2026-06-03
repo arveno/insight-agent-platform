@@ -231,6 +231,95 @@ UI 不得直接消费 raw API response。
 - 状态标签、风险等级、空态、错误态必须使用 shared UI。
 - UI 必须使用 Ant Design 体系，不引入第二套 UI 组件库。
 
+### Production UI 页面实现拆分规则
+
+Production UI 页面实现必须遵守：
+
+```text
+按页面职责 + 功能区域 + 可读性拆组件。
+```
+
+页面文件不是临时 demo，也不是一个页面一个超大文件。
+
+#### Page Container
+
+Page 文件只负责：
+
+- 页面级布局。
+- 组合 Section。
+- 接收 ViewModel。
+- 连接路由、页面级状态和页面级容器。
+
+Page 文件禁止：
+
+- 堆大段 JSX。
+- 直接解析 raw API response。
+- 直接使用 DB row。
+- 直接使用模型原始输出。
+- 直接使用 Tool 原始输出。
+- 直接使用 LangGraph raw state。
+- 绕过 Contract -> ViewModel -> UI。
+
+#### Sections
+
+Section 组件按功能区域拆分。
+
+一个 Section 只负责一个清晰页面区域，例如：
+
+- OverviewSection
+- RiskSummarySection
+- RecentRunsSection
+- ReportReaderSection
+- TraceTimelineSection
+
+Section 可以包含少量直观 JSX。
+
+很小、清晰、不重复的 JSX 可以留在 Section 内，不为拆而拆。
+
+#### Local Components
+
+Local Components 只服务当前页面或当前 feature，例如：
+
+- DashboardMetricGroup
+- RunSummaryList
+- GovernancePolicyPanel
+- PlatformJobPanel
+
+强业务组件优先留在 feature / page local，不提前提升到 shared。
+
+#### Shared Components
+
+Shared Components 只放跨页面复用且语义稳定的组件，例如：
+
+- StatusTag
+- RiskBadge
+- EmptyState
+- ErrorState
+- LoadingState
+- ChartCard
+- DataTable
+- CardList
+- SourceEvidenceList
+- TraceTimeline
+
+shared 组件只消费 ViewModel、UI State 或 contract enum。
+
+shared 不依赖 feature。
+
+禁止为了复用而过度抽象。
+
+#### Fixture / Static ViewModel
+
+每个页面必须有对应 fixture / static ViewModel。
+
+fixture / static ViewModel 只作为 UI Shell 阶段的数据来源。
+
+fixture 不等于真实业务实现。
+
+fixture 不得形成 mock / real 双链路。
+
+后续真实功能接入只替换数据来源和业务执行链路，不重写页面结构。
+
 ### Web / Mobile 编排边界
 
 前端必须遵守：
