@@ -527,6 +527,19 @@ Production UI Shell 必须满足：
 - 设计 token 必须走 `shared/theme`。
 - fixture / static ViewModel 只能作为当前阶段临时数据来源，不得进入长期业务链路。
 
+### Production UI Shell 文案 i18n 规则
+
+用户可见文本必须统一进入 `shared/i18n`，默认 locale 为 `zh-CN`。本规则定义文案归位边界，不要求当前阶段接入完整国际化库，也不允许因此新增依赖。
+
+固定规则：
+
+- 文案 key 应稳定、语义化。
+- 组件不得硬编码用户可见中文 / 英文文案。
+- theme label、language label、settings label 也属于 i18n 文案。
+- `aria-label`、`title`、空态、错误态、成功态、按钮、菜单都属于 i18n 文案。
+- 代码注释不进入 i18n。
+- 开发者错误可以不进入 i18n，除非会展示到 UI。
+
 ### Production UI Shell Implementation Decomposition
 
 Production UI Shell 后续实现时，每个页面必须给出并遵守 Implementation Decomposition。

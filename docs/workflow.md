@@ -253,6 +253,10 @@ PR 审查必须按 Issue 反查：
 - 是否违反 `AGENTS.md` / `docs/workflow.md` / `docs/architecture.md` / `docs/contracts.md`。
 - 是否违反前后端字段一致。
 - 是否违反 UI 不消费 raw 数据。
+- 是否存在用户可见文案散落在组件中，未进入 i18n。
+- 是否关键链路缺少必要中文主体注释。
+- 是否存在废话注释、长期 TODO 或用注释掩盖不清晰代码。
+- 是否提前引入未审查的文档生成工具或依赖。
 - 是否绕过 `Tool Registry` / `Model Gateway`。
 - 是否引入 Mock / Real 双链路。
 - 是否有测试和证据。

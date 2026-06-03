@@ -67,6 +67,41 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - Contracts：JSON Schema 校验、OpenAPI 检查、TypeScript 类型生成和 Python DTO 承载方向，不建立自动生成双轨。
 - Security：secret scan、依赖审计、Governance / SQL Guard / Tool Permission / Sensitive Field 承载方向。
 
+### 代码注释与文档工具边界
+
+代码注释用于帮助开发者和 AI 沿关键链路理解系统，不替代清晰代码结构，也不承载长期正式事实源。
+
+注释分层：
+
+- 关键链路注释：说明从输入、编排、领域对象、契约、响应到 UI 的主链路关系。
+- 跨层边界注释：说明 repository、API schema、ViewModel mapper、Model Gateway、Tool Registry 等边界职责。
+- 阶段限制注释：说明当前阶段有意保留的范围限制，后续能力必须回到 Issue / docs。
+- 非显而易见设计取舍注释：说明无法从代码结构直接读出的约束、权衡和风险。
+
+前端注释规则：
+
+- 使用 TSDoc 风格块注释。
+- 注释主体使用中文，可保留必要英文技术名词。
+- 当前不接 TypeDoc。
+- 未来 TypeDoc 接入必须单独 Issue / PR 审查。
+
+后端注释规则：
+
+- 使用 Python docstring。
+- 注释主体使用中文，可保留必要英文技术名词。
+- 当前不接 Sphinx。
+- 未来 Sphinx 接入必须单独 Issue / PR 审查。
+
+API 文档方向：
+
+- FastAPI OpenAPI / Swagger / ReDoc 是接口文档方向。
+
+禁止：
+
+- 不为了生成文档提前新增工具依赖。
+- 不用注释替代清晰代码结构。
+- 不把正式事实源写进代码注释。
+
 ## 3. Monorepo 结构
 
 ```text

@@ -2,6 +2,8 @@
 
 本文件是 Codex / AI Agent / 人类开发者在本仓库执行任务时必须遵守的硬规则。
 
+AGENTS.md 只承载 Codex / AI Agent / 人类开发者必须遵守的硬规则、禁止项和执行底线；完整协作流程以 `docs/workflow.md` 为事实源。
+
 ## 1. 项目定位
 
 本项目是 `Insight Agent Platform`：企业经营分析与决策 Agent 平台。
@@ -9,6 +11,8 @@
 目标是从第一天建立完整企业级 Agent 产品骨架，覆盖数据、知识、指标、Multi-Agent、Memory、Feedback、Evaluation、Governance、Observability、Model Gateway、报告决策、CI、契约、部署和运维承载位。
 
 ## 2. 执行流程
+
+本节只保留不可绕过的执行底线；完整阶段定义、审查流程和退回机制以 `docs/workflow.md` 为准。
 
 - 需求必须先形成 Issue；复杂需求必须按父 Issue / sub-issue / 必要时 sub-sub-issue 拆分。
 - Issue 是执行合同。
@@ -89,6 +93,17 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 - 前端不得绕过 Contract -> ViewModel -> UI 链路。
 - 代码必须优先清晰、直接、可审查。
 - Codex 只读自检和执行报告必须和人工审核分离，不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
+
+### 文本、注释与文档工具硬规则
+
+- 用户可见 UI 文案必须进入 i18n，不得散落在组件 JSX 中。
+- `aria-label` / `title` / 空态 / 错误态 / 成功态 / 按钮 / 菜单等用户可见文本也属于 UI 文案。
+- 代码注释以中文为主体，允许保留必要英文技术名词。
+- 注释只解释关键链路、职责边界、阶段限制和非显而易见设计取舍。
+- 禁止用注释解释显而易见代码。
+- 禁止用注释掩盖不清晰代码。
+- 禁止写长期 TODO；未来能力必须回到 Issue / docs。
+- 当前不引入 TypeDoc / Sphinx / MkDocs / docgen；文档生成工具接入必须单独 Issue 审查。
 
 ### 固定工具链规则
 
