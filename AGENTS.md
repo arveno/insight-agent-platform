@@ -10,58 +10,36 @@ AGENTS.md 只承载 Codex / AI Agent / 人类开发者必须遵守的硬规则�
 
 目标是从第一天建立完整企业级 Agent 产品骨架，覆盖数据、知识、指标、Multi-Agent、Memory、Feedback、Evaluation、Governance、Observability、Model Gateway、报告决策、CI、契约、部署和运维承载位。
 
-## 2. 执行流程
+## 2. 执行硬门禁
 
-本节只保留不可绕过的执行底线；完整阶段定义、审查流程和退回机制以 `docs/workflow.md` 为准。
+本节只定义不可绕过的执行底线；完整阶段、状态流转、退回机制和 Merge 条件以 `docs/workflow.md` 为事实源。
 
-- 需求必须先形成 Issue；复杂需求必须按父 Issue / sub-issue / 必要时 sub-sub-issue 拆分。
+- 需求必须先形成 Issue。
 - Issue 是执行合同。
 - Issue 必须基于需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 建立。
-- Issue 建立后不能直接交给 Codex 执行。
-- 必须先进行 Issue 合规审查。
-- Issue 合规审查通过并明确允许 Codex 执行后，Codex 才能执行代码。
-- Codex 执行前必须确认 Issue 已按 `docs/workflow.md` 完成合规审查。
-- 未经审查通过的 Issue，不允许进入代码执行阶段。
-- PR 是履约证明。
-- PR 只按已审查通过的 Issue 和 `docs/workflow.md` 反查，不重新发明标准。
-- CI 是自动守门。
+- Issue 未完成合规审查并明确允许 Codex 执行前，不允许进入代码执行阶段。
+- Codex 只能在 Approved Issue 范围内执行，不得自由发挥。
+- PR 是履约证明，必须按 Approved Issue 和仓库事实源反向审核。
+- Codex 不得自行声明 Issue / PR 审核通过、用户可以 merge 或可以进入下一阶段。
 - 用户最终决定是否 Merge。
-- Codex 不得绕过 Issue 自由发挥。
-- 复杂任务必须按 parent issue / sub-issue / 必要时 sub-sub-issue 拆分；简单任务可使用 standalone issue。
-- Comment 只用于过程记录、状态更新、链接和简短说明，不承载长期正式产出、正式验收结构或事实源。
-- Codex 不得用 comment 承载正式产出。
-- Codex 不得自行判断 Issue / PR 是否通过、勾选人工 Review Checklist、声明用户可以 merge 或声明可以进入下一阶段。
-- Codex 可以按 ChatGPT / 人工明确 prompt 代写 Issue Review Status、Review Result 或勾选项，但不得自行作出审核判断。
-- Codex 只读自检和 Codex 执行报告必须和人工审核分离。
+- Comment 只用于过程记录、状态更新、链接和简短说明，不承载长期正式产出或事实源。
 
-每个任务必须基于：
+## 3. Issue 合规硬门禁
 
-- `AGENTS.md`
-- `docs/workflow.md`
-- `docs/architecture.md`
-- `docs/contracts.md`
-- `packages/contracts/*`
+Issue 合规审查的完整流程、状态和退回机制以 `docs/workflow.md` 为事实源。
 
-并在 Issue 中摘出本次任务相关规则。
+AGENTS.md 只保留不可绕过的最低要求：
 
-## 3. Issue 合规审查
+- 目标必须清楚。
+- 修改范围必须明确。
+- 事实源必须完整。
+- 必须摘出本次任务相关规则，不能只写“遵守文档”。
+- 禁止项必须明确。
+- 验收标准和测试要求必须可检查。
+- 不得给 Codex 留自由发挥空间。
+- 不得引入 Mock / Real 双链路、无关依赖、无关重构或业务范围外实现。
 
-Issue 建立后必须先完成合规审查，审查通过后才允许进入 Codex 代码执行阶段。
-
-审查项至少包括：
-
-- 目标是否清楚。
-- 修改范围是否明确。
-- 事实源是否完整，包括需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts`。
-- 是否摘出了本次任务相关规则，而不是只写“遵守文档”。
-- 禁止项是否明确。
-- 验收标准是否可检查。
-- 测试要求是否明确。
-- 是否存在 Codex 自由发挥空间。
-- 是否越过 `AGENTS` / `workflow` / `architecture` / `contracts` / `packages/contracts` 事实源。
-- 是否引入 Mock / Real 双链路、无关依赖、无关重构或业务范围外实现。
-
-审查结论必须明确写入 Issue。未通过审查的 Issue 必须退回补充，不能进入代码执行阶段。
+未通过合规审查的 Issue 不允许进入代码执行阶段。
 
 ## 4. 总体代码规则
 
