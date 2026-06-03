@@ -527,6 +527,47 @@ Production UI Shell 必须满足：
 - 设计 token 必须走 `shared/theme`。
 - fixture / static ViewModel 只能作为当前阶段临时数据来源，不得进入长期业务链路。
 
+### Production UI Shell Implementation Decomposition
+
+Production UI Shell 后续实现时，每个页面必须给出并遵守 Implementation Decomposition。
+
+每个页面至少明确：
+
+```text
+Page Container
+Sections
+Local Components
+Shared Components
+Fixture / static ViewModel
+```
+
+固定规则：
+
+- Page Container 只负责页面级布局、组合 Section、接收 ViewModel。
+- Sections 按页面功能区域拆分。
+- Local Components 只服务当前页面或当前 feature。
+- Shared Components 只引用跨页面复用且语义稳定的组件。
+- Fixture / static ViewModel 与页面一一对应。
+- 不写一个页面一个超大文件。
+- 不为了拆而拆。
+- 不为了复用过度抽象。
+- 不把页面私有强业务组件提前抽到 shared。
+- 不在组件内清洗 raw 数据。
+- 不绕过 Contract -> ViewModel -> UI。
+- 不为 Mobile 建立独立业务组件体系。
+
+WebComposition 和 MobileComposition 可以分开编排，但必须共享：
+
+- contracts
+- Feature Mapper
+- ViewModel
+- shared/ui
+- shared/layout
+- shared/theme
+- shared/charts
+- Icon System
+- 状态 / 风险 / Evidence / Trace / Report 语义
+
 ## 17. Design-to-Code 可实现性检查
 
 Design-to-Code 检查必须在 Production UI Shell Handoff 和代码实现前完成。
