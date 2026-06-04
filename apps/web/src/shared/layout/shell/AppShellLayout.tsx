@@ -43,8 +43,7 @@ export function AppShellLayout({
             background: token.colorBgContainer,
             borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
             height: "100%",
-            overflowX: "hidden",
-            overflowY: "auto"
+            overflow: "hidden"
           }}
           width={shellThemeTokens.siderWidth}
         >

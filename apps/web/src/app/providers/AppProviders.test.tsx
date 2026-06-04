@@ -9,16 +9,17 @@ afterEach(cleanup);
 
 function ProviderProbe() {
   const { locale, t } = useI18n();
-  const { themeMode } = useAppTheme();
-  const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
+  const { resolvedThemeMode, themeMode } = useAppTheme();
+  const themeModeLabel = t(`themeMode.${themeMode}`);
 
   return (
     <div>
       <span>{t("appName")}</span>
       <span>{locale}</span>
       <span>{themeMode}</span>
+      <span>{resolvedThemeMode}</span>
       <span>{themeModeLabel}</span>
-      <AppIcon name="settings" title={t("settings")} />
+      <AppIcon name="settings" title={t("settings")} variant="glyph" />
       <AppIcon name="settings" title={`${t("settings")}-badge`} variant="badge" />
     </div>
   );
@@ -34,8 +35,9 @@ describe("AppProviders", () => {
 
     expect(screen.getByText("Insight Agent")).toBeTruthy();
     expect(screen.getByText("zh-CN")).toBeTruthy();
+    expect(screen.getByText("system")).toBeTruthy();
     expect(screen.getByText("light")).toBeTruthy();
-    expect(screen.getByText("浅色")).toBeTruthy();
+    expect(screen.getByText("系统")).toBeTruthy();
     expect(screen.getByLabelText("设置").querySelector("svg")).toBeTruthy();
     expect(screen.getByLabelText("设置-badge").textContent).toBe("S");
   });

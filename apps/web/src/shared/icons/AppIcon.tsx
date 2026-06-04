@@ -94,12 +94,12 @@ const baseIconStyle: CSSProperties = {
 /**
  * UI Shell 的统一 Icon 出口组件。
  *
- * glyph 用于导航、Header 和辅助区等非按钮场景；badge 用于按钮里的能力字母标识。
+ * glyph 仅用于 LeftNav 导航项扫描；badge 用于品牌区、按钮和能力动作。
  * 图标依赖只能在这一层引入，页面和业务组件必须继续通过 IconName -> AppIcon 边界消费。
  *
  * 这里不引入第二套 UI 组件库，也不把页面私有业务组件提升到 shared。
  */
-export function AppIcon({ name, title, variant = "glyph" }: AppIconProps) {
+export function AppIcon({ name, title, variant = "badge" }: AppIconProps) {
   const { token } = theme.useToken();
   const accessibilityProps = title
     ? { "aria-label": title, role: "img" as const }

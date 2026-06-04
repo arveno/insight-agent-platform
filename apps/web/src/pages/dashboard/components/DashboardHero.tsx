@@ -1,6 +1,6 @@
 import { Flex, Space, Typography, theme } from "antd";
 
-import { AppActionGroup, AppCardGrid, AppIcon, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, AppCardGrid, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
@@ -50,10 +50,7 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
     >
       <Flex align="start" justify="space-between" wrap="wrap" gap={token.marginLG}>
         <Space direction="vertical" size={token.marginSM} style={{ maxWidth: 660 }}>
-          <Typography.Text type="secondary">
-            <AppIcon name="dashboard" variant="glyph" />
-            {t("dashboard.hero.eyebrow")}
-          </Typography.Text>
+          <Typography.Text type="secondary">{t("dashboard.hero.eyebrow")}</Typography.Text>
           <Space direction="vertical" size={token.marginXXS}>
             <Typography.Title level={2} style={{ margin: 0 }}>
               {t("dashboard.hero.title")}

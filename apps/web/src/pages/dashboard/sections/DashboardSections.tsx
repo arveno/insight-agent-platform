@@ -60,7 +60,6 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
         action={openMetricsAction}
         columns={2}
         eyebrow={t("dashboard.metrics.eyebrow")}
-        iconName="metrics"
         title={t("dashboard.metrics.title")}
       >
         {viewModel.businessMetricCards.map((metric) => (
@@ -72,7 +71,6 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
         action={openGovernanceAction}
         columns={2}
         eyebrow={t("dashboard.risk.eyebrow")}
-        iconName="risk"
         title={t("dashboard.risk.title")}
       >
         {riskItems.map(({ isRiskSummary, item }) => (
@@ -89,7 +87,6 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
         action={openReportsAction}
         columns={2}
         eyebrow={t("dashboard.reportEvidence.eyebrow")}
-        iconName="reports"
         title={t("dashboard.reportEvidence.title")}
       >
         <DashboardReportEvidencePanel
@@ -108,7 +105,6 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
         action={openPlatformOperationsAction}
         columns={1}
         eyebrow={t("dashboard.quality.eyebrow")}
-        iconName="operations"
         title={t("dashboard.quality.title")}
       >
         {viewModel.platformQualitySummary.map((item) => (

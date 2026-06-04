@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Space, Typography } from "antd";
+import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
 
 import { appShellStaticViewModel } from "../fixtures";
 import type { StaticPageViewModelBase, StaticRouteKey } from "../models";
@@ -22,15 +22,17 @@ import {
   workspaceStaticViewModel
 } from "../../features/static-view-models";
 import {
-  AppActionButton,
   AppIcon,
   AppShellLayout,
   HeaderBar,
+  type I18nMessageKey,
   LeftNav,
-  StatusTag,
+  localeOptions,
+  type AppLocale,
+  type ThemeMode,
   useI18n
 } from "../../shared";
-import { ActionBar, RightAssistSummaryPanel, toStatusTag, translateKey } from "../../pages/_shared";
+import { RightAssistSummaryPanel } from "../../pages/_shared";
 
 const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
   analysis: analysisStaticViewModel,
@@ -49,86 +51,116 @@ const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
   workspace: workspaceStaticViewModel
 };
 
+function routeTitleKey(activeRoute: StaticRouteKey): I18nMessageKey {
+  const routeItem = appShellStaticViewModel.navigationGroups
+    .flatMap((group) => group.items)
+    .find((item) => item.key === activeRoute);
+
+  return (routeItem?.labelKey ?? "appName") as I18nMessageKey;
+}
+
 export function AppShell() {
-  const { locale, t } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const { setThemeMode, themeMode } = useAppTheme();
+  const { token } = theme.useToken();
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeViewModel = pageViewModels[activeRoute];
-  const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
-  const nextThemeMode = themeMode === "dark" ? "light" : "dark";
-  const nextThemeModeLabel = t(nextThemeMode === "dark" ? "themeMode.dark" : "themeMode.light");
+  const activeRouteTitle = t(routeTitleKey(activeRoute));
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
   );
-  const headerRouteActions = appShellStaticViewModel.headerActions.filter(
-    (action) => action.key !== "theme"
-  );
-  const headerActions = (
-    <Space size={16} wrap>
-      <ActionBar actions={headerRouteActions} onNavigate={setActiveRoute} t={t} />
-      <AppActionButton
-        iconName="theme"
-        onClick={() => setThemeMode(nextThemeMode)}
-        variant="moduleEntry"
-      >
-        {nextThemeModeLabel}
-      </AppActionButton>
-      <Typography.Text type="secondary">
-        <AppIcon name="language" title={t("language")} />
-        {translateKey(t, appShellStaticViewModel.localePreference.labelKey)}: {locale}
-      </Typography.Text>
-      <Typography.Text type="secondary">
-        <AppIcon name="theme" title={t("theme")} />
-        {translateKey(t, appShellStaticViewModel.themePreference.labelKey)}: {themeModeLabel}
-      </Typography.Text>
+  const userPreferenceContent = (
+    <Space direction="vertical" size={12} style={{ minWidth: 240 }}>
+      <Space direction="vertical" size={4}>
+        <Typography.Text strong>{appShellStaticViewModel.currentUser.displayName}</Typography.Text>
+        <Typography.Text type="secondary">
+          {appShellStaticViewModel.currentUser.roleLabel}
+        </Typography.Text>
+      </Space>
+      <Divider style={{ margin: 0 }} />
+      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+        <Space direction="vertical" size={6} style={{ width: "100%" }}>
+          <Typography.Text type="secondary">{t("language")}</Typography.Text>
+          <Segmented
+            block
+            onChange={(value) => setLocale(value as AppLocale)}
+            options={localeOptions}
+            value={locale}
+          />
+        </Space>
+        <Space direction="vertical" size={6} style={{ width: "100%" }}>
+          <Typography.Text type="secondary">{t("theme")}</Typography.Text>
+          <Segmented
+            block
+            onChange={(value) => setThemeMode(value as ThemeMode)}
+            options={[
+              { label: t("themeMode.system"), value: "system" },
+              { label: t("themeMode.light"), value: "light" },
+              { label: t("themeMode.dark"), value: "dark" }
+            ]}
+            value={themeMode}
+          />
+        </Space>
+      </Space>
     </Space>
   );
 
   return (
     <AppShellLayout
-      header={
-        <HeaderBar
-          actions={headerActions}
-          context={
-            <Space wrap>
-              <Typography.Text>
-                <AppIcon name="workspace" title={t("nav.workspace")} />
-                {appShellStaticViewModel.workspace.name}
-              </Typography.Text>
-              <Typography.Text type="secondary">
-                <AppIcon name="user" title={t("userMenu")} />
-                {appShellStaticViewModel.currentUser.displayName}
-              </Typography.Text>
-            </Space>
-          }
-          status={
-            <StatusTag
-              {...toStatusTag(t, {
-                labelKey: appShellStaticViewModel.shellState.ready.titleKey,
-                status: appShellStaticViewModel.shellState.ready.kind
-              })!}
-            />
-          }
-          subtitle={translateKey(t, appShellStaticViewModel.environmentSummary.messageKey)}
-          title={t("app.productTitle")}
-        />
-      }
+      header={<HeaderBar title={activeRouteTitle} />}
       leftNav={
-        <Space direction="vertical" size={12} style={{ paddingBlock: 20, width: "100%" }}>
-          <Typography.Text strong style={{ paddingInline: 24 }}>
-            <AppIcon name="dashboard" title={t("appName")} />
-            {t("appName")}
-          </Typography.Text>
-          <LeftNav
-            groups={navigationGroups}
-            onSelect={(key) => setActiveRoute(key as StaticRouteKey)}
-            selectedKey={activeRoute}
-          />
-        </Space>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            minHeight: 0,
+            width: "100%"
+          }}
+        >
+          <div style={{ flex: "0 0 auto", paddingBlock: token.paddingLG, paddingInline: 24 }}>
+            <Typography.Text strong>
+              <AppIcon name="dashboard" title={t("appName")} variant="badge" />
+              {t("appName")}
+            </Typography.Text>
+          </div>
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
+            <LeftNav
+              groups={navigationGroups}
+              onSelect={(key) => setActiveRoute(key as StaticRouteKey)}
+              selectedKey={activeRoute}
+            />
+          </div>
+          <div
+            style={{
+              borderTop: `1px solid ${token.colorBorderSecondary}`,
+              flex: "0 0 auto",
+              padding: token.padding
+            }}
+          >
+            <Popover
+              content={userPreferenceContent}
+              placement="topLeft"
+              title={t("userMenu")}
+              trigger="click"
+            >
+              <Button block style={{ height: "auto", paddingBlock: token.paddingSM }}>
+                <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                  <Typography.Text strong>
+                    {appShellStaticViewModel.currentUser.displayName}
+                  </Typography.Text>
+                  <Typography.Text type="secondary">
+                    {appShellStaticViewModel.currentUser.roleLabel}
+                  </Typography.Text>
+                </Space>
+              </Button>
+            </Popover>
+          </div>
+        </div>
       }
       rightAssistPanel={
         <RightAssistSummaryPanel
