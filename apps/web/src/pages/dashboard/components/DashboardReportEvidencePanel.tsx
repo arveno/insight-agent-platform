@@ -1,6 +1,12 @@
-import { Col, Row, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
-import { AppActionGroup, AppContentCard, type AppActionGroupItem, useI18n } from "../../../shared";
+import {
+  AppActionGroup,
+  AppCardGrid,
+  AppContentCard,
+  type AppActionGroupItem,
+  useI18n
+} from "../../../shared";
 import { toEvidenceItem } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -19,9 +25,9 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
         onNavigate={onNavigate}
         title={t("dashboard.reportEvidence.title")}
       />
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col lg={12} xs={24}>
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <div style={{ marginTop: 16 }}>
+        <AppCardGrid columns={2}>
+          <Space direction="vertical" key="reports" size={16} style={{ width: "100%" }}>
             {viewModel.recentReports.map((report) => {
               const reportActions: AppActionGroupItem[] = [
                 {
@@ -68,9 +74,7 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
               );
             })}
           </Space>
-        </Col>
-        <Col lg={12} xs={24}>
-          <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <Space direction="vertical" key="evidence" size={16} style={{ width: "100%" }}>
             {evidenceItems.map((evidence) => {
               const evidenceActions: AppActionGroupItem[] = [
                 {
@@ -116,8 +120,8 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
               );
             })}
           </Space>
-        </Col>
-      </Row>
+        </AppCardGrid>
+      </div>
     </section>
   );
 }

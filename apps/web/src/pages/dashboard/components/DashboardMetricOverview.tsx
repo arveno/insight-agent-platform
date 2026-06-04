@@ -1,6 +1,12 @@
-import { Col, Row, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
-import { AppActionGroup, type AppActionGroupItem, MetricCard, useI18n } from "../../../shared";
+import {
+  AppActionGroup,
+  AppCardGrid,
+  type AppActionGroupItem,
+  MetricCard,
+  useI18n
+} from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -18,40 +24,41 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
         onNavigate={onNavigate}
         title={t("dashboard.metrics.title")}
       />
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        {viewModel.businessMetricCards.map((metric) => {
-          const risk = toRiskBadge(t, metric.risk);
-          const displayRisk = risk?.reason
-            ? { ...risk, reason: t("dashboard.metrics.riskDescription") }
-            : risk;
-          const description =
-            metric.risk.level === "low"
-              ? t("dashboard.metrics.defaultDescription")
-              : t("dashboard.metrics.riskDescription");
-          const metricActions: AppActionGroupItem[] = [
-            ...(metric.risk.level !== "low"
-              ? [
-                  {
-                    iconName: "analysis" as const,
-                    key: `${metric.key}-analyze`,
-                    label: t("dashboard.action.analyzeAnomaly"),
-                    onClick: () => onNavigate?.("analysis"),
-                    variant: "contextPrimary" as const
-                  }
-                ]
-              : []),
-            {
-              iconName: "data",
-              key: `${metric.key}-source`,
-              label: t("dashboard.action.viewDataKnowledge"),
-              onClick: () => onNavigate?.("data-knowledge"),
-              variant: "sourceLink"
-            }
-          ];
+      <div style={{ marginTop: 16 }}>
+        <AppCardGrid columns={2}>
+          {viewModel.businessMetricCards.map((metric) => {
+            const risk = toRiskBadge(t, metric.risk);
+            const displayRisk = risk?.reason
+              ? { ...risk, reason: t("dashboard.metrics.riskDescription") }
+              : risk;
+            const description =
+              metric.risk.level === "low"
+                ? t("dashboard.metrics.defaultDescription")
+                : t("dashboard.metrics.riskDescription");
+            const metricActions: AppActionGroupItem[] = [
+              ...(metric.risk.level !== "low"
+                ? [
+                    {
+                      iconName: "analysis" as const,
+                      key: `${metric.key}-analyze`,
+                      label: t("dashboard.action.analyzeAnomaly"),
+                      onClick: () => onNavigate?.("analysis"),
+                      variant: "contextPrimary" as const
+                    }
+                  ]
+                : []),
+              {
+                iconName: "data",
+                key: `${metric.key}-source`,
+                label: t("dashboard.action.viewDataKnowledge"),
+                onClick: () => onNavigate?.("data-knowledge"),
+                variant: "sourceLink"
+              }
+            ];
 
-          return (
-            <Col key={metric.key} lg={12} xs={24}>
+            return (
               <MetricCard
+                key={metric.key}
                 description={<Typography.Text type="secondary">{description}</Typography.Text>}
                 footerActions={<AppActionGroup actions={metricActions} />}
                 meta={
@@ -68,10 +75,10 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                 title={metric.label}
                 value={metric.valueText}
               />
-            </Col>
-          );
-        })}
-      </Row>
+            );
+          })}
+        </AppCardGrid>
+      </div>
     </section>
   );
 }

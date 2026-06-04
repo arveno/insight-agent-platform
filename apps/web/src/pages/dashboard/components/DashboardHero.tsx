@@ -1,6 +1,12 @@
-import { Col, Flex, Row, Space, Typography, theme } from "antd";
+import { Flex, Space, Typography, theme } from "antd";
 
-import { AppActionGroup, type AppActionGroupItem, RiskBadge, useI18n } from "../../../shared";
+import {
+  AppActionGroup,
+  AppCardGrid,
+  type AppActionGroupItem,
+  RiskBadge,
+  useI18n
+} from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 
@@ -68,36 +74,30 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
         </Space>
         <AppActionGroup actions={heroActions} />
       </Flex>
-      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-        <Col lg={6} md={12} xs={24}>
+      <div style={{ marginTop: 24 }}>
+        <AppCardGrid columns={4}>
           <HeroFact
             label={t("dashboard.hero.fact.metricLabel")}
             value={`${viewModel.businessMetricCards.length} ${t(
               "dashboard.hero.fact.metricCountSuffix"
             )}`}
           />
-        </Col>
-        <Col lg={6} md={12} xs={24}>
           <HeroFact
             label={t("dashboard.hero.fact.riskAnomalyLabel")}
             value={`${anomalyCount} ${t("dashboard.hero.fact.riskAnomalyCountSuffix")}`}
           />
-        </Col>
-        <Col lg={6} md={12} xs={24}>
           <HeroFact
             label={t("dashboard.hero.fact.evidenceLabel")}
             value={`${viewModel.evidenceEntrances.length} ${t(
               "dashboard.hero.fact.evidenceCountSuffix"
             )}`}
           />
-        </Col>
-        <Col lg={6} md={12} xs={24}>
           <HeroFact
             label={t("dashboard.hero.fact.rightContextLabel")}
             value={t("dashboard.hero.fact.rightContextValue")}
           />
-        </Col>
-      </Row>
+        </AppCardGrid>
+      </div>
     </section>
   );
 }
@@ -111,7 +111,8 @@ function HeroFact({ label, value }: { label: string; value: string }) {
         background: token.colorFillAlter,
         borderRadius: 6,
         minHeight: 84,
-        padding: 16
+        padding: 16,
+        width: "100%"
       }}
     >
       <Space direction="vertical" size={4}>

@@ -1,7 +1,8 @@
-import { Col, Row, Typography } from "antd";
+import { Typography } from "antd";
 
 import {
   AppActionGroup,
+  AppCardGrid,
   AppContentCard,
   type AppActionGroupItem,
   RiskBadge,
@@ -24,55 +25,56 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
         onNavigate={onNavigate}
         title={t("dashboard.quality.title")}
       />
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        {viewModel.platformQualitySummary.map((item) => {
-          const risk = toRiskBadge(t, item.risk);
-          const qualityActions: AppActionGroupItem[] = [
-            {
-              iconName: "operations",
-              key: `${item.key}-operations`,
-              label: t("dashboard.action.viewPlatformOperations"),
-              onClick: () => onNavigate?.("platform-operations"),
-              variant: "moduleEntry"
-            },
-            {
-              iconName: "operations",
-              key: `${item.key}-job-quality`,
-              label: t("dashboard.action.viewJobDataQuality"),
-              onClick: () => onNavigate?.("platform-operations"),
-              variant: "objectDetail"
-            },
-            {
-              iconName: "analysis",
-              key: `${item.key}-platform-anomaly`,
-              label: t("dashboard.action.viewPlatformAnomaly"),
-              onClick: () => onNavigate?.("analysis"),
-              variant: "contextPrimary"
-            },
-            {
-              iconName: "data",
-              key: `${item.key}-source`,
-              label: t("dashboard.action.viewDataKnowledge"),
-              onClick: () => onNavigate?.("data-knowledge"),
-              variant: "sourceLink"
-            }
-          ];
+      <div style={{ marginTop: 16 }}>
+        <AppCardGrid columns={1}>
+          {viewModel.platformQualitySummary.map((item) => {
+            const risk = toRiskBadge(t, item.risk);
+            const qualityActions: AppActionGroupItem[] = [
+              {
+                iconName: "operations",
+                key: `${item.key}-operations`,
+                label: t("dashboard.action.viewPlatformOperations"),
+                onClick: () => onNavigate?.("platform-operations"),
+                variant: "moduleEntry"
+              },
+              {
+                iconName: "operations",
+                key: `${item.key}-job-quality`,
+                label: t("dashboard.action.viewJobDataQuality"),
+                onClick: () => onNavigate?.("platform-operations"),
+                variant: "objectDetail"
+              },
+              {
+                iconName: "analysis",
+                key: `${item.key}-platform-anomaly`,
+                label: t("dashboard.action.viewPlatformAnomaly"),
+                onClick: () => onNavigate?.("analysis"),
+                variant: "contextPrimary"
+              },
+              {
+                iconName: "data",
+                key: `${item.key}-source`,
+                label: t("dashboard.action.viewDataKnowledge"),
+                onClick: () => onNavigate?.("data-knowledge"),
+                variant: "sourceLink"
+              }
+            ];
 
-          return (
-            <Col key={item.key} xs={24}>
+            return (
               <AppContentCard
                 description={item.description}
                 eyebrow={t("dashboard.quality.itemEyebrow")}
                 footerActions={<AppActionGroup actions={qualityActions} />}
+                key={item.key}
                 tagSlot={risk ? <RiskBadge {...risk} /> : null}
                 title={item.label}
               >
                 <Typography.Text>{item.value}</Typography.Text>
               </AppContentCard>
-            </Col>
-          );
-        })}
-      </Row>
+            );
+          })}
+        </AppCardGrid>
+      </div>
     </section>
   );
 }

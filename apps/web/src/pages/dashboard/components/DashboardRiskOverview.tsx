@@ -1,7 +1,8 @@
-import { Col, Row, Typography } from "antd";
+import { Typography } from "antd";
 
 import {
   AppActionGroup,
+  AppCardGrid,
   AppContentCard,
   type AppActionGroupItem,
   RiskBadge,
@@ -25,55 +26,58 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
         onNavigate={onNavigate}
         title={t("dashboard.risk.title")}
       />
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        {riskItems.map((item) => {
-          const risk = toRiskBadge(t, item.risk);
-          const isRiskSummary = viewModel.riskSummary.some((riskItem) => riskItem.key === item.key);
-          const eyebrow = isRiskSummary
-            ? t("dashboard.risk.summaryEyebrow")
-            : t("dashboard.risk.anomalyEyebrow");
-          const description = isRiskSummary
-            ? item.description
-            : t("dashboard.risk.anomalyDescription");
-          const riskActions: AppActionGroupItem[] = [
-            {
-              iconName: "analysis",
-              key: `${item.key}-context-analysis`,
-              label: t("dashboard.action.analyzeWithContext"),
-              onClick: () => onNavigate?.("analysis"),
-              variant: "contextPrimary"
-            },
-            {
-              iconName: "analysis",
-              key: `${item.key}-detail`,
-              label: t("dashboard.action.viewAnomaly"),
-              onClick: () => onNavigate?.("analysis"),
-              variant: "objectDetail"
-            },
-            {
-              iconName: "observability",
-              key: `${item.key}-trace`,
-              label: t("dashboard.action.viewTrace"),
-              onClick: () => onNavigate?.("observability"),
-              variant: "sourceLink"
-            }
-          ];
+      <div style={{ marginTop: 16 }}>
+        <AppCardGrid columns={2}>
+          {riskItems.map((item) => {
+            const risk = toRiskBadge(t, item.risk);
+            const isRiskSummary = viewModel.riskSummary.some(
+              (riskItem) => riskItem.key === item.key
+            );
+            const eyebrow = isRiskSummary
+              ? t("dashboard.risk.summaryEyebrow")
+              : t("dashboard.risk.anomalyEyebrow");
+            const description = isRiskSummary
+              ? item.description
+              : t("dashboard.risk.anomalyDescription");
+            const riskActions: AppActionGroupItem[] = [
+              {
+                iconName: "analysis",
+                key: `${item.key}-context-analysis`,
+                label: t("dashboard.action.analyzeWithContext"),
+                onClick: () => onNavigate?.("analysis"),
+                variant: "contextPrimary"
+              },
+              {
+                iconName: "analysis",
+                key: `${item.key}-detail`,
+                label: t("dashboard.action.viewAnomaly"),
+                onClick: () => onNavigate?.("analysis"),
+                variant: "objectDetail"
+              },
+              {
+                iconName: "observability",
+                key: `${item.key}-trace`,
+                label: t("dashboard.action.viewTrace"),
+                onClick: () => onNavigate?.("observability"),
+                variant: "sourceLink"
+              }
+            ];
 
-          return (
-            <Col key={item.key} lg={12} xs={24}>
+            return (
               <AppContentCard
                 description={description}
                 eyebrow={eyebrow}
                 footerActions={<AppActionGroup actions={riskActions} />}
+                key={item.key}
                 tagSlot={risk ? <RiskBadge {...risk} /> : null}
                 title={item.label}
               >
-                <Typography.Text>{item.value}</Typography.Text>
+                {isRiskSummary ? null : <Typography.Text>{item.value}</Typography.Text>}
               </AppContentCard>
-            </Col>
-          );
-        })}
-      </Row>
+            );
+          })}
+        </AppCardGrid>
+      </div>
     </section>
   );
 }

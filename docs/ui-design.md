@@ -179,6 +179,45 @@ Card
 - RightAssistPanel 动作在分组内左对齐横向排列。
 - 证据、来源、运行轨迹等溯源动作统一使用 `sourceLink`，并在 `AppActionGroup` 排序中置后。
 
+## Section Card Grid Rules
+
+Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#103、#104 后续页面必须复用同一套列数和对齐逻辑。
+
+### AppCardGrid 职责
+
+- `AppCardGrid` 封装 Ant Design `Row` / `Col` 或等效布局。
+- 页面通过 `columns` 声明布局语义，不长期手写 `Row` / `Col` 摆放卡片。
+- `AppCardGrid` 只负责列数、gutter、左对齐和响应式断点。
+- `AppCardGrid` 不读取 ViewModel，不绑定路由，不写业务文案，不做视觉风格化，不新增 token，不引入新依赖。
+
+### Columns 规则
+
+| columns | 桌面 | 中屏 | 小屏 | 用途 |
+| --- | --- | --- | --- | --- |
+| `1` | 1 列 | 1 列 | 1 列 | 平台质量、整行摘要、长内容 |
+| `2` | 2 列 | 1-2 列 | 1 列 | 指标、风险、报告 / 证据 |
+| `3` | 3 列 | 2 列 | 1 列 | 后续状态卡、能力入口 |
+| `4` | 4 列 | 2 列 | 1 列 | Hero facts / 小摘要卡 |
+
+### 对齐规则
+
+- Section Header 右侧只放模块级入口。
+- Section 内容卡片默认左对齐，按数据顺序排列。
+- 不允许卡片因为数量不足而右对齐或居中。
+- 单对象摘要使用 `columns={1}` 占满整行。
+- 列表型 section 即使只有一个数据项，也默认从左开始排列。
+- 卡片内部按钮位置仍由 `AppContentCard` / `MetricCard` 的 `footerActions` 控制。
+
+### Dashboard 当前映射
+
+- Hero facts：`columns={4}`。
+- 核心指标：`columns={2}`。
+- 风险异常：`columns={2}`。
+- 报告与证据：`columns={2}`。
+- 平台质量：`columns={1}`。
+
+后续 #103 / #104 页面必须复用 `AppCardGrid`，不得页面私自长期手写 `Row` / `Col`。特殊布局必须在 Issue 中说明。
+
 后续 #103 / #104 页面必须按本节复用公共组件，不得页面私自摆放按钮、Tag 或卡片结构。
 
 ## 5. Web / Mobile Browser 适配规则
