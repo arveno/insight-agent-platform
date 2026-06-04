@@ -1,9 +1,9 @@
-import { Space } from "antd";
+import { Space, Typography } from "antd";
 
 import type { StaticRightAssistSummaryViewModel } from "../../../app/models";
-import { RightAssistPanel, StatusTag, useI18n } from "../../../shared";
+import { RightAssistPanel, RiskBadge, StatusTag, useI18n } from "../../../shared";
 import { ActionBar } from "../actions";
-import { toStatusTag } from "../adapters";
+import { toRiskBadge, toStatusTag } from "../adapters";
 import { translateKey } from "../text";
 import type { NavigateToRoute } from "../types";
 import { EvidencePanel } from "./EvidencePanel";
@@ -16,6 +16,8 @@ export type RightAssistSummaryPanelProps = {
 
 export function RightAssistSummaryPanel({ onNavigate, summary }: RightAssistSummaryPanelProps) {
   const { t } = useI18n();
+  const statusTag = summary.status.status === "ready" ? undefined : toStatusTag(t, summary.status);
+  const riskBadge = toRiskBadge(t, summary.risk);
 
   return (
     <RightAssistPanel
@@ -23,10 +25,24 @@ export function RightAssistSummaryPanel({ onNavigate, summary }: RightAssistSumm
       title={translateKey(t, summary.titleKey)}
     >
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
-        <StatusTag {...toStatusTag(t, summary.status)!} />
-        <ActionBar actions={summary.links} onNavigate={onNavigate} t={t} />
-        <EvidencePanel items={summary.evidence} />
-        {summary.traces ? <TracePanel items={summary.traces} /> : null}
+        <Space wrap>
+          {statusTag ? <StatusTag {...statusTag} /> : null}
+          {riskBadge ? <RiskBadge {...riskBadge} /> : null}
+        </Space>
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Text strong>上下文动作</Typography.Text>
+          <ActionBar actions={summary.links} onNavigate={onNavigate} t={t} />
+        </Space>
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Text strong>相关证据</Typography.Text>
+          <EvidencePanel items={summary.evidence} />
+        </Space>
+        {summary.traces ? (
+          <Space direction="vertical" size={8} style={{ width: "100%" }}>
+            <Typography.Text strong>Trace 上下文</Typography.Text>
+            <TracePanel items={summary.traces} />
+          </Space>
+        ) : null}
       </Space>
     </RightAssistPanel>
   );
