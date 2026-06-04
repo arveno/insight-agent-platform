@@ -27,19 +27,25 @@ export function AppShellLayout({
   rightAssistPanel
 }: AppShellLayoutProps) {
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ height: "100vh", minHeight: 0, overflow: "hidden" }}>
       {leftNav ? (
-        <Sider width={shellThemeTokens.siderWidth} theme="light">
+        <Sider
+          style={{ height: "100%", overflowX: "hidden", overflowY: "auto" }}
+          width={shellThemeTokens.siderWidth}
+          theme="light"
+        >
           {leftNav}
         </Sider>
       ) : null}
-      <Layout>
+      <Layout style={{ height: "100%", minHeight: 0, minWidth: 0, overflow: "hidden" }}>
         {header ? (
           <Header
             style={{
               background: shellThemeTokens.colorBgContainer,
               borderBottom: `1px solid ${shellThemeTokens.colorBorder}`,
+              flex: `0 0 ${shellThemeTokens.headerHeight}px`,
               height: shellThemeTokens.headerHeight,
+              lineHeight: `${shellThemeTokens.headerHeight}px`,
               padding: 0
             }}
           >
@@ -47,8 +53,26 @@ export function AppShellLayout({
           </Header>
         ) : null}
         {mobileTopBar}
-        <Layout style={{ flexDirection: "row", minWidth: 0 }}>
-          <Content style={{ minWidth: 0 }}>{children}</Content>
+        <Layout
+          style={{
+            flex: "1 1 auto",
+            flexDirection: "row",
+            minHeight: 0,
+            minWidth: 0,
+            overflow: "hidden"
+          }}
+        >
+          <Content
+            style={{
+              background: shellThemeTokens.colorBgLayout,
+              minHeight: 0,
+              minWidth: 0,
+              overflowX: "hidden",
+              overflowY: "auto"
+            }}
+          >
+            {children}
+          </Content>
           {rightAssistPanel}
         </Layout>
       </Layout>
