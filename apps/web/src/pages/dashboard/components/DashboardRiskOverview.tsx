@@ -1,6 +1,6 @@
-import { Button, Card, Col, Row, Space, Typography } from "antd";
+import { Card, Col, Row, Space, Typography } from "antd";
 
-import { AppIcon, RiskBadge, useI18n } from "../../../shared";
+import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -41,16 +41,25 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
                   </Space>
                   <Typography.Text type="secondary">{description}</Typography.Text>
                   <Space wrap>
-                    <Button onClick={() => onNavigate?.("analysis")} type="primary">
-                      <AppIcon name="analysis" />
+                    <AppActionButton
+                      iconName="analysis"
+                      onClick={() => onNavigate?.("analysis")}
+                      variant="contextPrimary"
+                    >
                       {t("dashboard.action.analyzeWithContext")}
-                    </Button>
-                    <Button onClick={() => onNavigate?.("analysis")}>
+                    </AppActionButton>
+                    <AppActionButton
+                      onClick={() => onNavigate?.("analysis")}
+                      variant="objectDetail"
+                    >
                       {t("dashboard.action.viewAnomaly")}
-                    </Button>
-                    <Button onClick={() => onNavigate?.("observability")}>
+                    </AppActionButton>
+                    <AppActionButton
+                      onClick={() => onNavigate?.("observability")}
+                      variant="sourceLink"
+                    >
                       {t("dashboard.action.viewTrace")}
-                    </Button>
+                    </AppActionButton>
                   </Space>
                 </Space>
               </Card>

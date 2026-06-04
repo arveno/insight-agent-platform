@@ -1,6 +1,6 @@
-import { Button, Col, Flex, Row, Space, Typography, theme } from "antd";
+import { Col, Flex, Row, Space, Typography, theme } from "antd";
 
-import { AppIcon, RiskBadge, useI18n } from "../../../shared";
+import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 
@@ -44,18 +44,27 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
           </Space>
         </Space>
         <Space wrap>
-          <Button onClick={() => onNavigate?.("analysis")} type="primary">
-            <AppIcon name="analysis" />
+          <AppActionButton
+            iconName="analysis"
+            onClick={() => onNavigate?.("analysis")}
+            variant="globalPrimary"
+          >
             {t("action.dashboardPrimaryAnalysis.label")}
-          </Button>
-          <Button onClick={() => onNavigate?.("metrics")}>
-            <AppIcon name="metrics" />
+          </AppActionButton>
+          <AppActionButton
+            iconName="metrics"
+            onClick={() => onNavigate?.("metrics")}
+            variant="moduleEntry"
+          >
             {t("dashboard.action.viewMetrics")}
-          </Button>
-          <Button onClick={() => onNavigate?.("reports")}>
-            <AppIcon name="reports" />
+          </AppActionButton>
+          <AppActionButton
+            iconName="reports"
+            onClick={() => onNavigate?.("reports")}
+            variant="moduleEntry"
+          >
             {t("dashboard.action.viewReports")}
-          </Button>
+          </AppActionButton>
         </Space>
       </Flex>
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>

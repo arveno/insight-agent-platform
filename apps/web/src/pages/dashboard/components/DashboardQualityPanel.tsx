@@ -1,6 +1,6 @@
-import { Button, Card, Col, Row, Space, Typography } from "antd";
+import { Card, Col, Row, Space, Typography } from "antd";
 
-import { AppIcon, RiskBadge, useI18n } from "../../../shared";
+import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -38,19 +38,31 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
                   </Space>
                   <Typography.Text type="secondary">{item.description}</Typography.Text>
                   <Space wrap>
-                    <Button onClick={() => onNavigate?.("platform-operations")} type="primary">
-                      <AppIcon name="operations" />
+                    <AppActionButton
+                      iconName="operations"
+                      onClick={() => onNavigate?.("platform-operations")}
+                      variant="moduleEntry"
+                    >
                       {t("dashboard.action.viewPlatformOperations")}
-                    </Button>
-                    <Button onClick={() => onNavigate?.("platform-operations")}>
+                    </AppActionButton>
+                    <AppActionButton
+                      onClick={() => onNavigate?.("platform-operations")}
+                      variant="objectDetail"
+                    >
                       {t("dashboard.action.viewJobDataQuality")}
-                    </Button>
-                    <Button onClick={() => onNavigate?.("analysis")}>
+                    </AppActionButton>
+                    <AppActionButton
+                      onClick={() => onNavigate?.("analysis")}
+                      variant="contextPrimary"
+                    >
                       {t("dashboard.action.viewPlatformAnomaly")}
-                    </Button>
-                    <Button onClick={() => onNavigate?.("data-knowledge")}>
+                    </AppActionButton>
+                    <AppActionButton
+                      onClick={() => onNavigate?.("data-knowledge")}
+                      variant="sourceLink"
+                    >
                       {t("dashboard.action.viewDataKnowledge")}
-                    </Button>
+                    </AppActionButton>
                   </Space>
                 </Space>
               </Card>

@@ -1,6 +1,6 @@
-import { Button, Card, Col, Divider, Row, Space, Typography } from "antd";
+import { Card, Col, Divider, Row, Space, Typography } from "antd";
 
-import { AppIcon, useI18n } from "../../../shared";
+import { AppActionButton, useI18n } from "../../../shared";
 import { toEvidenceItem } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -48,16 +48,25 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                       {t("dashboard.reportEvidence.suggestionSummary")}
                     </Typography.Text>
                     <Space wrap>
-                      <Button onClick={() => onNavigate?.("reports")} type="primary">
-                        <AppIcon name="reports" />
+                      <AppActionButton
+                        iconName="reports"
+                        onClick={() => onNavigate?.("reports")}
+                        variant="moduleEntry"
+                      >
                         {t("dashboard.action.viewReports")}
-                      </Button>
-                      <Button onClick={() => onNavigate?.("analysis")}>
+                      </AppActionButton>
+                      <AppActionButton
+                        onClick={() => onNavigate?.("analysis")}
+                        variant="objectDetail"
+                      >
                         {t("dashboard.action.viewSuggestions")}
-                      </Button>
-                      <Button onClick={() => onNavigate?.("analysis")}>
+                      </AppActionButton>
+                      <AppActionButton
+                        onClick={() => onNavigate?.("analysis")}
+                        variant="contextPrimary"
+                      >
                         {t("dashboard.action.analyzeWithContext")}
-                      </Button>
+                      </AppActionButton>
                     </Space>
                   </Space>
                 </div>
@@ -91,15 +100,21 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                     </Space>
                     <Typography.Text type="secondary">{evidence.summary}</Typography.Text>
                     <Space wrap>
-                      <Button onClick={() => onNavigate?.("reports")} size="small">
+                      <AppActionButton onClick={() => onNavigate?.("reports")} variant="sourceLink">
                         {t("dashboard.action.viewEvidence")}
-                      </Button>
-                      <Button onClick={() => onNavigate?.("data-knowledge")} size="small">
+                      </AppActionButton>
+                      <AppActionButton
+                        onClick={() => onNavigate?.("data-knowledge")}
+                        variant="sourceLink"
+                      >
                         {t("dashboard.action.viewDataKnowledge")}
-                      </Button>
-                      <Button onClick={() => onNavigate?.("observability")} size="small">
+                      </AppActionButton>
+                      <AppActionButton
+                        onClick={() => onNavigate?.("observability")}
+                        variant="sourceLink"
+                      >
                         {t("dashboard.action.viewTrace")}
-                      </Button>
+                      </AppActionButton>
                     </Space>
                   </Space>
                 </div>

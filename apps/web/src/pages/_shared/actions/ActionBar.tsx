@@ -1,6 +1,7 @@
-import { Button, Space } from "antd";
+import { Space } from "antd";
 
 import type { StaticActionViewModel } from "../../../app/models";
+import { AppActionButton, type AppActionButtonVariant } from "../../../shared";
 import { actionDescription } from "../adapters";
 import { translateKey, type Translate } from "../text";
 import type { NavigateToRoute } from "../types";
@@ -11,6 +12,18 @@ export type ActionBarProps = {
   t: Translate;
 };
 
+function actionButtonVariant(action: StaticActionViewModel): AppActionButtonVariant {
+  if (action.intent === "primary") {
+    return "contextPrimary";
+  }
+
+  if (action.intent === "disabled" || action.intent === "readonly") {
+    return "objectDetail";
+  }
+
+  return "moduleEntry";
+}
+
 export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
   if (actions.length === 0) {
     return null;
@@ -19,7 +32,7 @@ export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
   return (
     <Space wrap>
       {actions.map((action) => (
-        <Button
+        <AppActionButton
           disabled={action.disabled}
           key={action.key}
           onClick={() => {
@@ -28,10 +41,10 @@ export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
             }
           }}
           title={actionDescription(t, action)}
-          type={action.intent === "primary" ? "primary" : "default"}
+          variant={actionButtonVariant(action)}
         >
           {translateKey(t, action.labelKey)}
-        </Button>
+        </AppActionButton>
       ))}
     </Space>
   );

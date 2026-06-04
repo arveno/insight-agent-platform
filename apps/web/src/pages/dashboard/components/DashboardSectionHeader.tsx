@@ -1,7 +1,7 @@
-import { Button, Flex, Space, Typography } from "antd";
+import { Flex, Space, Typography } from "antd";
 
 import type { StaticRouteKey } from "../../../app/models";
-import { AppIcon, type IconName } from "../../../shared";
+import { AppActionButton, type IconName } from "../../../shared";
 import type { NavigateToRoute } from "../../_shared";
 
 export type DashboardSectionHeaderProps = {
@@ -30,10 +30,13 @@ export function DashboardSectionHeader({
         </Typography.Title>
       </Space>
       {actionLabel && actionRoute ? (
-        <Button onClick={() => onNavigate?.(actionRoute)}>
-          {actionIcon ? <AppIcon name={actionIcon} /> : null}
+        <AppActionButton
+          iconName={actionIcon}
+          onClick={() => onNavigate?.(actionRoute)}
+          variant="moduleEntry"
+        >
           {actionLabel}
-        </Button>
+        </AppActionButton>
       ) : null}
     </Flex>
   );

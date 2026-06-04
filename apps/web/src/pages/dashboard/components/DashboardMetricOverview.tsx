@@ -1,6 +1,6 @@
-import { Button, Col, Row, Space, Typography } from "antd";
+import { Col, Row, Space, Typography } from "antd";
 
-import { AppIcon, MetricCard, useI18n } from "../../../shared";
+import { AppActionButton, MetricCard, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -35,13 +35,16 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                 actions={
                   <Space wrap>
                     {metric.risk.level !== "low" ? (
-                      <Button onClick={() => onNavigate?.("analysis")} size="small" type="primary">
+                      <AppActionButton
+                        onClick={() => onNavigate?.("analysis")}
+                        variant="contextPrimary"
+                      >
                         {t("dashboard.action.analyzeAnomaly")}
-                      </Button>
+                      </AppActionButton>
                     ) : null}
-                    <Button onClick={() => onNavigate?.("metrics")} size="small">
+                    <AppActionButton onClick={() => onNavigate?.("metrics")} variant="moduleEntry">
                       {t("dashboard.action.viewMetrics")}
-                    </Button>
+                    </AppActionButton>
                   </Space>
                 }
                 description={<Typography.Text type="secondary">{description}</Typography.Text>}
@@ -53,10 +56,13 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                         {metric.evidenceCount} {t("dashboard.common.relatedEvidenceCountSuffix")}
                       </Typography.Text>
                     ) : null}
-                    <Button onClick={() => onNavigate?.("data-knowledge")} size="small" type="link">
-                      <AppIcon name="data" />
+                    <AppActionButton
+                      iconName="data"
+                      onClick={() => onNavigate?.("data-knowledge")}
+                      variant="sourceLink"
+                    >
                       {t("dashboard.action.viewDataKnowledge")}
-                    </Button>
+                    </AppActionButton>
                   </Space>
                 }
                 risk={displayRisk}
