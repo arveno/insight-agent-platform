@@ -32,6 +32,7 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
                         {t("dashboard.quality.itemEyebrow")}
                       </Typography.Text>
                       <Typography.Text strong>{item.label}</Typography.Text>
+                      <Typography.Text type="secondary">{item.value}</Typography.Text>
                     </Space>
                     {risk ? <RiskBadge {...risk} /> : null}
                   </Space>

@@ -13,7 +13,7 @@ export function EvidencePanel({ items }: EvidencePanelProps) {
   return (
     <SourceEvidenceList
       empty={{ title: translateKey(t, "state.empty.default.title") }}
-      items={items.map((item) => toEvidenceItem(item))}
+      items={items.map((item) => toEvidenceItem(t, item))}
     />
   );
 }

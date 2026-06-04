@@ -1,11 +1,13 @@
 import { Button, Card, Col, Divider, Row, Space, Typography } from "antd";
 
 import { AppIcon, useI18n } from "../../../shared";
+import { toEvidenceItem } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
 
 export function DashboardReportEvidencePanel({ onNavigate, viewModel }: DashboardComponentProps) {
   const { t } = useI18n();
+  const evidenceItems = viewModel.evidenceEntrances.map((item) => toEvidenceItem(t, item));
 
   return (
     <section>
@@ -42,6 +44,9 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                       {t("dashboard.common.updatedAtPrefix")}
                       {report.updatedAt}
                     </Typography.Text>
+                    <Typography.Text type="secondary">
+                      {t("dashboard.reportEvidence.suggestionSummary")}
+                    </Typography.Text>
                     <Space wrap>
                       <Button onClick={() => onNavigate?.("reports")} type="primary">
                         <AppIcon name="reports" />
@@ -71,7 +76,7 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                   {t("dashboard.reportEvidence.evidenceTitle")}
                 </Typography.Text>
               </Space>
-              {viewModel.evidenceEntrances.map((evidence, index) => (
+              {evidenceItems.map((evidence, index) => (
                 <div key={evidence.key}>
                   {index > 0 ? <Divider style={{ margin: "4px 0 12px" }} /> : null}
                   <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -79,7 +84,8 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                       <Space direction="vertical" size={2}>
                         <Typography.Text strong>{evidence.title}</Typography.Text>
                         <Typography.Text type="secondary">
-                          {evidence.sourceType} · {evidence.confidenceText}
+                          {evidence.sourceTypeLabel}
+                          {evidence.confidenceText ? ` · ${evidence.confidenceText}` : null}
                         </Typography.Text>
                       </Space>
                     </Space>

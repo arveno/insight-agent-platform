@@ -22,6 +22,11 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         {riskItems.map((item) => {
           const risk = toRiskBadge(t, item.risk);
+          const isRiskSummary = viewModel.riskSummary.some((riskItem) => riskItem.key === item.key);
+          const eyebrow = isRiskSummary ? t("dashboard.risk.summaryEyebrow") : item.value;
+          const description = isRiskSummary
+            ? item.description
+            : t("dashboard.risk.anomalyDescription");
 
           return (
             <Col key={item.key} lg={12} xs={24}>
@@ -29,12 +34,12 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
                 <Space direction="vertical" size={12} style={{ width: "100%" }}>
                   <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
                     <Space direction="vertical" size={4}>
-                      <Typography.Text type="secondary">{item.value}</Typography.Text>
+                      <Typography.Text type="secondary">{eyebrow}</Typography.Text>
                       <Typography.Text strong>{item.label}</Typography.Text>
                     </Space>
                     {risk ? <RiskBadge {...risk} /> : null}
                   </Space>
-                  <Typography.Text type="secondary">{item.description}</Typography.Text>
+                  <Typography.Text type="secondary">{description}</Typography.Text>
                   <Space wrap>
                     <Button onClick={() => onNavigate?.("analysis")} type="primary">
                       <AppIcon name="analysis" />
