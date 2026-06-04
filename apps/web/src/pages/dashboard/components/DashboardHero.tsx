@@ -27,48 +27,65 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
     >
       <Flex align="start" justify="space-between" wrap="wrap" gap={24}>
         <Space direction="vertical" size={12} style={{ maxWidth: 660 }}>
-          <Typography.Text type="secondary">Business Dashboard</Typography.Text>
+          <Typography.Text type="secondary">{t("dashboard.hero.eyebrow")}</Typography.Text>
           <Space direction="vertical" size={6}>
             <Typography.Title level={2} style={{ margin: 0 }}>
-              经营状态总览
+              {t("dashboard.hero.title")}
             </Typography.Title>
-            <Typography.Text type="secondary">
-              将核心指标、风险异常、报告证据和平台质量组织为可追问的业务工作台。
-            </Typography.Text>
+            <Typography.Text type="secondary">{t("dashboard.hero.description")}</Typography.Text>
           </Space>
           <Space wrap>
             {riskBadge ? <RiskBadge {...riskBadge} /> : null}
             <Typography.Text strong>{summary?.value}</Typography.Text>
-            <Typography.Text type="secondary">更新时间：{viewModel.lastUpdatedAt}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t("dashboard.common.updatedAtPrefix")}
+              {viewModel.lastUpdatedAt}
+            </Typography.Text>
           </Space>
         </Space>
         <Space wrap>
           <Button onClick={() => onNavigate?.("analysis")} type="primary">
             <AppIcon name="analysis" />
-            发起分析
+            {t("action.dashboardPrimaryAnalysis.label")}
           </Button>
           <Button onClick={() => onNavigate?.("metrics")}>
             <AppIcon name="metrics" />
-            查看指标
+            {t("dashboard.action.viewMetrics")}
           </Button>
           <Button onClick={() => onNavigate?.("reports")}>
             <AppIcon name="reports" />
-            查看报告
+            {t("dashboard.action.viewReports")}
           </Button>
         </Space>
       </Flex>
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col lg={6} md={12} xs={24}>
-          <HeroFact label="核心指标" value={`${viewModel.businessMetricCards.length} 项`} />
+          <HeroFact
+            label={t("dashboard.hero.fact.metricLabel")}
+            value={`${viewModel.businessMetricCards.length} ${t(
+              "dashboard.hero.fact.metricCountSuffix"
+            )}`}
+          />
         </Col>
         <Col lg={6} md={12} xs={24}>
-          <HeroFact label="风险异常" value={`${anomalyCount} 项关注`} />
+          <HeroFact
+            label={t("dashboard.hero.fact.riskAnomalyLabel")}
+            value={`${anomalyCount} ${t("dashboard.hero.fact.riskAnomalyCountSuffix")}`}
+          />
         </Col>
         <Col lg={6} md={12} xs={24}>
-          <HeroFact label="相关证据" value={`${viewModel.evidenceEntrances.length} 条`} />
+          <HeroFact
+            label={t("dashboard.hero.fact.evidenceLabel")}
+            value={`${viewModel.evidenceEntrances.length} ${t(
+              "dashboard.hero.fact.evidenceCountSuffix"
+            )}`}
+          />
         </Col>
         <Col lg={6} md={12} xs={24}>
-          <HeroFact label="右侧上下文" value="证据 / Trace / 建议动作" />
+          <HeroFact
+            label={t("dashboard.hero.fact.rightContextLabel")}
+            value={t("dashboard.hero.fact.rightContextValue")}
+          />
         </Col>
       </Row>
     </section>

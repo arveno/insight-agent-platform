@@ -13,11 +13,11 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
     <section>
       <DashboardSectionHeader
         actionIcon="governance"
-        actionLabel="查看治理风险"
+        actionLabel={t("dashboard.action.viewGovernanceRisk")}
         actionRoute="governance"
-        eyebrow="Risk & Anomaly"
+        eyebrow={t("dashboard.risk.eyebrow")}
         onNavigate={onNavigate}
-        title="风险与异常摘要"
+        title={t("dashboard.risk.title")}
       />
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         {riskItems.map((item) => {
@@ -38,10 +38,14 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
                   <Space wrap>
                     <Button onClick={() => onNavigate?.("analysis")} type="primary">
                       <AppIcon name="analysis" />
-                      带上下文打开分析
+                      {t("dashboard.action.analyzeWithContext")}
                     </Button>
-                    <Button onClick={() => onNavigate?.("analysis")}>查看异常详情</Button>
-                    <Button onClick={() => onNavigate?.("observability")}>查看 Trace</Button>
+                    <Button onClick={() => onNavigate?.("analysis")}>
+                      {t("dashboard.action.viewAnomaly")}
+                    </Button>
+                    <Button onClick={() => onNavigate?.("observability")}>
+                      {t("dashboard.action.viewTrace")}
+                    </Button>
                   </Space>
                 </Space>
               </Card>

@@ -30,16 +30,16 @@ export function RightAssistSummaryPanel({ onNavigate, summary }: RightAssistSumm
           {riskBadge ? <RiskBadge {...riskBadge} /> : null}
         </Space>
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>上下文动作</Typography.Text>
+          <Typography.Text strong>{t("rightAssist.section.contextActions.title")}</Typography.Text>
           <ActionBar actions={summary.links} onNavigate={onNavigate} t={t} />
         </Space>
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>相关证据</Typography.Text>
+          <Typography.Text strong>{t("rightAssist.section.evidence.title")}</Typography.Text>
           <EvidencePanel items={summary.evidence} />
         </Space>
         {summary.traces ? (
           <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Typography.Text strong>Trace 上下文</Typography.Text>
+            <Typography.Text strong>{t("rightAssist.section.trace.title")}</Typography.Text>
             <TracePanel items={summary.traces} />
           </Space>
         ) : null}

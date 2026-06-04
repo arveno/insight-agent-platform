@@ -12,11 +12,11 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
     <section>
       <DashboardSectionHeader
         actionIcon="operations"
-        actionLabel="查看 Platform Operations"
+        actionLabel={t("dashboard.action.viewPlatformOperations")}
         actionRoute="platform-operations"
-        eyebrow="Quality & Operations"
+        eyebrow={t("dashboard.quality.eyebrow")}
         onNavigate={onNavigate}
-        title="平台质量 / 运维入口"
+        title={t("dashboard.quality.title")}
       />
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         {viewModel.platformQualitySummary.map((item) => {
@@ -28,7 +28,9 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
                 <Space direction="vertical" size={12} style={{ width: "100%" }}>
                   <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
                     <Space direction="vertical" size={4}>
-                      <Typography.Text type="secondary">Data quality / Job</Typography.Text>
+                      <Typography.Text type="secondary">
+                        {t("dashboard.quality.itemEyebrow")}
+                      </Typography.Text>
                       <Typography.Text strong>{item.label}</Typography.Text>
                     </Space>
                     {risk ? <RiskBadge {...risk} /> : null}
@@ -37,13 +39,17 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
                   <Space wrap>
                     <Button onClick={() => onNavigate?.("platform-operations")} type="primary">
                       <AppIcon name="operations" />
-                      查看 Platform Operations
+                      {t("dashboard.action.viewPlatformOperations")}
                     </Button>
                     <Button onClick={() => onNavigate?.("platform-operations")}>
-                      查看 Job / Data Quality
+                      {t("dashboard.action.viewJobDataQuality")}
                     </Button>
-                    <Button onClick={() => onNavigate?.("analysis")}>平台质量异常上下文</Button>
-                    <Button onClick={() => onNavigate?.("data-knowledge")}>查看 Data & Knowledge</Button>
+                    <Button onClick={() => onNavigate?.("analysis")}>
+                      {t("dashboard.action.viewPlatformAnomaly")}
+                    </Button>
+                    <Button onClick={() => onNavigate?.("data-knowledge")}>
+                      {t("dashboard.action.viewDataKnowledge")}
+                    </Button>
                   </Space>
                 </Space>
               </Card>
