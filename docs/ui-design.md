@@ -107,6 +107,185 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
 
+## Page Composition Rules
+
+Page Composition 是 Web 页面默认组合层级，Dashboard、#103、#104 后续页面必须优先复用。
+
+### 默认页面层级
+
+```text
+AppShell
+└─ Page
+   └─ AppSectionStack
+      └─ AppSection
+         └─ AppCardGrid
+            └─ AppBaseCard / MetricCard / 基于 AppBaseCard 的页面私有业务卡片
+               └─ AppActionGroup
+                  └─ AppActionButton
+```
+
+### AppSectionStack
+
+- 统一页面内部 section 垂直排列。
+- 统一页面主内容 padding / section spacing。
+- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+
+### AppSection
+
+- 统一 Section eyebrow / title。
+- 统一 Section Header 右侧模块入口。
+- 统一 Section content 的 `AppCardGrid`。
+- 接收 `columns` 和 section action。
+- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+
+### AppCardGrid / Card / Tag / Action
+
+- `AppCardGrid` 只负责 section 内卡片列数、gutter、左对齐和响应式断点。
+- `AppBaseCard` 是唯一内容卡片外壳底座，`MetricCard` 必须基于 `AppBaseCard`。
+- `RiskBadge` / `StatusTag` 只负责状态与风险标签表达。
+- `AppActionGroup` / `AppActionButton` 只负责动作排序和按钮层级。
+
+### Route Action Adapter
+
+- `shared/ui` 不知道 route。
+- route-aware action helper 放在 `pages/_shared/actions`。
+- helper 负责把 route、variant、iconName、label、onNavigate 转成 `AppActionGroupItem`。
+- 后续入口跳转不得在页面中随意散写。
+- `Open in Analysis with context` 等能力后续也必须通过统一 action helper 承接上下文，不得页面临时拼按钮。
+
+### Page Archetype
+
+默认页面必须使用 `AppSectionStack` + `AppSection` + `AppCardGrid`。
+
+特殊页面必须落入明确 Page Archetype：
+
+- Overview Page：Dashboard / Metrics / Platform Operations。
+- Management Page：Data & Knowledge / Models & Tools / Governance / Settings。
+- Conversation Workspace：Analysis。
+- Reader Page：Reports。
+- Timeline Page：Observability。
+
+Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级页面。
+
+特殊页面可以不使用 CardGrid 主结构，但必须落入 Page Archetype，并继续复用 Action / Card / Tag / RightAssistPanel 等底层规则。
+
+## Card / Tag / Action Slot Rules
+
+Card / Tag / Action Slot 是 Web 页面卡片结构的长期规则，Dashboard、#103、#104 后续页面必须复用同一套摆放逻辑。
+
+### Card 分类
+
+| Card 类型      | 用途                       | 示例                   | 公共组件承接                                         |
+| -------------- | -------------------------- | ---------------------- | ---------------------------------------------------- |
+| HeroCard       | 页面总览 / 业务总览        | 经营状态总览           | 页面私有，后续稳定再抽                               |
+| MetricCard     | 指标值 + 趋势 + 风险       | 季度收入、毛利率       | `shared/ui/cards/MetricCard`，基于 `AppBaseCard`     |
+| RiskCard       | 风险 / 异常 / 治理提示     | 收入增速异常、风险摘要 | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| ReportCard     | 报告摘要 / 建议动作        | 周经营分析报告         | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| EvidenceCard   | 证据 / 来源 / 可信度       | 季度收入证据摘要       | `shared/ui/cards/AppBaseCard` / `SourceEvidenceList` |
+| OperationsCard | 任务 / 数据质量 / 运维状态 | 平台质量               | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| AssistCard     | 右侧栏上下文               | 相关证据、运行轨迹     | `RightAssistPanel` 内部结构                          |
+
+规则：
+
+- 不抽万能业务卡片。
+- 通用组件只沉淀 slot 容器、按钮分类和状态承接，业务内容仍由页面组合。
+- 页面不得私自重建 Card / Tag / Action 摆放体系。
+- 所有内容卡片必须基于 `AppBaseCard` slot。
+- 业务卡片可以页面定制，但不得重新实现 Card 外壳。
+- 不保留 `AppContentCard` / `MetricCard` 多套 Card 壳并存。
+- `shared/ui/cards` 是卡片组件唯一目录。
+
+### Card Slot 结构
+
+所有内容卡片遵守统一 slot：
+
+```text
+Card
+├─ Header
+│  ├─ Eyebrow / 类型说明
+│  ├─ Title
+│  └─ Tag Slot，右上角
+│
+├─ Main
+│  ├─ Value / Summary / Main Content
+│  └─ Description
+│
+├─ Meta
+│  ├─ 趋势
+│  ├─ 证据数
+│  ├─ 来源
+│  └─ 可信度
+│
+└─ Footer Actions
+   └─ AppActionGroup，左下横向排列
+```
+
+公共组件承接：
+
+- `AppBaseCard` 只负责 `eyebrow`、`title`、`tagSlot`、`children`、`description`、`meta`、`footerActions` slot 布局。
+- `MetricCard` 是基于 `AppBaseCard` 的指标专用卡片，必须支持 header tag slot 和 footer actions；趋势、证据数、来源等进入 meta 区。
+- `AppActionButton` 负责单个按钮 variant 到 Ant Design Button props 的映射。
+- `AppActionGroup` 负责多个按钮的横向排列和 variant 自动排序。
+
+### Tag 位置规则
+
+- Risk Tag / 风险标签固定在卡片 Header 右上角，表示当前卡片对象风险等级，最多 1 个。
+- Status Tag / 状态标签仅在非 ready 状态展示，位置同 Header 右上角。
+- ready 状态默认不展示。
+- Evidence confidence / 证据可信度属于 meta 信息，放在证据卡 meta 行。
+- Source type / 来源类型属于 meta 信息，和可信度放在一起。
+- Section 标题旁默认不放状态 Tag，除非 Section 本身就是状态对象。
+
+### Action 位置规则
+
+- 页面级主操作放在 Hero / 页面头部右侧。
+- Section 级模块入口放在 Section Header 右侧。
+- 卡片内部动作统一放在 Footer Actions 左下横向排列。
+- 证据 / Trace 条目动作可以跟随条目展示，但必须弱化，并走 `AppActionGroup` / `AppActionButton`。
+- RightAssistPanel 动作在分组内左对齐横向排列。
+- 证据、来源、运行轨迹等溯源动作统一使用 `sourceLink`，并在 `AppActionGroup` 排序中置后。
+
+## Section Card Grid Rules
+
+Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#103、#104 后续页面必须复用同一套列数和对齐逻辑。
+
+### AppCardGrid 职责
+
+- `AppCardGrid` 封装 Ant Design `Row` / `Col` 或等效布局。
+- 页面通过 `columns` 声明布局语义，不长期手写 `Row` / `Col` 摆放卡片。
+- `AppCardGrid` 只负责列数、gutter、左对齐和响应式断点。
+- `AppCardGrid` 不读取 ViewModel，不绑定路由，不写业务文案，不做视觉风格化，不新增 token，不引入新依赖。
+
+### Columns 规则
+
+| columns | 桌面 | 中屏   | 小屏 | 用途                       |
+| ------- | ---- | ------ | ---- | -------------------------- |
+| `1`     | 1 列 | 1 列   | 1 列 | 平台质量、整行摘要、长内容 |
+| `2`     | 2 列 | 1-2 列 | 1 列 | 指标、风险、报告 / 证据    |
+| `3`     | 3 列 | 2 列   | 1 列 | 后续状态卡、能力入口       |
+| `4`     | 4 列 | 2 列   | 1 列 | Hero facts / 小摘要卡      |
+
+### 对齐规则
+
+- Section Header 右侧只放模块级入口。
+- Section 内容卡片默认左对齐，按数据顺序排列。
+- 不允许卡片因为数量不足而右对齐或居中。
+- 单对象摘要使用 `columns={1}` 占满整行。
+- 列表型 section 即使只有一个数据项，也默认从左开始排列。
+- 卡片内部按钮位置仍由 `AppBaseCard` / `MetricCard` 的 `footerActions` 控制。
+
+### Dashboard 当前映射
+
+- Hero facts：`columns={4}`。
+- 核心指标：`columns={2}`。
+- 风险异常：`columns={2}`。
+- 报告与证据：`columns={2}`。
+- 平台质量：`columns={1}`。
+
+后续 #103 / #104 页面必须复用 `AppCardGrid`，不得页面私自长期手写 `Row` / `Col`。特殊布局必须在 Issue 中说明。
+
+后续 #103 / #104 页面必须按本节复用公共组件，不得页面私自摆放按钮、Tag 或卡片结构。
+
 ## 5. Web / Mobile Browser 适配规则
 
 Web 与 Mobile Browser 是同一产品链路的不同布局，不允许形成双实现主线。

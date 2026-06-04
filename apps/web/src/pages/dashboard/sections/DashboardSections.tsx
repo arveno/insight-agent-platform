@@ -1,17 +1,13 @@
-import { Space } from "antd";
-
 import type { DashboardViewModel } from "../../../features/static-view-models";
-import { useI18n } from "../../../shared";
+import { AppSection, AppSectionStack, useI18n } from "../../../shared";
+import { createRouteAction, type WebPageProps } from "../../_shared";
 import {
-  ActionBar,
-  EvidencePanel,
-  MetricCardGrid,
-  ReportEntranceList,
-  SummaryCardGrid,
-  WebSection,
-  toReportItem,
-  type WebPageProps
-} from "../../_shared";
+  DashboardHero,
+  DashboardMetricOverview,
+  DashboardQualityPanel,
+  DashboardReportEvidencePanel,
+  DashboardRiskOverview
+} from "../components";
 
 export type DashboardSectionsProps = WebPageProps & {
   viewModel: DashboardViewModel;
@@ -19,22 +15,102 @@ export type DashboardSectionsProps = WebPageProps & {
 
 export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsProps) {
   const { t } = useI18n();
+  const openMetricsAction = createRouteAction({
+    iconName: "metrics",
+    key: "dashboard-section-metrics",
+    label: t("dashboard.action.viewMetrics"),
+    onNavigate,
+    route: "metrics",
+    variant: "moduleEntry"
+  });
+  const openGovernanceAction = createRouteAction({
+    iconName: "governance",
+    key: "dashboard-section-governance",
+    label: t("dashboard.action.viewGovernanceRisk"),
+    onNavigate,
+    route: "governance",
+    variant: "moduleEntry"
+  });
+  const openReportsAction = createRouteAction({
+    iconName: "reports",
+    key: "dashboard-section-reports",
+    label: t("dashboard.action.viewAllReports"),
+    onNavigate,
+    route: "reports",
+    variant: "moduleEntry"
+  });
+  const openPlatformOperationsAction = createRouteAction({
+    iconName: "operations",
+    key: "dashboard-section-platform-operations",
+    label: t("dashboard.action.viewPlatformOperations"),
+    onNavigate,
+    route: "platform-operations",
+    variant: "moduleEntry"
+  });
+  const riskItems = [
+    ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
+    ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
+  ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <WebSection section={viewModel.mainSections[0]}>
-        <MetricCardGrid items={viewModel.businessMetricCards} />
-        <SummaryCardGrid items={viewModel.dashboardSummary} />
-        <ActionBar actions={viewModel.analysisEntrances} onNavigate={onNavigate} t={t} />
-      </WebSection>
-      <WebSection section={viewModel.mainSections[2]}>
-        <SummaryCardGrid items={[...viewModel.anomalyCards, ...viewModel.riskSummary]} />
-        <ReportEntranceList items={viewModel.recentReports.map((item) => toReportItem(t, item))} />
-      </WebSection>
-      <WebSection section={viewModel.mainSections[1]}>
-        <SummaryCardGrid items={viewModel.platformQualitySummary} />
-        <EvidencePanel items={viewModel.evidenceEntrances} />
-      </WebSection>
-    </Space>
+    <AppSectionStack>
+      <DashboardHero onNavigate={onNavigate} viewModel={viewModel} />
+
+      <AppSection
+        action={openMetricsAction}
+        columns={2}
+        eyebrow={t("dashboard.metrics.eyebrow")}
+        title={t("dashboard.metrics.title")}
+      >
+        {viewModel.businessMetricCards.map((metric) => (
+          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
+        ))}
+      </AppSection>
+
+      <AppSection
+        action={openGovernanceAction}
+        columns={2}
+        eyebrow={t("dashboard.risk.eyebrow")}
+        title={t("dashboard.risk.title")}
+      >
+        {riskItems.map(({ isRiskSummary, item }) => (
+          <DashboardRiskOverview
+            isRiskSummary={isRiskSummary}
+            item={item}
+            key={item.key}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </AppSection>
+
+      <AppSection
+        action={openReportsAction}
+        columns={2}
+        eyebrow={t("dashboard.reportEvidence.eyebrow")}
+        title={t("dashboard.reportEvidence.title")}
+      >
+        <DashboardReportEvidencePanel
+          onNavigate={onNavigate}
+          panel="reports"
+          viewModel={viewModel}
+        />
+        <DashboardReportEvidencePanel
+          onNavigate={onNavigate}
+          panel="evidence"
+          viewModel={viewModel}
+        />
+      </AppSection>
+
+      <AppSection
+        action={openPlatformOperationsAction}
+        columns={1}
+        eyebrow={t("dashboard.quality.eyebrow")}
+        title={t("dashboard.quality.title")}
+      >
+        {viewModel.platformQualitySummary.map((item) => (
+          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
+        ))}
+      </AppSection>
+    </AppSectionStack>
   );
 }

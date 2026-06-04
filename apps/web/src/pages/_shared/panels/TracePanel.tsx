@@ -13,7 +13,11 @@ export function TracePanel({ items }: TracePanelProps) {
   return (
     <TraceTimeline
       empty={{ title: translateKey(t, "state.empty.default.title") }}
-      items={items.map((item) => toTraceItem(t, item))}
+      items={items.map((item) => {
+        const traceItem = toTraceItem(t, item);
+
+        return item.status.status === "ready" ? { ...traceItem, status: undefined } : traceItem;
+      })}
     />
   );
 }
