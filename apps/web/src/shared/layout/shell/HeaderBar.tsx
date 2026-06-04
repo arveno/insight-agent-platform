@@ -8,7 +8,7 @@ export type HeaderBarProps = {
 /**
  * Header 内容区边界。
  *
- * HeaderBar 只展示当前 route title；
+ * HeaderBar 只展示当前 workspace 文本；
  * 不实现真实搜索、权限决策、偏好持久化或用户管理。
  */
 export function HeaderBar({ title }: HeaderBarProps) {

@@ -25,7 +25,6 @@ import {
   AppIcon,
   AppShellLayout,
   HeaderBar,
-  type I18nMessageKey,
   LeftNav,
   localeOptions,
   type AppLocale,
@@ -51,14 +50,6 @@ const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
   workspace: workspaceStaticViewModel
 };
 
-function routeTitleKey(activeRoute: StaticRouteKey): I18nMessageKey {
-  const routeItem = appShellStaticViewModel.navigationGroups
-    .flatMap((group) => group.items)
-    .find((item) => item.key === activeRoute);
-
-  return (routeItem?.labelKey ?? "appName") as I18nMessageKey;
-}
-
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();
   const { setThemeMode, themeMode } = useAppTheme();
@@ -68,7 +59,7 @@ export function AppShell() {
   );
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeViewModel = pageViewModels[activeRoute];
-  const activeRouteTitle = t(routeTitleKey(activeRoute));
+  const headerTitle = appShellStaticViewModel.workspace.name;
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
@@ -111,7 +102,7 @@ export function AppShell() {
 
   return (
     <AppShellLayout
-      header={<HeaderBar title={activeRouteTitle} />}
+      header={<HeaderBar title={headerTitle} />}
       leftNav={
         <div
           style={{
