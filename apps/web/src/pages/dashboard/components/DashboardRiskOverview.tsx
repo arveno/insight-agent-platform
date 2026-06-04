@@ -34,7 +34,7 @@ export function DashboardRiskOverview({
       variant: "objectDetail"
     }),
     createRouteAction({
-      iconName: "observability",
+      iconName: "trace",
       key: `${item.key}-trace`,
       label: t("dashboard.action.viewTrace"),
       onNavigate,

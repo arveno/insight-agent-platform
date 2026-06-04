@@ -286,6 +286,64 @@ Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#10
 
 后续 #103 / #104 页面必须按本节复用公共组件，不得页面私自摆放按钮、Tag 或卡片结构。
 
+## Dashboard Visual Language Rules
+
+Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源规则，只服务视觉层级、主题适配、图标语义、卡片质感和右侧辅助区质感，不改变 #100 已沉淀的 Page Composition / Section / Grid / Card / Tag / Action 结构。
+
+### Light / Dark Theme
+
+- Dashboard 必须同时支持 Light / Dark Theme。
+- 主题切换必须沿用现有 `AppThemeProvider` / `shared/theme` / Ant Design theme 能力。
+- 不新建第二套主题系统。
+- 不复制 Dashboard 组件承接 dark theme。
+- 不在 Dashboard 页面组件中硬编码颜色。
+- 不在页面中散写 light / dark 条件分支。
+- 页面背景、卡片背景、卡片边框、弱阴影、右侧栏背景、弱文本、主行动、证据 / Trace / 数据来源链接都必须通过 Ant Design token 或 `shared/theme` 语义 token 承接。
+
+### Token Usage
+
+- 颜色、边框、弱背景、弱阴影、圆角、间距和字号必须优先使用 Ant Design token。
+- 只有跨页面稳定语义才允许沉淀到 `shared/theme`。
+- 页面级组件不得自建 token map、状态色 map 或局部主题系统。
+- `shared/layout` / `shared/ui` 可以用 Ant Design token 定义公共壳层、卡片、状态和辅助区视觉；页面只能组合这些能力。
+
+### Risk Color
+
+- 风险色必须通过 `RiskBadge` 或已审查的 shared 状态组件承接。
+- 风险色在 dark theme 中不得过亮、刺眼或破坏信息层级。
+- `critical` / `high` / `medium` / `low` 必须保持层级清楚，但不得用大面积强饱和背景替代信息结构。
+- 风险原因优先作为 Tooltip 或辅助文本，不铺满页面。
+
+### AppIcon Glyph / Badge
+
+- `AppIcon` 是项目唯一图标出口。
+- `AppIcon` 支持 `glyph` / `badge` 两种形态。
+- `glyph` 用于 LeftNav、Section、Header、RightAssistPanel 等非按钮场景。
+- `badge` 用于按钮和能力动作，保留 Capability Badge Icon。
+- `AppActionButton` 继续只接收 `iconName`，内部固定使用 `variant="badge"`。
+- 页面、Dashboard 组件、Card 组件、Action 组件不得直接 import `@ant-design/icons`。
+- `@ant-design/icons` 只能在 `shared/icons` 内使用。
+- 如后续替换真实图标，必须仍通过 `IconName -> AppIcon` 边界，不允许页面私自处理。
+
+### Card Hierarchy
+
+- Dashboard 卡片必须继续使用 `AppBaseCard` / `MetricCard` 的单轨 Card Slot。
+- 卡片背景、边框、弱阴影和内部间距必须使用 token。
+- 卡片层级要服务业务扫描：主值 / 标题优先，趋势 / 证据 / 来源为弱层级，动作在 Footer Actions。
+- 不允许为了视觉效果重写 Section / Grid / Card / Tag / Action 结构。
+
+### RightAssistPanel
+
+- RightAssistPanel 必须像上下文助手，而不是字段清单或一整块黑色文本区。
+- 右侧栏背景、边界、弱阴影、分组标题、证据列表和 Trace 列表必须在 Light / Dark 下均可读。
+- 右侧栏可使用 `glyph` 辅助分组识别，但仍不得展示 raw Trace、Tool raw output、模型原始输出或实现语言。
+
+### Dependency Boundary
+
+- 除 `@ant-design/icons` 外，不新增其它直接依赖。
+- 必须使用 pnpm 更新 lockfile。
+- 不引入第二套 UI 库。
+
 ## 5. Web / Mobile Browser 适配规则
 
 Web 与 Mobile Browser 是同一产品链路的不同布局，不允许形成双实现主线。

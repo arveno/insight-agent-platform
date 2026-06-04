@@ -23,9 +23,32 @@ import {
   WorkspacePage
 } from "../../pages";
 import type { WebPageProps } from "../../pages/_shared";
-import type { I18nMessageKey, NavigationGroup, NavigationItem } from "../../shared";
+import {
+  AppIcon,
+  type I18nMessageKey,
+  type IconName,
+  type NavigationGroup,
+  type NavigationItem
+} from "../../shared";
 
 type Translate = (key: I18nMessageKey) => string;
+
+const routeIconByRoute: Record<StaticRouteKey, IconName> = {
+  analysis: "analysis",
+  dashboard: "dashboard",
+  "data-knowledge": "data",
+  evaluation: "evaluation",
+  feedback: "feedback",
+  governance: "governance",
+  memory: "memory",
+  metrics: "metrics",
+  "model-tools": "models",
+  observability: "observability",
+  "platform-operations": "operations",
+  reports: "reports",
+  settings: "settings",
+  workspace: "workspace"
+};
 
 /**
  * #68 只建立静态 WebComposition 路由表。
@@ -56,6 +79,7 @@ function createNavigationItem(t: Translate, item: AppShellNavigationItemViewMode
   return {
     badge: item.badgeTextKey ? translateNavigationLabel(t, item.badgeTextKey) : undefined,
     disabled: item.disabled,
+    icon: <AppIcon name={routeIconByRoute[item.key]} variant="glyph" />,
     key: item.key,
     label: translateNavigationLabel(t, item.labelKey)
   };

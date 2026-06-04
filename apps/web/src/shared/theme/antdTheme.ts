@@ -1,21 +1,16 @@
 import { theme, type ThemeConfig } from "antd";
 
 import { shellThemeTokens } from "./tokens";
-import type { ThemeMode } from "./themeTypes";
+import type { ResolvedThemeMode } from "./themeTypes";
 
 const baseToken: ThemeConfig["token"] = {
   borderRadius: shellThemeTokens.borderRadius,
-  colorBgLayout: shellThemeTokens.colorBgLayout,
-  colorBorder: shellThemeTokens.colorBorder,
   colorPrimary: shellThemeTokens.colorPrimary
 };
 
 export const lightAntdTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
-  token: {
-    ...baseToken,
-    colorBgContainer: shellThemeTokens.colorBgContainer
-  }
+  token: baseToken
 };
 
 export const darkAntdTheme: ThemeConfig = {
@@ -31,6 +26,6 @@ export const darkAntdTheme: ThemeConfig = {
  *
  * 当前阶段只承接静态 UI 主题，不读取真实偏好、不接后端设置，也不建立 mock / real 主题链路。
  */
-export function getAntdThemeConfig(themeMode: ThemeMode): ThemeConfig {
-  return themeMode === "dark" ? darkAntdTheme : lightAntdTheme;
+export function getAntdThemeConfig(resolvedThemeMode: ResolvedThemeMode): ThemeConfig {
+  return resolvedThemeMode === "dark" ? darkAntdTheme : lightAntdTheme;
 }

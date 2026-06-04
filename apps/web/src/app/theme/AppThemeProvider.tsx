@@ -1,9 +1,15 @@
-import { createContext, type ReactNode, useContext, useMemo, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-import { defaultThemeMode, getAntdThemeConfig, type ThemeMode } from "../../shared/theme";
+import {
+  defaultThemeMode,
+  getAntdThemeConfig,
+  type ResolvedThemeMode,
+  type ThemeMode
+} from "../../shared/theme";
 
 type AppThemeContextValue = {
   antdTheme: ReturnType<typeof getAntdThemeConfig>;
+  resolvedThemeMode: ResolvedThemeMode;
   setThemeMode: (themeMode: ThemeMode) => void;
   themeMode: ThemeMode;
 };
@@ -13,6 +19,14 @@ const AppThemeContext = createContext<AppThemeContextValue | undefined>(undefine
 type AppThemeProviderProps = {
   children: ReactNode;
 };
+
+function resolveSystemThemeMode(): ResolvedThemeMode {
+  if (typeof window === "undefined" || !window.matchMedia) {
+    return "light";
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 /**
  * UI Shell 的主题状态 Provider。
@@ -25,14 +39,34 @@ type AppThemeProviderProps = {
  */
 export function AppThemeProvider({ children }: AppThemeProviderProps) {
   const [themeMode, setThemeMode] = useState<ThemeMode>(defaultThemeMode);
+  const [systemThemeMode, setSystemThemeMode] = useState<ResolvedThemeMode>(resolveSystemThemeMode);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemThemeChange = (event: MediaQueryListEvent) => {
+      setSystemThemeMode(event.matches ? "dark" : "light");
+    };
+
+    setSystemThemeMode(mediaQuery.matches ? "dark" : "light");
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+
+    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+  }, []);
+
+  const resolvedThemeMode = themeMode === "system" ? systemThemeMode : themeMode;
 
   const value = useMemo<AppThemeContextValue>(
     () => ({
-      antdTheme: getAntdThemeConfig(themeMode),
+      antdTheme: getAntdThemeConfig(resolvedThemeMode),
+      resolvedThemeMode,
       setThemeMode,
       themeMode
     }),
-    [themeMode]
+    [resolvedThemeMode, themeMode]
   );
 
   return <AppThemeContext.Provider value={value}>{children}</AppThemeContext.Provider>;

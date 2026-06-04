@@ -27,6 +27,7 @@ export function DashboardReportEvidencePanel({
               variant: "objectDetail"
             }),
             createRouteAction({
+              iconName: "analysis",
               key: `${report.key}-suggestions`,
               label: t("dashboard.action.viewSuggestions"),
               onNavigate,
@@ -73,6 +74,7 @@ export function DashboardReportEvidencePanel({
       {evidenceItems.map((evidence) => {
         const evidenceActions = [
           createRouteAction({
+            iconName: "evidence",
             key: `${evidence.key}-view-evidence`,
             label: t("dashboard.action.viewEvidence"),
             onNavigate,
@@ -88,7 +90,7 @@ export function DashboardReportEvidencePanel({
             variant: "sourceLink"
           }),
           createRouteAction({
-            iconName: "observability",
+            iconName: "trace",
             key: `${evidence.key}-trace`,
             label: t("dashboard.action.viewTrace"),
             onNavigate,
