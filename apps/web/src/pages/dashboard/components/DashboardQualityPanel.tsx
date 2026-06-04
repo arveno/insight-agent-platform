@@ -1,6 +1,12 @@
-import { Card, Col, Row, Space, Typography } from "antd";
+import { Col, Row, Typography } from "antd";
 
-import { AppActionGroup, type AppActionGroupItem, RiskBadge, useI18n } from "../../../shared";
+import {
+  AppActionGroup,
+  AppContentCard,
+  type AppActionGroupItem,
+  RiskBadge,
+  useI18n
+} from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -54,22 +60,15 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
 
           return (
             <Col key={item.key} xs={24}>
-              <Card>
-                <Space direction="vertical" size={12} style={{ width: "100%" }}>
-                  <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-                    <Space direction="vertical" size={4}>
-                      <Typography.Text type="secondary">
-                        {t("dashboard.quality.itemEyebrow")}
-                      </Typography.Text>
-                      <Typography.Text strong>{item.label}</Typography.Text>
-                      <Typography.Text type="secondary">{item.value}</Typography.Text>
-                    </Space>
-                    {risk ? <RiskBadge {...risk} /> : null}
-                  </Space>
-                  <Typography.Text type="secondary">{item.description}</Typography.Text>
-                  <AppActionGroup actions={qualityActions} />
-                </Space>
-              </Card>
+              <AppContentCard
+                description={item.description}
+                eyebrow={t("dashboard.quality.itemEyebrow")}
+                footerActions={<AppActionGroup actions={qualityActions} />}
+                tagSlot={risk ? <RiskBadge {...risk} /> : null}
+                title={item.label}
+              >
+                <Typography.Text>{item.value}</Typography.Text>
+              </AppContentCard>
             </Col>
           );
         })}

@@ -53,7 +53,8 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
             <Col key={metric.key} lg={12} xs={24}>
               <MetricCard
                 description={<Typography.Text type="secondary">{description}</Typography.Text>}
-                evidenceSummary={
+                footerActions={<AppActionGroup actions={metricActions} />}
+                meta={
                   <Space wrap>
                     <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
                     {typeof metric.evidenceCount === "number" ? (
@@ -63,7 +64,6 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                     ) : null}
                   </Space>
                 }
-                footerActions={<AppActionGroup actions={metricActions} />}
                 risk={displayRisk}
                 title={metric.label}
                 value={metric.valueText}

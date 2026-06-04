@@ -107,6 +107,80 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
 
+## Card / Tag / Action Slot Rules
+
+Card / Tag / Action Slot 是 Web 页面卡片结构的长期规则，Dashboard、#103、#104 后续页面必须复用同一套摆放逻辑。
+
+### Card 分类
+
+| Card 类型 | 用途 | 示例 | 公共组件承接 |
+| --- | --- | --- | --- |
+| HeroCard | 页面总览 / 业务总览 | 经营状态总览 | 页面私有，后续稳定再抽 |
+| MetricCard | 指标值 + 趋势 + 风险 | 季度收入、毛利率 | `shared/ui/metric/MetricCard` |
+| RiskCard | 风险 / 异常 / 治理提示 | 收入增速异常、风险摘要 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
+| ReportCard | 报告摘要 / 建议动作 | 周经营分析报告 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
+| EvidenceCard | 证据 / 来源 / 可信度 | 季度收入证据摘要 | `shared/ui/cards/AppContentCard` / `SourceEvidenceList` |
+| OperationsCard | 任务 / 数据质量 / 运维状态 | 平台质量 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
+| AssistCard | 右侧栏上下文 | 相关证据、运行轨迹 | `RightAssistPanel` 内部结构 |
+
+规则：
+
+- 不抽万能业务卡片。
+- 通用组件只沉淀 slot 容器、按钮分类和状态承接，业务内容仍由页面组合。
+- 页面不得私自重建 Card / Tag / Action 摆放体系。
+
+### Card Slot 结构
+
+所有内容卡片遵守统一 slot：
+
+```text
+Card
+├─ Header
+│  ├─ Eyebrow / 类型说明
+│  ├─ Title
+│  └─ Tag Slot，右上角
+│
+├─ Main
+│  ├─ Value / Summary / Main Content
+│  └─ Description
+│
+├─ Meta
+│  ├─ 趋势
+│  ├─ 证据数
+│  ├─ 来源
+│  └─ 可信度
+│
+└─ Footer Actions
+   └─ AppActionGroup，左下横向排列
+```
+
+公共组件承接：
+
+- `AppContentCard` 只负责 `eyebrow`、`title`、`tagSlot`、`children`、`description`、`meta`、`footerActions` slot 布局。
+- `MetricCard` 必须支持 header tag slot 和 footer actions；趋势、证据数、来源等进入 meta 区。
+- `AppActionButton` 负责单个按钮 variant 到 Ant Design Button props 的映射。
+- `AppActionGroup` 负责多个按钮的横向排列和 variant 自动排序。
+
+### Tag 位置规则
+
+- Risk Tag / 风险标签固定在卡片 Header 右上角，表示当前卡片对象风险等级，最多 1 个。
+- Status Tag / 状态标签仅在非 ready 状态展示，位置同 Header 右上角。
+- ready 状态默认不展示。
+- Evidence confidence / 证据可信度属于 meta 信息，放在证据卡 meta 行。
+- Source type / 来源类型属于 meta 信息，和可信度放在一起。
+- Section 标题旁默认不放状态 Tag，除非 Section 本身就是状态对象。
+
+### Action 位置规则
+
+- 页面级主操作放在 Hero / 页面头部右侧。
+- Section 级模块入口放在 Section Header 右侧。
+- 卡片内部动作统一放在 Footer Actions 左下横向排列。
+- 证据 / Trace 条目动作可以跟随条目展示，但必须弱化，并走 `AppActionGroup` / `AppActionButton`。
+- RightAssistPanel 动作在分组内左对齐横向排列。
+- 证据、来源、运行轨迹等溯源动作统一使用 `sourceLink`，并在 `AppActionGroup` 排序中置后。
+
+后续 #103 / #104 页面必须按本节复用公共组件，不得页面私自摆放按钮、Tag 或卡片结构。
+
 ## 5. Web / Mobile Browser 适配规则
 
 Web 与 Mobile Browser 是同一产品链路的不同布局，不允许形成双实现主线。

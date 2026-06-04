@@ -8,8 +8,10 @@ export type MetricCardProps = {
   description?: ReactNode;
   evidenceSummary?: ReactNode;
   footerActions?: ReactNode;
+  meta?: ReactNode;
   risk?: RiskBadgeProps;
   status?: StatusTagProps;
+  tagSlot?: ReactNode;
   title: ReactNode;
   trend?: ReactNode;
   value: ReactNode;
@@ -26,35 +28,50 @@ export function MetricCard({
   description,
   evidenceSummary,
   footerActions,
+  meta,
   risk,
   status,
+  tagSlot,
   title,
   trend,
   value
 }: MetricCardProps) {
+  const resolvedTagSlot =
+    tagSlot || status || risk || actions ? (
+      <Space wrap>
+        {tagSlot}
+        {status ? <StatusTag {...status} /> : null}
+        {risk ? <RiskBadge {...risk} /> : null}
+        {actions}
+      </Space>
+    ) : null;
+  const resolvedMeta =
+    meta || trend || evidenceSummary ? (
+      <Space wrap>
+        {meta}
+        {trend}
+        {evidenceSummary}
+      </Space>
+    ) : null;
+
   return (
-    <Card>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+    <Card style={{ height: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: "100%" }}>
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space direction="vertical" size={4}>
             <Typography.Text type="secondary">{title}</Typography.Text>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              {value}
-            </Typography.Title>
           </Space>
-          {actions}
+          {resolvedTagSlot ? <div style={{ flexShrink: 0 }}>{resolvedTagSlot}</div> : null}
         </Space>
-        <Space wrap>
-          {status ? <StatusTag {...status} /> : null}
-          {risk ? <RiskBadge {...risk} /> : null}
-          {trend}
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {value}
+          </Typography.Title>
+          {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
         </Space>
-        {description ? <Typography.Text>{description}</Typography.Text> : null}
-        {evidenceSummary ? (
-          <Typography.Text type="secondary">{evidenceSummary}</Typography.Text>
-        ) : null}
-        {footerActions}
-      </Space>
+        {resolvedMeta ? <div>{resolvedMeta}</div> : null}
+        {footerActions ? <div style={{ marginTop: "auto" }}>{footerActions}</div> : null}
+      </div>
     </Card>
   );
 }
