@@ -29,7 +29,9 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
         {riskItems.map((item) => {
           const risk = toRiskBadge(t, item.risk);
           const isRiskSummary = viewModel.riskSummary.some((riskItem) => riskItem.key === item.key);
-          const eyebrow = isRiskSummary ? t("dashboard.risk.summaryEyebrow") : item.value;
+          const eyebrow = isRiskSummary
+            ? t("dashboard.risk.summaryEyebrow")
+            : t("dashboard.risk.anomalyEyebrow");
           const description = isRiskSummary
             ? item.description
             : t("dashboard.risk.anomalyDescription");

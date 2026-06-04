@@ -116,6 +116,7 @@ export const messages = {
     "dashboard.reportEvidence.suggestionSummary": "建议先核对相关证据，再带上下文继续分析。",
     "dashboard.reportEvidence.title": "报告与证据入口",
     "dashboard.risk.anomalyDescription": "收入增速低于阈值，建议带上下文分析异常。",
+    "dashboard.risk.anomalyEyebrow": "异常指标",
     "dashboard.risk.eyebrow": "风险与异常",
     "dashboard.risk.summaryEyebrow": "风险等级",
     "dashboard.risk.title": "风险与异常摘要",
@@ -461,6 +462,7 @@ export const messages = {
     "dashboard.reportEvidence.title": "Reports and evidence",
     "dashboard.risk.anomalyDescription":
       "Revenue growth is below the threshold. Analyze the anomaly with context.",
+    "dashboard.risk.anomalyEyebrow": "Anomaly metric",
     "dashboard.risk.eyebrow": "Risk and anomaly",
     "dashboard.risk.summaryEyebrow": "Risk level",
     "dashboard.risk.title": "Risk and anomaly summary",
