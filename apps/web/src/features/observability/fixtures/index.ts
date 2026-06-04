@@ -1,0 +1,1 @@
+export { observabilityStaticViewModel } from "./observabilityStaticViewModel";

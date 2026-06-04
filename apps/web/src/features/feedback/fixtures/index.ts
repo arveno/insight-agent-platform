@@ -1,0 +1,1 @@
+export { feedbackStaticViewModel } from "./feedbackStaticViewModel";

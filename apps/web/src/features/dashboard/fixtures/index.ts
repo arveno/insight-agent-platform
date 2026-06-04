@@ -1,0 +1,1 @@
+export { dashboardStaticViewModel } from "./dashboardStaticViewModel";
