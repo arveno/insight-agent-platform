@@ -1,4 +1,4 @@
-import { Card, Space, Typography } from "antd";
+import { Card, Space, Typography, theme } from "antd";
 
 import type { AppBaseCardProps } from "./cardTypes";
 
@@ -11,9 +11,27 @@ export function AppBaseCard({
   tagSlot,
   title
 }: AppBaseCardProps) {
+  const { token } = theme.useToken();
+
   return (
-    <Card style={{ height: "100%", width: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: "100%" }}>
+    <Card
+      style={{
+        background: token.colorBgContainer,
+        borderColor: token.colorBorderSecondary,
+        boxShadow: token.boxShadowTertiary,
+        height: "100%",
+        width: "100%"
+      }}
+      styles={{ body: { height: "100%" } }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: token.marginSM,
+          minHeight: "100%"
+        }}
+      >
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space direction="vertical" size={4} style={{ minWidth: 0 }}>
             {eyebrow ? <Typography.Text type="secondary">{eyebrow}</Typography.Text> : null}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Tag, Tooltip } from "antd";
+import { Tag, Tooltip, theme } from "antd";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical" | "unknown";
 
@@ -10,14 +10,6 @@ export type RiskBadgeProps = {
   reason?: string;
 };
 
-const riskColors: Record<RiskLevel, string> = {
-  critical: "red",
-  high: "volcano",
-  low: "green",
-  medium: "gold",
-  unknown: "default"
-};
-
 /**
  * 风险等级展示边界。
  *
@@ -25,8 +17,39 @@ const riskColors: Record<RiskLevel, string> = {
  * shared/ui 只负责稳定视觉表达，不自行计算风险。
  */
 export function RiskBadge({ icon, label, level = "unknown", reason }: RiskBadgeProps) {
+  const { token } = theme.useToken();
+  const riskTokenByLevel: Record<
+    RiskLevel,
+    { backgroundColor: string; borderColor: string; color: string }
+  > = {
+    critical: {
+      backgroundColor: token.colorErrorBg,
+      borderColor: token.colorErrorBorder,
+      color: token.colorErrorText
+    },
+    high: {
+      backgroundColor: token.colorWarningBg,
+      borderColor: token.colorWarningBorder,
+      color: token.colorWarningText
+    },
+    low: {
+      backgroundColor: token.colorSuccessBg,
+      borderColor: token.colorSuccessBorder,
+      color: token.colorSuccessText
+    },
+    medium: {
+      backgroundColor: token.colorWarningBg,
+      borderColor: token.colorWarningBorder,
+      color: token.colorWarningText
+    },
+    unknown: {
+      backgroundColor: token.colorFillQuaternary,
+      borderColor: token.colorBorderSecondary,
+      color: token.colorTextSecondary
+    }
+  };
   const badge = (
-    <Tag color={riskColors[level]} icon={icon}>
+    <Tag icon={icon} style={riskTokenByLevel[level]}>
       {label}
     </Tag>
   );

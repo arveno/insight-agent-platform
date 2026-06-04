@@ -1,5 +1,6 @@
 import { Flex, Space, Typography } from "antd";
 
+import { AppIcon } from "../../icons";
 import { AppActionGroup, AppCardGrid } from "../../ui";
 import type { AppSectionProps } from "./sectionTypes";
 
@@ -8,6 +9,7 @@ export function AppSection({
   children,
   columns = 2,
   eyebrow,
+  iconName,
   title,
   useGrid = true
 }: AppSectionProps) {
@@ -18,6 +20,7 @@ export function AppSection({
           <Space direction="vertical" size={2}>
             {eyebrow ? <Typography.Text type="secondary">{eyebrow}</Typography.Text> : null}
             <Typography.Title level={4} style={{ margin: 0 }}>
+              {iconName ? <AppIcon name={iconName} variant="glyph" /> : null}
               {title}
             </Typography.Title>
           </Space>

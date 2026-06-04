@@ -8,11 +8,7 @@
  */
 export const shellThemeTokens = {
   borderRadius: 6,
-  colorBgContainer: "#ffffff",
-  colorBgLayout: "#f6f8fb",
-  colorBorder: "#e5e7eb",
   colorPrimary: "#1677ff",
-  colorTextSecondary: "#64748b",
   headerHeight: 64,
   siderWidth: 260
 } as const;

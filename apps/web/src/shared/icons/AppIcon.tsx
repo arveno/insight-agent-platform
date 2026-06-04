@@ -1,11 +1,38 @@
 import type { CSSProperties } from "react";
+import {
+  ApiOutlined,
+  AuditOutlined,
+  BankOutlined,
+  BarChartOutlined,
+  BulbOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  ExperimentOutlined,
+  FileSearchOutlined,
+  FileTextOutlined,
+  GlobalOutlined,
+  HistoryOutlined,
+  LinkOutlined,
+  MessageOutlined,
+  MonitorOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  ToolOutlined,
+  TranslationOutlined,
+  UserOutlined,
+  WarningOutlined
+} from "@ant-design/icons";
+import { theme } from "antd";
 
-import type { IconName } from "./iconTypes";
+import type { AppIconVariant, IconName } from "./iconTypes";
 
-const iconLabels: Record<IconName, string> = {
+type GlyphIconComponent = typeof DashboardOutlined;
+
+const badgeLabels: Record<IconName, string> = {
   analysis: "A",
   dashboard: "D",
   data: "DK",
+  evidence: "EV",
   evaluation: "E",
   feedback: "F",
   governance: "G",
@@ -16,44 +43,100 @@ const iconLabels: Record<IconName, string> = {
   observability: "O",
   operations: "OP",
   reports: "R",
+  risk: "!",
   settings: "S",
+  source: "SRC",
   theme: "T",
+  trace: "TR",
   user: "U",
   workspace: "W"
+};
+
+const glyphIcons: Record<IconName, GlyphIconComponent> = {
+  analysis: BulbOutlined,
+  dashboard: DashboardOutlined,
+  data: DatabaseOutlined,
+  evidence: FileSearchOutlined,
+  evaluation: ExperimentOutlined,
+  feedback: MessageOutlined,
+  governance: SafetyCertificateOutlined,
+  language: TranslationOutlined,
+  memory: HistoryOutlined,
+  metrics: BarChartOutlined,
+  models: ApiOutlined,
+  observability: MonitorOutlined,
+  operations: ToolOutlined,
+  reports: FileTextOutlined,
+  risk: WarningOutlined,
+  settings: SettingOutlined,
+  source: LinkOutlined,
+  theme: GlobalOutlined,
+  trace: AuditOutlined,
+  user: UserOutlined,
+  workspace: BankOutlined
 };
 
 type AppIconProps = {
   name: IconName;
   title?: string;
+  variant?: AppIconVariant;
 };
 
-const iconStyle: CSSProperties = {
+const baseIconStyle: CSSProperties = {
   alignItems: "center",
-  border: "1px solid currentColor",
-  borderRadius: 4,
   display: "inline-flex",
-  fontSize: 10,
-  fontWeight: 700,
-  height: 18,
   justifyContent: "center",
   lineHeight: 1,
-  marginRight: 8,
-  minWidth: 18,
-  paddingInline: 3
+  marginInlineEnd: 8,
+  verticalAlign: "-0.125em"
 };
 
 /**
  * UI Shell 的统一 Icon 出口组件。
  *
- * 当前实现只提供 #65 阶段可用的轻量文本图标占位，保证 Header / AppShell 等入口先通过统一出口消费 Icon；
- * 后续替换为真实图标时仍应保留同一个 IconName -> AppIcon 边界。
+ * glyph 用于导航、Header 和辅助区等非按钮场景；badge 用于按钮里的能力字母标识。
+ * 图标依赖只能在这一层引入，页面和业务组件必须继续通过 IconName -> AppIcon 边界消费。
  *
- * 这里不引入第二套 UI 组件库、不新增图标依赖，也不把页面私有业务组件提升到 shared。
+ * 这里不引入第二套 UI 组件库，也不把页面私有业务组件提升到 shared。
  */
-export function AppIcon({ name, title }: AppIconProps) {
+export function AppIcon({ name, title, variant = "glyph" }: AppIconProps) {
+  const { token } = theme.useToken();
+  const accessibilityProps = title
+    ? { "aria-label": title, role: "img" as const }
+    : { "aria-hidden": true as const };
+
+  if (variant === "badge") {
+    return (
+      <span
+        {...accessibilityProps}
+        style={{
+          ...baseIconStyle,
+          border: "1px solid currentColor",
+          borderRadius: token.borderRadiusSM,
+          fontSize: token.fontSizeSM,
+          fontWeight: token.fontWeightStrong,
+          height: token.controlHeightXS,
+          minWidth: token.controlHeightXS,
+          paddingInline: token.paddingXXS
+        }}
+      >
+        {badgeLabels[name]}
+      </span>
+    );
+  }
+
+  const GlyphIcon = glyphIcons[name];
+
   return (
-    <span aria-hidden={title ? undefined : true} aria-label={title} style={iconStyle}>
-      {iconLabels[name]}
+    <span
+      {...accessibilityProps}
+      style={{
+        ...baseIconStyle,
+        color: "currentColor",
+        fontSize: token.fontSizeLG
+      }}
+    >
+      <GlyphIcon />
     </span>
   );
 }

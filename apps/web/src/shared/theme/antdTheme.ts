@@ -5,17 +5,12 @@ import type { ThemeMode } from "./themeTypes";
 
 const baseToken: ThemeConfig["token"] = {
   borderRadius: shellThemeTokens.borderRadius,
-  colorBgLayout: shellThemeTokens.colorBgLayout,
-  colorBorder: shellThemeTokens.colorBorder,
   colorPrimary: shellThemeTokens.colorPrimary
 };
 
 export const lightAntdTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
-  token: {
-    ...baseToken,
-    colorBgContainer: shellThemeTokens.colorBgContainer
-  }
+  token: baseToken
 };
 
 export const darkAntdTheme: ThemeConfig = {

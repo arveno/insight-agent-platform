@@ -24,7 +24,7 @@ export function AppActionButton({
 
   return (
     <Button {...buttonProps} {...mappedProps}>
-      {iconName ? <AppIcon name={iconName} /> : null}
+      {iconName ? <AppIcon name={iconName} variant="badge" /> : null}
       {children}
     </Button>
   );

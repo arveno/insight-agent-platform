@@ -2,6 +2,7 @@ export type IconName =
   | "analysis"
   | "dashboard"
   | "data"
+  | "evidence"
   | "evaluation"
   | "feedback"
   | "governance"
@@ -12,7 +13,12 @@ export type IconName =
   | "observability"
   | "operations"
   | "reports"
+  | "risk"
   | "settings"
+  | "source"
   | "theme"
+  | "trace"
   | "user"
   | "workspace";
+
+export type AppIconVariant = "badge" | "glyph";

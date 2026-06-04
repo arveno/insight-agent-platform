@@ -1,5 +1,5 @@
 import { Children } from "react";
-import { Col, Row, type ColProps } from "antd";
+import { Col, Row, theme, type ColProps } from "antd";
 
 import type { AppCardGridColumns, AppCardGridProps } from "./cardTypes";
 
@@ -13,15 +13,17 @@ const columnPropsByColumns: Record<
   4: { md: 12, xl: 6, xs: 24 }
 };
 
-export function AppCardGrid({ children, columns = 2, gutter = [16, 16] }: AppCardGridProps) {
+export function AppCardGrid({ children, columns = 2, gutter }: AppCardGridProps) {
+  const { token } = theme.useToken();
   const items = Children.toArray(children);
+  const resolvedGutter: [number, number] = gutter ?? [token.margin, token.margin];
 
   if (items.length === 0) {
     return null;
   }
 
   return (
-    <Row align="stretch" gutter={gutter}>
+    <Row align="stretch" gutter={resolvedGutter}>
       {items.map((child, index) => (
         <Col
           {...columnPropsByColumns[columns]}

@@ -19,6 +19,7 @@ function ProviderProbe() {
       <span>{themeMode}</span>
       <span>{themeModeLabel}</span>
       <AppIcon name="settings" title={t("settings")} />
+      <AppIcon name="settings" title={`${t("settings")}-badge`} variant="badge" />
     </div>
   );
 }
@@ -35,6 +36,7 @@ describe("AppProviders", () => {
     expect(screen.getByText("zh-CN")).toBeTruthy();
     expect(screen.getByText("light")).toBeTruthy();
     expect(screen.getByText("浅色")).toBeTruthy();
-    expect(screen.getByLabelText("设置").textContent).toBe("S");
+    expect(screen.getByLabelText("设置").querySelector("svg")).toBeTruthy();
+    expect(screen.getByLabelText("设置-badge").textContent).toBe("S");
   });
 });

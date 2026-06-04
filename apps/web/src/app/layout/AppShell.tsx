@@ -21,7 +21,15 @@ import {
   settingsStaticViewModel,
   workspaceStaticViewModel
 } from "../../features/static-view-models";
-import { AppIcon, AppShellLayout, HeaderBar, LeftNav, StatusTag, useI18n } from "../../shared";
+import {
+  AppActionButton,
+  AppIcon,
+  AppShellLayout,
+  HeaderBar,
+  LeftNav,
+  StatusTag,
+  useI18n
+} from "../../shared";
 import { ActionBar, RightAssistSummaryPanel, toStatusTag, translateKey } from "../../pages/_shared";
 
 const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
@@ -43,24 +51,32 @@ const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
 
 export function AppShell() {
   const { locale, t } = useI18n();
-  const { themeMode } = useAppTheme();
+  const { setThemeMode, themeMode } = useAppTheme();
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeViewModel = pageViewModels[activeRoute];
   const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
+  const nextThemeMode = themeMode === "dark" ? "light" : "dark";
+  const nextThemeModeLabel = t(nextThemeMode === "dark" ? "themeMode.dark" : "themeMode.light");
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
   );
+  const headerRouteActions = appShellStaticViewModel.headerActions.filter(
+    (action) => action.key !== "theme"
+  );
   const headerActions = (
     <Space size={16} wrap>
-      <ActionBar
-        actions={appShellStaticViewModel.headerActions}
-        onNavigate={setActiveRoute}
-        t={t}
-      />
+      <ActionBar actions={headerRouteActions} onNavigate={setActiveRoute} t={t} />
+      <AppActionButton
+        iconName="theme"
+        onClick={() => setThemeMode(nextThemeMode)}
+        variant="moduleEntry"
+      >
+        {nextThemeModeLabel}
+      </AppActionButton>
       <Typography.Text type="secondary">
         <AppIcon name="language" title={t("language")} />
         {translateKey(t, appShellStaticViewModel.localePreference.labelKey)}: {locale}

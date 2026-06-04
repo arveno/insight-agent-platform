@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Layout } from "antd";
+import { Layout, theme } from "antd";
 
 import { shellThemeTokens } from "../../theme";
 
@@ -26,13 +26,27 @@ export function AppShellLayout({
   mobileTopBar,
   rightAssistPanel
 }: AppShellLayoutProps) {
+  const { token } = theme.useToken();
+
   return (
-    <Layout style={{ height: "100vh", minHeight: 0, overflow: "hidden" }}>
+    <Layout
+      style={{
+        background: token.colorBgLayout,
+        height: "100vh",
+        minHeight: 0,
+        overflow: "hidden"
+      }}
+    >
       {leftNav ? (
         <Sider
-          style={{ height: "100%", overflowX: "hidden", overflowY: "auto" }}
+          style={{
+            background: token.colorBgContainer,
+            borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
+            height: "100%",
+            overflowX: "hidden",
+            overflowY: "auto"
+          }}
           width={shellThemeTokens.siderWidth}
-          theme="light"
         >
           {leftNav}
         </Sider>
@@ -41,8 +55,8 @@ export function AppShellLayout({
         {header ? (
           <Header
             style={{
-              background: shellThemeTokens.colorBgContainer,
-              borderBottom: `1px solid ${shellThemeTokens.colorBorder}`,
+              background: token.colorBgContainer,
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
               flex: `0 0 ${shellThemeTokens.headerHeight}px`,
               height: shellThemeTokens.headerHeight,
               lineHeight: `${shellThemeTokens.headerHeight}px`,
@@ -64,7 +78,7 @@ export function AppShellLayout({
         >
           <Content
             style={{
-              background: shellThemeTokens.colorBgLayout,
+              background: token.colorBgLayout,
               minHeight: 0,
               minWidth: 0,
               overflowX: "hidden",

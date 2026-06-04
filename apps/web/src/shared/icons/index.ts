@@ -1,2 +1,2 @@
 export { AppIcon } from "./AppIcon";
-export type { IconName } from "./iconTypes";
+export type { AppIconVariant, IconName } from "./iconTypes";
