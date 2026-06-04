@@ -40,6 +40,16 @@ const evidenceConfidenceKeyByText: Record<string, I18nMessageKey> = {
   Medium: "evidence.confidence.medium"
 };
 
+const evidenceSummaryKeyByEvidenceKey: Record<string, I18nMessageKey> = {
+  "metric-revenue-evidence": "evidence.summary.metricRevenue",
+  "quality-job-evidence": "evidence.summary.qualityJob"
+};
+
+const evidenceTitleKeyByEvidenceKey: Record<string, I18nMessageKey> = {
+  "metric-revenue-evidence": "evidence.title.metricRevenue",
+  "quality-job-evidence": "evidence.title.qualityJob"
+};
+
 const traceTitleKeyByTraceKey: Record<string, I18nMessageKey> = {
   "analysis-run-trace": "trace.title.analysisRunSummary",
   "tool-permission-trace": "trace.title.toolPermissionCheck"
@@ -108,13 +118,16 @@ export function actionDescription(
 }
 
 export function toEvidenceItem(t: Translate, item: StaticEvidenceEntranceViewModel) {
+  const summaryKey = evidenceSummaryKeyByEvidenceKey[item.key];
+  const titleKey = evidenceTitleKeyByEvidenceKey[item.key];
+
   return {
     confidenceText: translateMappedText(t, item.confidenceText, evidenceConfidenceKeyByText),
     key: item.key,
     sourceTypeLabel:
       translateMappedText(t, item.sourceType, evidenceSourceTypeKeyByLabel) ?? item.sourceType,
-    summary: item.summary,
-    title: item.title
+    summary: summaryKey ? translateKey(t, summaryKey) : item.summary,
+    title: titleKey ? translateKey(t, titleKey) : item.title
   };
 }
 

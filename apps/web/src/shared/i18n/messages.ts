@@ -122,6 +122,10 @@ export const messages = {
     "evidence.confidence.medium": "中可信度",
     "evidence.sourceType.dataQualityJob": "数据质量 / 任务",
     "evidence.sourceType.metricReport": "指标 / 报告",
+    "evidence.summary.metricRevenue": "来自核心收入指标、报告段落和数据质量摘要的证据入口。",
+    "evidence.summary.qualityJob": "用于仪表盘、数据与知识和平台运维的质量证据入口。",
+    "evidence.title.metricRevenue": "季度收入证据摘要",
+    "evidence.title.qualityJob": "数据质量与任务证据",
     "feedback.option.issue": "有问题",
     "feedback.option.useful": "有帮助",
     "feedback.submit": "提交反馈",
@@ -462,6 +466,12 @@ export const messages = {
     "evidence.confidence.medium": "Medium confidence",
     "evidence.sourceType.dataQualityJob": "Data quality / Jobs",
     "evidence.sourceType.metricReport": "Metrics / Reports",
+    "evidence.summary.metricRevenue":
+      "Evidence entry from core revenue metrics, report sections, and data quality summaries.",
+    "evidence.summary.qualityJob":
+      "Quality evidence entry for Dashboard, Data & Knowledge, and Platform Operations.",
+    "evidence.title.metricRevenue": "Quarterly revenue evidence summary",
+    "evidence.title.qualityJob": "Data quality and job evidence",
     "feedback.option.issue": "Has issue",
     "feedback.option.useful": "Useful",
     "feedback.submit": "Submit feedback",
