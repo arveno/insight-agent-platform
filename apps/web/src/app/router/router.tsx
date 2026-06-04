@@ -1,21 +1,79 @@
-import type { I18nMessageKey, NavigationItem } from "../../shared";
+import type { ComponentType } from "react";
+
+import type {
+  AppShellNavigationGroupViewModel,
+  AppShellNavigationItemViewModel,
+  StaticRouteKey
+} from "../models";
+import { appShellStaticViewModel } from "../fixtures";
+import {
+  AnalysisPage,
+  DashboardPage,
+  DataKnowledgePage,
+  EvaluationPage,
+  FeedbackPage,
+  GovernancePage,
+  MemoryPage,
+  MetricsPage,
+  ModelToolsPage,
+  ObservabilityPage,
+  PlatformOperationsPage,
+  ReportsPage,
+  SettingsPage,
+  WorkspacePage
+} from "../../pages";
+import type { WebPageProps } from "../../pages/_shared";
+import type { I18nMessageKey, NavigationGroup, NavigationItem } from "../../shared";
 
 type Translate = (key: I18nMessageKey) => string;
 
+/**
+ * #68 只建立静态 WebComposition 路由表。
+ * 这里不接真实路由库、不新增 MobileComposition，也不创建真实业务数据链路。
+ */
+export const webCompositionRoutes: Record<StaticRouteKey, ComponentType<WebPageProps>> = {
+  analysis: AnalysisPage,
+  dashboard: DashboardPage,
+  "data-knowledge": DataKnowledgePage,
+  evaluation: EvaluationPage,
+  feedback: FeedbackPage,
+  governance: GovernancePage,
+  memory: MemoryPage,
+  metrics: MetricsPage,
+  "model-tools": ModelToolsPage,
+  observability: ObservabilityPage,
+  "platform-operations": PlatformOperationsPage,
+  reports: ReportsPage,
+  settings: SettingsPage,
+  workspace: WorkspacePage
+};
+
+function translateNavigationLabel(t: Translate, key: string): string {
+  return t(key as I18nMessageKey);
+}
+
+function createNavigationItem(t: Translate, item: AppShellNavigationItemViewModel): NavigationItem {
+  return {
+    badge: item.badgeTextKey ? translateNavigationLabel(t, item.badgeTextKey) : undefined,
+    disabled: item.disabled,
+    key: item.key,
+    label: translateNavigationLabel(t, item.labelKey)
+  };
+}
+
+export function createNavigationGroups(
+  t: Translate,
+  groups: AppShellNavigationGroupViewModel[]
+): NavigationGroup[] {
+  return groups.map((group) => ({
+    items: group.items.map((item) => createNavigationItem(t, item)),
+    key: group.key,
+    label: translateNavigationLabel(t, group.labelKey)
+  }));
+}
+
 export function createPrimaryNavigation(t: Translate): NavigationItem[] {
-  return [
-    { key: "dashboard", label: t("nav.dashboard") },
-    { key: "analysis", label: t("nav.analysis") },
-    { key: "reports", label: t("nav.reports") },
-    { key: "data-knowledge", label: t("nav.dataKnowledge") },
-    { key: "metrics", label: t("nav.metrics") },
-    { key: "memory", label: t("nav.memory") },
-    { key: "feedback", label: t("nav.feedback") },
-    { key: "evaluation", label: t("nav.evaluation") },
-    { key: "model-tools", label: t("nav.modelTools") },
-    { key: "governance", label: t("nav.governance") },
-    { key: "observability", label: t("nav.observability") },
-    { key: "platform-operations", label: t("nav.platformOperations") },
-    { key: "settings", label: t("nav.settings") }
-  ];
+  return createNavigationGroups(t, appShellStaticViewModel.navigationGroups).flatMap(
+    (group) => group.items
+  );
 }

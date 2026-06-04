@@ -1,53 +1,127 @@
+import { useMemo, useState } from "react";
 import { Space, Typography } from "antd";
 
-import { createPrimaryNavigation } from "../router/router";
+import { appShellStaticViewModel } from "../fixtures";
+import type { StaticPageViewModelBase, StaticRouteKey } from "../models";
+import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
-import { AppIcon, AppShellLayout, HeaderBar, LeftNav, RightAssistPanel, useI18n } from "../../shared";
+import {
+  analysisStaticViewModel,
+  dashboardStaticViewModel,
+  dataKnowledgeStaticViewModel,
+  evaluationStaticViewModel,
+  feedbackStaticViewModel,
+  governanceStaticViewModel,
+  memoryStaticViewModel,
+  metricsStaticViewModel,
+  modelToolsStaticViewModel,
+  observabilityStaticViewModel,
+  platformOperationsStaticViewModel,
+  reportsStaticViewModel,
+  settingsStaticViewModel,
+  workspaceStaticViewModel
+} from "../../features/static-view-models";
+import { AppIcon, AppShellLayout, HeaderBar, LeftNav, StatusTag, useI18n } from "../../shared";
+import { ActionBar, RightAssistSummaryPanel, toStatusTag, translateKey } from "../../pages/_shared";
+
+const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
+  analysis: analysisStaticViewModel,
+  dashboard: dashboardStaticViewModel,
+  "data-knowledge": dataKnowledgeStaticViewModel,
+  evaluation: evaluationStaticViewModel,
+  feedback: feedbackStaticViewModel,
+  governance: governanceStaticViewModel,
+  memory: memoryStaticViewModel,
+  metrics: metricsStaticViewModel,
+  "model-tools": modelToolsStaticViewModel,
+  observability: observabilityStaticViewModel,
+  "platform-operations": platformOperationsStaticViewModel,
+  reports: reportsStaticViewModel,
+  settings: settingsStaticViewModel,
+  workspace: workspaceStaticViewModel
+};
 
 export function AppShell() {
   const { locale, t } = useI18n();
   const { themeMode } = useAppTheme();
+  const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
+    appShellStaticViewModel.currentRoute
+  );
+  const ActivePage = webCompositionRoutes[activeRoute];
+  const activeViewModel = pageViewModels[activeRoute];
   const themeModeLabel = t(themeMode === "dark" ? "themeMode.dark" : "themeMode.light");
-  const primaryNavigation = createPrimaryNavigation(t);
+  const navigationGroups = useMemo(
+    () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
+    [t]
+  );
   const headerActions = (
-    <Space size={20}>
+    <Space size={16} wrap>
+      <ActionBar
+        actions={appShellStaticViewModel.headerActions}
+        onNavigate={setActiveRoute}
+        t={t}
+      />
       <Typography.Text type="secondary">
         <AppIcon name="language" title={t("language")} />
-        {t("language")}: {locale}
+        {translateKey(t, appShellStaticViewModel.localePreference.labelKey)}: {locale}
       </Typography.Text>
       <Typography.Text type="secondary">
         <AppIcon name="theme" title={t("theme")} />
-        {t("theme")}: {themeModeLabel}
-      </Typography.Text>
-      <Typography.Text type="secondary">
-        <AppIcon name="settings" title={t("settings")} />
-        {t("settings")}
+        {translateKey(t, appShellStaticViewModel.themePreference.labelKey)}: {themeModeLabel}
       </Typography.Text>
     </Space>
   );
 
   return (
     <AppShellLayout
-      header={<HeaderBar actions={headerActions} title={t("app.headerPlaceholder")} />}
+      header={
+        <HeaderBar
+          actions={headerActions}
+          context={
+            <Space wrap>
+              <Typography.Text>
+                <AppIcon name="workspace" title={t("nav.workspace")} />
+                {appShellStaticViewModel.workspace.name}
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                <AppIcon name="user" title={t("userMenu")} />
+                {appShellStaticViewModel.currentUser.displayName}
+              </Typography.Text>
+            </Space>
+          }
+          status={
+            <StatusTag
+              {...toStatusTag(t, {
+                labelKey: appShellStaticViewModel.shellState.ready.titleKey,
+                status: appShellStaticViewModel.shellState.ready.kind
+              })!}
+            />
+          }
+          subtitle={translateKey(t, appShellStaticViewModel.environmentSummary.messageKey)}
+          title={t("app.productTitle")}
+        />
+      }
       leftNav={
         <Space direction="vertical" size={12} style={{ paddingBlock: 20, width: "100%" }}>
-          <Typography.Text strong>{t("appName")}</Typography.Text>
-          <LeftNav groups={[{ items: primaryNavigation, key: "primary" }]} selectedKey="dashboard" />
+          <Typography.Text strong style={{ paddingInline: 24 }}>
+            <AppIcon name="dashboard" title={t("appName")} />
+            {t("appName")}
+          </Typography.Text>
+          <LeftNav
+            groups={navigationGroups}
+            onSelect={(key) => setActiveRoute(key as StaticRouteKey)}
+            selectedKey={activeRoute}
+          />
         </Space>
       }
       rightAssistPanel={
-        <RightAssistPanel description={t("app.mainPlaceholder")} title={t("app.headerPlaceholder")}>
-          <Typography.Paragraph style={{ margin: 0 }} type="secondary">
-            {t("app.mainDescription")}
-          </Typography.Paragraph>
-        </RightAssistPanel>
+        <RightAssistSummaryPanel
+          onNavigate={setActiveRoute}
+          summary={activeViewModel.rightAssistSummary}
+        />
       }
     >
-      <main style={{ padding: 32 }}>
-        <Typography.Title level={1}>{t("app.productTitle")}</Typography.Title>
-        <Typography.Paragraph style={{ fontSize: 18 }}>{t("app.mainDescription")}</Typography.Paragraph>
-        <Typography.Paragraph type="secondary">{t("app.mainPlaceholder")}</Typography.Paragraph>
-      </main>
+      <ActivePage onNavigate={setActiveRoute} />
     </AppShellLayout>
   );
 }
