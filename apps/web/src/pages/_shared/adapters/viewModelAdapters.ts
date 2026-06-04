@@ -1,10 +1,5 @@
-import type { ReactNode } from "react";
-import { Badge, Button, Space, Typography } from "antd";
-
 import type {
-  StaticActionViewModel,
   StaticEvidenceEntranceViewModel,
-  StaticMetricCardViewModel,
   StaticPageStateViewModel,
   StaticReportEntranceViewModel,
   StaticRiskLevel,
@@ -12,10 +7,9 @@ import type {
   StaticStatusViewModel,
   StaticSummaryItemViewModel,
   StaticTraceEntranceViewModel
-} from "../../app/models";
-import type { RiskBadgeProps, RiskLevel, StatusTagProps } from "../../shared";
-import { translateKey, type Translate } from "./text";
-import type { NavigateToRoute } from "./types";
+} from "../../../app/models";
+import type { RiskBadgeProps, RiskLevel, StatusTagProps } from "../../../shared";
+import { translateKey, type Translate } from "../text";
 
 const statusToneByKind: Record<StaticStatusViewModel["status"], StatusTagProps["tone"]> = {
   disabled: "default",
@@ -65,67 +59,11 @@ export function toRiskBadge(t: Translate, risk?: StaticRiskViewModel): RiskBadge
   };
 }
 
-export function actionDescription(t: Translate, action: StaticActionViewModel): string | undefined {
+export function actionDescription(
+  t: Translate,
+  action: { description?: string; descriptionKey?: string }
+): string | undefined {
   return action.descriptionKey ? translateKey(t, action.descriptionKey) : action.description;
-}
-
-export type ActionBarProps = {
-  actions: StaticActionViewModel[];
-  onNavigate?: NavigateToRoute;
-  t: Translate;
-};
-
-export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
-  if (actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <Space wrap>
-      {actions.map((action) => (
-        <Button
-          disabled={action.disabled}
-          key={action.key}
-          onClick={() => {
-            if (action.targetRoute) {
-              onNavigate?.(action.targetRoute);
-            }
-          }}
-          title={actionDescription(t, action)}
-          type={action.intent === "primary" ? "primary" : "default"}
-        >
-          {translateKey(t, action.labelKey)}
-        </Button>
-      ))}
-    </Space>
-  );
-}
-
-export function summaryMeta(item: StaticSummaryItemViewModel): ReactNode {
-  return item.meta ? <Typography.Text type="secondary">{item.meta}</Typography.Text> : null;
-}
-
-export function summaryDescription(item: StaticSummaryItemViewModel): ReactNode {
-  return item.description ? (
-    <Typography.Text type="secondary">{item.description}</Typography.Text>
-  ) : null;
-}
-
-export function metricMeta(metric: StaticMetricCardViewModel): ReactNode {
-  return (
-    <Space wrap>
-      {metric.trendText ? (
-        <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
-      ) : null}
-      {typeof metric.evidenceCount === "number" ? (
-        <Badge
-          count={metric.evidenceCount}
-          overflowCount={99}
-          style={{ backgroundColor: "#1677ff" }}
-        />
-      ) : null}
-    </Space>
-  );
 }
 
 export function toEvidenceItem(item: StaticEvidenceEntranceViewModel) {

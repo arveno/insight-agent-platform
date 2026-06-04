@@ -9,8 +9,6 @@ import {
   SummaryCardGrid,
   SummaryTable,
   WebSection,
-  summaryDescription,
-  summaryMeta,
   toReportItem,
   toRiskBadge,
   toStatusTag,
@@ -37,8 +35,8 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           {viewModel.reportSections.map((section) => (
             <ReportSection
-              content={summaryDescription(section) ?? section.value}
-              evidenceSummary={summaryMeta(section)}
+              content={section.description ?? section.value}
+              evidenceSummary={section.meta}
               key={section.key}
               risk={toRiskBadge(t, section.risk)}
               title={section.label}
