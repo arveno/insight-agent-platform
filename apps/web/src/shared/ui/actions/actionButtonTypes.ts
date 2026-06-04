@@ -18,3 +18,18 @@ export type AppActionButtonProps = Omit<
   iconName?: IconName;
   variant: AppActionButtonVariant;
 };
+
+export type AppActionGroupItem = {
+  ariaLabel?: string;
+  disabled?: boolean;
+  iconName?: IconName;
+  key: string;
+  label: ReactNode;
+  onClick?: () => void;
+  title?: string;
+  variant: AppActionButtonVariant;
+};
+
+export type AppActionGroupProps = {
+  actions: AppActionGroupItem[];
+};

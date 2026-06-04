@@ -1,6 +1,6 @@
 import { Card, Col, Divider, Row, Space, Typography } from "antd";
 
-import { AppActionButton, useI18n } from "../../../shared";
+import { AppActionGroup, type AppActionGroupItem, useI18n } from "../../../shared";
 import { toEvidenceItem } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -31,46 +31,54 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                   {t("dashboard.reportEvidence.recentReportTitle")}
                 </Typography.Text>
               </Space>
-              {viewModel.recentReports.map((report) => (
-                <div key={report.key}>
-                  <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                    <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-                      <Typography.Text strong>{report.title}</Typography.Text>
+              {viewModel.recentReports.map((report) => {
+                const reportActions: AppActionGroupItem[] = [
+                  {
+                    iconName: "reports",
+                    key: `${report.key}-view-report`,
+                    label: t("dashboard.action.viewReports"),
+                    onClick: () => onNavigate?.("reports"),
+                    variant: "objectDetail"
+                  },
+                  {
+                    key: `${report.key}-suggestions`,
+                    label: t("dashboard.action.viewSuggestions"),
+                    onClick: () => onNavigate?.("analysis"),
+                    variant: "objectDetail"
+                  },
+                  {
+                    iconName: "analysis",
+                    key: `${report.key}-context-analysis`,
+                    label: t("dashboard.action.analyzeWithContext"),
+                    onClick: () => onNavigate?.("analysis"),
+                    variant: "contextPrimary"
+                  }
+                ];
+
+                return (
+                  <div key={report.key}>
+                    <Space direction="vertical" size={8} style={{ width: "100%" }}>
+                      <Space
+                        align="start"
+                        style={{ justifyContent: "space-between", width: "100%" }}
+                      >
+                        <Typography.Text strong>{report.title}</Typography.Text>
+                        <Typography.Text type="secondary">
+                          {report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
+                        </Typography.Text>
+                      </Space>
                       <Typography.Text type="secondary">
-                        {report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
+                        {t("dashboard.common.updatedAtPrefix")}
+                        {report.updatedAt}
                       </Typography.Text>
+                      <Typography.Text type="secondary">
+                        {t("dashboard.reportEvidence.suggestionSummary")}
+                      </Typography.Text>
+                      <AppActionGroup actions={reportActions} />
                     </Space>
-                    <Typography.Text type="secondary">
-                      {t("dashboard.common.updatedAtPrefix")}
-                      {report.updatedAt}
-                    </Typography.Text>
-                    <Typography.Text type="secondary">
-                      {t("dashboard.reportEvidence.suggestionSummary")}
-                    </Typography.Text>
-                    <Space wrap>
-                      <AppActionButton
-                        iconName="reports"
-                        onClick={() => onNavigate?.("reports")}
-                        variant="objectDetail"
-                      >
-                        {t("dashboard.action.viewReports")}
-                      </AppActionButton>
-                      <AppActionButton
-                        onClick={() => onNavigate?.("analysis")}
-                        variant="objectDetail"
-                      >
-                        {t("dashboard.action.viewSuggestions")}
-                      </AppActionButton>
-                      <AppActionButton
-                        onClick={() => onNavigate?.("analysis")}
-                        variant="contextPrimary"
-                      >
-                        {t("dashboard.action.analyzeWithContext")}
-                      </AppActionButton>
-                    </Space>
-                  </Space>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </Space>
           </Card>
         </Col>
@@ -85,40 +93,52 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                   {t("dashboard.reportEvidence.evidenceTitle")}
                 </Typography.Text>
               </Space>
-              {evidenceItems.map((evidence, index) => (
-                <div key={evidence.key}>
-                  {index > 0 ? <Divider style={{ margin: "4px 0 12px" }} /> : null}
-                  <Space direction="vertical" size={8} style={{ width: "100%" }}>
-                    <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-                      <Space direction="vertical" size={2}>
-                        <Typography.Text strong>{evidence.title}</Typography.Text>
-                        <Typography.Text type="secondary">
-                          {evidence.sourceTypeLabel}
-                          {evidence.confidenceText ? ` · ${evidence.confidenceText}` : null}
-                        </Typography.Text>
+              {evidenceItems.map((evidence, index) => {
+                const evidenceActions: AppActionGroupItem[] = [
+                  {
+                    key: `${evidence.key}-view-evidence`,
+                    label: t("dashboard.action.viewEvidence"),
+                    onClick: () => onNavigate?.("reports"),
+                    variant: "sourceLink"
+                  },
+                  {
+                    iconName: "data",
+                    key: `${evidence.key}-source`,
+                    label: t("dashboard.action.viewDataKnowledge"),
+                    onClick: () => onNavigate?.("data-knowledge"),
+                    variant: "sourceLink"
+                  },
+                  {
+                    iconName: "observability",
+                    key: `${evidence.key}-trace`,
+                    label: t("dashboard.action.viewTrace"),
+                    onClick: () => onNavigate?.("observability"),
+                    variant: "sourceLink"
+                  }
+                ];
+
+                return (
+                  <div key={evidence.key}>
+                    {index > 0 ? <Divider style={{ margin: "4px 0 12px" }} /> : null}
+                    <Space direction="vertical" size={8} style={{ width: "100%" }}>
+                      <Space
+                        align="start"
+                        style={{ justifyContent: "space-between", width: "100%" }}
+                      >
+                        <Space direction="vertical" size={2}>
+                          <Typography.Text strong>{evidence.title}</Typography.Text>
+                          <Typography.Text type="secondary">
+                            {evidence.sourceTypeLabel}
+                            {evidence.confidenceText ? ` · ${evidence.confidenceText}` : null}
+                          </Typography.Text>
+                        </Space>
                       </Space>
+                      <Typography.Text type="secondary">{evidence.summary}</Typography.Text>
+                      <AppActionGroup actions={evidenceActions} />
                     </Space>
-                    <Typography.Text type="secondary">{evidence.summary}</Typography.Text>
-                    <Space wrap>
-                      <AppActionButton onClick={() => onNavigate?.("reports")} variant="sourceLink">
-                        {t("dashboard.action.viewEvidence")}
-                      </AppActionButton>
-                      <AppActionButton
-                        onClick={() => onNavigate?.("data-knowledge")}
-                        variant="sourceLink"
-                      >
-                        {t("dashboard.action.viewDataKnowledge")}
-                      </AppActionButton>
-                      <AppActionButton
-                        onClick={() => onNavigate?.("observability")}
-                        variant="sourceLink"
-                      >
-                        {t("dashboard.action.viewTrace")}
-                      </AppActionButton>
-                    </Space>
-                  </Space>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </Space>
           </Card>
         </Col>

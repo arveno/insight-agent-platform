@@ -1,6 +1,6 @@
 import { Card, Col, Row, Space, Typography } from "antd";
 
-import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, type AppActionGroupItem, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -27,6 +27,29 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
           const description = isRiskSummary
             ? item.description
             : t("dashboard.risk.anomalyDescription");
+          const riskActions: AppActionGroupItem[] = [
+            {
+              iconName: "analysis",
+              key: `${item.key}-context-analysis`,
+              label: t("dashboard.action.analyzeWithContext"),
+              onClick: () => onNavigate?.("analysis"),
+              variant: "contextPrimary"
+            },
+            {
+              iconName: "analysis",
+              key: `${item.key}-detail`,
+              label: t("dashboard.action.viewAnomaly"),
+              onClick: () => onNavigate?.("analysis"),
+              variant: "objectDetail"
+            },
+            {
+              iconName: "observability",
+              key: `${item.key}-trace`,
+              label: t("dashboard.action.viewTrace"),
+              onClick: () => onNavigate?.("observability"),
+              variant: "sourceLink"
+            }
+          ];
 
           return (
             <Col key={item.key} lg={12} xs={24}>
@@ -40,27 +63,7 @@ export function DashboardRiskOverview({ onNavigate, viewModel }: DashboardCompon
                     {risk ? <RiskBadge {...risk} /> : null}
                   </Space>
                   <Typography.Text type="secondary">{description}</Typography.Text>
-                  <Space wrap>
-                    <AppActionButton
-                      iconName="analysis"
-                      onClick={() => onNavigate?.("analysis")}
-                      variant="contextPrimary"
-                    >
-                      {t("dashboard.action.analyzeWithContext")}
-                    </AppActionButton>
-                    <AppActionButton
-                      onClick={() => onNavigate?.("analysis")}
-                      variant="objectDetail"
-                    >
-                      {t("dashboard.action.viewAnomaly")}
-                    </AppActionButton>
-                    <AppActionButton
-                      onClick={() => onNavigate?.("observability")}
-                      variant="sourceLink"
-                    >
-                      {t("dashboard.action.viewTrace")}
-                    </AppActionButton>
-                  </Space>
+                  <AppActionGroup actions={riskActions} />
                 </Space>
               </Card>
             </Col>

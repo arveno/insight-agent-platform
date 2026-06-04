@@ -1,6 +1,6 @@
 import { Card, Col, Row, Space, Typography } from "antd";
 
-import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, type AppActionGroupItem, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -21,6 +21,36 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         {viewModel.platformQualitySummary.map((item) => {
           const risk = toRiskBadge(t, item.risk);
+          const qualityActions: AppActionGroupItem[] = [
+            {
+              iconName: "operations",
+              key: `${item.key}-operations`,
+              label: t("dashboard.action.viewPlatformOperations"),
+              onClick: () => onNavigate?.("platform-operations"),
+              variant: "moduleEntry"
+            },
+            {
+              iconName: "operations",
+              key: `${item.key}-job-quality`,
+              label: t("dashboard.action.viewJobDataQuality"),
+              onClick: () => onNavigate?.("platform-operations"),
+              variant: "objectDetail"
+            },
+            {
+              iconName: "analysis",
+              key: `${item.key}-platform-anomaly`,
+              label: t("dashboard.action.viewPlatformAnomaly"),
+              onClick: () => onNavigate?.("analysis"),
+              variant: "contextPrimary"
+            },
+            {
+              iconName: "data",
+              key: `${item.key}-source`,
+              label: t("dashboard.action.viewDataKnowledge"),
+              onClick: () => onNavigate?.("data-knowledge"),
+              variant: "sourceLink"
+            }
+          ];
 
           return (
             <Col key={item.key} xs={24}>
@@ -37,33 +67,7 @@ export function DashboardQualityPanel({ onNavigate, viewModel }: DashboardCompon
                     {risk ? <RiskBadge {...risk} /> : null}
                   </Space>
                   <Typography.Text type="secondary">{item.description}</Typography.Text>
-                  <Space wrap>
-                    <AppActionButton
-                      iconName="operations"
-                      onClick={() => onNavigate?.("platform-operations")}
-                      variant="moduleEntry"
-                    >
-                      {t("dashboard.action.viewPlatformOperations")}
-                    </AppActionButton>
-                    <AppActionButton
-                      onClick={() => onNavigate?.("platform-operations")}
-                      variant="objectDetail"
-                    >
-                      {t("dashboard.action.viewJobDataQuality")}
-                    </AppActionButton>
-                    <AppActionButton
-                      onClick={() => onNavigate?.("analysis")}
-                      variant="contextPrimary"
-                    >
-                      {t("dashboard.action.viewPlatformAnomaly")}
-                    </AppActionButton>
-                    <AppActionButton
-                      onClick={() => onNavigate?.("data-knowledge")}
-                      variant="sourceLink"
-                    >
-                      {t("dashboard.action.viewDataKnowledge")}
-                    </AppActionButton>
-                  </Space>
+                  <AppActionGroup actions={qualityActions} />
                 </Space>
               </Card>
             </Col>

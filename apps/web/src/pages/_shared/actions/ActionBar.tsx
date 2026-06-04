@@ -1,7 +1,10 @@
-import { Space } from "antd";
-
-import type { StaticActionViewModel } from "../../../app/models";
-import { AppActionButton, type AppActionButtonVariant } from "../../../shared";
+import type { StaticActionViewModel, StaticRouteKey } from "../../../app/models";
+import {
+  AppActionGroup,
+  type AppActionButtonVariant,
+  type AppActionGroupItem,
+  type IconName
+} from "../../../shared";
 import { actionDescription } from "../adapters";
 import { translateKey, type Translate } from "../text";
 import type { NavigateToRoute } from "../types";
@@ -10,6 +13,23 @@ export type ActionBarProps = {
   actions: StaticActionViewModel[];
   onNavigate?: NavigateToRoute;
   t: Translate;
+};
+
+const routeIconByRoute: Partial<Record<StaticRouteKey, IconName>> = {
+  analysis: "analysis",
+  dashboard: "dashboard",
+  "data-knowledge": "data",
+  evaluation: "evaluation",
+  feedback: "feedback",
+  governance: "governance",
+  memory: "memory",
+  metrics: "metrics",
+  "model-tools": "models",
+  observability: "observability",
+  "platform-operations": "operations",
+  reports: "reports",
+  settings: "settings",
+  workspace: "workspace"
 };
 
 function actionButtonVariant(action: StaticActionViewModel): AppActionButtonVariant {
@@ -30,22 +50,20 @@ export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
   }
 
   return (
-    <Space wrap>
-      {actions.map((action) => (
-        <AppActionButton
-          disabled={action.disabled}
-          key={action.key}
-          onClick={() => {
-            if (action.targetRoute) {
-              onNavigate?.(action.targetRoute);
-            }
-          }}
-          title={actionDescription(t, action)}
-          variant={actionButtonVariant(action)}
-        >
-          {translateKey(t, action.labelKey)}
-        </AppActionButton>
-      ))}
-    </Space>
+    <AppActionGroup
+      actions={actions.map<AppActionGroupItem>((action) => ({
+        disabled: action.disabled,
+        iconName: action.targetRoute ? routeIconByRoute[action.targetRoute] : undefined,
+        key: action.key,
+        label: translateKey(t, action.labelKey),
+        onClick: () => {
+          if (action.targetRoute) {
+            onNavigate?.(action.targetRoute);
+          }
+        },
+        title: actionDescription(t, action),
+        variant: actionButtonVariant(action)
+      }))}
+    />
   );
 }

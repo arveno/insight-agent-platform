@@ -7,6 +7,7 @@ export type MetricCardProps = {
   actions?: ReactNode;
   description?: ReactNode;
   evidenceSummary?: ReactNode;
+  footerActions?: ReactNode;
   risk?: RiskBadgeProps;
   status?: StatusTagProps;
   title: ReactNode;
@@ -24,6 +25,7 @@ export function MetricCard({
   actions,
   description,
   evidenceSummary,
+  footerActions,
   risk,
   status,
   title,
@@ -48,7 +50,10 @@ export function MetricCard({
           {trend}
         </Space>
         {description ? <Typography.Text>{description}</Typography.Text> : null}
-        {evidenceSummary ? <Typography.Text type="secondary">{evidenceSummary}</Typography.Text> : null}
+        {evidenceSummary ? (
+          <Typography.Text type="secondary">{evidenceSummary}</Typography.Text>
+        ) : null}
+        {footerActions}
       </Space>
     </Card>
   );

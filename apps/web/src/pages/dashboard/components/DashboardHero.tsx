@@ -1,6 +1,6 @@
 import { Col, Flex, Row, Space, Typography, theme } from "antd";
 
-import { AppActionButton, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, type AppActionGroupItem, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 
@@ -16,6 +16,29 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
   const summary = viewModel.dashboardSummary[0];
   const riskBadge = toRiskBadge(t, summary?.risk);
   const anomalyCount = viewModel.anomalyCards.length + viewModel.riskSummary.length;
+  const heroActions: AppActionGroupItem[] = [
+    {
+      iconName: "analysis",
+      key: "dashboard-hero-analysis",
+      label: t("action.dashboardPrimaryAnalysis.label"),
+      onClick: () => onNavigate?.("analysis"),
+      variant: "globalPrimary"
+    },
+    {
+      iconName: "metrics",
+      key: "dashboard-hero-metrics",
+      label: t("dashboard.action.viewMetrics"),
+      onClick: () => onNavigate?.("metrics"),
+      variant: "moduleEntry"
+    },
+    {
+      iconName: "reports",
+      key: "dashboard-hero-reports",
+      label: t("dashboard.action.viewReports"),
+      onClick: () => onNavigate?.("reports"),
+      variant: "moduleEntry"
+    }
+  ];
 
   return (
     <section
@@ -43,29 +66,7 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
             </Typography.Text>
           </Space>
         </Space>
-        <Space wrap>
-          <AppActionButton
-            iconName="analysis"
-            onClick={() => onNavigate?.("analysis")}
-            variant="globalPrimary"
-          >
-            {t("action.dashboardPrimaryAnalysis.label")}
-          </AppActionButton>
-          <AppActionButton
-            iconName="metrics"
-            onClick={() => onNavigate?.("metrics")}
-            variant="moduleEntry"
-          >
-            {t("dashboard.action.viewMetrics")}
-          </AppActionButton>
-          <AppActionButton
-            iconName="reports"
-            onClick={() => onNavigate?.("reports")}
-            variant="moduleEntry"
-          >
-            {t("dashboard.action.viewReports")}
-          </AppActionButton>
-        </Space>
+        <AppActionGroup actions={heroActions} />
       </Flex>
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col lg={6} md={12} xs={24}>

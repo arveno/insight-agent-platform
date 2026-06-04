@@ -1,6 +1,6 @@
 import { Col, Row, Space, Typography } from "antd";
 
-import { AppActionButton, MetricCard, useI18n } from "../../../shared";
+import { AppActionGroup, type AppActionGroupItem, MetricCard, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 import { DashboardSectionHeader } from "./DashboardSectionHeader";
@@ -28,22 +28,30 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
             metric.risk.level === "low"
               ? t("dashboard.metrics.defaultDescription")
               : t("dashboard.metrics.riskDescription");
+          const metricActions: AppActionGroupItem[] = [
+            ...(metric.risk.level !== "low"
+              ? [
+                  {
+                    iconName: "analysis" as const,
+                    key: `${metric.key}-analyze`,
+                    label: t("dashboard.action.analyzeAnomaly"),
+                    onClick: () => onNavigate?.("analysis"),
+                    variant: "contextPrimary" as const
+                  }
+                ]
+              : []),
+            {
+              iconName: "data",
+              key: `${metric.key}-source`,
+              label: t("dashboard.action.viewDataKnowledge"),
+              onClick: () => onNavigate?.("data-knowledge"),
+              variant: "sourceLink"
+            }
+          ];
 
           return (
             <Col key={metric.key} lg={12} xs={24}>
               <MetricCard
-                actions={
-                  <Space wrap>
-                    {metric.risk.level !== "low" ? (
-                      <AppActionButton
-                        onClick={() => onNavigate?.("analysis")}
-                        variant="contextPrimary"
-                      >
-                        {t("dashboard.action.analyzeAnomaly")}
-                      </AppActionButton>
-                    ) : null}
-                  </Space>
-                }
                 description={<Typography.Text type="secondary">{description}</Typography.Text>}
                 evidenceSummary={
                   <Space wrap>
@@ -53,15 +61,9 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                         {metric.evidenceCount} {t("dashboard.common.relatedEvidenceCountSuffix")}
                       </Typography.Text>
                     ) : null}
-                    <AppActionButton
-                      iconName="data"
-                      onClick={() => onNavigate?.("data-knowledge")}
-                      variant="sourceLink"
-                    >
-                      {t("dashboard.action.viewDataKnowledge")}
-                    </AppActionButton>
                   </Space>
                 }
+                footerActions={<AppActionGroup actions={metricActions} />}
                 risk={displayRisk}
                 title={metric.label}
                 value={metric.valueText}
