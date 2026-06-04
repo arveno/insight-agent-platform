@@ -1,13 +1,9 @@
 import type { StaticActionViewModel, StaticRouteKey } from "../../../app/models";
-import {
-  AppActionGroup,
-  type AppActionButtonVariant,
-  type AppActionGroupItem,
-  type IconName
-} from "../../../shared";
+import { AppActionGroup, type AppActionButtonVariant, type IconName } from "../../../shared";
 import { actionDescription } from "../adapters";
 import { translateKey, type Translate } from "../text";
 import type { NavigateToRoute } from "../types";
+import { createRouteAction } from "./createRouteAction";
 
 export type ActionBarProps = {
   actions: StaticActionViewModel[];
@@ -51,19 +47,18 @@ export function ActionBar({ actions, onNavigate, t }: ActionBarProps) {
 
   return (
     <AppActionGroup
-      actions={actions.map<AppActionGroupItem>((action) => ({
-        disabled: action.disabled,
-        iconName: action.targetRoute ? routeIconByRoute[action.targetRoute] : undefined,
-        key: action.key,
-        label: translateKey(t, action.labelKey),
-        onClick: () => {
-          if (action.targetRoute) {
-            onNavigate?.(action.targetRoute);
-          }
-        },
-        title: actionDescription(t, action),
-        variant: actionButtonVariant(action)
-      }))}
+      actions={actions.map((action) =>
+        createRouteAction({
+          disabled: action.disabled,
+          iconName: action.targetRoute ? routeIconByRoute[action.targetRoute] : undefined,
+          key: action.key,
+          label: translateKey(t, action.labelKey),
+          onNavigate,
+          route: action.targetRoute,
+          title: actionDescription(t, action),
+          variant: actionButtonVariant(action)
+        })
+      )}
     />
   );
 }

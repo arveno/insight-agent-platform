@@ -107,6 +107,68 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
 
+## Page Composition Rules
+
+Page Composition 是 Web 页面默认组合层级，Dashboard、#103、#104 后续页面必须优先复用。
+
+### 默认页面层级
+
+```text
+AppShell
+└─ Page
+   └─ AppSectionStack
+      └─ AppSection
+         └─ AppCardGrid
+            └─ AppContentCard / MetricCard / 页面私有业务卡片
+               └─ AppActionGroup
+                  └─ AppActionButton
+```
+
+### AppSectionStack
+
+- 统一页面内部 section 垂直排列。
+- 统一页面主内容 padding / section spacing。
+- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+
+### AppSection
+
+- 统一 Section eyebrow / title。
+- 统一 Section Header 右侧模块入口。
+- 统一 Section content 的 `AppCardGrid`。
+- 接收 `columns` 和 section action。
+- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+
+### AppCardGrid / Card / Tag / Action
+
+- `AppCardGrid` 只负责 section 内卡片列数、gutter、左对齐和响应式断点。
+- `AppContentCard` / `MetricCard` 只负责 Card slot。
+- `RiskBadge` / `StatusTag` 只负责状态与风险标签表达。
+- `AppActionGroup` / `AppActionButton` 只负责动作排序和按钮层级。
+
+### Route Action Adapter
+
+- `shared/ui` 不知道 route。
+- route-aware action helper 放在 `pages/_shared/actions`。
+- helper 负责把 route、variant、iconName、label、onNavigate 转成 `AppActionGroupItem`。
+- 后续入口跳转不得在页面中随意散写。
+- `Open in Analysis with context` 等能力后续也必须通过统一 action helper 承接上下文，不得页面临时拼按钮。
+
+### Page Archetype
+
+默认页面必须使用 `AppSectionStack` + `AppSection` + `AppCardGrid`。
+
+特殊页面必须落入明确 Page Archetype：
+
+- Overview Page：Dashboard / Metrics / Platform Operations。
+- Management Page：Data & Knowledge / Models & Tools / Governance / Settings。
+- Conversation Workspace：Analysis。
+- Reader Page：Reports。
+- Timeline Page：Observability。
+
+Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级页面。
+
+特殊页面可以不使用 CardGrid 主结构，但必须落入 Page Archetype，并继续复用 Action / Card / Tag / RightAssistPanel 等底层规则。
+
 ## Card / Tag / Action Slot Rules
 
 Card / Tag / Action Slot 是 Web 页面卡片结构的长期规则，Dashboard、#103、#104 后续页面必须复用同一套摆放逻辑。

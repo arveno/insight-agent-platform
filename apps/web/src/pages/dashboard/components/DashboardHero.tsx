@@ -1,13 +1,8 @@
 import { Flex, Space, Typography, theme } from "antd";
 
-import {
-  AppActionGroup,
-  AppCardGrid,
-  type AppActionGroupItem,
-  RiskBadge,
-  useI18n
-} from "../../../shared";
+import { AppActionGroup, AppCardGrid, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
+import { createRouteAction } from "../../_shared/actions";
 import type { DashboardComponentProps } from "./dashboardComponentTypes";
 
 const heroStyle = {
@@ -22,28 +17,31 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
   const summary = viewModel.dashboardSummary[0];
   const riskBadge = toRiskBadge(t, summary?.risk);
   const anomalyCount = viewModel.anomalyCards.length + viewModel.riskSummary.length;
-  const heroActions: AppActionGroupItem[] = [
-    {
+  const heroActions = [
+    createRouteAction({
       iconName: "analysis",
       key: "dashboard-hero-analysis",
       label: t("action.dashboardPrimaryAnalysis.label"),
-      onClick: () => onNavigate?.("analysis"),
+      onNavigate,
+      route: "analysis",
       variant: "globalPrimary"
-    },
-    {
+    }),
+    createRouteAction({
       iconName: "metrics",
       key: "dashboard-hero-metrics",
       label: t("dashboard.action.viewMetrics"),
-      onClick: () => onNavigate?.("metrics"),
+      onNavigate,
+      route: "metrics",
       variant: "moduleEntry"
-    },
-    {
+    }),
+    createRouteAction({
       iconName: "reports",
       key: "dashboard-hero-reports",
       label: t("dashboard.action.viewReports"),
-      onClick: () => onNavigate?.("reports"),
+      onNavigate,
+      route: "reports",
       variant: "moduleEntry"
-    }
+    })
   ];
 
   return (
