@@ -33,10 +33,7 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
       </WebSection>
       <WebSection section={viewModel.mainSections[1]}>
         <SummaryCardGrid items={[viewModel.metricFormula, ...viewModel.metricThresholds]} />
-        <StaticChart
-          metrics={viewModel.metricCards}
-          titleKey={viewModel.mainSections[1].titleKey}
-        />
+        <StaticChart titleKey={viewModel.mainSections[1].titleKey} />
       </WebSection>
       <WebSection section={viewModel.mainSections[2]}>
         <SummaryTable items={[...viewModel.metricLineage, ...viewModel.relatedDataFields]} />

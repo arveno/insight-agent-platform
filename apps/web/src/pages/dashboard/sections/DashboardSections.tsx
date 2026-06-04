@@ -7,7 +7,6 @@ import {
   EvidencePanel,
   MetricCardGrid,
   ReportEntranceList,
-  StaticChart,
   SummaryCardGrid,
   WebSection,
   toReportItem,
@@ -24,20 +23,16 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
       <WebSection section={viewModel.mainSections[0]}>
-        <SummaryCardGrid items={viewModel.dashboardSummary} />
         <MetricCardGrid items={viewModel.businessMetricCards} />
-        <StaticChart
-          metrics={viewModel.businessMetricCards}
-          titleKey={viewModel.mainSections[0].titleKey}
-        />
+        <SummaryCardGrid items={viewModel.dashboardSummary} />
         <ActionBar actions={viewModel.analysisEntrances} onNavigate={onNavigate} t={t} />
-      </WebSection>
-      <WebSection section={viewModel.mainSections[1]}>
-        <SummaryCardGrid items={viewModel.platformQualitySummary} />
       </WebSection>
       <WebSection section={viewModel.mainSections[2]}>
         <SummaryCardGrid items={[...viewModel.anomalyCards, ...viewModel.riskSummary]} />
         <ReportEntranceList items={viewModel.recentReports.map((item) => toReportItem(t, item))} />
+      </WebSection>
+      <WebSection section={viewModel.mainSections[1]}>
+        <SummaryCardGrid items={viewModel.platformQualitySummary} />
         <EvidencePanel items={viewModel.evidenceEntrances} />
       </WebSection>
     </Space>

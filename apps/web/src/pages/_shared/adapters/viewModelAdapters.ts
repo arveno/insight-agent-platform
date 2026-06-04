@@ -1,6 +1,5 @@
 import type {
   StaticEvidenceEntranceViewModel,
-  StaticPageStateViewModel,
   StaticReportEntranceViewModel,
   StaticRiskLevel,
   StaticRiskViewModel,
@@ -31,6 +30,14 @@ const riskLevelMap: Record<StaticRiskLevel, RiskLevel> = {
   none: "unknown"
 };
 
+function productRiskReason(reason?: string): string | undefined {
+  if (!reason) {
+    return undefined;
+  }
+
+  return /Surface Contract|\bGap\b|阶段限制/.test(reason) ? undefined : reason;
+}
+
 export function toStatusTag(
   t: Translate,
   status?: StaticStatusViewModel
@@ -55,7 +62,7 @@ export function toRiskBadge(t: Translate, risk?: StaticRiskViewModel): RiskBadge
       ? translateKey(t, risk.titleKey)
       : (risk.title ?? translateKey(t, "risk.unknown.title")),
     level: riskLevelMap[risk.level],
-    reason: risk.reason
+    reason: productRiskReason(risk.reason)
   };
 }
 
@@ -98,12 +105,4 @@ export function toReportItem(
     status: item.status,
     value: `${translateKey(t, "table.column.evidenceCount")}: ${item.evidenceCount}`
   };
-}
-
-export function pageStateTitle(t: Translate, state: StaticPageStateViewModel): string {
-  return translateKey(t, state.titleKey);
-}
-
-export function pageStateMessage(t: Translate, state: StaticPageStateViewModel): string {
-  return translateKey(t, state.messageKey);
 }

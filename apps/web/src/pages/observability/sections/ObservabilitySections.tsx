@@ -32,10 +32,7 @@ export function ObservabilitySections({ viewModel }: ObservabilitySectionsProps)
       <WebSection section={viewModel.mainSections[1]}>
         <MetricCardGrid items={viewModel.metricCards} />
         <SummaryCardGrid items={[...viewModel.costLatencySummary, ...viewModel.errorRateSummary]} />
-        <StaticChart
-          metrics={viewModel.metricCards}
-          titleKey={viewModel.mainSections[1].titleKey}
-        />
+        <StaticChart titleKey={viewModel.mainSections[1].titleKey} />
       </WebSection>
       <WebSection section={viewModel.mainSections[2]}>
         <SummaryTable items={[viewModel.traceDetail]} />

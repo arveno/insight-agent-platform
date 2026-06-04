@@ -34,13 +34,25 @@ export function RightAssistPanel({
   }
 
   return (
-    <aside style={{ borderLeft: `1px solid ${shellThemeTokens.colorBorder}`, width }}>
-      <Card bordered={false}>
+    <aside
+      style={{
+        background: shellThemeTokens.colorBgContainer,
+        borderLeft: `1px solid ${shellThemeTokens.colorBorder}`,
+        flex: `0 0 ${width}px`,
+        height: `calc(100vh - ${shellThemeTokens.headerHeight}px)`,
+        maxWidth: width,
+        overflowY: "auto",
+        width
+      }}
+    >
+      <Card bordered={false} style={{ height: "100%" }}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
             <Space direction="vertical" size={4}>
               <Typography.Text strong>{title}</Typography.Text>
-              {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
+              {description ? (
+                <Typography.Text type="secondary">{description}</Typography.Text>
+              ) : null}
             </Space>
             {actions}
           </Space>
