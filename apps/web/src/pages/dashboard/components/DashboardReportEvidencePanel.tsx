@@ -13,7 +13,7 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
     <section>
       <DashboardSectionHeader
         actionIcon="reports"
-        actionLabel={t("dashboard.action.viewReports")}
+        actionLabel={t("dashboard.action.viewAllReports")}
         actionRoute="reports"
         eyebrow={t("dashboard.reportEvidence.eyebrow")}
         onNavigate={onNavigate}
@@ -51,7 +51,7 @@ export function DashboardReportEvidencePanel({ onNavigate, viewModel }: Dashboar
                       <AppActionButton
                         iconName="reports"
                         onClick={() => onNavigate?.("reports")}
-                        variant="moduleEntry"
+                        variant="objectDetail"
                       >
                         {t("dashboard.action.viewReports")}
                       </AppActionButton>

@@ -42,9 +42,6 @@ export function DashboardMetricOverview({ onNavigate, viewModel }: DashboardComp
                         {t("dashboard.action.analyzeAnomaly")}
                       </AppActionButton>
                     ) : null}
-                    <AppActionButton onClick={() => onNavigate?.("metrics")} variant="moduleEntry">
-                      {t("dashboard.action.viewMetrics")}
-                    </AppActionButton>
                   </Space>
                 }
                 description={<Typography.Text type="secondary">{description}</Typography.Text>}
