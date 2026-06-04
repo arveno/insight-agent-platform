@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from "antd";
 
 import { AppIcon } from "../../icons";
-import type { AppActionButtonProps, AppActionButtonVariant } from "./actionButtonTypes";
+import type { AppActionButtonProps, AppActionButtonVariant } from "./actionTypes";
 
 const actionButtonPropsByVariant: Record<
   AppActionButtonVariant,

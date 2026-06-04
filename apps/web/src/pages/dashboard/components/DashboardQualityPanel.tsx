@@ -1,6 +1,6 @@
 import { Typography } from "antd";
 
-import { AppActionGroup, AppContentCard, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, AppBaseCard, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
 import type { DashboardQualityCardProps } from "./dashboardComponentTypes";
@@ -44,7 +44,7 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
   ];
 
   return (
-    <AppContentCard
+    <AppBaseCard
       description={item.description}
       eyebrow={t("dashboard.quality.itemEyebrow")}
       footerActions={<AppActionGroup actions={qualityActions} />}
@@ -52,6 +52,6 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
       title={item.label}
     >
       <Typography.Text>{item.value}</Typography.Text>
-    </AppContentCard>
+    </AppBaseCard>
   );
 }

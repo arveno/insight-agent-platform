@@ -1,7 +1,7 @@
 import { Space } from "antd";
 
 import { AppActionButton } from "./AppActionButton";
-import type { AppActionButtonVariant, AppActionGroupProps } from "./actionButtonTypes";
+import type { AppActionButtonVariant, AppActionGroupProps } from "./actionTypes";
 
 const actionVariantOrder: Record<AppActionButtonVariant, number> = {
   globalPrimary: 0,

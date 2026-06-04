@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { Card, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
 import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
+import { AppBaseCard } from "./AppBaseCard";
 
 export type MetricCardProps = {
   actions?: ReactNode;
@@ -55,23 +56,16 @@ export function MetricCard({
     ) : null;
 
   return (
-    <Card style={{ height: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: "100%" }}>
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Typography.Text type="secondary">{title}</Typography.Text>
-          </Space>
-          {resolvedTagSlot ? <div style={{ flexShrink: 0 }}>{resolvedTagSlot}</div> : null}
-        </Space>
-        <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            {value}
-          </Typography.Title>
-          {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
-        </Space>
-        {resolvedMeta ? <div>{resolvedMeta}</div> : null}
-        {footerActions ? <div style={{ marginTop: "auto" }}>{footerActions}</div> : null}
-      </div>
-    </Card>
+    <AppBaseCard
+      description={description}
+      footerActions={footerActions}
+      meta={resolvedMeta}
+      tagSlot={resolvedTagSlot}
+      title={title}
+    >
+      <Typography.Title level={3} style={{ margin: 0 }}>
+        {value}
+      </Typography.Title>
+    </AppBaseCard>
   );
 }

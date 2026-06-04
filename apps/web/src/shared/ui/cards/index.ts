@@ -1,3 +1,5 @@
+export { AppBaseCard } from "./AppBaseCard";
 export { AppCardGrid } from "./AppCardGrid";
-export { AppContentCard } from "./AppContentCard";
-export type { AppCardGridColumns, AppCardGridProps, AppContentCardProps } from "./cardTypes";
+export { MetricCard } from "./MetricCard";
+export type { AppBaseCardProps, AppCardGridColumns, AppCardGridProps } from "./cardTypes";
+export type { MetricCardProps } from "./MetricCard";

@@ -119,7 +119,7 @@ AppShell
    └─ AppSectionStack
       └─ AppSection
          └─ AppCardGrid
-            └─ AppContentCard / MetricCard / 页面私有业务卡片
+            └─ AppBaseCard / MetricCard / 基于 AppBaseCard 的页面私有业务卡片
                └─ AppActionGroup
                   └─ AppActionButton
 ```
@@ -141,7 +141,7 @@ AppShell
 ### AppCardGrid / Card / Tag / Action
 
 - `AppCardGrid` 只负责 section 内卡片列数、gutter、左对齐和响应式断点。
-- `AppContentCard` / `MetricCard` 只负责 Card slot。
+- `AppBaseCard` 是唯一内容卡片外壳底座，`MetricCard` 必须基于 `AppBaseCard`。
 - `RiskBadge` / `StatusTag` 只负责状态与风险标签表达。
 - `AppActionGroup` / `AppActionButton` 只负责动作排序和按钮层级。
 
@@ -175,21 +175,25 @@ Card / Tag / Action Slot 是 Web 页面卡片结构的长期规则，Dashboard�
 
 ### Card 分类
 
-| Card 类型 | 用途 | 示例 | 公共组件承接 |
-| --- | --- | --- | --- |
-| HeroCard | 页面总览 / 业务总览 | 经营状态总览 | 页面私有，后续稳定再抽 |
-| MetricCard | 指标值 + 趋势 + 风险 | 季度收入、毛利率 | `shared/ui/metric/MetricCard` |
-| RiskCard | 风险 / 异常 / 治理提示 | 收入增速异常、风险摘要 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
-| ReportCard | 报告摘要 / 建议动作 | 周经营分析报告 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
-| EvidenceCard | 证据 / 来源 / 可信度 | 季度收入证据摘要 | `shared/ui/cards/AppContentCard` / `SourceEvidenceList` |
-| OperationsCard | 任务 / 数据质量 / 运维状态 | 平台质量 | `shared/ui/cards/AppContentCard` + 页面私有组合 |
-| AssistCard | 右侧栏上下文 | 相关证据、运行轨迹 | `RightAssistPanel` 内部结构 |
+| Card 类型      | 用途                       | 示例                   | 公共组件承接                                         |
+| -------------- | -------------------------- | ---------------------- | ---------------------------------------------------- |
+| HeroCard       | 页面总览 / 业务总览        | 经营状态总览           | 页面私有，后续稳定再抽                               |
+| MetricCard     | 指标值 + 趋势 + 风险       | 季度收入、毛利率       | `shared/ui/cards/MetricCard`，基于 `AppBaseCard`     |
+| RiskCard       | 风险 / 异常 / 治理提示     | 收入增速异常、风险摘要 | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| ReportCard     | 报告摘要 / 建议动作        | 周经营分析报告         | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| EvidenceCard   | 证据 / 来源 / 可信度       | 季度收入证据摘要       | `shared/ui/cards/AppBaseCard` / `SourceEvidenceList` |
+| OperationsCard | 任务 / 数据质量 / 运维状态 | 平台质量               | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
+| AssistCard     | 右侧栏上下文               | 相关证据、运行轨迹     | `RightAssistPanel` 内部结构                          |
 
 规则：
 
 - 不抽万能业务卡片。
 - 通用组件只沉淀 slot 容器、按钮分类和状态承接，业务内容仍由页面组合。
 - 页面不得私自重建 Card / Tag / Action 摆放体系。
+- 所有内容卡片必须基于 `AppBaseCard` slot。
+- 业务卡片可以页面定制，但不得重新实现 Card 外壳。
+- 不保留 `AppContentCard` / `MetricCard` 多套 Card 壳并存。
+- `shared/ui/cards` 是卡片组件唯一目录。
 
 ### Card Slot 结构
 
@@ -218,8 +222,8 @@ Card
 
 公共组件承接：
 
-- `AppContentCard` 只负责 `eyebrow`、`title`、`tagSlot`、`children`、`description`、`meta`、`footerActions` slot 布局。
-- `MetricCard` 必须支持 header tag slot 和 footer actions；趋势、证据数、来源等进入 meta 区。
+- `AppBaseCard` 只负责 `eyebrow`、`title`、`tagSlot`、`children`、`description`、`meta`、`footerActions` slot 布局。
+- `MetricCard` 是基于 `AppBaseCard` 的指标专用卡片，必须支持 header tag slot 和 footer actions；趋势、证据数、来源等进入 meta 区。
 - `AppActionButton` 负责单个按钮 variant 到 Ant Design Button props 的映射。
 - `AppActionGroup` 负责多个按钮的横向排列和 variant 自动排序。
 
@@ -254,12 +258,12 @@ Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#10
 
 ### Columns 规则
 
-| columns | 桌面 | 中屏 | 小屏 | 用途 |
-| --- | --- | --- | --- | --- |
-| `1` | 1 列 | 1 列 | 1 列 | 平台质量、整行摘要、长内容 |
-| `2` | 2 列 | 1-2 列 | 1 列 | 指标、风险、报告 / 证据 |
-| `3` | 3 列 | 2 列 | 1 列 | 后续状态卡、能力入口 |
-| `4` | 4 列 | 2 列 | 1 列 | Hero facts / 小摘要卡 |
+| columns | 桌面 | 中屏   | 小屏 | 用途                       |
+| ------- | ---- | ------ | ---- | -------------------------- |
+| `1`     | 1 列 | 1 列   | 1 列 | 平台质量、整行摘要、长内容 |
+| `2`     | 2 列 | 1-2 列 | 1 列 | 指标、风险、报告 / 证据    |
+| `3`     | 3 列 | 2 列   | 1 列 | 后续状态卡、能力入口       |
+| `4`     | 4 列 | 2 列   | 1 列 | Hero facts / 小摘要卡      |
 
 ### 对齐规则
 
@@ -268,7 +272,7 @@ Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#10
 - 不允许卡片因为数量不足而右对齐或居中。
 - 单对象摘要使用 `columns={1}` 占满整行。
 - 列表型 section 即使只有一个数据项，也默认从左开始排列。
-- 卡片内部按钮位置仍由 `AppContentCard` / `MetricCard` 的 `footerActions` 控制。
+- 卡片内部按钮位置仍由 `AppBaseCard` / `MetricCard` 的 `footerActions` 控制。
 
 ### Dashboard 当前映射
 

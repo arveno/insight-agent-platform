@@ -1,8 +1,8 @@
 import { Card, Space, Typography } from "antd";
 
-import type { AppContentCardProps } from "./cardTypes";
+import type { AppBaseCardProps } from "./cardTypes";
 
-export function AppContentCard({
+export function AppBaseCard({
   children,
   description,
   eyebrow,
@@ -10,9 +10,9 @@ export function AppContentCard({
   meta,
   tagSlot,
   title
-}: AppContentCardProps) {
+}: AppBaseCardProps) {
   return (
-    <Card style={{ height: "100%" }}>
+    <Card style={{ height: "100%", width: "100%" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: "100%" }}>
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space direction="vertical" size={4} style={{ minWidth: 0 }}>

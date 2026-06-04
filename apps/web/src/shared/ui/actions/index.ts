@@ -5,4 +5,4 @@ export type {
   AppActionButtonVariant,
   AppActionGroupItem,
   AppActionGroupProps
-} from "./actionButtonTypes";
+} from "./actionTypes";

@@ -8,7 +8,7 @@ export type AppCardGridProps = {
   gutter?: [number, number];
 };
 
-export type AppContentCardProps = {
+export type AppBaseCardProps = {
   children?: ReactNode;
   description?: ReactNode;
   eyebrow?: ReactNode;

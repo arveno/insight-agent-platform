@@ -1,6 +1,6 @@
 import { Space, Typography } from "antd";
 
-import { AppActionGroup, AppContentCard, useI18n } from "../../../shared";
+import { AppActionGroup, AppBaseCard, useI18n } from "../../../shared";
 import { toEvidenceItem } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
 import type { DashboardReportEvidencePanelProps } from "./dashboardComponentTypes";
@@ -44,7 +44,7 @@ export function DashboardReportEvidencePanel({
           ];
 
           return (
-            <AppContentCard
+            <AppBaseCard
               description={t("dashboard.reportEvidence.suggestionSummary")}
               eyebrow={t("dashboard.reportEvidence.recentReportEyebrow")}
               footerActions={<AppActionGroup actions={reportActions} />}
@@ -98,7 +98,7 @@ export function DashboardReportEvidencePanel({
         ];
 
         return (
-          <AppContentCard
+          <AppBaseCard
             description={evidence.summary}
             eyebrow={t("dashboard.reportEvidence.evidenceEyebrow")}
             footerActions={<AppActionGroup actions={evidenceActions} />}

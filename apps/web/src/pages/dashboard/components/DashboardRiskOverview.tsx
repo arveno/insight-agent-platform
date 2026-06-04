@@ -1,6 +1,6 @@
 import { Typography } from "antd";
 
-import { AppActionGroup, AppContentCard, RiskBadge, useI18n } from "../../../shared";
+import { AppActionGroup, AppBaseCard, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
 import type { DashboardRiskCardProps } from "./dashboardComponentTypes";
@@ -44,7 +44,7 @@ export function DashboardRiskOverview({
   ];
 
   return (
-    <AppContentCard
+    <AppBaseCard
       description={description}
       eyebrow={eyebrow}
       footerActions={<AppActionGroup actions={riskActions} />}
@@ -52,6 +52,6 @@ export function DashboardRiskOverview({
       title={item.label}
     >
       {isRiskSummary ? null : <Typography.Text>{item.value}</Typography.Text>}
-    </AppContentCard>
+    </AppBaseCard>
   );
 }
