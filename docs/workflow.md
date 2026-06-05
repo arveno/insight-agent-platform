@@ -49,6 +49,8 @@
 - 不能从原型直接进入正式代码。
 - 不能用口头规则覆盖文档事实源。
 - Issue 重整必须发生在正式 UI 实现前。
+- 产品体验原型确认只代表用户流程、页面关系、对象归属和入口流向已被讨论确认，不代表 HTML 原型本身成为正式事实源。
+- 必须先把确认后的规则沉淀到 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts`，再进入 Issue 和代码。
 
 ## 4. 需求分析阶段
 
@@ -81,7 +83,7 @@ Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format
 - `docs/architecture.md`。
 - `docs/contracts.md`。
 - `packages/contracts`。
-- 涉及产品体验、导航、页面职责、Inspector 的任务还必须包含 `docs/prototypes/product-experience.html`。
+- 涉及产品体验、导航、页面职责、Inspector 的任务可以附带 `docs/prototypes/product-experience.html` 作为产品体验原型参考，但必须明确正式规则已经沉淀到 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts`。
 
 Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”，必须摘出本次任务相关规则。
 
@@ -118,7 +120,8 @@ Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”�
 - Codex 不能新增无关依赖、无关目录、无关抽象或无关重构。
 - Codex 发现 Issue 不清楚时，必须停止执行，说明问题，退回 Issue 补充。
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
-- 涉及正式 UI 的任务，Codex 不得绕过 `docs/prototypes/product-experience.html`、`docs/ui-design.md`、`docs/contracts.md` 中已确认的产品体验、页面编排和 canonical id 规则。
+- 涉及正式 UI 的任务，Codex 不得绕过已沉淀进 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts` 的产品体验规则、页面编排和 canonical id 规则。
+- `docs/prototypes/product-experience.html` 只用于辅助理解用户逻辑、页面跳转、对象归属和入口关系，不能从原型直接进入正式代码。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
 

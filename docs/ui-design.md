@@ -22,14 +22,18 @@
 事实源层级固定如下：
 
 ```text
-architecture / contracts / database
-= 系统能力、数据对象、字段语义事实源
+AGENTS.md / docs/workflow.md
+= 执行边界、Issue / PR / 审查流程事实源
 
-docs/prototypes/product-experience.html
-= 产品体验事实源，定义页面关系、用户路径、对象归属、页面职责和入口流向
+docs/architecture.md / docs/contracts.md / packages/contracts / database
+= 系统能力、产品对象、字段语义、ID、数据库结构事实源
 
 docs/ui-design.md
 = 正式 Web UI 编排、导航骨架、InspectorSlot、Page Composition、设计交接和审查规则事实源
+
+docs/prototypes/product-experience.html
+= 产品体验原型参考，用于验证用户路径、页面关系、对象归属和入口流向
+  不是正式事实源，只能辅助理解产品体验方向
 
 Figma Wireframe
 = 在不违反前述事实源的前提下，承载 Web / Mobile Browser 线稿和交互表达
@@ -50,9 +54,9 @@ Code
 冲突处理：
 
 - `docs/prototypes/product-experience.html` 不得被当作正式 React 组件结构、API、DB、contracts、ViewModel 或真实 Agent Run 的事实源。
-- HTML 原型用于定义产品体验，不直接定义正式组件树。
+- HTML 原型只用于辅助理解和验证产品体验方向，不直接定义正式组件树、导航实现、InspectorSlot 或 Page Composition。
 - Figma 不得推翻 `docs/architecture.md`、`docs/contracts.md`、`docs/database.md` 或 `packages/contracts`。
-- Figma 不得静默覆盖 `docs/ui-design.md` 或 `docs/prototypes/product-experience.html`。
+- Figma / Code 不得绕过已沉淀进正式文档的产品体验规则。
 - Code 不得绕过 GitHub Issue 和 PR 证据要求。
 - 如果 Figma、文档、Issue、PR、Code 之间发生冲突，必须回到 Issue 审查。
 - Issue #8 和 PR #9 只能作为历史背景，不作为当前执行依据。
@@ -90,8 +94,8 @@ docs/prototypes/product-experience.html
 
 执行规则：
 
-- `docs/prototypes/product-experience.html` 先定义页面关系、对象归属、用户路径和入口流向。
-- 文档事实源必须先承接产品体验模型，再进入 Figma、Issue 和代码。
+- `docs/prototypes/product-experience.html` 只用于原型确认和可点击验证，帮助讨论页面关系、对象归属、用户路径和入口流向。
+- 文档事实源必须先承接确认后的产品体验模型，再进入 Figma、Issue 和代码。
 - 不能从原型直接进入正式代码。
 - 不能用口头规则覆盖文档事实源。
 - Issue 重整必须发生在正式 UI 实现前。
@@ -130,12 +134,21 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
 
-### 产品体验事实源承接
+### 产品体验原型参考承接
 
-- `docs/prototypes/product-experience.html` 是产品体验事实源。
-- 它用于定义页面关系、用户路径、对象归属、页面职责和入口流向。
-- 它不是正式 React 组件结构、API、DB、contracts、ViewModel、真实 Agent Run 的事实源。
-- 正式实现仍以 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 为约束。
+- `docs/prototypes/product-experience.html` 是产品体验原型 / 用户流程参考 / 可点击验证稿。
+- 它用于辅助理解用户逻辑、页面跳转、对象归属、页面职责和入口关系。
+- 它不定义正式 UI 结构。
+- 它不定义 React 组件结构。
+- 它不定义导航实现。
+- 它不定义 Inspector 实现。
+- 它不定义 contracts / API / DB / ViewModel。
+- 它不定义真实 Agent Run。
+- 原型中的内容只有在人工确认并沉淀进正式文档后，才能进入正式 Issue 和代码实现。
+- 正式 Web UI 编排规则事实源是 `docs/ui-design.md`。
+- 产品体验对象关系归 `docs/architecture.md`。
+- 字段和 ID 归 `docs/contracts.md` / `packages/contracts`。
+- 执行硬规则归 `AGENTS.md`。
 
 ### 产品体验页面类型
 

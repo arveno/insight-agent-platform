@@ -246,6 +246,8 @@ API Response
 
 UI 不得直接消费 raw API response。
 
+`docs/prototypes/product-experience.html` 仅作为产品体验原型参考，用于辅助理解用户逻辑、页面跳转、对象归属和入口关系。
+
 ### 产品体验页面职责
 
 - `Workspace`：最上层容器和当前空间上下文，不是普通业务菜单项。
@@ -257,6 +259,8 @@ UI 不得直接消费 raw API response。
 - `Metrics`：指标、阈值、口径、血缘和异常规则层。
 - `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层。
 - `Governance / Feedback / Evaluation / Memory / Platform Operations / Settings`：支撑、治理、质量和平台能力页面。
+
+正式对象层级和页面职责以 `docs/architecture.md` 为准，而不是以 HTML 原型中的页面结构为准。
 
 ### 前端职责边界
 
