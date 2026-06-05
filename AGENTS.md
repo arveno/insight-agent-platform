@@ -34,7 +34,7 @@
 
 并在 Issue 中摘出本次任务相关规则。
 
-涉及正式 Web UI、导航、页面职责、Inspector、页面流转的任务，必须额外反查 `docs/prototypes/product-experience.html` 作为产品体验事实源。
+涉及正式 Web UI、导航、页面职责、Inspector、页面流转的任务，可以额外反查 `docs/prototypes/product-experience.html` 作为产品体验原型参考，但不得把 HTML 原型当作正式事实源。
 
 ## 3. Issue 合规审查
 
@@ -69,8 +69,9 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 ### Codex 代码生成硬规则
 
 - Codex 只能在已审查通过的 Issue 范围内写代码。
-- 正式实现必须反查 `docs/prototypes/product-experience.html` 作为产品体验事实源。
+- 涉及正式 UI 的实现可以反查 `docs/prototypes/product-experience.html` 作为产品体验原型参考，用于辅助理解用户逻辑、页面跳转、对象归属和入口关系。
 - HTML 原型不得作为正式 React 组件结构、API、DB、contracts、ViewModel 或真实 Agent Run 的事实源。
+- 原型内容只有在沉淀进正式文档后，才能进入正式 Issue 和代码实现。
 - Codex 不允许为了“保险”新增双轨实现。
 - Codex 不允许新增 `oldField || newField`、`mockData || realData`、`status === "done" || status === "success"` 这类兜底代码。
 - 代码型 Issue 必须遵守 ID Contract P0 公共守门规则。

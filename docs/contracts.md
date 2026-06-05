@@ -156,8 +156,10 @@ localOnlyId
 当前已知风险：
 
 - `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
-- `product-experience.html` 已引入 `findingId`、`conversationId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId`。
+- `product-experience.html` 已在原型中暴露出 `findingId`、`conversationId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId` 等候选产品对象 ID。
 - `findingId / conversationId / messageId` 如后续进入共享链路，必须先完成 contracts 文档与 schema 审查。
+- `product-experience.html` 中出现的 `findingId / conversationId / messageId` 等只代表原型里暴露出来的候选产品对象 ID，不代表它们已经成为正式 contract。
+- 这些候选 ID 只有在进入正式链路前，才需要先更新 `docs/contracts.md` 与 `packages/contracts`。
 - `eventId` 与 `runEventId` 的命名边界必须保持单义，避免在 Observability / Inspector / Action 链路中产生双轨。
 
 禁止混用：
