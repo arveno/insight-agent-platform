@@ -26,4 +26,9 @@
 - 哪个页面承载什么
 - 哪个页面只展示摘要 / 入口
 
+LeftNav 原型采用两级导航：
+
+1. 全局导航：Workspace + 主工作区 + 能力分组
+2. 模块内导航：Analysis 会话列表 / Reports 报告列表
+
 打开方式：直接在浏览器中打开 `docs/prototypes/product-experience.html`。
