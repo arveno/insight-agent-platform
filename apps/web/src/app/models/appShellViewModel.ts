@@ -16,16 +16,29 @@ export type AppShellNavigationItemViewModel = {
   status?: StaticStatusViewModel;
 };
 
+export type AppShellNavigationGroupKind = "primary" | "preview";
+
 export type AppShellNavigationGroupViewModel = {
   items: AppShellNavigationItemViewModel[];
+  kind: AppShellNavigationGroupKind;
   key: string;
   labelKey: string;
+};
+
+export type AppShellInspectorViewModel = {
+  descriptionKey: string;
+  titleKey: string;
 };
 
 export type AppShellPreferenceViewModel = {
   key: string;
   labelKey: string;
   value: string;
+};
+
+export type AppShellWorkspaceOptionViewModel = {
+  name: string;
+  workspaceId: string;
 };
 
 export type AppShellStaticViewModel = {
@@ -44,6 +57,7 @@ export type AppShellStaticViewModel = {
     status: "idle" | "success" | "warning" | "error";
   };
   headerActions: StaticActionViewModel[];
+  inspectorByRoute: Record<StaticRouteKey, AppShellInspectorViewModel>;
   localePreference: AppShellPreferenceViewModel;
   mobileNavigation: AppShellNavigationGroupViewModel[];
   navigationGroups: AppShellNavigationGroupViewModel[];
@@ -58,4 +72,5 @@ export type AppShellStaticViewModel = {
     name: string;
     workspaceId: string;
   };
+  workspaces: AppShellWorkspaceOptionViewModel[];
 };

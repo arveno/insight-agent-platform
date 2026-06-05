@@ -50,9 +50,9 @@ export function RightAssistPanel({
       }}
     >
       <Card
-        bordered={false}
         style={{ background: "transparent", minHeight: "100%" }}
         styles={{ body: { padding: token.paddingLG } }}
+        variant="borderless"
       >
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>

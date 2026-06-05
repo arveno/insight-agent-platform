@@ -90,6 +90,7 @@ export function createNavigationGroups(
   groups: AppShellNavigationGroupViewModel[]
 ): NavigationGroup[] {
   return groups.map((group) => ({
+    kind: group.kind,
     items: group.items.map((item) => createNavigationItem(t, item)),
     key: group.key,
     label: translateNavigationLabel(t, group.labelKey)

@@ -13,43 +13,99 @@ const webNavigationGroups: AppShellNavigationGroupViewModel[] = [
       { key: "analysis", labelKey: "nav.analysis" },
       { key: "reports", labelKey: "nav.reports" }
     ],
-    key: "default-analysis",
-    labelKey: "nav.group.defaultAnalysis"
+    key: "primary-entries",
+    kind: "primary",
+    labelKey: "nav.group.primaryEntrances"
   },
   {
     items: [
+      { key: "metrics", labelKey: "nav.metrics" },
       { key: "data-knowledge", labelKey: "nav.dataKnowledge" },
-      { key: "metrics", labelKey: "nav.metrics" }
-    ],
-    key: "data-metrics",
-    labelKey: "nav.group.dataMetrics"
-  },
-  {
-    items: [
       { key: "model-tools", labelKey: "nav.modelTools" },
-      { key: "observability", labelKey: "nav.observability" }
-    ],
-    key: "model-observe",
-    labelKey: "nav.group.modelObserve"
-  },
-  {
-    items: [
       { key: "governance", labelKey: "nav.governance", badgeTextKey: "nav.badge.risk" },
-      { key: "evaluation", labelKey: "nav.evaluation" },
       { key: "feedback", labelKey: "nav.feedback" },
-      { key: "memory", labelKey: "nav.memory" }
+      { key: "evaluation", labelKey: "nav.evaluation" },
+      { key: "memory", labelKey: "nav.memory" },
+      { key: "platform-operations", labelKey: "nav.platformOperations" },
+      { key: "settings", labelKey: "nav.settings" }
     ],
-    key: "governance-quality",
-    labelKey: "nav.group.governanceQuality"
+    key: "capability-preview",
+    kind: "preview",
+    labelKey: "nav.group.previewEntrances"
+  }
+];
+
+const inspectorByRoute: AppShellStaticViewModel["inspectorByRoute"] = {
+  analysis: {
+    descriptionKey: "shell.inspector.analysis.description",
+    titleKey: "page.analysis.title"
+  },
+  dashboard: {
+    descriptionKey: "shell.inspector.dashboard.description",
+    titleKey: "page.dashboard.title"
+  },
+  "data-knowledge": {
+    descriptionKey: "shell.inspector.dataKnowledge.description",
+    titleKey: "page.dataKnowledge.title"
+  },
+  evaluation: {
+    descriptionKey: "shell.inspector.evaluation.description",
+    titleKey: "page.evaluation.title"
+  },
+  feedback: {
+    descriptionKey: "shell.inspector.feedback.description",
+    titleKey: "page.feedback.title"
+  },
+  governance: {
+    descriptionKey: "shell.inspector.governance.description",
+    titleKey: "page.governance.title"
+  },
+  memory: {
+    descriptionKey: "shell.inspector.memory.description",
+    titleKey: "page.memory.title"
+  },
+  metrics: {
+    descriptionKey: "shell.inspector.metrics.description",
+    titleKey: "page.metrics.title"
+  },
+  "model-tools": {
+    descriptionKey: "shell.inspector.modelTools.description",
+    titleKey: "page.modelTools.title"
+  },
+  observability: {
+    descriptionKey: "shell.inspector.observability.description",
+    titleKey: "page.observability.title"
+  },
+  "platform-operations": {
+    descriptionKey: "shell.inspector.platformOperations.description",
+    titleKey: "page.platformOperations.title"
+  },
+  reports: {
+    descriptionKey: "shell.inspector.reports.description",
+    titleKey: "page.reports.title"
+  },
+  settings: {
+    descriptionKey: "shell.inspector.settings.description",
+    titleKey: "page.settings.title"
+  },
+  workspace: {
+    descriptionKey: "shell.inspector.workspace.description",
+    titleKey: "page.workspace.title"
+  }
+};
+
+const workspaces = [
+  {
+    name: "Northstar Retail China",
+    workspaceId: "workspace-northstar-retail-china"
   },
   {
-    items: [
-      { key: "platform-operations", labelKey: "nav.platformOperations" },
-      { key: "settings", labelKey: "nav.settings" },
-      { key: "workspace", labelKey: "nav.workspace" }
-    ],
-    key: "platform",
-    labelKey: "nav.group.platform"
+    name: "East Retail Demo",
+    workspaceId: "workspace-east-retail-demo"
+  },
+  {
+    name: "Global Ops Sandbox",
+    workspaceId: "workspace-global-ops-sandbox"
   }
 ];
 
@@ -90,18 +146,13 @@ export const appShellStaticViewModel: AppShellStaticViewModel = {
       labelKey: "theme"
     }
   ],
+  inspectorByRoute,
   localePreference: {
     key: "locale",
     labelKey: "language",
     value: "zh-CN"
   },
-  mobileNavigation: [
-    { ...webNavigationGroups[0], key: "primary", labelKey: "nav.group.primary" },
-    { ...webNavigationGroups[1], key: "work", labelKey: "nav.group.work" },
-    { ...webNavigationGroups[2], key: "ai-platform", labelKey: "nav.group.aiPlatform" },
-    { ...webNavigationGroups[3], key: "quality-control", labelKey: "nav.group.qualityControl" },
-    webNavigationGroups[4]
-  ],
+  mobileNavigation: webNavigationGroups,
   navigationGroups: webNavigationGroups,
   permissionSummary: defaultPermissionSummary,
   readonlyState: defaultReadonlyState,
@@ -119,7 +170,8 @@ export const appShellStaticViewModel: AppShellStaticViewModel = {
   workspace: {
     businessDomainCount: 6,
     memberCount: 18,
-    name: "North Star Workspace",
-    workspaceId: "workspace-north-star"
-  }
+    name: "Northstar Retail China",
+    workspaceId: "workspace-northstar-retail-china"
+  },
+  workspaces
 };

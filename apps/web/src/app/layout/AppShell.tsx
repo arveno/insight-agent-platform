@@ -2,25 +2,9 @@ import { useMemo, useState } from "react";
 import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
 
 import { appShellStaticViewModel } from "../fixtures";
-import type { StaticPageViewModelBase, StaticRouteKey } from "../models";
+import type { StaticRouteKey } from "../models";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
-import {
-  analysisStaticViewModel,
-  dashboardStaticViewModel,
-  dataKnowledgeStaticViewModel,
-  evaluationStaticViewModel,
-  feedbackStaticViewModel,
-  governanceStaticViewModel,
-  memoryStaticViewModel,
-  metricsStaticViewModel,
-  modelToolsStaticViewModel,
-  observabilityStaticViewModel,
-  platformOperationsStaticViewModel,
-  reportsStaticViewModel,
-  settingsStaticViewModel,
-  workspaceStaticViewModel
-} from "../../features/static-view-models";
 import {
   AppIcon,
   AppShellLayout,
@@ -31,24 +15,8 @@ import {
   type ThemeMode,
   useI18n
 } from "../../shared";
-import { RightAssistSummaryPanel } from "../../pages/_shared";
 
-const pageViewModels: Record<StaticRouteKey, StaticPageViewModelBase> = {
-  analysis: analysisStaticViewModel,
-  dashboard: dashboardStaticViewModel,
-  "data-knowledge": dataKnowledgeStaticViewModel,
-  evaluation: evaluationStaticViewModel,
-  feedback: feedbackStaticViewModel,
-  governance: governanceStaticViewModel,
-  memory: memoryStaticViewModel,
-  metrics: metricsStaticViewModel,
-  "model-tools": modelToolsStaticViewModel,
-  observability: observabilityStaticViewModel,
-  "platform-operations": platformOperationsStaticViewModel,
-  reports: reportsStaticViewModel,
-  settings: settingsStaticViewModel,
-  workspace: workspaceStaticViewModel
-};
+import { AppShellInspector } from "./AppShellInspector";
 
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();
@@ -57,13 +25,25 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
+    appShellStaticViewModel.workspace.workspaceId
+  );
+  const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(false);
   const ActivePage = webCompositionRoutes[activeRoute];
-  const activeViewModel = pageViewModels[activeRoute];
-  const headerTitle = appShellStaticViewModel.workspace.name;
+  const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
   );
+  const selectedWorkspace =
+    appShellStaticViewModel.workspaces.find(
+      (workspace) => workspace.workspaceId === selectedWorkspaceId
+    ) ?? appShellStaticViewModel.workspace;
+  const selectedNavigationKey = navigationGroups.some((group) =>
+    group.items.some((item) => item.key === activeRoute)
+  )
+    ? activeRoute
+    : undefined;
   const userPreferenceContent = (
     <Space direction="vertical" size={12} style={{ minWidth: 240 }}>
       <Space direction="vertical" size={4}>
@@ -102,7 +82,26 @@ export function AppShell() {
 
   return (
     <AppShellLayout
-      header={<HeaderBar title={headerTitle} />}
+      header={
+        <HeaderBar
+          currentWorkspaceName={selectedWorkspace.name}
+          feedback={workspaceRefreshFeedback ? t("shell.workspace.switchFeedback") : undefined}
+          manageWorkspaceLabel={t("shell.workspace.manage")}
+          onOpenWorkspaceManagement={() => setActiveRoute("workspace")}
+          onSelectWorkspace={(workspaceId) => {
+            if (workspaceId === selectedWorkspaceId) {
+              return;
+            }
+
+            setSelectedWorkspaceId(workspaceId);
+            setWorkspaceRefreshFeedback(true);
+          }}
+          selectedWorkspaceId={selectedWorkspaceId}
+          workspaceLabel={t("shell.workspace.currentLabel")}
+          workspaceMenuLabel={t("shell.workspace.currentLabel")}
+          workspaces={appShellStaticViewModel.workspaces}
+        />
+      }
       leftNav={
         <div
           style={{
@@ -123,7 +122,7 @@ export function AppShell() {
             <LeftNav
               groups={navigationGroups}
               onSelect={(key) => setActiveRoute(key as StaticRouteKey)}
-              selectedKey={activeRoute}
+              selectedKey={selectedNavigationKey}
             />
           </div>
           <div
@@ -154,13 +153,10 @@ export function AppShell() {
         </div>
       }
       rightAssistPanel={
-        <RightAssistSummaryPanel
-          onNavigate={setActiveRoute}
-          summary={activeViewModel.rightAssistSummary}
-        />
+        <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
       }
     >
-      <ActivePage onNavigate={setActiveRoute} />
+      <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={setActiveRoute} />
     </AppShellLayout>
   );
 }
