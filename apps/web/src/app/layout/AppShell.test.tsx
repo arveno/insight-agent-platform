@@ -45,8 +45,8 @@ describe("AppShell", () => {
     expect(analysisButton.querySelector(".anticon-right")).toBeTruthy();
     expect(reportsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
+    expect(within(navigation).getByRole("button", { name: /观测/ })).toBeTruthy();
     expect(within(navigation).queryByRole("button", { name: /工作区/ })).toBeNull();
-    expect(within(navigation).queryByRole("button", { name: /观测/ })).toBeNull();
   });
 
   it("switches the static workspace selector and shows simulated refresh feedback", async () => {
@@ -65,5 +65,24 @@ describe("AppShell", () => {
     expect(screen.queryByRole("button", { name: /当前工作区/ })).toBeNull();
     expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
     expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
+  });
+
+  it("renders route-specific inspector capability notes from the static view model", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const navigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    expect(screen.getByText(/用于查看当前工作区经营概览、异常摘要和关键入口。/)).toBeTruthy();
+
+    fireEvent.click(within(navigation).getByRole("button", { name: /分析/ }));
+
+    expect(screen.getByText(/用于承接分析会话、追问和问题定位。/)).toBeTruthy();
+    expect(
+      screen.getByText(/后续会对接 Agent Run、Tool Calling、Run Trace、RAG Evidence。/)
+    ).toBeTruthy();
   });
 });

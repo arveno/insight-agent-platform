@@ -14,7 +14,7 @@ export function AppShellInspector({ inspector, workspaceName }: AppShellInspecto
 
   return (
     <RightAssistPanel
-      description={t(inspector.descriptionKey as I18nMessageKey)}
+      description={inspector.summary}
       title={t(inspector.titleKey as I18nMessageKey)}
     >
       <Space
@@ -26,6 +26,17 @@ export function AppShellInspector({ inspector, workspaceName }: AppShellInspecto
         <Typography.Paragraph
           style={{ color: token.colorTextDescription, margin: 0 }}
         >{`${t("shell.workspace.currentLabel")}: ${workspaceName}`}</Typography.Paragraph>
+        <Typography.Text strong>能力说明</Typography.Text>
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          {inspector.capabilityNotes.map((note) => (
+            <Typography.Paragraph
+              key={note}
+              style={{ color: token.colorTextDescription, margin: 0 }}
+            >
+              {`• ${note}`}
+            </Typography.Paragraph>
+          ))}
+        </Space>
       </Space>
     </RightAssistPanel>
   );

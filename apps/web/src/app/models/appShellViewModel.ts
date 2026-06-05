@@ -26,7 +26,8 @@ export type AppShellNavigationGroupViewModel = {
 };
 
 export type AppShellInspectorViewModel = {
-  descriptionKey: string;
+  capabilityNotes: string[];
+  summary: string;
   titleKey: string;
 };
 

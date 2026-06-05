@@ -102,7 +102,6 @@ export function AppShell() {
             setWorkspaceRefreshFeedback(true);
           }}
           selectedWorkspaceId={selectedWorkspaceId}
-          workspaceLabel={t("shell.workspace.currentLabel")}
           workspaceMenuLabel={t("shell.workspace.currentLabel")}
           workspaces={appShellStaticViewModel.workspaces}
         />

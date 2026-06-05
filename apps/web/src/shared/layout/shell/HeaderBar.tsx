@@ -17,7 +17,6 @@ export type HeaderBarProps = {
   onOpenWorkspaceManagement?: () => void;
   onSelectWorkspace?: (workspaceId: string) => void;
   selectedWorkspaceId: string;
-  workspaceLabel: ReactNode;
   workspaceMenuLabel: ReactNode;
   workspaces: HeaderBarWorkspaceOption[];
 };

@@ -10,7 +10,6 @@ const baseToken = {
   boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
   boxShadowSecondary: "0 1px 2px rgba(15, 23, 42, 0.04)",
   boxShadowTertiary: "none",
-  colorPrimary: shellThemeTokens.colorPrimary,
   controlHeight: 36,
   controlHeightSM: 30
 } satisfies ThemeConfig["token"];
@@ -23,13 +22,23 @@ const lightToken = {
   colorBorderSecondary: "#eceef2",
   colorFillSecondary: "#f3f4f6",
   colorFillTertiary: "#f8fafc",
-  colorPrimaryBg: "#eff6ff",
-  colorPrimaryBorder: "#dbeafe",
+  colorLink: shellThemeTokens.colorLink,
+  colorLinkActive: shellThemeTokens.colorLinkActive,
+  colorLinkHover: shellThemeTokens.colorLinkHover,
+  colorPrimary: shellThemeTokens.colorActionPrimaryLight,
+  colorPrimaryActive: shellThemeTokens.colorActionPrimaryLightActive,
+  colorPrimaryBg: "#f3f4f6",
+  colorPrimaryBgHover: "#eceef2",
+  colorPrimaryBorder: "#e5e7eb",
+  colorPrimaryHover: shellThemeTokens.colorActionPrimaryLightHover,
+  colorPrimaryText: shellThemeTokens.colorLink,
+  colorPrimaryTextActive: shellThemeTokens.colorLinkActive,
+  colorPrimaryTextHover: shellThemeTokens.colorLinkHover,
   colorText: "#111827",
   colorTextDescription: "#6b7280",
   colorTextSecondary: "#4b5563",
-  controlItemBgActive: "#eef4ff",
-  controlItemBgActiveHover: "#e8f0ff"
+  controlItemBgActive: "#f3f4f6",
+  controlItemBgActiveHover: "#eceef2"
 } satisfies ThemeConfig["token"];
 
 const darkToken = {
@@ -40,13 +49,23 @@ const darkToken = {
   colorBorderSecondary: "#222a36",
   colorFillSecondary: "#1b2230",
   colorFillTertiary: "#151b26",
-  colorPrimaryBg: "#172554",
-  colorPrimaryBorder: "#1d4ed8",
+  colorLink: "#60a5fa",
+  colorLinkActive: "#93c5fd",
+  colorLinkHover: "#7dd3fc",
+  colorPrimary: shellThemeTokens.colorActionPrimaryDark,
+  colorPrimaryActive: shellThemeTokens.colorActionPrimaryDarkActive,
+  colorPrimaryBg: "#1b2230",
+  colorPrimaryBgHover: "#232c3a",
+  colorPrimaryBorder: "#2b3340",
+  colorPrimaryHover: shellThemeTokens.colorActionPrimaryDarkHover,
+  colorPrimaryText: "#60a5fa",
+  colorPrimaryTextActive: "#93c5fd",
+  colorPrimaryTextHover: "#7dd3fc",
   colorText: "#f3f4f6",
   colorTextDescription: "#9ca3af",
   colorTextSecondary: "#c5cad3",
-  controlItemBgActive: "#172554",
-  controlItemBgActiveHover: "#1e3a8a"
+  controlItemBgActive: "#1b2230",
+  controlItemBgActiveHover: "#232c3a"
 } satisfies ThemeConfig["token"];
 
 const sharedComponentTheme: ThemeConfig["components"] = {
@@ -68,6 +87,7 @@ const sharedComponentTheme: ThemeConfig["components"] = {
     paddingBlockSM: 4,
     paddingInline: 14,
     paddingInlineSM: 12,
+    primaryColor: shellThemeTokens.colorActionPrimaryTextLight,
     primaryShadow: "none",
     textHoverBg: "#f3f4f6"
   },
@@ -121,6 +141,7 @@ export const darkAntdTheme: ThemeConfig = {
       defaultHoverBg: "#171b23",
       defaultHoverBorderColor: "#3a4555",
       defaultHoverColor: "#f3f4f6",
+      primaryColor: shellThemeTokens.colorActionPrimaryTextDark,
       textHoverBg: "#1b2230"
     },
     Card: {

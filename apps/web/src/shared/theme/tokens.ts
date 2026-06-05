@@ -7,10 +7,20 @@
  * 当前 token 只服务静态 UI Shell，不承接业务状态、用户偏好持久化或后端配置。
  */
 export const shellThemeTokens = {
+  colorActionPrimaryDark: "#f3f4f6",
+  colorActionPrimaryDarkActive: "#e5e7eb",
+  colorActionPrimaryDarkHover: "#ffffff",
+  colorActionPrimaryLight: "#111827",
+  colorActionPrimaryLightActive: "#030712",
+  colorActionPrimaryLightHover: "#1f2937",
+  colorActionPrimaryTextDark: "#111827",
+  colorActionPrimaryTextLight: "#ffffff",
+  colorLink: "#2563eb",
+  colorLinkActive: "#1e40af",
+  colorLinkHover: "#1d4ed8",
   borderRadius: 8,
   borderRadiusLG: 10,
   borderRadiusSM: 6,
-  colorPrimary: "#2563eb",
   headerHeight: 60,
   headerPaddingInline: 20,
   inspectorWidth: 336,
