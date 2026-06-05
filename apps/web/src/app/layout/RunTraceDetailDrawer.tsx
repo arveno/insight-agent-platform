@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Button, Descriptions, Divider, Space, Typography } from "antd";
 
 import type { AnalysisRunTraceEventViewModel } from "../../features/agent-analysis/models";
@@ -32,6 +32,7 @@ export function RunTraceDetailDrawer({
   open
 }: RunTraceDetailDrawerProps) {
   const { t } = useI18n();
+  const drawerRootClassName = "analysis-run-trace-detail-drawer";
   const drawerContainer =
     typeof document === "undefined" ? undefined : () => document.querySelector("main") ?? document.body;
   const resourceItems = [
@@ -65,6 +66,34 @@ export function RunTraceDetailDrawer({
       : null
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
+  useEffect(() => {
+    if (!open || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const handleDocumentMouseDown = (mouseEvent: MouseEvent) => {
+      if (!(mouseEvent.target instanceof Element)) {
+        return;
+      }
+
+      if (mouseEvent.target.closest(`.${drawerRootClassName}`)) {
+        return;
+      }
+
+      if (mouseEvent.target.closest("[data-trace-timeline-trigger='true']")) {
+        return;
+      }
+
+      onClose();
+    };
+
+    document.addEventListener("mousedown", handleDocumentMouseDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentMouseDown);
+    };
+  }, [drawerRootClassName, onClose, open]);
+
   return (
     <AppDrawer
       destroyOnHidden={false}
@@ -78,6 +107,7 @@ export function RunTraceDetailDrawer({
       onClose={onClose}
       open={open}
       placement="right"
+      rootClassName={drawerRootClassName}
       rootStyle={{
         position: "absolute"
       }}

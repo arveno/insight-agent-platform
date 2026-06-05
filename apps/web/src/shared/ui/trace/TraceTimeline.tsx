@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Space, Timeline, Typography, theme } from "antd";
 
 import { shellTypographyStyles } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../feedback";
-import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
+import { RiskBadge, type RiskBadgeProps, type StatusTagProps } from "../status";
 
 export type TraceTimelineItem = {
   ariaLabel?: string;
@@ -30,6 +30,16 @@ export type TraceTimelineProps = {
  */
 export function TraceTimeline({ empty, items }: TraceTimelineProps) {
   const { token } = theme.useToken();
+  const itemContainerStyle: CSSProperties = {
+    border: `1px solid transparent`,
+    borderRadius: token.borderRadiusLG,
+    color: token.colorText,
+    display: "block",
+    minHeight: 76,
+    padding: token.paddingSM,
+    textAlign: "left",
+    width: "100%"
+  };
 
   if (items.length === 0) {
     return <EmptyState {...empty} />;
@@ -42,62 +52,92 @@ export function TraceTimeline({ empty, items }: TraceTimelineProps) {
           <button
             aria-label={item.ariaLabel}
             aria-pressed={item.selected}
+            data-trace-timeline-trigger="true"
             onClick={item.onClick}
             style={{
+              ...itemContainerStyle,
               background: item.selected ? token.colorFillAlter : "transparent",
-              border: `1px solid ${item.selected ? token.colorPrimaryBorder : "transparent"}`,
-              borderRadius: token.borderRadiusLG,
-              color: token.colorText,
-              cursor: "pointer",
-              display: "block",
-              padding: token.paddingSM,
-              textAlign: "left",
-              width: "100%"
+              borderColor: item.selected ? token.colorPrimaryBorder : "transparent",
+              cursor: "pointer"
             }}
             type="button"
           >
-            <Space direction="vertical" size={4} style={{ width: "100%" }}>
-              <Space wrap>
-                <Typography.Text style={shellTypographyStyles.cardTitle}>
-                  {item.title}
-                </Typography.Text>
-                {item.status ? <StatusTag {...item.status} /> : null}
-                {item.risk ? <RiskBadge {...item.risk} /> : null}
-                {item.timestampText ? (
-                  <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-                    {item.timestampText}
-                  </Typography.Text>
-                ) : null}
-              </Space>
-              {item.description ? (
-                <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                  {item.description}
-                </Typography.Text>
-              ) : null}
-            </Space>
+            <TraceTimelineContent item={item} />
           </button>
         ) : (
-          <Space direction="vertical" size={4}>
-            <Space wrap>
-              <Typography.Text style={shellTypographyStyles.cardTitle}>
-                {item.title}
-              </Typography.Text>
-              {item.status ? <StatusTag {...item.status} /> : null}
-              {item.risk ? <RiskBadge {...item.risk} /> : null}
-              {item.timestampText ? (
-                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-                  {item.timestampText}
-                </Typography.Text>
-              ) : null}
-            </Space>
-            {item.description ? (
-              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                {item.description}
-              </Typography.Text>
-            ) : null}
-          </Space>
-        )
+          <div
+            style={{
+              ...itemContainerStyle,
+              background: "transparent"
+            }}
+          >
+            <TraceTimelineContent item={item} />
+          </div>
+        ),
+        dot: <TraceStatusDot status={item.status} />
       }))}
     />
   );
+}
+
+function TraceTimelineContent({ item }: { item: TraceTimelineItem }) {
+  return (
+    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+      <Space wrap>
+        <Typography.Text style={shellTypographyStyles.cardTitle}>{item.title}</Typography.Text>
+        {item.risk ? <RiskBadge {...item.risk} /> : null}
+        {item.timestampText ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {item.timestampText}
+          </Typography.Text>
+        ) : null}
+      </Space>
+      {item.description ? (
+        <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+          {item.description}
+        </Typography.Text>
+      ) : null}
+    </Space>
+  );
+}
+
+function TraceStatusDot({ status }: { status?: StatusTagProps }) {
+  const { token } = theme.useToken();
+  const backgroundColor = getTraceStatusDotColor(status?.tone, token);
+  const tone = status?.tone ?? "default";
+
+  return (
+    <span
+      aria-hidden="true"
+      data-trace-status-dot={tone}
+      style={{
+        backgroundColor,
+        border: `1px solid ${backgroundColor}`,
+        borderRadius: "50%",
+        display: "inline-block",
+        height: 8,
+        transform: "translateY(2px)",
+        width: 8
+      }}
+    />
+  );
+}
+
+function getTraceStatusDotColor(
+  tone: StatusTagProps["tone"] | undefined,
+  token: ReturnType<typeof theme.useToken>["token"]
+) {
+  switch (tone) {
+    case "success":
+      return token.colorSuccess;
+    case "processing":
+      return token.colorInfo;
+    case "warning":
+      return token.colorWarning;
+    case "error":
+      return token.colorError;
+    case "default":
+    default:
+      return token.colorTextQuaternary;
+  }
 }

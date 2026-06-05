@@ -155,7 +155,7 @@ describe("AppShell", () => {
     expect(screen.queryByText(/技术对接：/)).toBeNull();
   });
 
-  it("opens, switches, and closes run trace event detail without leaving analysis", () => {
+  it("switches and closes run trace event detail without leaving analysis", () => {
     render(
       <AppProviders>
         <AppShell />
@@ -190,6 +190,18 @@ describe("AppShell", () => {
     expect(within(dialog).getByText("5. 调用指标摘要工具")).toBeTruthy();
     expect(within(dialog).getByText("tool_call")).toBeTruthy();
     expect(within(dialog).getByText("metrics.summary.compare")).toBeTruthy();
+
+    fireEvent.mouseDown(main);
+    fireEvent.click(main);
+
+    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "查看 Trace 事件详情：5. 调用指标摘要工具" })
+    );
+
+    dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
+    expect(within(dialog).getByText("5. 调用指标摘要工具")).toBeTruthy();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭详情" }));
 
