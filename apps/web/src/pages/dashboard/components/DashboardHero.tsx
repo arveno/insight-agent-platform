@@ -1,6 +1,13 @@
 import { Flex, Select, Space, Typography, theme } from "antd";
 
-import { AppActionGroup, AppCardGrid, RiskBadge, useI18n } from "../../../shared";
+import {
+  AppActionGroup,
+  AppCardGrid,
+  RiskBadge,
+  shellThemeTokens,
+  shellTypographyStyles,
+  useI18n
+} from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
@@ -55,23 +62,31 @@ export function DashboardHero({
         border: `1px solid ${token.colorBorderSecondary}`,
         borderRadius: token.borderRadiusLG,
         boxShadow: token.boxShadowTertiary,
-        padding: token.paddingLG
+        padding: shellThemeTokens.panelPadding
       }}
     >
       <Flex align="start" justify="space-between" wrap="wrap" gap={token.marginLG}>
         <Space direction="vertical" size={token.marginSM} style={{ maxWidth: 660 }}>
-          <Typography.Text type="secondary">{t("dashboard.hero.eyebrow")}</Typography.Text>
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {t("dashboard.hero.eyebrow")}
+          </Typography.Text>
           <Space direction="vertical" size={token.marginXXS}>
-            <Typography.Title level={2} style={{ margin: 0 }}>
+            <Typography.Text style={{ ...shellTypographyStyles.heroTitle, display: "block" }}>
               {t("dashboard.hero.title")}
-            </Typography.Title>
-            <Typography.Text type="secondary">{t("dashboard.hero.description")}</Typography.Text>
-            <Typography.Text type="secondary">{selectedTimeRange.description}</Typography.Text>
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.body}>
+              {t("dashboard.hero.description")}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+              {selectedTimeRange.description}
+            </Typography.Text>
           </Space>
           <Space wrap size={token.marginXS}>
             {riskBadge ? <RiskBadge {...riskBadge} /> : null}
-            <Typography.Text strong>{summary?.value}</Typography.Text>
-            <Typography.Text type="secondary">
+            <Typography.Text style={shellTypographyStyles.cardValue}>
+              {summary?.value}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
               {t("dashboard.common.updatedAtPrefix")}
               {viewModel.lastUpdatedAt}
             </Typography.Text>
@@ -127,13 +142,15 @@ function HeroFact({ label, value }: { label: string; value: string }) {
         border: `1px solid ${token.colorBorderSecondary}`,
         borderRadius: token.borderRadius,
         minHeight: token.controlHeightLG * 2,
-        padding: token.padding,
+        padding: shellThemeTokens.panelPadding,
         width: "100%"
       }}
     >
       <Space direction="vertical" size={token.marginXXS}>
-        <Typography.Text type="secondary">{label}</Typography.Text>
-        <Typography.Text strong>{value}</Typography.Text>
+        <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+          {label}
+        </Typography.Text>
+        <Typography.Text style={shellTypographyStyles.cardValue}>{value}</Typography.Text>
       </Space>
     </div>
   );

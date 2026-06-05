@@ -1,5 +1,6 @@
-import { Card, Space, Typography, theme } from "antd";
+import { Card, Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import type { AppBaseCardProps } from "./cardTypes";
 
 export function AppBaseCard({
@@ -11,8 +12,6 @@ export function AppBaseCard({
   tagSlot,
   title
 }: AppBaseCardProps) {
-  const { token } = theme.useToken();
-
   return (
     <Card
       style={{
@@ -25,22 +24,34 @@ export function AppBaseCard({
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: token.marginSM,
+          gap: shellThemeTokens.cardContentGap,
           minHeight: "100%"
         }}
       >
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space direction="vertical" size={4} style={{ minWidth: 0 }}>
-            {eyebrow ? <Typography.Text type="secondary">{eyebrow}</Typography.Text> : null}
-            <Typography.Text strong>{title}</Typography.Text>
+            {eyebrow ? (
+              <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                {eyebrow}
+              </Typography.Text>
+            ) : null}
+            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
           </Space>
           {tagSlot ? <div style={{ flexShrink: 0 }}>{tagSlot}</div> : null}
         </Space>
 
         {children || description ? (
-          <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Space
+            direction="vertical"
+            size={shellThemeTokens.cardContentGap}
+            style={{ width: "100%" }}
+          >
             {children}
-            {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
+            {description ? (
+              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                {description}
+              </Typography.Text>
+            ) : null}
           </Space>
         ) : null}
 

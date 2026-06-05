@@ -33,4 +33,18 @@ describe("AppActionButton", () => {
     expect(button.className).toContain("ant-btn-color-default");
     expect(button.className).toContain("ant-btn-variant-outlined");
   });
+
+  it("uses compact button typography for console density", () => {
+    render(
+      <AppProviders>
+        <AppActionButton variant="moduleEntry">查看指标</AppActionButton>
+      </AppProviders>
+    );
+
+    const button = screen.getByRole("button", { name: "查看指标" });
+    const style = button.getAttribute("style") ?? "";
+
+    expect(style).toContain("font-size: 13px");
+    expect(style).toContain("font-weight: 500");
+  });
 });

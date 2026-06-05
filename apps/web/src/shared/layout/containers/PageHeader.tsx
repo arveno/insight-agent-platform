@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+
 export type PageHeaderProps = {
   actions?: ReactNode;
   meta?: ReactNode;
@@ -17,11 +19,15 @@ export type PageHeaderProps = {
 export function PageHeader({ actions, meta, subtitle, title }: PageHeaderProps) {
   return (
     <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-      <Space direction="vertical" size={4}>
-        <Typography.Title level={2} style={{ margin: 0 }}>
+      <Space direction="vertical" size={shellThemeTokens.shellSectionGap}>
+        <Typography.Text style={{ ...shellTypographyStyles.pageTitle, display: "block" }}>
           {title}
-        </Typography.Title>
-        {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
+        </Typography.Text>
+        {subtitle ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.body}>
+            {subtitle}
+          </Typography.Text>
+        ) : null}
         {meta}
       </Space>
       {actions}

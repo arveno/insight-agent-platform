@@ -15,6 +15,7 @@ import {
   LeftNav,
   localeOptions,
   shellThemeTokens,
+  shellTypographyStyles,
   type AppLocale,
   type ThemeMode,
   useI18n
@@ -83,8 +84,10 @@ export function AppShell() {
       style={{ minWidth: shellThemeTokens.popoverMinWidth }}
     >
       <Space direction="vertical" size={4}>
-        <Typography.Text strong>{appShellStaticViewModel.currentUser.displayName}</Typography.Text>
-        <Typography.Text type="secondary">
+        <Typography.Text style={shellTypographyStyles.cardTitle}>
+          {appShellStaticViewModel.currentUser.displayName}
+        </Typography.Text>
+        <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
           {appShellStaticViewModel.currentUser.roleLabel}
         </Typography.Text>
       </Space>
@@ -155,8 +158,12 @@ export function AppShell() {
             }}
           >
             <Typography.Text
-              strong
-              style={{ color: token.colorText, display: "inline-flex", letterSpacing: -0.2 }}
+              style={{
+                ...shellTypographyStyles.cardTitle,
+                color: token.colorText,
+                display: "inline-flex",
+                letterSpacing: -0.2
+              }}
             >
               <AppIcon name="dashboard" title={t("appName")} variant="badge" />
               {t("appName")}
@@ -206,6 +213,7 @@ export function AppShell() {
               <Button
                 block
                 style={{
+                  ...shellTypographyStyles.buttonLabel,
                   height: "auto",
                   justifyContent: "flex-start",
                   paddingBlock: shellThemeTokens.userButtonPaddingBlock,
@@ -214,10 +222,10 @@ export function AppShell() {
                 type="default"
               >
                 <Space direction="vertical" size={2} style={{ width: "100%" }}>
-                  <Typography.Text strong>
+                  <Typography.Text style={shellTypographyStyles.cardTitle}>
                     {appShellStaticViewModel.currentUser.displayName}
                   </Typography.Text>
-                  <Typography.Text type="secondary">
+                  <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
                     {appShellStaticViewModel.currentUser.roleLabel}
                   </Typography.Text>
                 </Space>
@@ -244,7 +252,10 @@ export function AppShell() {
           onNavigate={handleNavigate}
         />
       ) : (
-        <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={handleNavigate} />
+        <ActivePage
+          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+          onNavigate={handleNavigate}
+        />
       )}
     </AppShellLayout>
   );

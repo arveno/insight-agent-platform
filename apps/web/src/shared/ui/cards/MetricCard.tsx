@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
+import { shellTypographyStyles } from "../../theme";
 import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
 import { AppBaseCard } from "./AppBaseCard";
 
@@ -63,9 +64,9 @@ export function MetricCard({
       tagSlot={resolvedTagSlot}
       title={title}
     >
-      <Typography.Title level={3} style={{ margin: 0 }}>
+      <Typography.Text style={{ ...shellTypographyStyles.metricValue, display: "block" }}>
         {value}
-      </Typography.Title>
+      </Typography.Text>
     </AppBaseCard>
   );
 }

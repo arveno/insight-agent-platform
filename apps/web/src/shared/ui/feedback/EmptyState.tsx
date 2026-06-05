@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Empty, Space, Typography } from "antd";
 
+import { shellTypographyStyles } from "../../theme";
+
 export type EmptyStateProps = {
   action?: ReactNode;
   description?: string;
@@ -18,8 +20,14 @@ export function EmptyState({ action, description, title }: EmptyStateProps) {
     <Empty
       description={
         <Space direction="vertical" size={4}>
-          {title ? <Typography.Text strong>{title}</Typography.Text> : null}
-          {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
+          {title ? (
+            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
+          ) : null}
+          {description ? (
+            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+              {description}
+            </Typography.Text>
+          ) : null}
         </Space>
       }
     >

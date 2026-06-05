@@ -10,8 +10,20 @@ const baseToken = {
   boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
   boxShadowSecondary: "0 1px 2px rgba(15, 23, 42, 0.04)",
   boxShadowTertiary: "none",
-  controlHeight: 36,
-  controlHeightSM: 30
+  controlHeight: 34,
+  controlHeightSM: 28,
+  fontSize: shellThemeTokens.fontSizeBody,
+  fontSizeHeading1: shellThemeTokens.fontSizePageTitle,
+  fontSizeHeading2: shellThemeTokens.fontSizeHeroTitle,
+  fontSizeHeading3: 20,
+  fontSizeHeading4: shellThemeTokens.fontSizeSectionTitle,
+  fontSizeHeading5: shellThemeTokens.fontSizeCardTitle,
+  fontSizeLG: shellThemeTokens.fontSizeSectionTitle,
+  fontSizeSM: shellThemeTokens.fontSizeMeta,
+  fontWeightStrong: shellThemeTokens.fontWeightSemibold,
+  lineHeight: 1.5,
+  lineHeightLG: 1.4,
+  lineHeightSM: 1.4
 } satisfies ThemeConfig["token"];
 
 const lightPalette = {
@@ -97,12 +109,12 @@ const sharedComponentTheme: ThemeConfig["components"] = {
     defaultHoverBorderColor: "#D4D4D4",
     defaultHoverColor: lightPalette.colorText,
     defaultShadow: "none",
-    fontWeight: 500,
+    fontWeight: shellThemeTokens.fontWeightMedium,
     linkHoverBg: "transparent",
-    paddingBlock: 4,
-    paddingBlockSM: 4,
-    paddingInline: 14,
-    paddingInlineSM: 12,
+    paddingBlock: 3,
+    paddingBlockSM: 3,
+    paddingInline: 12,
+    paddingInlineSM: 10,
     primaryColor: shellThemeTokens.colorActionPrimaryText,
     primaryShadow: "none",
     solidTextColor: shellThemeTokens.colorActionPrimaryText,
@@ -111,13 +123,13 @@ const sharedComponentTheme: ThemeConfig["components"] = {
   Card: {
     actionsBg: lightPalette.colorBgContainer,
     bodyPadding: shellThemeTokens.panelPadding,
-    bodyPaddingSM: 16,
+    bodyPaddingSM: 14,
     extraColor: lightPalette.colorTextDescription,
     headerBg: "transparent",
-    headerHeight: 48,
-    headerHeightSM: 40,
+    headerHeight: shellThemeTokens.cardHeaderHeight,
+    headerHeightSM: 38,
     headerPadding: shellThemeTokens.panelPadding,
-    headerPaddingSM: 16
+    headerPaddingSM: 14
   },
   Dropdown: {
     paddingBlock: 4

@@ -1,7 +1,13 @@
 import { Space, Typography } from "antd";
 
 import type { StaticRightAssistSummaryViewModel } from "../../../app/models";
-import { RightAssistPanel, RiskBadge, StatusTag, useI18n } from "../../../shared";
+import {
+  RightAssistPanel,
+  RiskBadge,
+  shellTypographyStyles,
+  StatusTag,
+  useI18n
+} from "../../../shared";
 import { ActionBar } from "../actions";
 import { toRiskBadge, toStatusTag } from "../adapters";
 import { translateKey } from "../text";
@@ -30,16 +36,22 @@ export function RightAssistSummaryPanel({ onNavigate, summary }: RightAssistSumm
           {riskBadge ? <RiskBadge {...riskBadge} /> : null}
         </Space>
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>{t("rightAssist.section.contextActions.title")}</Typography.Text>
+          <Typography.Text style={shellTypographyStyles.cardTitle}>
+            {t("rightAssist.section.contextActions.title")}
+          </Typography.Text>
           <ActionBar actions={summary.links} onNavigate={onNavigate} t={t} />
         </Space>
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>{t("rightAssist.section.evidence.title")}</Typography.Text>
+          <Typography.Text style={shellTypographyStyles.cardTitle}>
+            {t("rightAssist.section.evidence.title")}
+          </Typography.Text>
           <EvidencePanel items={summary.evidence} />
         </Space>
         {summary.traces ? (
           <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Typography.Text strong>{t("rightAssist.section.trace.title")}</Typography.Text>
+            <Typography.Text style={shellTypographyStyles.cardTitle}>
+              {t("rightAssist.section.trace.title")}
+            </Typography.Text>
             <TracePanel items={summary.traces} />
           </Space>
         ) : null}

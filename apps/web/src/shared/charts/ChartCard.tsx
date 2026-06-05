@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../theme";
 import { EmptyState, ErrorState, LoadingState } from "../ui";
 import type { ChartCardViewModel } from "./chartTypes";
 
@@ -14,7 +15,14 @@ export type ChartCardProps = ChartCardViewModel & {
  * ChartCard 只承接图表标题、状态和 slot；
  * 具体 series 必须由 feature mapper 产出 ViewModel，不直接消费 raw metric rows。
  */
-export function ChartCard({ actions, children, legend, state = { kind: "ready" }, subtitle, title }: ChartCardProps) {
+export function ChartCard({
+  actions,
+  children,
+  legend,
+  state = { kind: "ready" },
+  subtitle,
+  title
+}: ChartCardProps) {
   let content: ReactNode = children;
 
   if (state.kind === "loading") {
@@ -31,11 +39,15 @@ export function ChartCard({ actions, children, legend, state = { kind: "ready" }
 
   return (
     <Card>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space direction="vertical" size={4}>
-            <Typography.Text strong>{title}</Typography.Text>
-            {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
+            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
+            {subtitle ? (
+              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                {subtitle}
+              </Typography.Text>
+            ) : null}
           </Space>
           {actions}
         </Space>

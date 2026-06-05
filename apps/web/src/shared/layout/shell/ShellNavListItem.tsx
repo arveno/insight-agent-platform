@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Flex, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 
 export type ShellNavListItemProps = {
   ariaCurrent?: "page";
@@ -76,7 +76,10 @@ export function ShellNavListItem({
             {icon}
           </span>
         ) : null}
-        <Typography.Text ellipsis style={{ color: textColor, minWidth: 0 }}>
+        <Typography.Text
+          ellipsis
+          style={{ ...shellTypographyStyles.navItem, color: textColor, minWidth: 0 }}
+        >
           {label}
         </Typography.Text>
       </Flex>

@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
 import type { StaticPageViewModelBase } from "../../../app/models";
-import { PageHeader, ResponsivePageShell, useI18n } from "../../../shared";
+import {
+  PageHeader,
+  ResponsivePageShell,
+  shellThemeTokens,
+  shellTypographyStyles,
+  useI18n
+} from "../../../shared";
 import { ActionBar } from "../actions";
 import { translateKey } from "../text";
 import type { NavigateToRoute } from "../types";
@@ -24,7 +30,7 @@ export function WebPageScaffold({ children, onNavigate, viewModel }: WebPageScaf
           actions={<ActionBar actions={actions} onNavigate={onNavigate} t={t} />}
           meta={
             <Space wrap>
-              <Typography.Text type="secondary">
+              <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
                 {translateKey(t, "chrome.lastUpdated")}: {viewModel.lastUpdatedAt}
               </Typography.Text>
             </Space>
@@ -34,7 +40,7 @@ export function WebPageScaffold({ children, onNavigate, viewModel }: WebPageScaf
         />
       }
     >
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>
         {children}
       </Space>
     </ResponsivePageShell>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { List, Space, Typography } from "antd";
 
+import { shellTypographyStyles } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../feedback";
 import { RiskBadge, type RiskBadgeProps } from "../status";
 
@@ -38,9 +39,17 @@ export function SourceEvidenceList({ empty, items }: SourceEvidenceListProps) {
           <List.Item.Meta
             title={
               <Space wrap>
-                <Typography.Text strong>{item.title}</Typography.Text>
-                <Typography.Text type="secondary">{item.sourceTypeLabel}</Typography.Text>
-                {item.confidenceText ? <Typography.Text type="secondary">{item.confidenceText}</Typography.Text> : null}
+                <Typography.Text style={shellTypographyStyles.cardTitle}>
+                  {item.title}
+                </Typography.Text>
+                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                  {item.sourceTypeLabel}
+                </Typography.Text>
+                {item.confidenceText ? (
+                  <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                    {item.confidenceText}
+                  </Typography.Text>
+                ) : null}
                 {item.risk ? <RiskBadge {...item.risk} /> : null}
               </Space>
             }
