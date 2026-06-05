@@ -3,6 +3,8 @@ import { CheckOutlined, DownOutlined } from "@ant-design/icons";
 import { Button, Dropdown, Flex, Space, Typography, theme } from "antd";
 import type { ItemType } from "antd/es/menu/interface";
 
+import { shellThemeTokens } from "../../theme";
+
 export type HeaderBarWorkspaceOption = {
   name: string;
   workspaceId: string;
@@ -63,7 +65,11 @@ export function HeaderBar({
     <Flex
       align="center"
       justify="space-between"
-      style={{ gap: token.margin, height: "100%", paddingInline: 24 }}
+      style={{
+        gap: token.margin,
+        height: "100%",
+        paddingInline: shellThemeTokens.headerPaddingInline
+      }}
     >
       <Dropdown
         menu={{
@@ -80,7 +86,16 @@ export function HeaderBar({
         placement="bottomLeft"
         trigger={["click"]}
       >
-        <Button style={{ height: "auto", paddingBlock: token.paddingXS }} type="text">
+        <Button
+          size="small"
+          style={{
+            borderRadius: shellThemeTokens.borderRadiusLG,
+            height: "auto",
+            paddingBlock: shellThemeTokens.navPreviewPaddingBlock,
+            paddingInline: shellThemeTokens.navPrimaryPaddingInline
+          }}
+          type="default"
+        >
           <Space size={6}>
             <Typography.Text type="secondary">{workspaceLabel}</Typography.Text>
             <Typography.Text strong>{currentWorkspaceName}</Typography.Text>
@@ -89,7 +104,9 @@ export function HeaderBar({
         </Button>
       </Dropdown>
       {feedback ? (
-        <Typography.Text style={{ color: token.colorTextDescription }}>{feedback}</Typography.Text>
+        <Typography.Text style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+          {feedback}
+        </Typography.Text>
       ) : null}
     </Flex>
   );

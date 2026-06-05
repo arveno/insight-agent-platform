@@ -16,9 +16,6 @@ export function AppBaseCard({
   return (
     <Card
       style={{
-        background: token.colorBgContainer,
-        borderColor: token.colorBorderSecondary,
-        boxShadow: token.boxShadowTertiary,
         height: "100%",
         width: "100%"
       }}

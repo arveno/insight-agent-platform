@@ -11,6 +11,7 @@ import {
   HeaderBar,
   LeftNav,
   localeOptions,
+  shellThemeTokens,
   type AppLocale,
   type ThemeMode,
   useI18n
@@ -45,7 +46,7 @@ export function AppShell() {
     ? activeRoute
     : undefined;
   const userPreferenceContent = (
-    <Space direction="vertical" size={12} style={{ minWidth: 240 }}>
+    <Space direction="vertical" size={shellThemeTokens.shellSectionGap} style={{ minWidth: 240 }}>
       <Space direction="vertical" size={4}>
         <Typography.Text strong>{appShellStaticViewModel.currentUser.displayName}</Typography.Text>
         <Typography.Text type="secondary">
@@ -112,8 +113,17 @@ export function AppShell() {
             width: "100%"
           }}
         >
-          <div style={{ flex: "0 0 auto", paddingBlock: token.paddingLG, paddingInline: 24 }}>
-            <Typography.Text strong>
+          <div
+            style={{
+              flex: "0 0 auto",
+              paddingBlock: shellThemeTokens.panelPadding,
+              paddingInline: shellThemeTokens.headerPaddingInline
+            }}
+          >
+            <Typography.Text
+              strong
+              style={{ color: token.colorText, display: "inline-flex", letterSpacing: -0.2 }}
+            >
               <AppIcon name="dashboard" title={t("appName")} variant="badge" />
               {t("appName")}
             </Typography.Text>
@@ -129,7 +139,7 @@ export function AppShell() {
             style={{
               borderTop: `1px solid ${token.colorBorderSecondary}`,
               flex: "0 0 auto",
-              padding: token.padding
+              padding: shellThemeTokens.shellFooterPadding
             }}
           >
             <Popover
@@ -138,7 +148,16 @@ export function AppShell() {
               title={t("userMenu")}
               trigger="click"
             >
-              <Button block style={{ height: "auto", paddingBlock: token.paddingSM }}>
+              <Button
+                block
+                style={{
+                  height: "auto",
+                  justifyContent: "flex-start",
+                  paddingBlock: shellThemeTokens.userButtonPaddingBlock,
+                  paddingInline: shellThemeTokens.userButtonPaddingInline
+                }}
+                type="default"
+              >
                 <Space direction="vertical" size={2} style={{ width: "100%" }}>
                   <Typography.Text strong>
                     {appShellStaticViewModel.currentUser.displayName}

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { Badge, Button, Flex, Space, Typography, theme } from "antd";
+import { Button, Flex, Space, Typography, theme } from "antd";
+
+import { shellThemeTokens } from "../../theme";
 
 export type NavigationItem = {
   badge?: ReactNode;
@@ -34,7 +36,12 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
   return (
     <nav
       aria-label="Shell navigation"
-      style={{ display: "flex", flexDirection: "column", gap: token.marginLG, paddingInline: 16 }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: shellThemeTokens.navGroupGap,
+        paddingInline: shellThemeTokens.navPaddingInline
+      }}
     >
       {groups.map((group) => (
         <section key={group.key}>
@@ -53,10 +60,32 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
               {group.label}
             </Typography.Text>
           ) : null}
-          <Space direction="vertical" size={group.kind === "primary" ? 8 : 4} style={{ width: "100%" }}>
+          <Space
+            direction="vertical"
+            size={
+              group.kind === "primary"
+                ? shellThemeTokens.navPrimaryItemGap
+                : shellThemeTokens.navPreviewItemGap
+            }
+            style={{ width: "100%" }}
+          >
             {group.items.map((item) => {
               const isPrimary = group.kind === "primary";
               const isSelected = selectedKey === item.key;
+              const iconColor = isSelected
+                ? token.colorPrimary
+                : isPrimary
+                  ? token.colorText
+                  : token.colorTextSecondary;
+              const itemBackground = isSelected
+                ? isPrimary
+                  ? token.colorBgContainer
+                  : token.colorFillSecondary
+                : "transparent";
+              const itemBorderColor =
+                isSelected && isPrimary ? token.colorBorderSecondary : "transparent";
+              const itemTextColor =
+                isPrimary || isSelected ? token.colorText : token.colorTextSecondary;
 
               return (
                 <Button
@@ -67,34 +96,26 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                   onClick={() => onSelect?.(item.key)}
                   style={{
                     alignItems: "center",
-                    background: isPrimary
-                      ? isSelected
-                        ? token.colorPrimaryBg
-                        : token.colorBgContainer
-                      : isSelected
-                        ? token.colorFillSecondary
-                        : "transparent",
-                    border: isPrimary
-                      ? `1px solid ${isSelected ? token.colorPrimaryBorder : token.colorBorderSecondary}`
-                      : "1px solid transparent",
-                    borderRadius: token.borderRadiusLG,
-                    boxShadow: isPrimary && isSelected ? token.boxShadowSecondary : "none",
+                    background: itemBackground,
+                    border: `1px solid ${itemBorderColor}`,
+                    borderRadius: shellThemeTokens.borderRadiusLG,
+                    boxShadow: "none",
                     display: "flex",
                     height: "auto",
                     justifyContent: "space-between",
-                    paddingBlock: isPrimary ? token.paddingSM : token.paddingXS,
-                    paddingInline: isPrimary ? token.padding : token.paddingSM
+                    paddingBlock: isPrimary
+                      ? shellThemeTokens.navPrimaryPaddingBlock
+                      : shellThemeTokens.navPreviewPaddingBlock,
+                    paddingInline: isPrimary
+                      ? shellThemeTokens.navPrimaryPaddingInline
+                      : shellThemeTokens.navPreviewPaddingInline
                   }}
                   type="text"
                 >
                   <Flex align="center" gap={token.marginXS} style={{ minWidth: 0 }}>
                     <span
                       style={{
-                        color: isSelected
-                          ? token.colorPrimary
-                          : isPrimary
-                            ? token.colorText
-                            : token.colorTextSecondary,
+                        color: iconColor,
                         display: "inline-flex"
                       }}
                     >
@@ -104,11 +125,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                       ellipsis
                       strong={isPrimary}
                       style={{
-                        color: isSelected
-                          ? token.colorPrimary
-                          : isPrimary
-                            ? token.colorText
-                            : token.colorTextSecondary,
+                        color: itemTextColor,
                         textAlign: "left"
                       }}
                     >
@@ -116,7 +133,20 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                     </Typography.Text>
                   </Flex>
                   {item.badge ? (
-                    <Badge color={token.colorError} count={item.badge} size="small" />
+                    <span
+                      style={{
+                        background: token.colorFillSecondary,
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                        borderRadius: token.borderRadiusSM,
+                        color: token.colorTextDescription,
+                        fontSize: token.fontSizeSM,
+                        lineHeight: 1,
+                        paddingBlock: 2,
+                        paddingInline: token.paddingXS
+                      }}
+                    >
+                      {item.badge}
+                    </span>
                   ) : null}
                 </Button>
               );
