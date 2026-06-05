@@ -50,10 +50,10 @@ export function AnalysisSections({
         border: `1px solid ${token.colorBorderSecondary}`,
         borderRadius: token.borderRadiusLG,
         display: "flex",
+        flex: "1 1 auto",
         flexDirection: "column",
-        height: "calc(100vh - 156px)",
-        maxHeight: 860,
-        minHeight: 620,
+        height: "100%",
+        minHeight: 0,
         overflow: "hidden",
         width: "100%"
       }}

@@ -1,5 +1,5 @@
 import { useAnalysisConversationState, type AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
-import { ResponsivePageShell } from "../../shared";
+import { theme } from "antd";
 import { type WebPageProps } from "../_shared";
 import { AnalysisSections } from "./sections";
 
@@ -10,22 +10,36 @@ export type AnalysisPageContentProps = WebPageProps & {
 export function AnalysisPageContent({
   conversationState,
 }: AnalysisPageContentProps) {
+  const { token } = theme.useToken();
+
   return (
-    <ResponsivePageShell>
-      <AnalysisSections
-        analysisDraft={conversationState.analysisDraft}
-        composerMode={conversationState.composerMode}
-        followUpDraft={conversationState.followUpDraft}
-        interactionMessage={conversationState.interactionMessage}
-        onAnalysisDraftChange={conversationState.onAnalysisDraftChange}
-        onAnalysisSubmit={conversationState.onAnalysisSubmit}
-        onFollowUpDraftChange={conversationState.onFollowUpDraftChange}
-        onFollowUpSubmit={conversationState.onFollowUpSubmit}
-        onSelectAnalysisSuggestion={conversationState.onSelectAnalysisSuggestion}
-        onSelectFollowUpSuggestion={conversationState.onSelectFollowUpSuggestion}
-        selectedSession={conversationState.selectedSession}
-      />
-    </ResponsivePageShell>
+    <div
+      style={{
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+        padding: token.paddingLG,
+        width: "100%"
+      }}
+    >
+      <div style={{ display: "flex", flex: "1 1 auto", minHeight: 0, minWidth: 0 }}>
+        <AnalysisSections
+          analysisDraft={conversationState.analysisDraft}
+          composerMode={conversationState.composerMode}
+          followUpDraft={conversationState.followUpDraft}
+          interactionMessage={conversationState.interactionMessage}
+          onAnalysisDraftChange={conversationState.onAnalysisDraftChange}
+          onAnalysisSubmit={conversationState.onAnalysisSubmit}
+          onFollowUpDraftChange={conversationState.onFollowUpDraftChange}
+          onFollowUpSubmit={conversationState.onFollowUpSubmit}
+          onSelectAnalysisSuggestion={conversationState.onSelectAnalysisSuggestion}
+          onSelectFollowUpSuggestion={conversationState.onSelectFollowUpSuggestion}
+          selectedSession={conversationState.selectedSession}
+        />
+      </div>
+    </div>
   );
 }
 

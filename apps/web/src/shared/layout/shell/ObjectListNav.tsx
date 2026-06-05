@@ -3,12 +3,13 @@ import { ArrowLeftOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Input, Space, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../theme";
+import { ShellNavListItem } from "./ShellNavListItem";
 
 export type ObjectListNavItem = {
-  description?: ReactNode;
+  disabled?: boolean;
+  icon?: ReactNode;
   key: string;
-  meta?: ReactNode;
-  status?: ReactNode;
+  rightContent?: ReactNode;
   title: ReactNode;
 };
 
@@ -89,63 +90,18 @@ export function ObjectListNav({
         ) : null}
         {items.map((item) => {
           const isSelected = selectedKey === item.key;
-          const isSimpleItem = !item.description && !item.meta && !item.status;
 
           return (
-            <button
-              aria-pressed={isSelected}
+            <ShellNavListItem
+              ariaPressed={isSelected}
+              disabled={item.disabled}
+              icon={item.icon}
               key={item.key}
+              label={item.title}
               onClick={() => onSelect?.(item.key)}
-              style={{
-                appearance: "none",
-                background: isSelected ? token.colorFillSecondary : "transparent",
-                border: `${shellThemeTokens.surfaceBorderWidth}px solid ${
-                  isSelected ? token.colorBorderSecondary : "transparent"
-                }`,
-                borderRadius: shellThemeTokens.borderRadiusLG,
-                cursor: "pointer",
-                paddingBlock: isSimpleItem
-                  ? shellThemeTokens.navPrimaryPaddingBlock
-                  : shellThemeTokens.navPreviewPaddingBlock,
-                paddingInline: shellThemeTokens.navPreviewPaddingInline,
-                textAlign: "left",
-                width: "100%"
-              }}
-              type="button"
-            >
-              {isSimpleItem ? (
-                <Typography.Text
-                  ellipsis
-                  strong={isSelected}
-                  style={{ color: isSelected ? token.colorText : token.colorTextSecondary }}
-                >
-                  {item.title}
-                </Typography.Text>
-              ) : (
-                <Space direction="vertical" size={2} style={{ width: "100%" }}>
-                  <Space
-                    align="start"
-                    size={token.marginXS}
-                    style={{ justifyContent: "space-between", width: "100%" }}
-                    wrap
-                  >
-                    <Typography.Text
-                      strong
-                      style={{ color: isSelected ? token.colorText : token.colorTextSecondary }}
-                    >
-                      {item.title}
-                    </Typography.Text>
-                    {item.status}
-                  </Space>
-                  {item.description ? (
-                    <Typography.Text type="secondary">{item.description}</Typography.Text>
-                  ) : null}
-                  {item.meta ? (
-                    <Typography.Text type="secondary">{item.meta}</Typography.Text>
-                  ) : null}
-                </Space>
-              )}
-            </button>
+              rightContent={item.rightContent}
+              selected={isSelected}
+            />
           );
         })}
       </Space>

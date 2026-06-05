@@ -38,8 +38,13 @@ describe("AnalysisPage", () => {
     expect(
       within(main).getAllByText("来自 Dashboard / Revenue · 收入增速异常 · Last 30 days")
     ).toHaveLength(2);
-    expect(within(main).getByRole("log", { name: "Analysis message list" })).toBeTruthy();
-    expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
+    expect(main.getAttribute("style")).toContain("height: 100%");
+    const messageList = within(main).getByRole("log", { name: "Analysis message list" });
+    const composer = within(main).getByRole("group", { name: "Analysis composer" });
+    expect(messageList).toBeTruthy();
+    expect(messageList.getAttribute("style")).toContain("overflow-y: auto");
+    expect(composer).toBeTruthy();
+    expect(composer.getAttribute("style")).toContain("flex: 0 0 auto");
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
