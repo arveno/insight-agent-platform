@@ -164,5 +164,30 @@ export const dashboardStaticViewModel: DashboardViewModel = {
       status: readyStatus,
       value: "静态样例"
     }
-  ]
+  ],
+  timeRange: {
+    options: [
+      {
+        description: "当前展示最近 12 小时内的指标摘要、异常和报告入口。",
+        key: "last_12_hours",
+        label: "Last 12 hours"
+      },
+      {
+        description: "当前展示最近 7 天内的指标摘要、异常和报告入口。",
+        key: "last_7_days",
+        label: "Last 7 days"
+      },
+      {
+        description: "当前展示最近 30 天内的指标摘要、异常和报告入口。",
+        key: "last_30_days",
+        label: "Last 30 days"
+      },
+      {
+        description: "当前展示本季度内的指标摘要、异常和报告入口。",
+        key: "this_quarter",
+        label: "This quarter"
+      }
+    ],
+    selectedKey: "last_30_days"
+  }
 };

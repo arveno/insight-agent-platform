@@ -7,6 +7,23 @@ import type {
   StaticSummaryItemViewModel
 } from "../../../app/models";
 
+export type DashboardTimeRangeKey =
+  | "last_12_hours"
+  | "last_7_days"
+  | "last_30_days"
+  | "this_quarter";
+
+export type DashboardTimeRangeOptionViewModel = {
+  description: string;
+  key: DashboardTimeRangeKey;
+  label: string;
+};
+
+export type DashboardTimeRangeViewModel = {
+  options: DashboardTimeRangeOptionViewModel[];
+  selectedKey: DashboardTimeRangeKey;
+};
+
 export type DashboardViewModel = StaticPageViewModelBase & {
   analysisEntrances: StaticActionViewModel[];
   anomalyCards: StaticSummaryItemViewModel[];
@@ -17,4 +34,5 @@ export type DashboardViewModel = StaticPageViewModelBase & {
   platformQualitySummary: StaticSummaryItemViewModel[];
   recentReports: StaticReportEntranceViewModel[];
   riskSummary: StaticSummaryItemViewModel[];
+  timeRange: DashboardTimeRangeViewModel;
 };
