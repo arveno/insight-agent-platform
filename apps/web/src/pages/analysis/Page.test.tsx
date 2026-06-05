@@ -50,6 +50,7 @@ describe("AnalysisPage", () => {
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
+    expect(within(main).queryByText("Draft")).toBeNull();
     expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "打开聊天工具入口" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "选择模型" })).toBeTruthy();
@@ -75,9 +76,19 @@ describe("AnalysisPage", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
       target: { value: "继续追问华东渠道和最近 7 天的差异。" }
     });
+    expect(
+      within(screen.getByRole("log", { name: "Analysis message list" })).queryByText(
+        "继续追问华东渠道和最近 7 天的差异。"
+      )
+    ).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
 
     expect(screen.getByRole("button", { name: "停止生成" })).toBeTruthy();
+    expect(
+      within(screen.getByRole("log", { name: "Analysis message list" })).queryByText(
+        "继续追问华东渠道和最近 7 天的差异。"
+      )
+    ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "停止生成" }));
 

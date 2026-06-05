@@ -23,8 +23,6 @@ export type AnalysisSectionsProps = {
   onFollowUpSubmit: () => void;
   onComposerStop: () => void;
   onSelectModel: (key: string) => void;
-  onSelectAnalysisSuggestion: (value: string) => void;
-  onSelectFollowUpSuggestion: (value: string) => void;
   selectedModelKey: string;
   selectedModelLabel: string;
   selectedSession: AnalysisViewModel["sessions"][number];
@@ -44,8 +42,6 @@ export function AnalysisSections({
   onFollowUpSubmit,
   onComposerStop,
   onSelectModel,
-  onSelectAnalysisSuggestion,
-  onSelectFollowUpSuggestion,
   selectedModelKey,
   selectedModelLabel,
   selectedSession
@@ -57,13 +53,11 @@ export function AnalysisSections({
   const onActiveDraftChange =
     composerMode === "analysis" ? onAnalysisDraftChange : onFollowUpDraftChange;
   const onActiveSubmit = composerMode === "analysis" ? onAnalysisSubmit : onFollowUpSubmit;
-  const onSelectSuggestion =
-    composerMode === "analysis" ? onSelectAnalysisSuggestion : onSelectFollowUpSuggestion;
-  const hasFollowUpDraft = composerMode === "follow_up" && followUpDraft.trim().length > 0;
   const modelMenuItems = modelOptions.map((option) => ({
     key: option.key,
     label: option.label
   }));
+  const committedUserMessage = selectedSession.inputComposer.initialDraft;
 
   return (
     <section
@@ -116,7 +110,7 @@ export function AnalysisSections({
         </ChatMessage>
 
         <ChatMessage align="end" roleLabel="User" tone="user">
-          <Typography.Paragraph style={{ margin: 0 }}>{analysisDraft}</Typography.Paragraph>
+          <Typography.Paragraph style={{ margin: 0 }}>{committedUserMessage}</Typography.Paragraph>
         </ChatMessage>
 
         <ChatMessage roleLabel="Assistant" tone="assistant">
@@ -137,12 +131,6 @@ export function AnalysisSections({
           </div>
           <Typography.Text type="secondary">完整执行过程见右侧 Run Trace。</Typography.Text>
         </ChatMessage>
-
-        {hasFollowUpDraft ? (
-          <ChatMessage align="end" roleLabel="Draft" tone="draft">
-            <Typography.Paragraph style={{ margin: 0 }}>{followUpDraft}</Typography.Paragraph>
-          </ChatMessage>
-        ) : null}
       </div>
 
       <footer
@@ -163,11 +151,34 @@ export function AnalysisSections({
             padding: token.paddingSM
           }}
         >
+          <textarea
+            aria-label={activeComposer.title}
+            onChange={(event) => onActiveDraftChange(event.target.value)}
+            placeholder={activeComposer.placeholder}
+            rows={4}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: token.colorText,
+              display: "block",
+              fontFamily: "inherit",
+              fontSize: token.fontSize,
+              lineHeight: token.lineHeight,
+              marginBottom: token.marginSM,
+              minHeight: 96,
+              outline: "none",
+              padding: 0,
+              resize: "none",
+              width: "100%"
+            }}
+            value={activeDraft}
+          />
           <div
             style={{
-              alignItems: "flex-end",
+              alignItems: "center",
               display: "flex",
               gap: token.marginSM,
+              justifyContent: "space-between",
               width: "100%"
             }}
           >
@@ -179,66 +190,32 @@ export function AnalysisSections({
               shape="circle"
               type="default"
             />
-            <textarea
-              aria-label={activeComposer.title}
-              onChange={(event) => onActiveDraftChange(event.target.value)}
-              placeholder={activeComposer.placeholder}
-              rows={3}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: token.colorText,
-                flex: "1 1 auto",
-                fontFamily: "inherit",
-                fontSize: token.fontSize,
-                lineHeight: token.lineHeight,
-                minHeight: 72,
-                outline: "none",
-                paddingBlock: token.paddingXS,
-                paddingInline: 0,
-                resize: "none",
-                width: "100%"
-              }}
-              value={activeDraft}
-            />
-            <Dropdown
-              menu={{
-                items: modelMenuItems,
-                onClick: ({ key }) => onSelectModel(String(key)),
-                selectable: true,
-                selectedKeys: [selectedModelKey]
-              }}
-              trigger={["click"]}
-            >
-              <Button aria-label="选择模型" type="default">
-                {selectedModelLabel}
-                <DownOutlined />
-              </Button>
-            </Dropdown>
-            <Button
-              aria-label={composerState === "running" ? "停止生成" : "发送消息"}
-              color="default"
-              disabled={composerState === "idle" && activeDraft.trim().length === 0}
-              icon={composerState === "running" ? <StopOutlined /> : <ArrowUpOutlined />}
-              onClick={composerState === "running" ? onComposerStop : onActiveSubmit}
-              shape="circle"
-              variant="solid"
-            />
-          </div>
-          {activeComposer.suggestions.length > 0 ? (
-            <Space size={token.marginXS} style={{ marginTop: token.marginSM }} wrap>
-              {activeComposer.suggestions.map((suggestion) => (
-                <Button
-                  key={suggestion.key}
-                  onClick={() => onSelectSuggestion(suggestion.label)}
-                  size="small"
-                  type="default"
-                >
-                  {suggestion.label}
+            <Space size={token.marginSM}>
+              <Dropdown
+                menu={{
+                  items: modelMenuItems,
+                  onClick: ({ key }) => onSelectModel(String(key)),
+                  selectable: true,
+                  selectedKeys: [selectedModelKey]
+                }}
+                trigger={["click"]}
+              >
+                <Button aria-label="选择模型" type="default">
+                  {selectedModelLabel}
+                  <DownOutlined />
                 </Button>
-              ))}
+              </Dropdown>
+              <Button
+                aria-label={composerState === "running" ? "停止生成" : "发送消息"}
+                color="default"
+                disabled={composerState === "idle" && activeDraft.trim().length === 0}
+                icon={composerState === "running" ? <StopOutlined /> : <ArrowUpOutlined />}
+                onClick={composerState === "running" ? onComposerStop : onActiveSubmit}
+                shape="circle"
+                variant="solid"
+              />
             </Space>
-          ) : null}
+          </div>
         </div>
         <span
           aria-live="polite"

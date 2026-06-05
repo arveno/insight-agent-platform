@@ -38,8 +38,6 @@ export function AnalysisPageContent({
           onFollowUpSubmit={conversationState.onFollowUpSubmit}
           onComposerStop={conversationState.onComposerStop}
           onSelectModel={conversationState.onSelectModel}
-          onSelectAnalysisSuggestion={conversationState.onSelectAnalysisSuggestion}
-          onSelectFollowUpSuggestion={conversationState.onSelectFollowUpSuggestion}
           selectedModelKey={conversationState.selectedModelKey}
           selectedModelLabel={conversationState.selectedModelLabel}
           modelOptions={conversationState.modelOptions}
