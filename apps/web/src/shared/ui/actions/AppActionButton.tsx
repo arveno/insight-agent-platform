@@ -5,10 +5,10 @@ import type { AppActionButtonProps, AppActionButtonVariant } from "./actionTypes
 
 const actionButtonPropsByVariant: Record<
   AppActionButtonVariant,
-  Pick<ButtonProps, "size" | "type">
+  Pick<ButtonProps, "color" | "size" | "type" | "variant">
 > = {
-  contextPrimary: { type: "primary" },
-  globalPrimary: { type: "primary" },
+  contextPrimary: { color: "default", variant: "solid" },
+  globalPrimary: { color: "default", variant: "solid" },
   moduleEntry: { type: "default" },
   objectDetail: { size: "small", type: "default" },
   sourceLink: { size: "small", type: "link" }

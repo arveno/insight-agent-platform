@@ -37,6 +37,17 @@ export function AppShellInspector({ inspector, workspaceName }: AppShellInspecto
             </Typography.Paragraph>
           ))}
         </Space>
+        <Typography.Text strong>技术对接</Typography.Text>
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          {inspector.integrationNotes.map((note) => (
+            <Typography.Paragraph
+              key={note}
+              style={{ color: token.colorTextDescription, margin: 0 }}
+            >
+              {`• ${note}`}
+            </Typography.Paragraph>
+          ))}
+        </Space>
       </Space>
     </RightAssistPanel>
   );

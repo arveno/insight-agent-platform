@@ -50,7 +50,7 @@ export function FeedbackPanel({
         />
         {helperText ? <Typography.Text type="secondary">{helperText}</Typography.Text> : null}
         {submitLabel ? (
-          <Button disabled={disabled || !value} onClick={onSubmit} type="primary">
+          <Button color="default" disabled={disabled || !value} onClick={onSubmit} variant="solid">
             {submitLabel}
           </Button>
         ) : null}
