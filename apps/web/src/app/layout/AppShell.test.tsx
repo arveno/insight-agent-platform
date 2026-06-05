@@ -147,4 +147,44 @@ describe("AppShell", () => {
     expect(screen.queryByText("报告补充入口")).toBeNull();
     expect(screen.queryByText(/技术对接：/)).toBeNull();
   });
+
+  it("enters reports navigation mode and keeps report selection in local UI state", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /报告/ }));
+
+    const reportsNavigation = screen.getByRole("navigation", { name: "Reports navigation" });
+
+    expect(within(reportsNavigation).getByText("报告")).toBeTruthy();
+    expect(within(reportsNavigation).getByRole("textbox", { name: "搜索报告" })).toBeTruthy();
+    expect(within(reportsNavigation).getByText("周经营分析报告")).toBeTruthy();
+    expect(within(reportsNavigation).getByText("毛利率复盘报告")).toBeTruthy();
+    expect(within(reportsNavigation).getByText("库存异常跟踪报告")).toBeTruthy();
+    expect(within(reportsNavigation).queryByText("4 个证据引用")).toBeNull();
+
+    fireEvent.change(within(reportsNavigation).getByRole("textbox", { name: "搜索报告" }), {
+      target: { value: "库存" }
+    });
+
+    expect(within(reportsNavigation).queryByText("周经营分析报告")).toBeNull();
+    expect(within(reportsNavigation).queryByText("毛利率复盘报告")).toBeNull();
+    expect(within(reportsNavigation).getByText("库存异常跟踪报告")).toBeTruthy();
+
+    fireEvent.click(within(reportsNavigation).getByText("库存异常跟踪报告"));
+
+    expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("reportId: report-inventory-exception-tracking").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(0);
+    expect(screen.getByText("evidence: 2")).toBeTruthy();
+    expect(screen.getByText("sections: 2")).toBeTruthy();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
+    expect(screen.queryByText("Run Trace")).toBeNull();
+  });
 });

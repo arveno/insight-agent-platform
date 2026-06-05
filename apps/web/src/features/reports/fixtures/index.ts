@@ -1,1 +1,1 @@
-export { reportsStaticViewModel } from "./reportsStaticViewModel";
+export { createReportsViewModel, reportCatalog, reportsStaticViewModel } from "./reportsStaticViewModel";

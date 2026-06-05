@@ -6,6 +6,7 @@ import type { StaticRouteKey } from "../models";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
 import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
+import { useReportsReaderState } from "../../features/reports/hooks";
 import { analysisStaticViewModel } from "../../features/static-view-models";
 import { AnalysisPageContent } from "../../pages/analysis/Page";
 import {
@@ -24,6 +25,8 @@ import {
 import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
 import { AnalysisSessionNav } from "./AnalysisSessionNav";
 import { AppShellInspector } from "./AppShellInspector";
+import { ReportsInspectorPanel } from "./ReportsInspectorPanel";
+import { ReportsListNav } from "./ReportsListNav";
 
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();
@@ -32,7 +35,7 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
-  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "root">(
+  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "reports" | "root">(
     appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
   );
   const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
@@ -41,6 +44,7 @@ export function AppShell() {
   );
   const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(false);
   const analysisConversationState = useAnalysisConversationState();
+  const reportsReaderState = useReportsReaderState();
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
   const navigationGroups = useMemo(
@@ -71,10 +75,14 @@ export function AppShell() {
     : undefined;
   const handleNavigate = (route: StaticRouteKey) => {
     setActiveRoute(route);
-    setLeftNavMode(route === "analysis" ? "analysis" : "root");
+    setLeftNavMode(route === "analysis" ? "analysis" : route === "reports" ? "reports" : "root");
 
     if (route !== "analysis") {
       setAnalysisSessionQuery("");
+    }
+
+    if (route !== "reports") {
+      reportsReaderState.onSearchChange("");
     }
   };
   const userPreferenceContent = (
@@ -189,6 +197,11 @@ export function AppShell() {
                 selectedSessionKey={analysisConversationState.selectedSessionKey}
                 sessions={filteredAnalysisSessions}
               />
+            ) : activeRoute === "reports" && leftNavMode === "reports" ? (
+              <ReportsListNav
+                controller={reportsReaderState}
+                onBack={() => setLeftNavMode("root")}
+              />
             ) : (
               <LeftNav
                 groups={navigationGroups}
@@ -240,6 +253,12 @@ export function AppShell() {
             conversationState={analysisConversationState}
             workspaceName={selectedWorkspace.name}
           />
+        ) : activeRoute === "reports" ? (
+          <ReportsInspectorPanel
+            reportSections={reportsReaderState.viewModel.reportSections}
+            selectedReport={reportsReaderState.viewModel.selectedReport}
+            workspaceName={selectedWorkspace.name}
+          />
         ) : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )
@@ -255,6 +274,7 @@ export function AppShell() {
         <ActivePage
           key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
           onNavigate={handleNavigate}
+          reportsState={activeRoute === "reports" ? reportsReaderState : undefined}
         />
       )}
     </AppShellLayout>
