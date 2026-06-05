@@ -5,6 +5,9 @@ import { appShellStaticViewModel } from "../fixtures";
 import type { StaticRouteKey } from "../models";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
+import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
+import { analysisStaticViewModel } from "../../features/static-view-models";
+import { AnalysisPageContent } from "../../pages/analysis/Page";
 import {
   AppIcon,
   AppShellLayout,
@@ -17,6 +20,8 @@ import {
   useI18n
 } from "../../shared";
 
+import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
+import { AnalysisSessionNav } from "./AnalysisSessionNav";
 import { AppShellInspector } from "./AppShellInspector";
 
 export function AppShell() {
@@ -26,16 +31,34 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
+  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "root">(
+    appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
+  );
+  const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
     appShellStaticViewModel.workspace.workspaceId
   );
   const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(false);
+  const analysisConversationState = useAnalysisConversationState();
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
   );
+  const filteredAnalysisSessions = useMemo(() => {
+    const normalizedQuery = analysisSessionQuery.trim().toLowerCase();
+
+    if (normalizedQuery.length === 0) {
+      return analysisStaticViewModel.sessions;
+    }
+
+    return analysisStaticViewModel.sessions.filter((session) =>
+      [session.session.contextLabel, session.session.summary, session.session.title].some((value) =>
+        value.toLowerCase().includes(normalizedQuery)
+      )
+    );
+  }, [analysisSessionQuery]);
   const selectedWorkspace =
     appShellStaticViewModel.workspaces.find(
       (workspace) => workspace.workspaceId === selectedWorkspaceId
@@ -43,8 +66,18 @@ export function AppShell() {
   const selectedNavigationKey = navigationGroups.some((group) =>
     group.items.some((item) => item.key === activeRoute)
   )
-    ? activeRoute
+    ? leftNavMode === "root"
+      ? activeRoute
+      : undefined
     : undefined;
+  const handleNavigate = (route: StaticRouteKey) => {
+    setActiveRoute(route);
+    setLeftNavMode(route === "analysis" ? "analysis" : "root");
+
+    if (route !== "analysis") {
+      setAnalysisSessionQuery("");
+    }
+  };
   const userPreferenceContent = (
     <Space
       direction="vertical"
@@ -92,7 +125,7 @@ export function AppShell() {
           currentWorkspaceName={selectedWorkspace.name}
           feedback={workspaceRefreshFeedback ? t("shell.workspace.switchFeedback") : undefined}
           manageWorkspaceLabel={t("shell.workspace.manage")}
-          onOpenWorkspaceManagement={() => setActiveRoute("workspace")}
+          onOpenWorkspaceManagement={() => handleNavigate("workspace")}
           onSelectWorkspace={(workspaceId) => {
             if (workspaceId === selectedWorkspaceId) {
               return;
@@ -132,11 +165,32 @@ export function AppShell() {
             </Typography.Text>
           </div>
           <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
-            <LeftNav
-              groups={navigationGroups}
-              onSelect={(key) => setActiveRoute(key as StaticRouteKey)}
-              selectedKey={selectedNavigationKey}
-            />
+            {activeRoute === "analysis" && leftNavMode === "analysis" ? (
+              <AnalysisSessionNav
+                onBack={() => setLeftNavMode("root")}
+                onCreateNewAnalysis={() => {
+                  setActiveRoute("analysis");
+                  setLeftNavMode("analysis");
+                  setAnalysisSessionQuery("");
+                  analysisConversationState.onResetForNewAnalysis();
+                }}
+                onSearchChange={setAnalysisSessionQuery}
+                onSelectSession={(sessionKey) => {
+                  setActiveRoute("analysis");
+                  setLeftNavMode("analysis");
+                  analysisConversationState.onSelectSession(sessionKey);
+                }}
+                searchValue={analysisSessionQuery}
+                selectedSessionKey={analysisConversationState.selectedSessionKey}
+                sessions={filteredAnalysisSessions}
+              />
+            ) : (
+              <LeftNav
+                groups={navigationGroups}
+                onSelect={(key) => handleNavigate(key as StaticRouteKey)}
+                selectedKey={selectedNavigationKey}
+              />
+            )}
           </div>
           <div
             style={{
@@ -175,10 +229,27 @@ export function AppShell() {
         </div>
       }
       rightAssistPanel={
-        <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
+        activeRoute === "analysis" ? (
+          <AnalysisInspectorPanel
+            conversationState={analysisConversationState}
+            inspector={activeInspector}
+            onNavigate={handleNavigate}
+            workspaceName={selectedWorkspace.name}
+          />
+        ) : (
+          <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
+        )
       }
     >
-      <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={setActiveRoute} />
+      {activeRoute === "analysis" ? (
+        <AnalysisPageContent
+          conversationState={analysisConversationState}
+          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+          onNavigate={handleNavigate}
+        />
+      ) : (
+        <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={handleNavigate} />
+      )}
     </AppShellLayout>
   );
 }

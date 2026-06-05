@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../app/providers/AppProviders";
@@ -23,24 +23,25 @@ beforeAll(() => {
 });
 
 describe("AnalysisPage", () => {
-  it("renders the conversation-first static analysis surface", () => {
+  it("renders conversation-first main content and keeps inspector-only panels out of main", () => {
     render(
       <AppProviders>
         <AnalysisPage />
       </AppProviders>
     );
 
-    expect(screen.getByText("分析输入与上下文")).toBeTruthy();
-    expect(screen.getByText("会话与运行过程")).toBeTruthy();
-    expect(screen.getByText("证据与 Trace 摘要")).toBeTruthy();
-    expect(screen.getByText("结论、追问与反馈")).toBeTruthy();
-    expect(screen.getByText("分析会话 / 历史入口")).toBeTruthy();
-    expect(screen.getByText("Plan / Step / Tool Calling")).toBeTruthy();
-    expect(screen.getByText("Evidence / RAG 来源")).toBeTruthy();
-    expect(screen.getByText("Feedback / Bad Case 入口")).toBeTruthy();
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
+
+    expect(within(main).getByText("Conversation-first")).toBeTruthy();
+    expect(within(main).getByText("当前分析问题")).toBeTruthy();
+    expect(within(main).getByText("分析结果摘要")).toBeTruthy();
+    expect(within(main).getByText("后续追问")).toBeTruthy();
+    expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
+    expect(within(main).queryByText("Evidence / RAG 来源")).toBeNull();
+    expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
   });
 
-  it("switches static sessions and updates local state without navigation", () => {
+  it("keeps analysis submit and follow-up submit local to the page state", () => {
     const onNavigate = vi.fn();
 
     render(
@@ -49,35 +50,19 @@ describe("AnalysisPage", () => {
       </AppProviders>
     );
 
-    const input = screen.getByRole("textbox", { name: "分析任务输入区" }) as HTMLTextAreaElement;
-
-    expect(input.value).toBe("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。");
-
-    fireEvent.click(screen.getByRole("button", { name: /毛利率波动复盘/ }));
-
-    expect(screen.getByText(/已切换到「毛利率波动复盘」静态会话/)).toBeTruthy();
-    expect(input.value).toBe("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。");
-    expect(screen.getByText("当前阶段: 追问进行中")).toBeTruthy();
-    expect(screen.getByText(/当前阶段判断倾向于促销档期重叠导致毛利率波动/)).toBeTruthy();
-    expect(onNavigate).not.toHaveBeenCalled();
-  });
-
-  it("keeps submit and feedback actions local to the page state", () => {
-    const onNavigate = vi.fn();
-
-    render(
-      <AppProviders>
-        <AnalysisPage onNavigate={onNavigate} />
-      </AppProviders>
-    );
-
+    fireEvent.change(screen.getByRole("textbox", { name: "分析任务输入区" }), {
+      target: { value: "请重新整理收入异常的归因和建议。" }
+    });
     fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
+
     expect(screen.getByText(/已记录当前分析问题草稿/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("radio", { name: "标记问题" }));
-    fireEvent.click(screen.getByRole("button", { name: "提交标记" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
+      target: { value: "继续追问华东渠道和最近 7 天的差异。" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "继续追问" }));
 
-    expect(screen.getByText(/已记录本地反馈选择/)).toBeTruthy();
+    expect(screen.getByText(/已记录当前追问草稿/)).toBeTruthy();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 });

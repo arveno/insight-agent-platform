@@ -638,7 +638,7 @@ export const analysisStaticViewModel: AnalysisViewModel = {
           }
         ],
         submitLabel: "提交标记",
-        targetTitle: "针对「北区缺货率异常」静态追问",
+        targetTitle: "针对「库存异常定位」静态追问",
         title: "问题标记入口"
       },
       followUpComposer: {
@@ -744,7 +744,7 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         runLabel: "Run: analysis-stockout-risk",
         status: warningStateStatus,
         summary: "围绕缺货率异常保留观测和治理入口，不自动升级为真实告警。",
-        title: "北区缺货率异常",
+        title: "库存异常定位",
         updatedAtText: "15 分钟前"
       },
       traceSummary: {
