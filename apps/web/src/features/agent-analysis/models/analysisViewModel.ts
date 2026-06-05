@@ -2,7 +2,6 @@ import type {
   StaticPageStateViewModel,
   StaticPageViewModelBase,
   StaticRiskViewModel,
-  StaticRouteKey,
   StaticStatusViewModel
 } from "../../../app/models";
 
@@ -20,16 +19,6 @@ export type AnalysisComposerViewModel = {
   submitLabel: string;
   suggestions: AnalysisComposerSuggestionViewModel[];
   title: string;
-};
-
-export type AnalysisContextItemViewModel = {
-  description?: string;
-  key: string;
-  label: string;
-  meta?: string;
-  risk?: StaticRiskViewModel;
-  status?: StaticStatusViewModel;
-  value: string;
 };
 
 export type AnalysisContextPackViewModel = {
@@ -52,19 +41,7 @@ export type AnalysisSessionSummaryViewModel = {
   updatedAtText: string;
 };
 
-export type AnalysisRunOverviewViewModel = {
-  key: string;
-  ownerLabel: string;
-  phaseLabel: string;
-  risk?: StaticRiskViewModel;
-  stageSummary: string;
-  status: StaticStatusViewModel;
-  title: string;
-  toolSummary: string;
-  updatedAtText: string;
-};
-
-export type AnalysisTimelineItemViewModel = {
+export type AnalysisRunTraceEventViewModel = {
   description?: string;
   key: string;
   meta?: string;
@@ -74,31 +51,8 @@ export type AnalysisTimelineItemViewModel = {
   title: string;
 };
 
-export type AnalysisEvidenceItemViewModel = {
-  confidenceText: string;
-  key: string;
-  relatedContext?: string;
-  risk?: StaticRiskViewModel;
-  sourceTypeLabel: string;
-  summary: string;
-  title: string;
-};
-
-export type AnalysisTraceSummaryViewModel = {
-  actionLabel: string;
-  description: string;
-  eventCountText: string;
-  items: AnalysisTimelineItemViewModel[];
-  key: string;
-  risk?: StaticRiskViewModel;
-  status: StaticStatusViewModel;
-  targetRoute: StaticRouteKey;
-  title: string;
-  updatedAtText: string;
-};
-
 export type AnalysisRunTraceViewModel = {
-  events: AnalysisTimelineItemViewModel[];
+  events: AnalysisRunTraceEventViewModel[];
   key: string;
   risk?: StaticRiskViewModel;
   runId: string;
@@ -118,44 +72,14 @@ export type AnalysisResultSummaryViewModel = {
   title: string;
 };
 
-export type AnalysisFeedbackOptionViewModel = {
-  label: string;
-  value: string;
-};
-
-export type AnalysisFeedbackViewModel = {
-  helperText: string;
-  initialValue?: string;
-  options: AnalysisFeedbackOptionViewModel[];
-  submitLabel: string;
-  targetTitle: string;
-  title: string;
-};
-
-export type AnalysisReportEntryViewModel = {
-  actionLabel: string;
-  description: string;
-  evidenceSummary: string;
-  key: string;
-  targetRoute: StaticRouteKey;
-  title: string;
-};
-
 export type AnalysisSessionDetailViewModel = {
   contextPack: AnalysisContextPackViewModel;
-  contextItems: AnalysisContextItemViewModel[];
-  evidenceItems: AnalysisEvidenceItemViewModel[];
-  feedback: AnalysisFeedbackViewModel;
   followUpComposer: AnalysisComposerViewModel;
   inputComposer: AnalysisComposerViewModel;
   key: string;
-  planSteps: AnalysisTimelineItemViewModel[];
-  reportEntry: AnalysisReportEntryViewModel;
   resultSummary: AnalysisResultSummaryViewModel;
   runTrace: AnalysisRunTraceViewModel;
-  runOverview: AnalysisRunOverviewViewModel;
   session: AnalysisSessionSummaryViewModel;
-  traceSummary: AnalysisTraceSummaryViewModel;
 };
 
 export type AnalysisViewModel = StaticPageViewModelBase & {

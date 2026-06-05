@@ -76,7 +76,7 @@ export function ShellNavListItem({
             {icon}
           </span>
         ) : null}
-        <Typography.Text ellipsis strong={selected} style={{ color: textColor, minWidth: 0 }}>
+        <Typography.Text ellipsis style={{ color: textColor, minWidth: 0 }}>
           {label}
         </Typography.Text>
       </Flex>

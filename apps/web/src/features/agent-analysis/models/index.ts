@@ -1,1 +1,1 @@
-export type { AnalysisViewModel } from "./analysisViewModel";
+export type { AnalysisRunTraceViewModel, AnalysisViewModel } from "./analysisViewModel";

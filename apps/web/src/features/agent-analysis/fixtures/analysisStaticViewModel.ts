@@ -11,7 +11,7 @@ import type {
   StaticSectionViewModel,
   StaticStatusViewModel
 } from "../../../app/models";
-import type { AnalysisViewModel } from "../models";
+import type { AnalysisRunTraceViewModel, AnalysisViewModel } from "../models";
 
 const successStatus: StaticStatusViewModel = {
   labelKey: "state.success.default.title",
@@ -78,7 +78,7 @@ function createRunTrace({
   status,
   updatedAtText
 }: {
-  events: AnalysisViewModel["sessions"][number]["planSteps"];
+  events: AnalysisRunTraceViewModel["events"];
   key: string;
   risk?: StaticRiskViewModel;
   runId: string;
@@ -166,93 +166,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         timeRange: "Last 30 days",
         workspace: "Northstar Retail China"
       }),
-      contextItems: [
-        {
-          key: "context-workspace",
-          label: "当前 Workspace",
-          meta: "Global Context",
-          status: readyStatus,
-          value: "Northstar Retail China"
-        },
-        {
-          description: "从 Dashboard 的收入异常摘要进入 Analysis。",
-          key: "context-entry",
-          label: "进入来源",
-          meta: "Route Context",
-          risk: mediumRisk,
-          status: readyStatus,
-          value: "Dashboard / 收入增速异常"
-        },
-        {
-          description: "当前只展示静态上下文对象摘要，不注入真实业务 ID。",
-          key: "context-object",
-          label: "上下文对象",
-          meta: "Context Summary",
-          status: readyStatus,
-          value: "季度收入 / 华东渠道 / 最近周报"
-        },
-        {
-          description: "时间范围只作为静态上下文提示，不触发真实查询。",
-          key: "context-window",
-          label: "观察窗口",
-          meta: "Static Range",
-          status: readyStatus,
-          value: "Last 30 days"
-        }
-      ],
-      evidenceItems: [
-        {
-          confidenceText: "高可信度",
-          key: "evidence-metric-threshold",
-          relatedContext: "关联指标: 收入增速阈值 / 区域对比",
-          risk: lowRisk,
-          sourceTypeLabel: "Metrics / Threshold",
-          summary: "收入增速在华东渠道连续三周低于阈值，异常并非全区域同步发生。",
-          title: "指标阈值与区域波动摘要"
-        },
-        {
-          confidenceText: "中可信度",
-          key: "evidence-rag-weekly-report",
-          relatedContext: "关联材料: 渠道周报 / 库存说明",
-          risk: mediumRisk,
-          sourceTypeLabel: "RAG / Weekly Report",
-          summary: "渠道周报显示促销货品周转延迟，影响收入确认节奏和销售反馈口径。",
-          title: "渠道周报与库存说明"
-        },
-        {
-          confidenceText: "高可信度",
-          key: "evidence-report-entry",
-          relatedContext: "关联入口: Reports / 经营周报",
-          risk: lowRisk,
-          sourceTypeLabel: "Report / Summary",
-          summary: "最近经营周报已经沉淀过区域结构变化，可作为后续追问和报告生成入口。",
-          title: "最近报告引用入口"
-        }
-      ],
-      feedback: {
-        helperText: "静态入口只记录本地选择，不写入 Feedback、Bad Case 或 Evaluation。",
-        options: [
-          {
-            label: "采纳",
-            value: "accepted"
-          },
-          {
-            label: "驳回",
-            value: "rejected"
-          },
-          {
-            label: "标记问题",
-            value: "issue"
-          },
-          {
-            label: "Bad Case",
-            value: "bad_case"
-          }
-        ],
-        submitLabel: "提交标记",
-        targetTitle: "针对「华东渠道收入增速异常」静态结论摘要",
-        title: "Feedback / Bad Case 入口"
-      },
       followUpComposer: {
         contextHint: "继续追问会沿用当前静态会话上下文，但不会发起真实多轮请求。",
         helperText: "追问输入只做本地 UI 联动，不创建真实消息流或 streaming。",
@@ -300,57 +213,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "分析任务输入区"
       },
       key: "session-revenue-gap-q2",
-      planSteps: [
-        {
-          description: "识别问题、约束和上下文来源，只展示未来 Runtime 如何进入页面。",
-          key: "plan-revenue-step-1",
-          meta: "Plan",
-          status: successStatus,
-          timestampText: "11:08",
-          title: "Step 1 · 识别分析问题与上下文"
-        },
-        {
-          description: "静态展示指标摘要和阈值对比结果，不读取真实 Metrics API。",
-          key: "plan-revenue-tool-1",
-          meta: "Tool Calling",
-          status: successStatus,
-          timestampText: "11:10",
-          title: "Tool Call · 指标阈值摘要"
-        },
-        {
-          description: "对比区域、渠道和时间窗口，形成异常归因草稿。",
-          key: "plan-revenue-step-2",
-          meta: "Step",
-          risk: mediumRisk,
-          status: readyStatus,
-          timestampText: "11:14",
-          title: "Step 2 · 区域与渠道波动对比"
-        },
-        {
-          description: "静态召回周报和库存说明，承接未来 RAG Evidence 入口。",
-          key: "plan-revenue-tool-2",
-          meta: "Tool Calling",
-          status: successStatus,
-          timestampText: "11:18",
-          title: "Tool Call · 召回周报与库存说明"
-        },
-        {
-          description: "归并关键发现、建议动作和 Trace 摘要入口。",
-          key: "plan-revenue-step-3",
-          meta: "Result",
-          status: successStatus,
-          timestampText: "11:22",
-          title: "Step 3 · 汇总结论与建议动作"
-        }
-      ],
-      reportEntry: {
-        actionLabel: "沉淀到报告",
-        description: "将当前结论、建议动作和证据摘要沉淀为报告入口。",
-        evidenceSummary: "静态入口只跳转到 Reports，不会生成真实报告。",
-        key: "report-entry-revenue-gap",
-        targetRoute: "reports",
-        title: "报告生成入口"
-      },
       resultSummary: {
         actionSuggestions: [
           "先核对华东渠道确认周期与促销库存节奏。",
@@ -440,17 +302,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         status: successStatus,
         updatedAtText: "更新于 11:24"
       }),
-      runOverview: {
-        key: "run-overview-revenue-gap",
-        ownerLabel: "Owner: Revenue Ops / Strategy",
-        phaseLabel: "当前阶段: 结论整理完成",
-        risk: mediumRisk,
-        stageSummary: "已完成问题拆解、指标比对、证据归并和建议动作整理。",
-        status: successStatus,
-        title: "Agent Run 状态展示",
-        toolSummary: "静态展示 Plan 3 步、Tool Calling 2 次、Evidence 3 条。",
-        updatedAtText: "更新于 11:24"
-      },
       session: {
         contextLabel: "Dashboard / Revenue",
         key: "session-summary-revenue-gap",
@@ -460,41 +311,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         summary: "围绕 Dashboard 收入异常做渠道和时间窗口追问。",
         title: "Q2 收入异常追问",
         updatedAtText: "刚刚更新"
-      },
-      traceSummary: {
-        actionLabel: "查看观测详情",
-        description: "静态展示 Trace 摘要、事件数量和进入 Observability 的入口，不查询真实 Trace。",
-        eventCountText: "8 个静态事件",
-        items: [
-          {
-            description: "创建分析计划并绑定当前静态上下文。",
-            key: "trace-revenue-plan-created",
-            status: successStatus,
-            timestampText: "11:08",
-            title: "Plan Created"
-          },
-          {
-            description: "校验 Tool 权限和 Evidence 入口，未执行真实工具。",
-            key: "trace-revenue-tool-check",
-            risk: lowRisk,
-            status: successStatus,
-            timestampText: "11:10",
-            title: "Tool Permission Checked"
-          },
-          {
-            description: "输出结论摘要并保留报告生成入口。",
-            key: "trace-revenue-result",
-            status: successStatus,
-            timestampText: "11:22",
-            title: "Result Summary Ready"
-          }
-        ],
-        key: "trace-summary-revenue-gap",
-        risk: lowRisk,
-        status: successStatus,
-        targetRoute: "observability",
-        title: "Run Trace 摘要入口",
-        updatedAtText: "更新于 11:24"
       }
     },
     {
@@ -504,79 +320,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         timeRange: "This quarter",
         workspace: "Northstar Retail China"
       }),
-      contextItems: [
-        {
-          key: "context-workspace-margin",
-          label: "当前 Workspace",
-          meta: "Global Context",
-          status: readyStatus,
-          value: "Northstar Retail China"
-        },
-        {
-          description: "来自 Reports 的毛利率波动结论补充追问。",
-          key: "context-entry-margin",
-          label: "进入来源",
-          meta: "Route Context",
-          status: readyStatus,
-          value: "Reports / 毛利率复盘"
-        },
-        {
-          description: "当前会话聚焦促销、折扣和区域差异，不引入真实业务对象 ID。",
-          key: "context-object-margin",
-          label: "上下文对象",
-          meta: "Context Summary",
-          status: readyStatus,
-          value: "毛利率 / 促销档期 / 华南区域"
-        },
-        {
-          description: "静态观察窗口仅用于会话说明。",
-          key: "context-window-margin",
-          label: "观察窗口",
-          meta: "Static Range",
-          status: readyStatus,
-          value: "This quarter"
-        }
-      ],
-      evidenceItems: [
-        {
-          confidenceText: "中可信度",
-          key: "evidence-margin-report",
-          relatedContext: "关联材料: 毛利率复盘 / 折扣计划",
-          risk: mediumRisk,
-          sourceTypeLabel: "Report / Review",
-          summary: "复盘报告显示折扣投放节奏和促销档期存在重叠，影响毛利率波动判断。",
-          title: "毛利率复盘报告"
-        },
-        {
-          confidenceText: "中可信度",
-          key: "evidence-margin-threshold",
-          relatedContext: "关联指标: 折扣率 / 商品结构",
-          risk: lowRisk,
-          sourceTypeLabel: "Metrics / Mix",
-          summary: "商品结构变化可能是主要变量，但仍需结合区域拆分解释。",
-          title: "商品结构与折扣指标"
-        }
-      ],
-      feedback: {
-        helperText: "静态反馈只用于展示选项和页面状态，不触发 Evaluation。",
-        options: [
-          {
-            label: "采纳",
-            value: "accepted"
-          },
-          {
-            label: "驳回",
-            value: "rejected"
-          },
-          {
-            label: "标记问题",
-            value: "issue"
-          }
-        ],
-        submitLabel: "提交反馈",
-        targetTitle: "针对「毛利率波动复盘」阶段性结论",
-        title: "Feedback / 采纳入口"
-      },
       followUpComposer: {
         contextHint: "沿用当前会话上下文继续补充追问，不做真实多轮请求。",
         helperText: "继续追问只更新静态摘要和本地提示。",
@@ -616,41 +359,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "分析任务输入区"
       },
       key: "session-margin-follow-up",
-      planSteps: [
-        {
-          description: "已解析上一轮报告结论，准备拆分折扣和商品结构因素。",
-          key: "plan-margin-step-1",
-          meta: "Plan",
-          status: successStatus,
-          timestampText: "10:16",
-          title: "Step 1 · 拆解上一轮结论"
-        },
-        {
-          description: "当前处于静态进行中展示，不触发真实 Tool Calling。",
-          key: "plan-margin-tool-1",
-          meta: "Tool Calling",
-          status: loadingStatus,
-          timestampText: "10:18",
-          title: "Tool Call · 促销与商品结构对比"
-        },
-        {
-          description: "等待进一步追问，结果摘要仍是阶段性草稿。",
-          key: "plan-margin-step-2",
-          meta: "Step",
-          risk: mediumRisk,
-          status: loadingStatus,
-          timestampText: "10:20",
-          title: "Step 2 · 形成阶段性判断"
-        }
-      ],
-      reportEntry: {
-        actionLabel: "带结论回到报告",
-        description: "把当前阶段性判断带回 Reports 作为补充材料入口。",
-        evidenceSummary: "静态入口只跳转，不生成真实报告版本。",
-        key: "report-entry-margin",
-        targetRoute: "reports",
-        title: "报告补充入口"
-      },
       resultSummary: {
         actionSuggestions: [
           "继续拆分促销折扣与商品结构影响。",
@@ -739,17 +447,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         status: loadingStatus,
         updatedAtText: "更新于 10:20"
       }),
-      runOverview: {
-        key: "run-overview-margin",
-        ownerLabel: "Owner: Finance / Pricing",
-        phaseLabel: "当前阶段: 追问进行中",
-        risk: mediumRisk,
-        stageSummary: "已承接上一轮报告结论，正在拆分促销和商品结构的影响。",
-        status: loadingStatus,
-        title: "Agent Run 状态展示",
-        toolSummary: "静态展示 Plan 2 步、Tool Calling 1 次、Evidence 2 条。",
-        updatedAtText: "更新于 10:20"
-      },
       session: {
         contextLabel: "Reports / Margin",
         key: "session-summary-margin",
@@ -759,33 +456,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         summary: "从 Reports 结论继续追问毛利率波动归因。",
         title: "毛利率波动复盘",
         updatedAtText: "2 分钟前"
-      },
-      traceSummary: {
-        actionLabel: "查看观测详情",
-        description: "展示进行中的静态 Trace 摘要和后续观测入口，不轮询真实事件。",
-        eventCountText: "5 个静态事件",
-        items: [
-          {
-            description: "上一轮报告结论已进入当前静态会话。",
-            key: "trace-margin-context",
-            status: successStatus,
-            timestampText: "10:15",
-            title: "Context Loaded"
-          },
-          {
-            description: "过程列表停留在静态进行中阶段。",
-            key: "trace-margin-progress",
-            status: loadingStatus,
-            timestampText: "10:19",
-            title: "Run In Progress"
-          }
-        ],
-        key: "trace-summary-margin",
-        risk: lowRisk,
-        status: loadingStatus,
-        targetRoute: "observability",
-        title: "Run Trace 摘要入口",
-        updatedAtText: "更新于 10:20"
       }
     },
     {
@@ -795,59 +465,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         timeRange: "Last 12 hours",
         workspace: "Northstar Retail China"
       }),
-      contextItems: [
-        {
-          key: "context-workspace-stockout",
-          label: "当前 Workspace",
-          meta: "Global Context",
-          status: readyStatus,
-          value: "Northstar Retail China"
-        },
-        {
-          description: "来自 Metrics 的北区库存缺货异常入口。",
-          key: "context-entry-stockout",
-          label: "进入来源",
-          meta: "Route Context",
-          risk: highRisk,
-          status: readyStatus,
-          value: "Metrics / 缺货率异常"
-        },
-        {
-          description: "当前会话聚焦缺货率、补货节奏和门店反馈。",
-          key: "context-object-stockout",
-          label: "上下文对象",
-          meta: "Context Summary",
-          status: readyStatus,
-          value: "北区缺货率 / 补货任务 / 门店反馈"
-        }
-      ],
-      evidenceItems: [
-        {
-          confidenceText: "中可信度",
-          key: "evidence-stockout-feedback",
-          relatedContext: "关联材料: 门店反馈 / 补货任务",
-          risk: highRisk,
-          sourceTypeLabel: "Operations / Feedback",
-          summary: "门店反馈与补货任务摘要存在冲突，说明当前结论可信度不足。",
-          title: "门店反馈与补货任务冲突"
-        }
-      ],
-      feedback: {
-        helperText: "适合标记为问题样例或后续 Bad Case 候选。",
-        options: [
-          {
-            label: "标记问题",
-            value: "issue"
-          },
-          {
-            label: "Bad Case",
-            value: "bad_case"
-          }
-        ],
-        submitLabel: "提交标记",
-        targetTitle: "针对「库存异常定位」静态追问",
-        title: "问题标记入口"
-      },
       followUpComposer: {
         contextHint: "继续追问只调整静态文本，不做真实告警或任务分派。",
         helperText: "适合继续限定门店范围或补货时段。",
@@ -887,34 +504,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "分析任务输入区"
       },
       key: "session-stockout-risk",
-      planSteps: [
-        {
-          description: "已识别异常入口，但证据冲突导致当前会话停留在风险提示阶段。",
-          key: "plan-stockout-step-1",
-          meta: "Plan",
-          risk: highRisk,
-          status: riskStateStatus,
-          timestampText: "09:42",
-          title: "Step 1 · 异常入口识别"
-        },
-        {
-          description: "Evidence 摘要之间存在冲突，因此不输出强结论。",
-          key: "plan-stockout-step-2",
-          meta: "Evidence",
-          risk: highRisk,
-          status: warningStateStatus,
-          timestampText: "09:46",
-          title: "Step 2 · 证据冲突待确认"
-        }
-      ],
-      reportEntry: {
-        actionLabel: "保留报告入口",
-        description: "当前更适合作为异常跟踪入口，而不是直接沉淀正式报告。",
-        evidenceSummary: "静态入口只保留后续沉淀可能性。",
-        key: "report-entry-stockout",
-        targetRoute: "reports",
-        title: "报告入口占位"
-      },
       resultSummary: {
         actionSuggestions: [
           "先核对补货任务与门店反馈时间线。",
@@ -1006,17 +595,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         status: warningStateStatus,
         updatedAtText: "更新于 09:46"
       }),
-      runOverview: {
-        key: "run-overview-stockout",
-        ownerLabel: "Owner: Supply Chain / Store Ops",
-        phaseLabel: "当前阶段: 风险待确认",
-        risk: highRisk,
-        stageSummary: "Evidence 存在冲突，当前只展示风险提示和下一步追问入口。",
-        status: warningStateStatus,
-        title: "Agent Run 状态展示",
-        toolSummary: "静态展示 Plan 2 步、Evidence 1 条、Trace 2 个事件。",
-        updatedAtText: "更新于 09:46"
-      },
       session: {
         contextLabel: "Metrics / Stockout",
         key: "session-summary-stockout",
@@ -1026,34 +604,6 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         summary: "围绕缺货率异常保留观测和治理入口，不自动升级为真实告警。",
         title: "库存异常定位",
         updatedAtText: "15 分钟前"
-      },
-      traceSummary: {
-        actionLabel: "查看观测详情",
-        description: "只保留风险 Trace 摘要入口，用于表达未来观测联动方向。",
-        eventCountText: "2 个静态事件",
-        items: [
-          {
-            description: "识别到异常来源和冲突证据。",
-            key: "trace-stockout-risk",
-            risk: highRisk,
-            status: warningStateStatus,
-            timestampText: "09:42",
-            title: "Risk Detected"
-          },
-          {
-            description: "保留后续 Observability 跟踪入口。",
-            key: "trace-stockout-observe",
-            status: readyStatus,
-            timestampText: "09:46",
-            title: "Observability Entry Reserved"
-          }
-        ],
-        key: "trace-summary-stockout",
-        risk: highRisk,
-        status: warningStateStatus,
-        targetRoute: "observability",
-        title: "Run Trace 摘要入口",
-        updatedAtText: "更新于 09:46"
       }
     }
   ],

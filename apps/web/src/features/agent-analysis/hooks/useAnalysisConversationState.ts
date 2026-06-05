@@ -22,7 +22,6 @@ export type AnalysisConversationController = {
   analysisDraft: string;
   composerState: "idle" | "running";
   composerMode: "analysis" | "follow_up";
-  feedbackValue?: string;
   followUpDraft: string;
   interactionMessage: string;
   modelOptions: readonly { key: string; label: string }[];
@@ -31,8 +30,6 @@ export type AnalysisConversationController = {
   onComposerAccessoryClick: () => void;
   onComposerModeChange: (mode: "analysis" | "follow_up") => void;
   onComposerStop: () => void;
-  onFeedbackChange: (value: string) => void;
-  onFeedbackSubmit: () => void;
   onFollowUpDraftChange: (value: string) => void;
   onFollowUpSubmit: () => void;
   onResetForNewAnalysis: () => void;
@@ -52,9 +49,6 @@ export function useAnalysisConversationState(): AnalysisConversationController {
   const [composerState, setComposerState] = useState<"idle" | "running">("idle");
   const [composerMode, setComposerMode] = useState<"analysis" | "follow_up">("follow_up");
   const [followUpDraft, setFollowUpDraft] = useState(defaultSession.followUpComposer.initialDraft);
-  const [feedbackValue, setFeedbackValue] = useState<string | undefined>(
-    defaultSession.feedback.initialValue
-  );
   const [selectedModelKey, setSelectedModelKey] = useState<string>(analysisComposerModels[0].key);
   const [interactionMessage, setInteractionMessage] = useState("");
   const selectedSession = findSession(selectedSessionKey);
@@ -66,7 +60,6 @@ export function useAnalysisConversationState(): AnalysisConversationController {
     analysisDraft,
     composerState,
     composerMode,
-    feedbackValue,
     followUpDraft,
     interactionMessage,
     modelOptions: analysisComposerModels,
@@ -84,14 +77,6 @@ export function useAnalysisConversationState(): AnalysisConversationController {
       setComposerState("idle");
       setInteractionMessage("已停止本地模拟生成，不会触发真实 streaming cancel 或后端中断。");
     },
-    onFeedbackChange: setFeedbackValue,
-    onFeedbackSubmit: () => {
-      if (!feedbackValue) {
-        return;
-      }
-
-      setInteractionMessage("已记录本地反馈选择，不会写入 Feedback、Bad Case 或 Evaluation。");
-    },
     onFollowUpDraftChange: setFollowUpDraft,
     onFollowUpSubmit: () => {
       setComposerState("running");
@@ -103,7 +88,6 @@ export function useAnalysisConversationState(): AnalysisConversationController {
       setAnalysisDraft(defaultSession.inputComposer.initialDraft);
       setComposerState("idle");
       setFollowUpDraft("");
-      setFeedbackValue(undefined);
       setComposerMode("analysis");
       setInteractionMessage(
         "已准备新的静态分析入口，仍只更新本地 UI State，不创建真实会话或触发 Agent。"
@@ -138,7 +122,6 @@ export function useAnalysisConversationState(): AnalysisConversationController {
       setAnalysisDraft(nextSession.inputComposer.initialDraft);
       setComposerState("idle");
       setFollowUpDraft(nextSession.followUpComposer.initialDraft);
-      setFeedbackValue(nextSession.feedback.initialValue);
       setComposerMode("follow_up");
       setInteractionMessage(
         `已切换到「${nextSession.session.title}」静态会话；仅更新 UI State，不加载真实会话或运行数据。`
