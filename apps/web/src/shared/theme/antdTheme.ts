@@ -14,72 +14,82 @@ const baseToken = {
   controlHeightSM: 30
 } satisfies ThemeConfig["token"];
 
+const lightPalette = {
+  colorBgContainer: "#FFFFFF",
+  colorBgElevated: "#FFFFFF",
+  colorBgLayout: "#FAFAFA",
+  colorBorder: "#EAEAEA",
+  colorBorderSecondary: "#EDEDED",
+  colorFillSecondary: "#F5F5F5",
+  colorFillTertiary: "#FAFAFA",
+  colorText: "#171717",
+  colorTextDescription: "#737373",
+  colorTextSecondary: "#525252"
+} as const;
+
 const lightToken = {
   ...baseToken,
-  colorBgElevated: "#fcfcfd",
-  colorBgLayout: "#f5f6f8",
-  colorBorder: "#e5e7eb",
-  colorBorderSecondary: "#eceef2",
-  colorFillSecondary: "#f3f4f6",
-  colorFillTertiary: "#f8fafc",
+  ...lightPalette,
   colorLink: shellThemeTokens.colorLink,
   colorLinkActive: shellThemeTokens.colorLinkActive,
   colorLinkHover: shellThemeTokens.colorLinkHover,
   colorPrimary: shellThemeTokens.colorActionPrimaryLight,
   colorPrimaryActive: shellThemeTokens.colorActionPrimaryLightActive,
-  colorPrimaryBg: "#f3f4f6",
-  colorPrimaryBgHover: "#eceef2",
-  colorPrimaryBorder: "#e5e7eb",
+  colorPrimaryBg: lightPalette.colorFillSecondary,
+  colorPrimaryBgHover: "#F0F0F0",
+  colorPrimaryBorder: lightPalette.colorBorder,
   colorPrimaryHover: shellThemeTokens.colorActionPrimaryLightHover,
   colorPrimaryText: shellThemeTokens.colorLink,
   colorPrimaryTextActive: shellThemeTokens.colorLinkActive,
   colorPrimaryTextHover: shellThemeTokens.colorLinkHover,
-  colorText: "#111827",
-  colorTextDescription: "#6b7280",
-  colorTextSecondary: "#4b5563",
-  controlItemBgActive: "#f3f4f6",
-  controlItemBgActiveHover: "#eceef2"
+  controlItemBgActive: lightPalette.colorFillSecondary,
+  controlItemBgActiveHover: "#F0F0F0"
 } satisfies ThemeConfig["token"];
+
+const darkPalette = {
+  colorBgContainer: "#0A0A0A",
+  colorBgElevated: "#111111",
+  colorBgLayout: "#000000",
+  colorBorder: "#262626",
+  colorBorderSecondary: "#1F1F1F",
+  colorFillSecondary: "#111111",
+  colorFillTertiary: "#0A0A0A",
+  colorText: "#EDEDED",
+  colorTextDescription: "#737373",
+  colorTextSecondary: "#A3A3A3"
+} as const;
 
 const darkToken = {
   ...baseToken,
-  colorBgElevated: "#151821",
-  colorBgLayout: "#10131a",
-  colorBorder: "#2b3340",
-  colorBorderSecondary: "#222a36",
-  colorFillSecondary: "#1b2230",
-  colorFillTertiary: "#151b26",
+  ...darkPalette,
   colorLink: "#60a5fa",
   colorLinkActive: "#93c5fd",
   colorLinkHover: "#7dd3fc",
   colorPrimary: shellThemeTokens.colorActionPrimaryDark,
   colorPrimaryActive: shellThemeTokens.colorActionPrimaryDarkActive,
-  colorPrimaryBg: "#1b2230",
-  colorPrimaryBgHover: "#232c3a",
-  colorPrimaryBorder: "#2b3340",
+  colorPrimaryBg: darkPalette.colorFillSecondary,
+  colorPrimaryBgHover: "#171717",
+  colorPrimaryBorder: darkPalette.colorBorder,
   colorPrimaryHover: shellThemeTokens.colorActionPrimaryDarkHover,
   colorPrimaryText: "#60a5fa",
   colorPrimaryTextActive: "#93c5fd",
   colorPrimaryTextHover: "#7dd3fc",
-  colorText: "#f3f4f6",
-  colorTextDescription: "#9ca3af",
-  colorTextSecondary: "#c5cad3",
-  controlItemBgActive: "#1b2230",
-  controlItemBgActiveHover: "#232c3a"
+  controlItemBgActive: darkPalette.colorFillSecondary,
+  controlItemBgActiveHover: "#171717"
 } satisfies ThemeConfig["token"];
 
 const sharedComponentTheme: ThemeConfig["components"] = {
   Button: {
     borderColorDisabled: "#d0d5dd",
-    defaultActiveBg: "#ffffff",
-    defaultActiveBorderColor: "#d0d5dd",
-    defaultActiveColor: "#111827",
-    defaultBg: "#ffffff",
-    defaultBorderColor: "#e5e7eb",
-    defaultColor: "#111827",
-    defaultHoverBg: "#ffffff",
-    defaultHoverBorderColor: "#d0d5dd",
-    defaultHoverColor: "#111827",
+    defaultActiveBg: lightPalette.colorBgContainer,
+    defaultActiveBorderColor: "#D4D4D4",
+    defaultActiveColor: lightPalette.colorText,
+    defaultBg: lightPalette.colorBgContainer,
+    defaultBorderColor: lightPalette.colorBorder,
+    defaultColor: lightPalette.colorText,
+    defaultHoverBg: lightPalette.colorBgContainer,
+    defaultHoverBorderColor: "#D4D4D4",
+    defaultHoverColor: lightPalette.colorText,
     defaultShadow: "none",
     fontWeight: 500,
     linkHoverBg: "transparent",
@@ -89,13 +99,13 @@ const sharedComponentTheme: ThemeConfig["components"] = {
     paddingInlineSM: 12,
     primaryColor: shellThemeTokens.colorActionPrimaryTextLight,
     primaryShadow: "none",
-    textHoverBg: "#f3f4f6"
+    textHoverBg: lightPalette.colorFillSecondary
   },
   Card: {
-    actionsBg: "#ffffff",
+    actionsBg: lightPalette.colorBgContainer,
     bodyPadding: shellThemeTokens.panelPadding,
     bodyPaddingSM: 16,
-    extraColor: "#6b7280",
+    extraColor: lightPalette.colorTextDescription,
     headerBg: "transparent",
     headerHeight: 48,
     headerHeightSM: 40,
@@ -106,13 +116,13 @@ const sharedComponentTheme: ThemeConfig["components"] = {
     paddingBlock: 4
   },
   Layout: {
-    bodyBg: "#f5f6f8",
-    headerBg: "#ffffff",
-    headerColor: "#111827",
+    bodyBg: lightPalette.colorBgLayout,
+    headerBg: lightPalette.colorBgContainer,
+    headerColor: lightPalette.colorText,
     headerHeight: shellThemeTokens.headerHeight,
     headerPadding: `0 ${shellThemeTokens.headerPaddingInline}px`,
-    lightSiderBg: "#fcfcfd",
-    siderBg: "#fcfcfd"
+    lightSiderBg: lightPalette.colorBgElevated,
+    siderBg: lightPalette.colorBgElevated
   },
   Popover: {
     titleMinWidth: shellThemeTokens.popoverMinWidth
@@ -132,30 +142,30 @@ export const darkAntdTheme: ThemeConfig = {
     Button: {
       ...sharedComponentTheme.Button,
       borderColorDisabled: "#3a4555",
-      defaultActiveBg: "#171b23",
-      defaultActiveBorderColor: "#3a4555",
-      defaultActiveColor: "#f3f4f6",
-      defaultBg: "#171b23",
-      defaultBorderColor: "#2b3340",
-      defaultColor: "#f3f4f6",
-      defaultHoverBg: "#171b23",
-      defaultHoverBorderColor: "#3a4555",
-      defaultHoverColor: "#f3f4f6",
+      defaultActiveBg: darkPalette.colorBgContainer,
+      defaultActiveBorderColor: "#303030",
+      defaultActiveColor: darkPalette.colorText,
+      defaultBg: darkPalette.colorBgContainer,
+      defaultBorderColor: darkPalette.colorBorder,
+      defaultColor: darkPalette.colorText,
+      defaultHoverBg: darkPalette.colorBgContainer,
+      defaultHoverBorderColor: "#303030",
+      defaultHoverColor: darkPalette.colorText,
       primaryColor: shellThemeTokens.colorActionPrimaryTextDark,
-      textHoverBg: "#1b2230"
+      textHoverBg: darkPalette.colorFillSecondary
     },
     Card: {
       ...sharedComponentTheme.Card,
-      actionsBg: "#171b23",
-      extraColor: "#9ca3af"
+      actionsBg: darkPalette.colorBgContainer,
+      extraColor: darkPalette.colorTextDescription
     },
     Layout: {
       ...sharedComponentTheme.Layout,
-      bodyBg: "#10131a",
-      headerBg: "#171b23",
-      headerColor: "#f3f4f6",
-      lightSiderBg: "#151821",
-      siderBg: "#151821"
+      bodyBg: darkPalette.colorBgLayout,
+      headerBg: darkPalette.colorBgContainer,
+      headerColor: darkPalette.colorText,
+      lightSiderBg: darkPalette.colorBgElevated,
+      siderBg: darkPalette.colorBgElevated
     }
   },
   token: darkToken
