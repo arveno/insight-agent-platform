@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { RightOutlined } from "@ant-design/icons";
-import { Button, Flex, Space, Typography, theme } from "antd";
+import { Space, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../theme";
+import { ShellNavListItem } from "./ShellNavListItem";
 
 export type NavigationItem = {
   badge?: ReactNode;
@@ -71,97 +72,57 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
             style={{ width: "100%" }}
           >
             {group.items.map((item) => {
-              const isPrimary = group.kind === "primary";
               const isSelected = selectedKey === item.key;
-              const iconColor = isSelected
-                ? token.colorPrimary
-                : isPrimary
-                  ? token.colorText
-                  : token.colorTextSecondary;
-              const itemBackground = isSelected
-                ? isPrimary
-                  ? token.colorBgContainer
-                  : token.colorFillSecondary
-                : "transparent";
-              const itemBorderColor =
-                isSelected && isPrimary ? token.colorBorderSecondary : "transparent";
-              const itemTextColor =
-                isPrimary || isSelected ? token.colorText : token.colorTextSecondary;
-              const showEntryArrow = isPrimary && (item.key === "analysis" || item.key === "reports");
+              const showEntryArrow =
+                group.kind === "primary" && (item.key === "analysis" || item.key === "reports");
+              const badge = item.badge ? (
+                <span
+                  style={{
+                    background: token.colorFillSecondary,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                    borderRadius: token.borderRadiusSM,
+                    color: token.colorTextDescription,
+                    fontSize: token.fontSizeSM,
+                    lineHeight: 1,
+                    paddingBlock: 2,
+                    paddingInline: token.paddingXS
+                  }}
+                >
+                  {item.badge}
+                </span>
+              ) : null;
+              const rightContent =
+                showEntryArrow || badge ? (
+                  <>
+                    {showEntryArrow ? (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          color: isSelected
+                            ? token.colorTextSecondary
+                            : token.colorTextDescription,
+                          display: "inline-flex",
+                          fontSize: token.fontSizeSM
+                        }}
+                      >
+                        <RightOutlined />
+                      </span>
+                    ) : null}
+                    {badge}
+                  </>
+                ) : undefined;
 
               return (
-                <Button
-                  aria-current={isSelected ? "page" : undefined}
-                  block
+                <ShellNavListItem
+                  ariaCurrent={isSelected ? "page" : undefined}
                   disabled={item.disabled}
+                  icon={item.icon}
                   key={item.key}
+                  label={item.label}
                   onClick={() => onSelect?.(item.key)}
-                  style={{
-                    alignItems: "center",
-                    background: itemBackground,
-                    border: `${shellThemeTokens.surfaceBorderWidth}px solid ${itemBorderColor}`,
-                    borderRadius: shellThemeTokens.borderRadiusLG,
-                    boxShadow: "none",
-                    display: "flex",
-                    height: "auto",
-                    justifyContent: "space-between",
-                    paddingBlock: isPrimary
-                      ? shellThemeTokens.navPrimaryPaddingBlock
-                      : shellThemeTokens.navPreviewPaddingBlock,
-                    paddingInline: isPrimary
-                      ? shellThemeTokens.navPrimaryPaddingInline
-                      : shellThemeTokens.navPreviewPaddingInline
-                  }}
-                  type="text"
-                >
-                  <Flex align="center" gap={token.marginXS} style={{ minWidth: 0 }}>
-                    <span
-                      style={{
-                        color: iconColor,
-                        display: "inline-flex"
-                      }}
-                    >
-                      {item.icon}
-                    </span>
-                    <Typography.Text
-                      ellipsis
-                      style={{
-                        color: itemTextColor,
-                        textAlign: "left"
-                      }}
-                    >
-                      {item.label}
-                    </Typography.Text>
-                  </Flex>
-                  {showEntryArrow ? (
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        color: isSelected ? token.colorTextSecondary : token.colorTextDescription,
-                        display: "inline-flex",
-                        fontSize: token.fontSizeSM
-                      }}
-                    >
-                      <RightOutlined />
-                    </span>
-                  ) : null}
-                  {item.badge ? (
-                    <span
-                      style={{
-                        background: token.colorFillSecondary,
-                        border: `1px solid ${token.colorBorderSecondary}`,
-                        borderRadius: token.borderRadiusSM,
-                        color: token.colorTextDescription,
-                        fontSize: token.fontSizeSM,
-                        lineHeight: 1,
-                        paddingBlock: 2,
-                        paddingInline: token.paddingXS
-                      }}
-                    >
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </Button>
+                  rightContent={rightContent}
+                  selected={isSelected}
+                />
               );
             })}
           </Space>

@@ -67,28 +67,84 @@ describe("AppShell", () => {
     expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
   });
 
-  it("renders route-specific inspector capability and integration notes from the static view model", () => {
+  it("enters analysis session navigation mode and filters the static session list locally", () => {
     render(
       <AppProviders>
         <AppShell />
       </AppProviders>
     );
 
-    const navigation = screen.getByRole("navigation", { name: "Shell navigation" });
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
-    expect(screen.getByText(/用于查看当前工作区经营概览、异常摘要和关键入口。/)).toBeTruthy();
-    expect(screen.getByText(/Metrics：指标口径、阈值和时间范围数据监测。/)).toBeTruthy();
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
 
-    fireEvent.click(within(navigation).getByRole("button", { name: /分析/ }));
+    const analysisNavigation = screen.getByRole("navigation", {
+      name: "Analysis session navigation"
+    });
 
-    expect(screen.getByText(/用于承接分析会话、追问和问题定位。/)).toBeTruthy();
+    expect(within(analysisNavigation).getByText("分析")).toBeTruthy();
+    expect(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" })).toBeTruthy();
+    expect(within(analysisNavigation).getByRole("button", { name: /新聊天/ })).toBeTruthy();
+    expect(within(analysisNavigation).getByText("Q2 收入异常追问")).toBeTruthy();
+    expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
+    expect(within(analysisNavigation).getByText("库存异常定位")).toBeTruthy();
+    expect(within(analysisNavigation).queryByText("刚刚更新")).toBeNull();
+    expect(within(analysisNavigation).queryByText("成功")).toBeNull();
     expect(
-      screen.getByText(/后续会对接 Agent Run、Tool Calling、Run Trace、RAG Evidence。/)
-    ).toBeTruthy();
+      within(analysisNavigation).queryByText("围绕 Dashboard 收入异常做渠道和时间窗口追问。")
+    ).toBeNull();
+
+    fireEvent.change(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" }), {
+      target: { value: "毛利率" }
+    });
+
+    expect(within(analysisNavigation).queryByText("Q2 收入异常追问")).toBeNull();
+    expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
+    expect(within(analysisNavigation).queryByText("库存异常定位")).toBeNull();
+  });
+
+  it("updates conversation and inspector when switching analysis sessions", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
+
+    const analysisNavigation = screen.getByRole("navigation", {
+      name: "Analysis session navigation"
+    });
+
+    fireEvent.click(within(analysisNavigation).getByText("毛利率波动复盘"));
+
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
+
+    expect(within(main).queryByRole("heading", { name: "分析" })).toBeNull();
+    expect(within(main).queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(within(main).queryByRole("button", { name: "查看观测" })).toBeNull();
     expect(
-      screen.getByText(
-        /LangGraph：Agent Runtime，负责分析流程编排、状态流转、Human-in-the-loop 和可恢复执行。/
-      )
+      within(main).getAllByText("来自 Reports / Margin · 毛利率复盘 · This quarter")
+    ).toHaveLength(2);
+    expect(
+      within(main).getByText("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。")
     ).toBeTruthy();
+    expect(within(main).getByText(/当前阶段判断倾向于促销档期重叠导致毛利率波动/)).toBeTruthy();
+    expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
+    expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
+    expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
+    expect(within(main).queryByText("Feedback / 采纳入口")).toBeNull();
+
+    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getByText("runId: analysis-margin-follow-up")).toBeTruthy();
+    expect(screen.getByText("1. 接收用户问题")).toBeTruthy();
+    expect(screen.getByText("6. 召回 Evidence / RAG 来源")).toBeTruthy();
+    expect(screen.getByText("8. 等待用户追问 / 反馈")).toBeTruthy();
+    expect(screen.queryByText("Plan / Step / Tool Calling")).toBeNull();
+    expect(screen.queryByText("Feedback / 采纳入口")).toBeNull();
+    expect(screen.queryByText("报告补充入口")).toBeNull();
+    expect(screen.queryByText(/技术对接：/)).toBeNull();
   });
 });
