@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowLeftOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Input, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import { ShellNavListItem } from "./ShellNavListItem";
 
 export type ObjectListNavItem = {
@@ -59,13 +59,13 @@ export function ObjectListNav({
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={onBack}
-          style={{ justifyContent: "flex-start" }}
+          style={{ ...shellTypographyStyles.buttonLabel, justifyContent: "flex-start" }}
           type="text"
         >
           {title}
         </Button>
       ) : (
-        <Typography.Text strong>{title}</Typography.Text>
+        <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
       )}
 
       {onSearchChange ? (

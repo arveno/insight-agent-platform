@@ -1,6 +1,7 @@
 import { Children } from "react";
-import { Col, Row, theme, type ColProps } from "antd";
+import { Col, Row, type ColProps } from "antd";
 
+import { shellThemeTokens } from "../../theme";
 import type { AppCardGridColumns, AppCardGridProps } from "./cardTypes";
 
 const columnPropsByColumns: Record<
@@ -14,9 +15,11 @@ const columnPropsByColumns: Record<
 };
 
 export function AppCardGrid({ children, columns = 2, gutter }: AppCardGridProps) {
-  const { token } = theme.useToken();
   const items = Children.toArray(children);
-  const resolvedGutter: [number, number] = gutter ?? [token.margin, token.margin];
+  const resolvedGutter: [number, number] = gutter ?? [
+    shellThemeTokens.cardGridGap,
+    shellThemeTokens.cardGridGap
+  ];
 
   if (items.length === 0) {
     return null;

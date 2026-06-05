@@ -1,15 +1,14 @@
-import { Space, theme } from "antd";
+import { Space } from "antd";
 
+import { shellThemeTokens } from "../../theme";
 import type { AppSectionStackProps } from "./sectionTypes";
 
 export function AppSectionStack({ children }: AppSectionStackProps) {
-  const { token } = theme.useToken();
-
   return (
     <Space
       direction="vertical"
-      size={token.marginLG}
-      style={{ padding: token.paddingLG, width: "100%" }}
+      size={shellThemeTokens.pageSectionGap}
+      style={{ padding: shellThemeTokens.pagePadding, width: "100%" }}
     >
       {children}
     </Space>

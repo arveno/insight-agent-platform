@@ -1,5 +1,7 @@
 import { Button, Card, Radio, Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+
 export type FeedbackOption = {
   disabled?: boolean;
   label: string;
@@ -37,10 +39,14 @@ export function FeedbackPanel({
 }: FeedbackPanelProps) {
   return (
     <Card>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
         <Space direction="vertical" size={4}>
-          <Typography.Text strong>{title}</Typography.Text>
-          {targetTitle ? <Typography.Text type="secondary">{targetTitle}</Typography.Text> : null}
+          <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
+          {targetTitle ? (
+            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+              {targetTitle}
+            </Typography.Text>
+          ) : null}
         </Space>
         <Radio.Group
           disabled={disabled}
@@ -48,7 +54,11 @@ export function FeedbackPanel({
           options={options}
           value={value}
         />
-        {helperText ? <Typography.Text type="secondary">{helperText}</Typography.Text> : null}
+        {helperText ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {helperText}
+          </Typography.Text>
+        ) : null}
         {submitLabel ? (
           <Button color="default" disabled={disabled || !value} onClick={onSubmit} variant="solid">
             {submitLabel}

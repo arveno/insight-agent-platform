@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../../ui";
 
 export type RightAssistPanelProps = {
@@ -54,12 +54,18 @@ export function RightAssistPanel({
         styles={{ body: { padding: shellThemeTokens.panelPadding } }}
         variant="borderless"
       >
-        <Space direction="vertical" size={shellThemeTokens.shellSectionGap} style={{ width: "100%" }}>
+        <Space
+          direction="vertical"
+          size={shellThemeTokens.shellSectionGap}
+          style={{ width: "100%" }}
+        >
           <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
             <Space direction="vertical" size={4}>
-              <Typography.Text strong>{title}</Typography.Text>
+              <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
               {description ? (
-                <Typography.Text type="secondary">{description}</Typography.Text>
+                <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                  {description}
+                </Typography.Text>
               ) : null}
             </Space>
             {actions}

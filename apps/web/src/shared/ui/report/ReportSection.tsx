@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import { RiskBadge, type RiskBadgeProps } from "../status";
 
 export type ReportSectionProps = {
@@ -17,21 +18,31 @@ export type ReportSectionProps = {
  * content 必须来自 ReportSection ViewModel；
  * 组件不展示模型原始输出，也不承接完整 ReportReader 编排。
  */
-export function ReportSection({ actions, content, evidenceSummary, risk, title }: ReportSectionProps) {
+export function ReportSection({
+  actions,
+  content,
+  evidenceSummary,
+  risk,
+  title
+}: ReportSectionProps) {
   return (
     <Card>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
           <Space wrap>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {title}
-            </Typography.Title>
+            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
             {risk ? <RiskBadge {...risk} /> : null}
           </Space>
           {actions}
         </Space>
-        <Typography.Paragraph style={{ margin: 0 }}>{content}</Typography.Paragraph>
-        {evidenceSummary ? <Typography.Text type="secondary">{evidenceSummary}</Typography.Text> : null}
+        <Typography.Paragraph style={{ ...shellTypographyStyles.body, margin: 0 }}>
+          {content}
+        </Typography.Paragraph>
+        {evidenceSummary ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {evidenceSummary}
+          </Typography.Text>
+        ) : null}
       </Space>
     </Card>
   );

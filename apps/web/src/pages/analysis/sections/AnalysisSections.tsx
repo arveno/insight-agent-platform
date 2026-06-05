@@ -1,13 +1,9 @@
 import type { ReactNode } from "react";
-import {
-  ArrowUpOutlined,
-  DownOutlined,
-  PlusOutlined,
-  StopOutlined
-} from "@ant-design/icons";
+import { ArrowUpOutlined, DownOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Dropdown, List, Space, Typography, theme } from "antd";
 
 import type { AnalysisViewModel } from "../../../features/static-view-models";
+import { shellTypographyStyles } from "../../../shared";
 
 export type AnalysisSectionsProps = {
   analysisDraft: string;
@@ -99,14 +95,13 @@ export function AnalysisSections({
           padding: token.paddingLG
         }}
       >
-        <ChatMessage
-          roleLabel="System"
-          tone="system"
-        >
+        <ChatMessage roleLabel="System" tone="system">
           <Typography.Paragraph style={{ margin: 0 }}>
             {selectedSession.contextPack.systemText}
           </Typography.Paragraph>
-          <Typography.Text type="secondary">{selectedSession.contextPack.stripText}</Typography.Text>
+          <Typography.Text type="secondary">
+            {selectedSession.contextPack.stripText}
+          </Typography.Text>
         </ChatMessage>
 
         <ChatMessage align="end" roleLabel="User" tone="user">
@@ -118,7 +113,7 @@ export function AnalysisSections({
             {selectedSession.resultSummary.conclusion}
           </Typography.Paragraph>
           <div>
-            <Typography.Text strong>关键发现</Typography.Text>
+            <Typography.Text style={shellTypographyStyles.cardTitle}>关键发现</Typography.Text>
             <List
               dataSource={selectedSession.resultSummary.findingBullets.slice(0, 2)}
               renderItem={(item) => (

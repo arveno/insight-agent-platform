@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Space, Timeline, Typography } from "antd";
 
+import { shellTypographyStyles } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../feedback";
 import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
 
@@ -35,12 +36,22 @@ export function TraceTimeline({ empty, items }: TraceTimelineProps) {
         children: (
           <Space direction="vertical" size={4}>
             <Space wrap>
-              <Typography.Text strong>{item.title}</Typography.Text>
+              <Typography.Text style={shellTypographyStyles.cardTitle}>
+                {item.title}
+              </Typography.Text>
               {item.status ? <StatusTag {...item.status} /> : null}
               {item.risk ? <RiskBadge {...item.risk} /> : null}
-              {item.timestampText ? <Typography.Text type="secondary">{item.timestampText}</Typography.Text> : null}
+              {item.timestampText ? (
+                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                  {item.timestampText}
+                </Typography.Text>
+              ) : null}
             </Space>
-            {item.description ? <Typography.Text type="secondary">{item.description}</Typography.Text> : null}
+            {item.description ? (
+              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                {item.description}
+              </Typography.Text>
+            ) : null}
           </Space>
         )
       }))}

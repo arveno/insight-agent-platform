@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { RightOutlined } from "@ant-design/icons";
 import { Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import { ShellNavListItem } from "./ShellNavListItem";
 
 export type NavigationItem = {
@@ -50,13 +50,10 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
           {group.label ? (
             <Typography.Text
               style={{
+                ...shellTypographyStyles.navGroupLabel,
                 color: token.colorTextDescription,
                 display: "block",
-                fontSize: token.fontSizeSM,
-                fontWeight: token.fontWeightStrong,
-                letterSpacing: 0.2,
-                marginBottom: token.marginSM,
-                textTransform: "uppercase"
+                marginBottom: token.marginSM
               }}
             >
               {group.label}
@@ -98,9 +95,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                       <span
                         aria-hidden="true"
                         style={{
-                          color: isSelected
-                            ? token.colorTextSecondary
-                            : token.colorTextDescription,
+                          color: isSelected ? token.colorTextSecondary : token.colorTextDescription,
                           display: "inline-flex",
                           fontSize: token.fontSizeSM
                         }}

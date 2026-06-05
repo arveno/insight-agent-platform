@@ -1,7 +1,14 @@
 import { Space, Typography } from "antd";
 
 import type { AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
-import { RightAssistPanel, RiskBadge, StatusTag, TraceTimeline, useI18n } from "../../shared";
+import {
+  RightAssistPanel,
+  RiskBadge,
+  shellTypographyStyles,
+  StatusTag,
+  TraceTimeline,
+  useI18n
+} from "../../shared";
 import { toRiskBadge, toStatusTag } from "../../pages/_shared";
 
 export type AnalysisInspectorPanelProps = {
@@ -18,14 +25,27 @@ export function AnalysisInspectorPanel({
 
   return (
     <RightAssistPanel title="Run Trace">
-      <Space aria-label="Analysis inspector" direction="vertical" size={16} style={{ width: "100%" }}>
+      <Space
+        aria-label="Analysis inspector"
+        direction="vertical"
+        size={16}
+        style={{ width: "100%" }}
+      >
         <Space align="start" style={{ justifyContent: "space-between", width: "100%" }} wrap>
           <Space direction="vertical" size={4}>
-            <Typography.Text strong>当前 Run 状态</Typography.Text>
-            <Typography.Text type="secondary">{workspaceName}</Typography.Text>
-            <Typography.Text type="secondary">{`runId: ${runTrace.runId}`}</Typography.Text>
-            <Typography.Text type="secondary">{runTrace.stageSummary}</Typography.Text>
-            <Typography.Text type="secondary">{runTrace.updatedAtText}</Typography.Text>
+            <Typography.Text style={shellTypographyStyles.cardTitle}>当前 Run 状态</Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+              {workspaceName}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+              {`runId: ${runTrace.runId}`}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+              {runTrace.stageSummary}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+              {runTrace.updatedAtText}
+            </Typography.Text>
           </Space>
           <Space wrap>
             <StatusTag {...toStatusTag(t, runTrace.status)!} />

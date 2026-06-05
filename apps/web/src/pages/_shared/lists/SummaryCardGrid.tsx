@@ -1,7 +1,7 @@
 import { Typography } from "antd";
 
 import type { StaticSummaryItemViewModel } from "../../../app/models";
-import { CardList, useI18n } from "../../../shared";
+import { CardList, shellTypographyStyles, useI18n } from "../../../shared";
 import { toRiskBadge, toStatusTag } from "../adapters";
 import { translateKey } from "../text";
 
@@ -20,11 +20,17 @@ export function SummaryCardGrid({ items }: SummaryCardGridProps) {
           <Typography.Text type="secondary">{item.description}</Typography.Text>
         ) : null,
         key: item.key,
-        meta: item.meta ? <Typography.Text type="secondary">{item.meta}</Typography.Text> : null,
+        meta: item.meta ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {item.meta}
+          </Typography.Text>
+        ) : null,
         risk: toRiskBadge(t, item.risk),
         status: toStatusTag(t, item.status),
         title: item.label,
-        extra: <Typography.Text strong>{item.value}</Typography.Text>
+        extra: (
+          <Typography.Text style={shellTypographyStyles.cardValue}>{item.value}</Typography.Text>
+        )
       }))}
     />
   );

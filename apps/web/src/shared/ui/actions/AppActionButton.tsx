@@ -1,6 +1,7 @@
 import { Button, type ButtonProps } from "antd";
 
 import { AppIcon } from "../../icons";
+import { shellTypographyStyles } from "../../theme";
 import type { AppActionButtonProps, AppActionButtonVariant } from "./actionTypes";
 
 const actionButtonPropsByVariant: Record<
@@ -17,13 +18,18 @@ const actionButtonPropsByVariant: Record<
 export function AppActionButton({
   children,
   iconName,
+  style,
   variant,
   ...buttonProps
 }: AppActionButtonProps) {
   const mappedProps = actionButtonPropsByVariant[variant];
 
   return (
-    <Button {...buttonProps} {...mappedProps}>
+    <Button
+      {...buttonProps}
+      {...mappedProps}
+      style={{ ...shellTypographyStyles.buttonLabel, ...style }}
+    >
       {iconName ? <AppIcon name={iconName} variant="badge" /> : null}
       {children}
     </Button>

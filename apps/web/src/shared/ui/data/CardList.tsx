@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, List, Space, Typography } from "antd";
 
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../feedback";
 import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
 
@@ -37,11 +38,21 @@ export function CardList({ empty, items }: CardListProps) {
       renderItem={(item) => (
         <List.Item>
           <Card style={{ width: "100%" }}>
-            <Space direction="vertical" size={8} style={{ width: "100%" }}>
+            <Space
+              direction="vertical"
+              size={shellThemeTokens.cardContentGap}
+              style={{ width: "100%" }}
+            >
               <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
                 <Space direction="vertical" size={2}>
-                  <Typography.Text strong>{item.title}</Typography.Text>
-                  {item.description ? <Typography.Text type="secondary">{item.description}</Typography.Text> : null}
+                  <Typography.Text style={shellTypographyStyles.cardTitle}>
+                    {item.title}
+                  </Typography.Text>
+                  {item.description ? (
+                    <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                      {item.description}
+                    </Typography.Text>
+                  ) : null}
                 </Space>
                 {item.extra}
               </Space>
