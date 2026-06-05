@@ -1,17 +1,17 @@
-import { Alert, Button, Card, Input, List, Space, Typography, theme } from "antd";
+import type { ReactNode } from "react";
+import { Alert, Button, List, Space, Typography, theme } from "antd";
 
 import type { AnalysisViewModel } from "../../../features/static-view-models";
 import { RiskBadge, StatusTag } from "../../../shared";
-import type { WebPageProps } from "../../_shared";
 
-const { TextArea } = Input;
-
-export type AnalysisSectionsProps = WebPageProps & {
+export type AnalysisSectionsProps = {
   analysisDraft: string;
+  composerMode: "analysis" | "follow_up";
   followUpDraft: string;
   interactionMessage: string;
   onAnalysisDraftChange: (value: string) => void;
   onAnalysisSubmit: () => void;
+  onComposerModeChange: (mode: "analysis" | "follow_up") => void;
   onFollowUpDraftChange: (value: string) => void;
   onFollowUpSubmit: () => void;
   onSelectAnalysisSuggestion: (value: string) => void;
@@ -22,10 +22,12 @@ export type AnalysisSectionsProps = WebPageProps & {
 
 export function AnalysisSections({
   analysisDraft,
+  composerMode,
   followUpDraft,
   interactionMessage,
   onAnalysisDraftChange,
   onAnalysisSubmit,
+  onComposerModeChange,
   onFollowUpDraftChange,
   onFollowUpSubmit,
   onSelectAnalysisSuggestion,
@@ -38,34 +40,45 @@ export function AnalysisSections({
     .slice(0, 3)
     .map((item) => item.value)
     .join(" / ");
+  const hasFollowUpDraft = followUpDraft.trim().length > 0;
+  const activeComposer =
+    composerMode === "analysis" ? selectedSession.inputComposer : selectedSession.followUpComposer;
+  const activeDraft = composerMode === "analysis" ? analysisDraft : followUpDraft;
+  const onActiveDraftChange =
+    composerMode === "analysis" ? onAnalysisDraftChange : onFollowUpDraftChange;
+  const onActiveSubmit = composerMode === "analysis" ? onAnalysisSubmit : onFollowUpSubmit;
+  const onSelectSuggestion =
+    composerMode === "analysis" ? onSelectAnalysisSuggestion : onSelectFollowUpSuggestion;
 
   return (
-    <Space
+    <section
       aria-label="Analysis conversation"
-      direction="vertical"
       role="region"
-      size={token.marginLG}
-      style={{ width: "100%" }}
+      style={{
+        background: token.colorBgElevated,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        borderRadius: token.borderRadiusLG,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 720,
+        overflow: "hidden",
+        width: "100%"
+      }}
     >
-      <section
+      <header
         style={{
-          background: token.colorBgElevated,
-          border: `1px solid ${token.colorBorderSecondary}`,
-          borderRadius: token.borderRadiusLG,
-          boxShadow: token.boxShadowTertiary,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
           padding: token.paddingLG
         }}
       >
-        <Space direction="vertical" size={token.margin} style={{ width: "100%" }}>
+        <Space direction="vertical" size={token.marginSM} style={{ width: "100%" }}>
           <Space align="start" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-            <Space direction="vertical" size={4} style={{ maxWidth: 720 }}>
-              <Typography.Text type="secondary">Conversation-first</Typography.Text>
+            <Space direction="vertical" size={4} style={{ maxWidth: 760 }}>
+              <Typography.Text type="secondary">Conversation</Typography.Text>
               <Typography.Title level={3} style={{ margin: 0 }}>
                 {selectedSession.session.title}
               </Typography.Title>
-              <Typography.Text type="secondary">
-                {selectedSession.session.summary}
-              </Typography.Text>
+              <Typography.Text type="secondary">{selectedSession.session.summary}</Typography.Text>
               <Typography.Text type="secondary">
                 当前上下文：{contextSummary || viewModel.contextPanelNote}
               </Typography.Text>
@@ -84,61 +97,111 @@ export function AnalysisSections({
             type="info"
           />
         </Space>
-      </section>
+      </header>
 
-      <Space
-        aria-label="Analysis messages"
-        direction="vertical"
-        size={token.margin}
-        style={{ width: "100%" }}
+      <div
+        aria-label="Analysis message list"
+        role="log"
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "column",
+          gap: token.margin,
+          minHeight: 0,
+          padding: token.paddingLG
+        }}
       >
-        <MessageBubble
+        <ChatMessage
           content={viewModel.contextPanelNote}
           roleLabel="System"
           subtitle={selectedSession.inputComposer.contextHint}
           tone="system"
           title="当前为静态 Analysis UI"
         />
-        <QuestionBubble
-          draft={analysisDraft}
-          onDraftChange={onAnalysisDraftChange}
-          onSelectSuggestion={onSelectAnalysisSuggestion}
-          onSubmit={onAnalysisSubmit}
-          session={selectedSession}
+        <ChatMessage
+          align="end"
+          content={analysisDraft}
+          roleLabel="User"
+          subtitle={selectedSession.inputComposer.helperText}
+          tone="user"
+          title="当前分析问题"
         />
-        <AssistantBubble session={selectedSession} />
-      </Space>
+        <ChatMessage
+          findingBullets={selectedSession.resultSummary.findingBullets.slice(0, 2)}
+          note="更完整的 Plan、Evidence、Result 和后续反馈入口已收敛到右侧 Run Trace。"
+          roleLabel="Assistant"
+          subtitle={selectedSession.runOverview.phaseLabel}
+          title="静态分析摘要"
+          tone="assistant"
+        >
+          <Typography.Paragraph style={{ margin: 0 }}>
+            {selectedSession.resultSummary.conclusion}
+          </Typography.Paragraph>
+        </ChatMessage>
+        {hasFollowUpDraft ? (
+          <ChatMessage
+            align="end"
+            content={followUpDraft}
+            roleLabel="Draft"
+            subtitle="当前追问草稿只保留在本地 UI State。"
+            tone="draft"
+            title="待发送追问"
+          />
+        ) : null}
+      </div>
 
-      <section
+      <footer
+        aria-label="Analysis composer"
+        role="group"
         style={{
-          background: token.colorBgElevated,
-          border: `1px solid ${token.colorBorderSecondary}`,
-          borderRadius: token.borderRadiusLG,
+          background: token.colorBgContainer,
+          borderTop: `1px solid ${token.colorBorderSecondary}`,
           padding: token.paddingLG
         }}
       >
         <Space direction="vertical" size={token.margin} style={{ width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Typography.Text type="secondary">Composer</Typography.Text>
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {selectedSession.followUpComposer.title}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {selectedSession.followUpComposer.helperText}
-            </Typography.Text>
+          <Space wrap>
+            <Button
+              onClick={() => onComposerModeChange("analysis")}
+              type={composerMode === "analysis" ? "primary" : "default"}
+            >
+              分析问题
+            </Button>
+            <Button
+              onClick={() => onComposerModeChange("follow_up")}
+              type={composerMode === "follow_up" ? "primary" : "default"}
+            >
+              后续追问
+            </Button>
           </Space>
-          <TextArea
-            aria-label={selectedSession.followUpComposer.title}
-            onChange={(event) => onFollowUpDraftChange(event.target.value)}
-            placeholder={selectedSession.followUpComposer.placeholder}
+          <Space direction="vertical" size={4}>
+            <Typography.Text strong>{activeComposer.title}</Typography.Text>
+            <Typography.Text type="secondary">{activeComposer.helperText}</Typography.Text>
+          </Space>
+          <textarea
+            aria-label={activeComposer.title}
+            onChange={(event) => onActiveDraftChange(event.target.value)}
+            placeholder={activeComposer.placeholder}
             rows={4}
-            value={followUpDraft}
+            style={{
+              background: token.colorBgElevated,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              borderRadius: token.borderRadiusLG,
+              color: token.colorText,
+              fontFamily: "inherit",
+              fontSize: token.fontSize,
+              lineHeight: token.lineHeight,
+              padding: token.padding,
+              resize: "vertical",
+              width: "100%"
+            }}
+            value={activeDraft}
           />
           <Space wrap>
-            {selectedSession.followUpComposer.suggestions.map((suggestion) => (
+            {activeComposer.suggestions.map((suggestion) => (
               <Button
                 key={suggestion.key}
-                onClick={() => onSelectFollowUpSuggestion(suggestion.label)}
+                onClick={() => onSelectSuggestion(suggestion.label)}
                 size="small"
                 type="default"
               >
@@ -147,183 +210,91 @@ export function AnalysisSections({
             ))}
           </Space>
           <Space align="center" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-            <Typography.Text type="secondary">
-              静态本地提交只更新当前页面提示，不触发真实多轮请求或 Agent。
-            </Typography.Text>
+            <Typography.Text type="secondary">{activeComposer.contextHint}</Typography.Text>
             <Button
               color="default"
-              disabled={followUpDraft.trim().length === 0}
-              onClick={onFollowUpSubmit}
+              disabled={activeDraft.trim().length === 0}
+              onClick={onActiveSubmit}
               variant="solid"
             >
-              {selectedSession.followUpComposer.submitLabel}
+              {activeComposer.submitLabel}
             </Button>
           </Space>
         </Space>
-      </section>
-    </Space>
+      </footer>
+    </section>
   );
 }
 
-function MessageBubble({
+function ChatMessage({
+  align = "start",
+  children,
   content,
+  findingBullets,
+  note,
   roleLabel,
   subtitle,
-  tone,
-  title
+  title,
+  tone
 }: {
-  content: string;
+  align?: "end" | "start";
+  children?: ReactNode;
+  content?: string;
+  findingBullets?: string[];
+  note?: string;
   roleLabel: string;
   subtitle?: string;
-  tone: "assistant" | "system" | "user";
   title: string;
+  tone: "assistant" | "draft" | "system" | "user";
 }) {
   const { token } = theme.useToken();
   const backgroundByTone = {
-    assistant: token.colorBgElevated,
+    assistant: token.colorBgContainer,
+    draft: token.colorFillSecondary,
     system: token.colorFillAlter,
-    user: token.colorBgContainer
+    user: token.colorFillTertiary
   };
   const borderByTone = {
     assistant: token.colorBorderSecondary,
-    system: token.colorBorder,
+    draft: token.colorBorder,
+    system: token.colorBorderSecondary,
     user: token.colorText
   };
 
   return (
-    <Card
-      styles={{ body: { padding: token.paddingLG } }}
+    <div
       style={{
+        alignSelf: align === "end" ? "flex-end" : "flex-start",
         background: backgroundByTone[tone],
-        borderColor: borderByTone[tone],
+        border: `1px solid ${borderByTone[tone]}`,
         borderRadius: token.borderRadiusLG,
-        width: "100%"
+        maxWidth: "78%",
+        padding: token.paddingLG
       }}
     >
       <Space direction="vertical" size={token.marginXS} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{roleLabel}</Typography.Text>
         <Typography.Text strong>{title}</Typography.Text>
         {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
-        <Typography.Paragraph style={{ margin: 0 }}>{content}</Typography.Paragraph>
+        {content ? <Typography.Paragraph style={{ margin: 0 }}>{content}</Typography.Paragraph> : null}
+        {children}
+        {findingBullets?.length ? (
+          <div>
+            <Typography.Text strong>关键发现</Typography.Text>
+            <List
+              dataSource={findingBullets}
+              renderItem={(item) => (
+                <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
+                  <Typography.Text>{item}</Typography.Text>
+                </List.Item>
+              )}
+              split={false}
+            />
+          </div>
+        ) : null}
+        {note ? <Typography.Text type="secondary">{note}</Typography.Text> : null}
       </Space>
-    </Card>
-  );
-}
-
-function QuestionBubble({
-  draft,
-  onDraftChange,
-  onSelectSuggestion,
-  onSubmit,
-  session
-}: {
-  draft: string;
-  onDraftChange: (value: string) => void;
-  onSelectSuggestion: (value: string) => void;
-  onSubmit: () => void;
-  session: AnalysisViewModel["sessions"][number];
-}) {
-  const { token } = theme.useToken();
-
-  return (
-    <Card
-      styles={{ body: { padding: token.paddingLG } }}
-      style={{ borderColor: token.colorText, borderRadius: token.borderRadiusLG, width: "100%" }}
-    >
-      <Space direction="vertical" size={token.margin} style={{ width: "100%" }}>
-        <Space direction="vertical" size={4}>
-          <Typography.Text type="secondary">User</Typography.Text>
-          <Typography.Text strong>当前分析问题</Typography.Text>
-          <Typography.Text type="secondary">{session.inputComposer.helperText}</Typography.Text>
-        </Space>
-        <TextArea
-          aria-label={session.inputComposer.title}
-          onChange={(event) => onDraftChange(event.target.value)}
-          placeholder={session.inputComposer.placeholder}
-          rows={5}
-          value={draft}
-        />
-        <Space wrap>
-          {session.inputComposer.suggestions.map((suggestion) => (
-            <Button
-              key={suggestion.key}
-              onClick={() => onSelectSuggestion(suggestion.label)}
-              size="small"
-              type="default"
-            >
-              {suggestion.label}
-            </Button>
-          ))}
-        </Space>
-        <Space align="center" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-          <Typography.Text type="secondary">
-            当前会话标题和上下文来自静态 ViewModel；提交不会创建真实会话。
-          </Typography.Text>
-          <Button
-            color="default"
-            disabled={draft.trim().length === 0}
-            onClick={onSubmit}
-            variant="solid"
-          >
-            {session.inputComposer.submitLabel}
-          </Button>
-        </Space>
-      </Space>
-    </Card>
-  );
-}
-
-function AssistantBubble({ session }: { session: AnalysisViewModel["sessions"][number] }) {
-  const { token } = theme.useToken();
-
-  return (
-    <Card
-      styles={{ body: { padding: token.paddingLG } }}
-      style={{
-        background: token.colorBgElevated,
-        borderColor: token.colorBorderSecondary,
-        borderRadius: token.borderRadiusLG,
-        width: "100%"
-      }}
-    >
-      <Space direction="vertical" size={token.margin} style={{ width: "100%" }}>
-        <Space direction="vertical" size={4}>
-          <Typography.Text type="secondary">Assistant</Typography.Text>
-          <Typography.Text strong>分析结果摘要</Typography.Text>
-          <Typography.Text type="secondary">{session.runOverview.phaseLabel}</Typography.Text>
-        </Space>
-        <Typography.Paragraph style={{ margin: 0 }}>
-          {session.resultSummary.conclusion}
-        </Typography.Paragraph>
-        <div>
-          <Typography.Text strong>关键发现</Typography.Text>
-          <List
-            dataSource={session.resultSummary.findingBullets}
-            renderItem={(item) => (
-              <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
-                <Typography.Text>{item}</Typography.Text>
-              </List.Item>
-            )}
-            split={false}
-          />
-        </div>
-        <div>
-          <Typography.Text strong>建议动作</Typography.Text>
-          <List
-            dataSource={session.resultSummary.actionSuggestions}
-            renderItem={(item) => (
-              <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
-                <Typography.Text>{item}</Typography.Text>
-              </List.Item>
-            )}
-            split={false}
-          />
-        </div>
-        <Typography.Text type="secondary">
-          更完整的 Run / Trace / Evidence / Feedback / Report 信息已迁移到右侧 Inspector。
-        </Typography.Text>
-      </Space>
-    </Card>
+    </div>
   );
 }
 
@@ -350,7 +321,9 @@ function toStatusTagLabel(status: AnalysisViewModel["sessions"][number]["session
   } as const;
 }
 
-function toRiskBadgeLabel(risk: NonNullable<AnalysisViewModel["sessions"][number]["session"]["risk"]>) {
+function toRiskBadgeLabel(
+  risk: NonNullable<AnalysisViewModel["sessions"][number]["session"]["risk"]>
+) {
   const riskLabelByLevel = {
     critical: "严重风险",
     high: "高风险",

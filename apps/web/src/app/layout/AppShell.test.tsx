@@ -118,23 +118,23 @@ describe("AppShell", () => {
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
     expect(within(main).getByText("毛利率波动复盘")).toBeTruthy();
-    expect(
-      within(main).getByDisplayValue("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。")
-    ).toBeTruthy();
     expect(within(main).getByText(/当前上下文：Northstar Retail China/)).toBeTruthy();
+    expect(
+      within(main).getByText("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。")
+    ).toBeTruthy();
     expect(within(main).getByText(/当前阶段判断倾向于促销档期重叠导致毛利率波动/)).toBeTruthy();
+    expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
+    expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
     expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
-    expect(within(main).queryByText("Evidence / RAG 来源")).toBeNull();
     expect(within(main).queryByText("Feedback / 采纳入口")).toBeNull();
 
-    expect(screen.getByText("Plan / Step / Tool Calling")).toBeTruthy();
-    expect(screen.getByText("Evidence / RAG 来源")).toBeTruthy();
-    expect(screen.getByText("Feedback / 采纳入口")).toBeTruthy();
-    expect(screen.getByText("报告补充入口")).toBeTruthy();
-    expect(
-      screen.getByText(
-        /LangGraph：Agent Runtime，负责分析流程编排、状态流转、Human-in-the-loop 和可恢复执行。/
-      )
-    ).toBeTruthy();
+    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getByText("1. 接收用户问题")).toBeTruthy();
+    expect(screen.getByText("6. 召回 Evidence / RAG 来源")).toBeTruthy();
+    expect(screen.getByText("8. 等待用户追问 / 反馈")).toBeTruthy();
+    expect(screen.queryByText("Plan / Step / Tool Calling")).toBeNull();
+    expect(screen.queryByText("Feedback / 采纳入口")).toBeNull();
+    expect(screen.queryByText("报告补充入口")).toBeNull();
+    expect(screen.getByText(/技术对接：LangGraph \/ LangChain \/ LlamaIndex \/ Milvus。/)).toBeTruthy();
   });
 });

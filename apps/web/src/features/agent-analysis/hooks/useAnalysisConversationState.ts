@@ -15,11 +15,13 @@ function findSession(
 
 export type AnalysisConversationController = {
   analysisDraft: string;
+  composerMode: "analysis" | "follow_up";
   feedbackValue?: string;
   followUpDraft: string;
   interactionMessage: string;
   onAnalysisDraftChange: (value: string) => void;
   onAnalysisSubmit: () => void;
+  onComposerModeChange: (mode: "analysis" | "follow_up") => void;
   onFeedbackChange: (value: string) => void;
   onFeedbackSubmit: () => void;
   onFollowUpDraftChange: (value: string) => void;
@@ -35,6 +37,7 @@ export type AnalysisConversationController = {
 export function useAnalysisConversationState(): AnalysisConversationController {
   const [selectedSessionKey, setSelectedSessionKey] = useState(defaultSession.key);
   const [analysisDraft, setAnalysisDraft] = useState(defaultSession.inputComposer.initialDraft);
+  const [composerMode, setComposerMode] = useState<"analysis" | "follow_up">("follow_up");
   const [followUpDraft, setFollowUpDraft] = useState(defaultSession.followUpComposer.initialDraft);
   const [feedbackValue, setFeedbackValue] = useState<string | undefined>(
     defaultSession.feedback.initialValue
@@ -46,13 +49,16 @@ export function useAnalysisConversationState(): AnalysisConversationController {
 
   return {
     analysisDraft,
+    composerMode,
     feedbackValue,
     followUpDraft,
     interactionMessage,
     onAnalysisDraftChange: setAnalysisDraft,
     onAnalysisSubmit: () => {
       setInteractionMessage("已记录当前分析问题草稿，不会创建真实 Agent Run 或发送真实请求。");
+      setComposerMode("follow_up");
     },
+    onComposerModeChange: setComposerMode,
     onFeedbackChange: setFeedbackValue,
     onFeedbackSubmit: () => {
       if (!feedbackValue) {
@@ -64,22 +70,26 @@ export function useAnalysisConversationState(): AnalysisConversationController {
     onFollowUpDraftChange: setFollowUpDraft,
     onFollowUpSubmit: () => {
       setInteractionMessage("已记录当前追问草稿，不会触发真实多轮分析、streaming 或轮询。");
+      setComposerMode("follow_up");
     },
     onResetForNewAnalysis: () => {
       setSelectedSessionKey(defaultSession.key);
       setAnalysisDraft(defaultSession.inputComposer.initialDraft);
       setFollowUpDraft("");
       setFeedbackValue(undefined);
+      setComposerMode("analysis");
       setInteractionMessage(
         "已准备新的静态分析入口，仍只更新本地 UI State，不创建真实会话或触发 Agent。"
       );
     },
     onSelectAnalysisSuggestion: (value) => {
       setAnalysisDraft(value);
+      setComposerMode("analysis");
       setInteractionMessage("已用建议问题更新草稿，仍停留在静态 Analysis UI。");
     },
     onSelectFollowUpSuggestion: (value) => {
       setFollowUpDraft(value);
+      setComposerMode("follow_up");
       setInteractionMessage("已用建议追问更新草稿，不会触发真实会话续跑。");
     },
     onSelectSession: (sessionKey) => {
@@ -89,6 +99,7 @@ export function useAnalysisConversationState(): AnalysisConversationController {
       setAnalysisDraft(nextSession.inputComposer.initialDraft);
       setFollowUpDraft(nextSession.followUpComposer.initialDraft);
       setFeedbackValue(nextSession.feedback.initialValue);
+      setComposerMode("follow_up");
       setInteractionMessage(
         `已切换到「${nextSession.session.title}」静态会话；仅更新 UI State，不加载真实会话或运行数据。`
       );

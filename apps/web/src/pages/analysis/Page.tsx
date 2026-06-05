@@ -15,15 +15,16 @@ export function AnalysisPageContent({
     <WebPageScaffold onNavigate={onNavigate} viewModel={analysisStaticViewModel}>
       <AnalysisSections
         analysisDraft={conversationState.analysisDraft}
+        composerMode={conversationState.composerMode}
         followUpDraft={conversationState.followUpDraft}
         interactionMessage={conversationState.interactionMessage}
         onAnalysisDraftChange={conversationState.onAnalysisDraftChange}
         onAnalysisSubmit={conversationState.onAnalysisSubmit}
+        onComposerModeChange={conversationState.onComposerModeChange}
         onFollowUpDraftChange={conversationState.onFollowUpDraftChange}
         onFollowUpSubmit={conversationState.onFollowUpSubmit}
         onSelectAnalysisSuggestion={conversationState.onSelectAnalysisSuggestion}
         onSelectFollowUpSuggestion={conversationState.onSelectFollowUpSuggestion}
-        onNavigate={onNavigate}
         selectedSession={conversationState.selectedSession}
         viewModel={analysisStaticViewModel}
       />

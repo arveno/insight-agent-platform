@@ -233,7 +233,6 @@ export function AppShell() {
           <AnalysisInspectorPanel
             conversationState={analysisConversationState}
             inspector={activeInspector}
-            onNavigate={handleNavigate}
             workspaceName={selectedWorkspace.name}
           />
         ) : (

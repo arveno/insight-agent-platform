@@ -39,8 +39,8 @@ const webNavigationGroups: AppShellNavigationGroupViewModel[] = [
 const inspectorByRoute: AppShellStaticViewModel["inspectorByRoute"] = {
   analysis: {
     capabilityNotes: [
-      "左侧用于切换静态分析会话，主区只展示 Conversation，对话辅助信息收敛到右侧 Inspector。",
-      "右侧 Inspector 展示当前 Run 状态、Tool Calling、Trace、Evidence、结果、反馈和报告入口。",
+      "左侧用于切换静态分析会话，主区只展示 Conversation，对话输入固定收敛在聊天底部 composer。",
+      "右侧 Inspector 固定展示单一 Run Trace，Evidence、结果、反馈和报告只作为 trace 事件说明出现。",
       "关联能力：Agent Runtime、Tools、RAG、Observability。"
     ],
     integrationNotes: [
@@ -52,7 +52,7 @@ const inspectorByRoute: AppShellStaticViewModel["inspectorByRoute"] = {
       "Tool Registry：自研工具注册入口，统一工具 schema、权限、风险等级、trace 和 handler。",
       "LangSmith / Langfuse：Observability，负责 Trace、调试、运行记录和评估记录。"
     ],
-    summary: "当前 Analysis 采用 Conversation-first 结构：左侧会话列表，主区对话，右侧 Inspector 承接运行与证据辅助信息。",
+    summary: "当前 Analysis 采用 Conversation-first 结构：左侧会话列表，主区聊天，右侧仅展示静态 Run Trace。",
     titleKey: "page.analysis.title"
   },
   dashboard: {
