@@ -45,16 +45,21 @@ describe("AnalysisPage", () => {
     expect(messageList.getAttribute("style")).toContain("overflow-y: auto");
     expect(composer).toBeTruthy();
     expect(composer.getAttribute("style")).toContain("flex: 0 0 auto");
+    expect(within(main).queryByText("当前展示静态 Analysis 会话。页面交互只更新 UI State，不创建真实 Agent Run。")).toBeNull();
+    expect(within(main).queryByText("继续追问会沿用当前静态会话上下文，但不会发起真实多轮请求。")).toBeNull();
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
     expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "打开聊天工具入口" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "选择模型" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "发送消息" })).toBeTruthy();
     expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
     expect(within(main).queryByText("报告生成入口")).toBeNull();
   });
 
-  it("keeps follow-up submit local to the page state", () => {
+  it("keeps composer actions local to the page state", async () => {
     const onNavigate = vi.fn();
 
     render(
@@ -63,12 +68,21 @@ describe("AnalysisPage", () => {
       </AppProviders>
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "选择模型" }));
+    fireEvent.click(await screen.findByText("Reasoning"));
+    expect(screen.getByRole("button", { name: "选择模型" }).textContent).toContain("Reasoning");
+
     fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
       target: { value: "继续追问华东渠道和最近 7 天的差异。" }
     });
-    fireEvent.click(screen.getByRole("button", { name: "继续追问" }));
+    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
 
-    expect(screen.getByText(/已记录当前追问草稿/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "停止生成" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "停止生成" }));
+
+    expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
+    expect(screen.getByText(/已停止本地模拟生成/)).toBeTruthy();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 });

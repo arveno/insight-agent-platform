@@ -84,7 +84,7 @@ describe("AppShell", () => {
 
     expect(within(analysisNavigation).getByText("分析")).toBeTruthy();
     expect(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" })).toBeTruthy();
-    expect(within(analysisNavigation).getByRole("button", { name: /新建分析/ })).toBeTruthy();
+    expect(within(analysisNavigation).getByRole("button", { name: /新聊天/ })).toBeTruthy();
     expect(within(analysisNavigation).getByText("Q2 收入异常追问")).toBeTruthy();
     expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
     expect(within(analysisNavigation).getByText("库存异常定位")).toBeTruthy();

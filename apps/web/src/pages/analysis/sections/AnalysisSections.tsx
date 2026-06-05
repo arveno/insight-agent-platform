@@ -1,33 +1,53 @@
 import type { ReactNode } from "react";
-import { Button, List, Space, Typography, theme } from "antd";
+import {
+  ArrowUpOutlined,
+  DownOutlined,
+  PlusOutlined,
+  StopOutlined
+} from "@ant-design/icons";
+import { Button, Dropdown, List, Space, Typography, theme } from "antd";
 
 import type { AnalysisViewModel } from "../../../features/static-view-models";
 
 export type AnalysisSectionsProps = {
   analysisDraft: string;
+  composerState: "idle" | "running";
   composerMode: "analysis" | "follow_up";
   followUpDraft: string;
   interactionMessage: string;
+  modelOptions: readonly { key: string; label: string }[];
   onAnalysisDraftChange: (value: string) => void;
   onAnalysisSubmit: () => void;
+  onComposerAccessoryClick: () => void;
   onFollowUpDraftChange: (value: string) => void;
   onFollowUpSubmit: () => void;
+  onComposerStop: () => void;
+  onSelectModel: (key: string) => void;
   onSelectAnalysisSuggestion: (value: string) => void;
   onSelectFollowUpSuggestion: (value: string) => void;
+  selectedModelKey: string;
+  selectedModelLabel: string;
   selectedSession: AnalysisViewModel["sessions"][number];
 };
 
 export function AnalysisSections({
   analysisDraft,
+  composerState,
   composerMode,
   followUpDraft,
   interactionMessage,
+  modelOptions,
   onAnalysisDraftChange,
   onAnalysisSubmit,
+  onComposerAccessoryClick,
   onFollowUpDraftChange,
   onFollowUpSubmit,
+  onComposerStop,
+  onSelectModel,
   onSelectAnalysisSuggestion,
   onSelectFollowUpSuggestion,
+  selectedModelKey,
+  selectedModelLabel,
   selectedSession
 }: AnalysisSectionsProps) {
   const { token } = theme.useToken();
@@ -40,6 +60,10 @@ export function AnalysisSections({
   const onSelectSuggestion =
     composerMode === "analysis" ? onSelectAnalysisSuggestion : onSelectFollowUpSuggestion;
   const hasFollowUpDraft = composerMode === "follow_up" && followUpDraft.trim().length > 0;
+  const modelMenuItems = modelOptions.map((option) => ({
+    key: option.key,
+    label: option.label
+  }));
 
   return (
     <section
@@ -131,51 +155,107 @@ export function AnalysisSections({
           padding: token.paddingLG
         }}
       >
-        <Space direction="vertical" size={token.marginSM} style={{ width: "100%" }}>
-          <Typography.Text type="secondary">{interactionMessage}</Typography.Text>
-          <textarea
-            aria-label={activeComposer.title}
-            onChange={(event) => onActiveDraftChange(event.target.value)}
-            placeholder={activeComposer.placeholder}
-            rows={3}
+        <div
+          style={{
+            background: token.colorBgElevated,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: token.borderRadiusLG,
+            padding: token.paddingSM
+          }}
+        >
+          <div
             style={{
-              background: token.colorBgElevated,
-              border: `1px solid ${token.colorBorderSecondary}`,
-              borderRadius: token.borderRadiusLG,
-              color: token.colorText,
-              fontFamily: "inherit",
-              fontSize: token.fontSize,
-              lineHeight: token.lineHeight,
-              padding: token.padding,
-              resize: "none",
+              alignItems: "flex-end",
+              display: "flex",
+              gap: token.marginSM,
               width: "100%"
             }}
-            value={activeDraft}
-          />
-          <Space wrap>
-            {activeComposer.suggestions.map((suggestion) => (
-              <Button
-                key={suggestion.key}
-                onClick={() => onSelectSuggestion(suggestion.label)}
-                size="small"
-                type="default"
-              >
-                {suggestion.label}
-              </Button>
-            ))}
-          </Space>
-          <Space align="center" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-            <Typography.Text type="secondary">{activeComposer.contextHint}</Typography.Text>
+          >
             <Button
+              aria-label="打开聊天工具入口"
               color="default"
-              disabled={activeDraft.trim().length === 0}
-              onClick={onActiveSubmit}
-              variant="solid"
+              icon={<PlusOutlined />}
+              onClick={onComposerAccessoryClick}
+              shape="circle"
+              type="default"
+            />
+            <textarea
+              aria-label={activeComposer.title}
+              onChange={(event) => onActiveDraftChange(event.target.value)}
+              placeholder={activeComposer.placeholder}
+              rows={3}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: token.colorText,
+                flex: "1 1 auto",
+                fontFamily: "inherit",
+                fontSize: token.fontSize,
+                lineHeight: token.lineHeight,
+                minHeight: 72,
+                outline: "none",
+                paddingBlock: token.paddingXS,
+                paddingInline: 0,
+                resize: "none",
+                width: "100%"
+              }}
+              value={activeDraft}
+            />
+            <Dropdown
+              menu={{
+                items: modelMenuItems,
+                onClick: ({ key }) => onSelectModel(String(key)),
+                selectable: true,
+                selectedKeys: [selectedModelKey]
+              }}
+              trigger={["click"]}
             >
-              {activeComposer.submitLabel}
-            </Button>
-          </Space>
-        </Space>
+              <Button aria-label="选择模型" type="default">
+                {selectedModelLabel}
+                <DownOutlined />
+              </Button>
+            </Dropdown>
+            <Button
+              aria-label={composerState === "running" ? "停止生成" : "发送消息"}
+              color="default"
+              disabled={composerState === "idle" && activeDraft.trim().length === 0}
+              icon={composerState === "running" ? <StopOutlined /> : <ArrowUpOutlined />}
+              onClick={composerState === "running" ? onComposerStop : onActiveSubmit}
+              shape="circle"
+              variant="solid"
+            />
+          </div>
+          {activeComposer.suggestions.length > 0 ? (
+            <Space size={token.marginXS} style={{ marginTop: token.marginSM }} wrap>
+              {activeComposer.suggestions.map((suggestion) => (
+                <Button
+                  key={suggestion.key}
+                  onClick={() => onSelectSuggestion(suggestion.label)}
+                  size="small"
+                  type="default"
+                >
+                  {suggestion.label}
+                </Button>
+              ))}
+            </Space>
+          ) : null}
+        </div>
+        <span
+          aria-live="polite"
+          style={{
+            border: 0,
+            clip: "rect(0 0 0 0)",
+            height: 1,
+            margin: -1,
+            overflow: "hidden",
+            padding: 0,
+            position: "absolute",
+            whiteSpace: "nowrap",
+            width: 1
+          }}
+        >
+          {interactionMessage}
+        </span>
       </footer>
     </section>
   );

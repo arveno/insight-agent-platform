@@ -27,7 +27,7 @@ export function AnalysisSessionNav({
     <ObjectListNav
       action={
         <Button icon={<PlusOutlined />} onClick={onCreateNewAnalysis} type="default">
-          新建分析
+          新聊天
         </Button>
       }
       ariaLabel="Analysis session navigation"
