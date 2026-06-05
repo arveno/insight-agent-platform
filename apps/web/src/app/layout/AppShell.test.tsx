@@ -34,9 +34,16 @@ describe("AppShell", () => {
 
     expect(within(navigation).getByText("主入口")).toBeTruthy();
     expect(within(navigation).getByText("能力预览")).toBeTruthy();
-    expect(within(navigation).getByRole("button", { name: /仪表盘/ })).toBeTruthy();
-    expect(within(navigation).getByRole("button", { name: /分析/ })).toBeTruthy();
-    expect(within(navigation).getByRole("button", { name: /报告/ })).toBeTruthy();
+    const dashboardButton = within(navigation).getByRole("button", { name: /仪表盘/ });
+    const analysisButton = within(navigation).getByRole("button", { name: /分析/ });
+    const reportsButton = within(navigation).getByRole("button", { name: /报告/ });
+
+    expect(dashboardButton).toBeTruthy();
+    expect(analysisButton).toBeTruthy();
+    expect(reportsButton).toBeTruthy();
+    expect(dashboardButton.querySelector(".anticon-right")).toBeNull();
+    expect(analysisButton.querySelector(".anticon-right")).toBeTruthy();
+    expect(reportsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
     expect(within(navigation).queryByRole("button", { name: /工作区/ })).toBeNull();
     expect(within(navigation).queryByRole("button", { name: /观测/ })).toBeNull();
@@ -55,6 +62,7 @@ describe("AppShell", () => {
     fireEvent.click(await screen.findByText("East Retail Demo"));
 
     expect(screen.getByRole("button", { name: /East Retail Demo/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /当前工作区/ })).toBeNull();
     expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
     expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
   });

@@ -35,7 +35,6 @@ export function HeaderBar({
   onOpenWorkspaceManagement,
   onSelectWorkspace,
   selectedWorkspaceId,
-  workspaceLabel,
   workspaceMenuLabel,
   workspaces
 }: HeaderBarProps) {
@@ -89,17 +88,17 @@ export function HeaderBar({
         <Button
           size="small"
           style={{
-            borderRadius: shellThemeTokens.borderRadiusLG,
+            borderRadius: shellThemeTokens.borderRadiusSM,
+            color: token.colorText,
             height: "auto",
-            paddingBlock: shellThemeTokens.navPreviewPaddingBlock,
-            paddingInline: shellThemeTokens.navPrimaryPaddingInline
+            paddingBlock: 4,
+            paddingInline: 0
           }}
-          type="default"
+          type="text"
         >
-          <Space size={6}>
-            <Typography.Text type="secondary">{workspaceLabel}</Typography.Text>
-            <Typography.Text strong>{currentWorkspaceName}</Typography.Text>
-            <DownOutlined />
+          <Space size={4}>
+            <Typography.Text>{currentWorkspaceName}</Typography.Text>
+            <DownOutlined style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }} />
           </Space>
         </Button>
       </Dropdown>

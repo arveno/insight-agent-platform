@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { RightOutlined } from "@ant-design/icons";
 import { Button, Flex, Space, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../theme";
@@ -86,6 +87,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                 isSelected && isPrimary ? token.colorBorderSecondary : "transparent";
               const itemTextColor =
                 isPrimary || isSelected ? token.colorText : token.colorTextSecondary;
+              const showEntryArrow = isPrimary && (item.key === "analysis" || item.key === "reports");
 
               return (
                 <Button
@@ -123,7 +125,6 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                     </span>
                     <Typography.Text
                       ellipsis
-                      strong={isPrimary}
                       style={{
                         color: itemTextColor,
                         textAlign: "left"
@@ -132,6 +133,18 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                       {item.label}
                     </Typography.Text>
                   </Flex>
+                  {showEntryArrow ? (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        color: isSelected ? token.colorTextSecondary : token.colorTextDescription,
+                        display: "inline-flex",
+                        fontSize: token.fontSizeSM
+                      }}
+                    >
+                      <RightOutlined />
+                    </span>
+                  ) : null}
                   {item.badge ? (
                     <span
                       style={{
