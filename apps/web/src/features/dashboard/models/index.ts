@@ -1,1 +1,6 @@
-export type { DashboardViewModel } from "./dashboardViewModel";
+export type {
+  DashboardTimeRangeKey,
+  DashboardTimeRangeOptionViewModel,
+  DashboardTimeRangeViewModel,
+  DashboardViewModel
+} from "./dashboardViewModel";

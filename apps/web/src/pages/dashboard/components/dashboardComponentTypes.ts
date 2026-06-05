@@ -6,6 +6,12 @@ export type DashboardComponentProps = {
   viewModel: DashboardViewModel;
 };
 
+export type DashboardHeroProps = DashboardComponentProps & {
+  onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
+  selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
+  selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
+};
+
 export type DashboardMetricCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
   metric: DashboardViewModel["businessMetricCards"][number];
 };

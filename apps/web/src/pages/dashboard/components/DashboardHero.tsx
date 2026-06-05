@@ -1,11 +1,17 @@
-import { Flex, Space, Typography, theme } from "antd";
+import { Flex, Select, Space, Typography, theme } from "antd";
 
 import { AppActionGroup, AppCardGrid, RiskBadge, useI18n } from "../../../shared";
 import { toRiskBadge } from "../../_shared";
 import { createRouteAction } from "../../_shared/actions";
-import type { DashboardComponentProps } from "./dashboardComponentTypes";
+import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
-export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps) {
+export function DashboardHero({
+  onNavigate,
+  onTimeRangeChange,
+  selectedTimeRange,
+  selectedTimeRangeKey,
+  viewModel
+}: DashboardHeroProps) {
   const { t } = useI18n();
   const { token } = theme.useToken();
   const summary = viewModel.dashboardSummary[0];
@@ -37,6 +43,10 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
       variant: "moduleEntry"
     })
   ];
+  const timeRangeOptions = viewModel.timeRange.options.map((option) => ({
+    label: option.label,
+    value: option.key
+  }));
 
   return (
     <section
@@ -56,6 +66,7 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
               {t("dashboard.hero.title")}
             </Typography.Title>
             <Typography.Text type="secondary">{t("dashboard.hero.description")}</Typography.Text>
+            <Typography.Text type="secondary">{selectedTimeRange.description}</Typography.Text>
           </Space>
           <Space wrap size={token.marginXS}>
             {riskBadge ? <RiskBadge {...riskBadge} /> : null}
@@ -66,7 +77,17 @@ export function DashboardHero({ onNavigate, viewModel }: DashboardComponentProps
             </Typography.Text>
           </Space>
         </Space>
-        <AppActionGroup actions={heroActions} />
+        <Flex align="center" gap={token.marginSM} justify="flex-end" wrap="wrap">
+          <Select
+            aria-label="Dashboard time range"
+            onChange={(value) => onTimeRangeChange(value)}
+            options={timeRangeOptions}
+            popupMatchSelectWidth={false}
+            style={{ minWidth: 168 }}
+            value={selectedTimeRangeKey}
+          />
+          <AppActionGroup actions={heroActions} />
+        </Flex>
       </Flex>
       <div style={{ marginTop: token.marginLG }}>
         <AppCardGrid columns={4}>

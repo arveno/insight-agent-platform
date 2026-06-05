@@ -10,10 +10,19 @@ import {
 } from "../components";
 
 export type DashboardSectionsProps = WebPageProps & {
+  onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
+  selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
+  selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
   viewModel: DashboardViewModel;
 };
 
-export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsProps) {
+export function DashboardSections({
+  onNavigate,
+  onTimeRangeChange,
+  selectedTimeRange,
+  selectedTimeRangeKey,
+  viewModel
+}: DashboardSectionsProps) {
   const { t } = useI18n();
   const openMetricsAction = createRouteAction({
     iconName: "metrics",
@@ -54,7 +63,13 @@ export function DashboardSections({ onNavigate, viewModel }: DashboardSectionsPr
 
   return (
     <AppSectionStack>
-      <DashboardHero onNavigate={onNavigate} viewModel={viewModel} />
+      <DashboardHero
+        onNavigate={onNavigate}
+        onTimeRangeChange={onTimeRangeChange}
+        selectedTimeRange={selectedTimeRange}
+        selectedTimeRangeKey={selectedTimeRangeKey}
+        viewModel={viewModel}
+      />
 
       <AppSection
         action={openMetricsAction}
