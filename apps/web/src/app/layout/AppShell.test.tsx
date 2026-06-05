@@ -20,6 +20,13 @@ beforeAll(() => {
       removeListener: () => undefined
     })
   });
+
+  const originalGetComputedStyle = window.getComputedStyle.bind(window);
+
+  Object.defineProperty(window, "getComputedStyle", {
+    configurable: true,
+    value: (element: Element) => originalGetComputedStyle(element)
+  });
 });
 
 describe("AppShell", () => {
@@ -146,6 +153,43 @@ describe("AppShell", () => {
     expect(screen.queryByText("Feedback / 采纳入口")).toBeNull();
     expect(screen.queryByText("报告补充入口")).toBeNull();
     expect(screen.queryByText(/技术对接：/)).toBeNull();
+  });
+
+  it("opens and closes run trace event detail without leaving analysis", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
+
+    const analysisNavigation = screen.getByRole("navigation", {
+      name: "Analysis session navigation"
+    });
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" })
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
+    expect(within(dialog).getByText("1. 接收用户问题")).toBeTruthy();
+    expect(within(dialog).getByText("user_input")).toBeTruthy();
+    expect(
+      within(dialog).getByText("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。")
+    ).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭详情" }));
+
+    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
+    expect(analysisNavigation).toBeTruthy();
+    expect(
+      within(main).getAllByText("来自 Dashboard / Revenue · 收入增速异常 · Last 30 days")
+    ).toHaveLength(2);
+    expect(screen.getByText("Run Trace")).toBeTruthy();
   });
 
   it("enters reports navigation mode and keeps report selection in local UI state", () => {

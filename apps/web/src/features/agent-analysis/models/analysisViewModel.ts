@@ -41,23 +41,52 @@ export type AnalysisSessionSummaryViewModel = {
   updatedAtText: string;
 };
 
+export type AnalysisRunTraceEventType =
+  | "user_input"
+  | "context_bound"
+  | "plan_created"
+  | "permission_check"
+  | "model_call"
+  | "tool_call"
+  | "evidence_retrieval"
+  | "summary_generated"
+  | "feedback_waiting"
+  | "report_draft_created"
+  | "error"
+  | "cancelled";
+
 export type AnalysisRunTraceEventViewModel = {
-  description?: string;
+  costText?: string;
+  detail: string;
+  durationText?: string;
+  errorType?: string;
+  eventId: string;
+  eventType: AnalysisRunTraceEventType;
+  evidenceRefs?: string[];
+  inputSummary?: string;
   key: string;
-  meta?: string;
+  modelName?: string;
+  outputSummary?: string;
   risk?: StaticRiskViewModel;
   status: StaticStatusViewModel;
+  summary: string;
   timestampText?: string;
+  tokenUsageText?: string;
+  toolName?: string;
   title: string;
 };
 
 export type AnalysisRunTraceViewModel = {
+  costText: string;
+  errorSummaryText: string;
   events: AnalysisRunTraceEventViewModel[];
   key: string;
   risk?: StaticRiskViewModel;
   runId: string;
   stageSummary: string;
   status: StaticStatusViewModel;
+  tokenUsageText: string;
+  totalDurationText: string;
   updatedAtText: string;
 };
 

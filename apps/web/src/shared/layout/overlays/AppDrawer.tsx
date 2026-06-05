@@ -7,7 +7,7 @@ export type AppDrawerProps = Omit<DrawerProps, "children" | "title"> & {
 };
 
 /**
- * 非阻断详情容器。
+ * 详情抽屉容器。
  *
  * Drawer 内容由页面 / feature slot 注入；
  * shared/layout 不承载长报告主阅读或业务详情清洗。

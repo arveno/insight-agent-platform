@@ -1,7 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
 import { Space, Typography } from "antd";
 
 import type { AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
 import {
+  AppBaseCard,
   RightAssistPanel,
   RiskBadge,
   shellTypographyStyles,
@@ -10,6 +12,8 @@ import {
   useI18n
 } from "../../shared";
 import { toRiskBadge, toStatusTag } from "../../pages/_shared";
+
+import { RunTraceDetailDrawer } from "./RunTraceDetailDrawer";
 
 export type AnalysisInspectorPanelProps = {
   conversationState: Pick<AnalysisConversationController, "selectedSession">;
@@ -22,6 +26,27 @@ export function AnalysisInspectorPanel({
 }: AnalysisInspectorPanelProps) {
   const { t } = useI18n();
   const { runTrace } = conversationState.selectedSession;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedTraceEventId, setSelectedTraceEventId] = useState<string | null>(
+    runTrace.events[0]?.eventId ?? null
+  );
+  const selectedTraceEvent = useMemo(
+    () =>
+      runTrace.events.find((event) => event.eventId === selectedTraceEventId) ?? runTrace.events[0],
+    [runTrace.events, selectedTraceEventId]
+  );
+
+  useEffect(() => {
+    setDrawerOpen(false);
+    setSelectedTraceEventId(runTrace.events[0]?.eventId ?? null);
+  }, [runTrace.events, runTrace.runId]);
+
+  const runSummaryItems = [
+    { key: "duration", label: "Total duration", value: runTrace.totalDurationText },
+    { key: "tokens", label: "Tokens", value: runTrace.tokenUsageText },
+    { key: "cost", label: "Cost", value: runTrace.costText },
+    { key: "errors", label: "Errors", value: runTrace.errorSummaryText }
+  ];
 
   return (
     <RightAssistPanel title="Run Trace">
@@ -31,37 +56,63 @@ export function AnalysisInspectorPanel({
         size={16}
         style={{ width: "100%" }}
       >
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-          <Space direction="vertical" size={4}>
-            <Typography.Text style={shellTypographyStyles.cardTitle}>当前 Run 状态</Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-              {workspaceName}
-            </Typography.Text>
+        <AppBaseCard
+          description={runTrace.stageSummary}
+          eyebrow={`runId: ${runTrace.runId}`}
+          meta={
             <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-              {`runId: ${runTrace.runId}`}
+              {`${workspaceName} · ${runTrace.updatedAtText}`}
             </Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-              {runTrace.stageSummary}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-              {runTrace.updatedAtText}
-            </Typography.Text>
-          </Space>
-          <Space wrap>
-            <StatusTag {...toStatusTag(t, runTrace.status)!} />
-            {runTrace.risk ? <RiskBadge {...toRiskBadge(t, runTrace.risk)!} /> : null}
-          </Space>
-        </Space>
+          }
+          tagSlot={
+            <Space wrap>
+              <StatusTag {...toStatusTag(t, runTrace.status)!} />
+              {runTrace.risk ? <RiskBadge {...toRiskBadge(t, runTrace.risk)!} /> : null}
+            </Space>
+          }
+          title="Current Run Overview"
+        >
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))"
+            }}
+          >
+            {runSummaryItems.map((item) => (
+              <Space direction="vertical" key={item.key} size={2}>
+                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                  {item.label}
+                </Typography.Text>
+                <Typography.Text style={shellTypographyStyles.cardTitle}>
+                  {item.value}
+                </Typography.Text>
+              </Space>
+            ))}
+          </div>
+        </AppBaseCard>
 
         <TraceTimeline
           items={runTrace.events.map((event) => ({
-            description: event.description ?? event.meta,
+            ariaLabel: `查看 Trace 事件详情：${event.title}`,
+            description: event.summary,
             key: event.key,
+            onClick: () => {
+              setSelectedTraceEventId(event.eventId);
+              setDrawerOpen(true);
+            },
             risk: toRiskBadge(t, event.risk),
+            selected: selectedTraceEvent?.eventId === event.eventId,
             status: toStatusTag(t, event.status),
             timestampText: event.timestampText,
             title: event.title
           }))}
+        />
+
+        <RunTraceDetailDrawer
+          event={selectedTraceEvent}
+          onClose={() => setDrawerOpen(false)}
+          open={drawerOpen}
         />
       </Space>
     </RightAssistPanel>

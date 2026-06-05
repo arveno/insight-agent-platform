@@ -70,29 +70,41 @@ function createContextPack({
 }
 
 function createRunTrace({
+  costText,
+  errorSummaryText,
   events,
   key,
   risk,
   runId,
   stageSummary,
   status,
+  tokenUsageText,
+  totalDurationText,
   updatedAtText
 }: {
+  costText: string;
+  errorSummaryText: string;
   events: AnalysisRunTraceViewModel["events"];
   key: string;
   risk?: StaticRiskViewModel;
   runId: string;
   stageSummary: string;
   status: StaticStatusViewModel;
+  tokenUsageText: string;
+  totalDurationText: string;
   updatedAtText: string;
 }) {
   return {
+    costText,
+    errorSummaryText,
     events,
     key,
     risk,
     runId,
     stageSummary,
     status,
+    tokenUsageText,
+    totalDurationText,
     updatedAtText
   };
 }
@@ -233,64 +245,129 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "结果摘要"
       },
       runTrace: createRunTrace({
+        costText: "¥0.86",
+        errorSummaryText: "0 blocking / 1 warning",
         events: [
           {
-            description: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+            detail:
+              "用户在 Analysis 会话里发起收入异常追问。当前阶段只记录标准化静态问题摘要，不创建真实消息流或真实 Agent Run。",
+            durationText: "0.4s",
+            eventId: "event-analysis-q2-revenue-gap-user-input",
+            eventType: "user_input",
+            inputSummary: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
             key: "run-trace-revenue-question",
+            outputSummary: "静态记录问题摘要，并进入当前 run 的上下文绑定阶段。",
             status: successStatus,
+            summary: "记录当前用户问题，并为后续 run trace 生成起点。",
             timestampText: "11:08",
             title: "1. 接收用户问题"
           },
           {
-            description: "绑定 Dashboard / Revenue、收入增速异常和 Last 30 days 静态上下文。",
+            detail:
+              "将 Dashboard / Revenue、收入增速异常和 Last 30 days 静态上下文绑定到当前 run。这里只展示标准化后的上下文摘要，不拼接 raw route state。",
+            durationText: "1.1s",
+            eventId: "event-analysis-q2-revenue-gap-context-bound",
+            eventType: "context_bound",
+            inputSummary: "Dashboard / Revenue · 收入增速异常 · Last 30 days",
             key: "run-trace-revenue-context",
+            outputSummary: "当前 run 已具备 Workspace、来源对象和时间窗口上下文。",
             risk: mediumRisk,
             status: successStatus,
+            summary: "绑定当前 Workspace、来源页面和时间窗口，为后续计划生成提供上下文。",
             timestampText: "11:08",
             title: "2. 绑定 Dashboard / Metrics / Reports 上下文"
           },
           {
-            description: "识别问题、约束和当前上下文来源，生成静态分析计划。",
+            detail:
+              "当前阶段根据问题、约束和上下文来源生成静态分析计划，只展示标准化计划摘要，不展示 LangGraph raw state。",
+            durationText: "1.5s",
+            eventId: "event-analysis-q2-revenue-gap-plan-created",
+            eventType: "plan_created",
+            inputSummary: "收入异常归因 + 渠道/库存拆解 + 经营周会建议",
             key: "run-trace-revenue-plan",
+            outputSummary: "形成指标比对、证据召回和摘要生成三段式静态计划。",
             status: successStatus,
+            summary: "识别问题与约束，生成当前 run 的静态分析计划。",
             timestampText: "11:09",
             title: "3. 生成分析计划"
           },
           {
-            description: "静态检查工具权限和可用入口，不执行真实 Tool Calling。",
+            detail:
+              "当前只做静态权限摘要检查，确认 Metrics、Evidence 和 Reports 入口可用，但不执行真实 Tool Calling 或治理动作。",
+            durationText: "0.8s",
+            eventId: "event-analysis-q2-revenue-gap-permission-check",
+            eventType: "permission_check",
+            inputSummary: "核对 Metrics / Evidence / Reports 静态入口权限",
             key: "run-trace-revenue-permission",
+            outputSummary: "当前 run 可继续使用静态指标摘要与证据说明能力。",
             risk: lowRisk,
             status: successStatus,
+            summary: "检查当前 run 可用的静态工具入口和权限说明。",
             timestampText: "11:10",
             title: "4. 检查工具权限"
           },
           {
-            description: "静态展示指标阈值摘要和区域对比结果，不读取真实 Metrics API。",
+            costText: "¥0.22",
+            detail:
+              "以静态 ViewModel 展示收入增速阈值摘要和区域对比结果，不读取真实 Metrics API，也不展示底层原始指标返回。",
+            durationText: "4.1s",
+            eventId: "event-analysis-q2-revenue-gap-tool-call-metrics",
+            eventType: "tool_call",
+            inputSummary: "比较华东与其他区域的收入增速阈值、确认周期和库存节奏。",
             key: "run-trace-revenue-metrics",
+            outputSummary: "华东渠道确认延迟明显，其他区域未同步放大，当前异常集中在单一区域。",
             status: successStatus,
+            summary: "调用静态指标摘要工具，对比区域收入增速与阈值差异。",
             timestampText: "11:10",
+            tokenUsageText: "3,420",
+            toolName: "metrics.summary.compare",
             title: "5. 调用指标摘要工具"
           },
           {
-            description: "召回渠道周报与库存说明，Evidence 只作为静态来源说明出现。",
+            detail:
+              "召回渠道周报与库存说明的静态证据摘要，Evidence 只保留标准化来源引用，不展示原始文档片段或 raw retrieval payload。",
+            durationText: "5.8s",
+            eventId: "event-analysis-q2-revenue-gap-evidence-retrieval",
+            eventType: "evidence_retrieval",
+            evidenceRefs: ["evidence/channel-weekly-17", "evidence/inventory-note-east-04"],
+            inputSummary: "召回华东渠道周报和库存说明，验证异常是否由价格体系失效引起。",
             key: "run-trace-revenue-evidence",
+            outputSummary: "渠道周报与库存说明均支持“确认延迟 + 库存错配”的静态归因方向。",
             risk: mediumRisk,
             status: successStatus,
+            summary: "补充渠道周报与库存说明的静态证据引用。",
             timestampText: "11:18",
             title: "6. 召回 Evidence / RAG 来源"
           },
           {
-            description: "生成收入异常结论、关键发现和下一步建议，完整过程见当前 Run Trace。",
+            costText: "¥0.41",
+            detail:
+              "基于指标摘要和证据引用生成收入异常结论、关键发现和下一步建议。这里只展示标准化结论摘要，不暴露模型原始输出。",
+            durationText: "3.2s",
+            eventId: "event-analysis-q2-revenue-gap-summary-generated",
+            eventType: "summary_generated",
+            inputSummary: "整合指标摘要、证据引用和经营周会导向的表达要求。",
             key: "run-trace-revenue-summary",
+            modelName: "gpt-4.1-static",
+            outputSummary: "形成“确认延迟 + 库存错配”主结论，并给出渠道和库存复核动作。",
             risk: mediumRisk,
             status: successStatus,
+            summary: "生成当前 run 的结论、关键发现和下一步建议。",
             timestampText: "11:22",
+            tokenUsageText: "7,960",
             title: "7. 生成分析摘要"
           },
           {
-            description: "当前支持本地追问、反馈标记和报告入口占位，不触发真实 Agent 或报告生成。",
+            detail:
+              "当前会话停留在本地追问、反馈标记和报告入口占位阶段，不触发真实 Agent 续跑、真实反馈写入或真实报告生成。",
+            durationText: "1.3s",
+            eventId: "event-analysis-q2-revenue-gap-feedback-waiting",
+            eventType: "feedback_waiting",
+            inputSummary: "等待用户继续追问、反馈或进入报告入口。",
             key: "run-trace-revenue-follow-up",
+            outputSummary: "保持当前 conversation 和 run，不刷新页面，不改变 URL。",
             status: successStatus,
+            summary: "等待用户进一步追问、反馈或报告动作。",
             timestampText: "11:24",
             title: "8. 等待用户追问 / 反馈"
           }
@@ -300,6 +377,8 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         runId: "analysis-q2-revenue-gap",
         stageSummary: "已完成问题拆解、指标比对、证据归并和建议动作整理。",
         status: successStatus,
+        tokenUsageText: "12,480",
+        totalDurationText: "18.2s",
         updatedAtText: "更新于 11:24"
       }),
       session: {
@@ -378,64 +457,129 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "阶段性结果摘要"
       },
       runTrace: createRunTrace({
+        costText: "¥0.61",
+        errorSummaryText: "0 blocking / 1 warning",
         events: [
           {
-            description: "复盘本季度毛利率波动，重点解释促销投放和商品结构变化。",
+            detail:
+              "用户从 Reports / Margin 上下文进入 Analysis，发起毛利率波动复盘。当前阶段只记录标准化问题摘要，不读取真实报告对象。",
+            durationText: "0.5s",
+            eventId: "event-analysis-margin-follow-up-user-input",
+            eventType: "user_input",
+            inputSummary: "复盘本季度毛利率波动，重点解释促销投放和商品结构变化。",
             key: "run-trace-margin-question",
+            outputSummary: "当前 run 已记录毛利率复盘问题，并进入上下文绑定。",
             status: successStatus,
+            summary: "记录从 Reports 结论继续追问的当前问题。",
             timestampText: "10:15",
             title: "1. 接收用户问题"
           },
           {
-            description: "绑定 Reports / Margin、毛利率复盘和 This quarter 静态上下文。",
+            detail:
+              "当前 run 绑定 Reports / Margin、毛利率复盘和 This quarter 静态上下文，保留来源对象、时间窗口和 Workspace 信息。",
+            durationText: "0.9s",
+            eventId: "event-analysis-margin-follow-up-context-bound",
+            eventType: "context_bound",
+            inputSummary: "Reports / Margin · 毛利率复盘 · This quarter",
             key: "run-trace-margin-context",
+            outputSummary: "已带着报告复盘背景进入当前会话。",
             status: successStatus,
+            summary: "绑定 Reports 上下文和本季度时间窗口。",
             timestampText: "10:15",
             title: "2. 绑定 Dashboard / Metrics / Reports 上下文"
           },
           {
-            description: "解析上一轮报告结论，准备拆分促销和商品结构影响。",
+            detail:
+              "解析上一轮报告结论，准备拆分促销投放与商品结构影响。当前只展示标准化计划说明，不展示真实规划 state。",
+            durationText: "1.4s",
+            eventId: "event-analysis-margin-follow-up-plan-created",
+            eventType: "plan_created",
+            inputSummary: "聚焦促销折扣、商品结构和华南区域差异。",
             key: "run-trace-margin-plan",
+            outputSummary: "形成促销折扣与商品结构拆解计划，并保留区域继续追问入口。",
             status: successStatus,
+            summary: "根据上一轮报告结论生成新的拆解计划。",
             timestampText: "10:16",
             title: "3. 生成分析计划"
           },
           {
-            description: "静态检查工具权限和上下文范围，不执行真实权限校验。",
+            detail:
+              "当前只做静态权限和上下文范围检查，确认可使用指标摘要和证据说明入口，但不执行真实权限校验。",
+            durationText: "0.7s",
+            eventId: "event-analysis-margin-follow-up-permission-check",
+            eventType: "permission_check",
+            inputSummary: "核对 Margin 复盘上下文可访问的静态工具入口。",
             key: "run-trace-margin-permission",
+            outputSummary: "当前 run 允许继续查看静态指标对比和证据说明。",
             risk: lowRisk,
             status: successStatus,
+            summary: "检查当前追问上下文可用的静态工具入口。",
             timestampText: "10:17",
             title: "4. 检查工具权限"
           },
           {
-            description: "当前处于静态进行中阶段，只展示促销与商品结构对比意图。",
+            costText: "¥0.17",
+            detail:
+              "当前处于静态进行中阶段，只展示促销折扣和商品结构对比意图，不读取真实 Metrics API，也不展示底层对比原始结果。",
+            durationText: "2.8s",
+            eventId: "event-analysis-margin-follow-up-tool-call-metrics",
+            eventType: "tool_call",
+            inputSummary: "对比促销折扣强度、商品结构变化和区域毛利率波动。",
             key: "run-trace-margin-metrics",
+            outputSummary: "当前只返回阶段性对比意图，尚未收敛为最终归因。",
             status: loadingStatus,
+            summary: "调用静态指标摘要工具，准备拆分促销与商品结构影响。",
             timestampText: "10:18",
+            tokenUsageText: "2,840",
+            toolName: "metrics.margin.compare",
             title: "5. 调用指标摘要工具"
           },
           {
-            description: "引用毛利率复盘和商品结构指标，Evidence 仍停留在静态说明层。",
+            detail:
+              "引用毛利率复盘和商品结构指标的静态证据摘要。Evidence 仍停留在标准化说明层，不展示 raw retrieval 结果。",
+            durationText: "1.9s",
+            eventId: "event-analysis-margin-follow-up-evidence-retrieval",
+            eventType: "evidence_retrieval",
+            evidenceRefs: ["evidence/margin-report-q2", "evidence/product-mix-q2"],
+            inputSummary: "召回毛利率复盘和商品结构相关证据。",
             key: "run-trace-margin-evidence",
+            outputSummary: "当前证据支持继续拆分促销与商品结构，但不足以得出最终结论。",
             risk: mediumRisk,
             status: loadingStatus,
+            summary: "补充毛利率复盘和商品结构证据引用。",
             timestampText: "10:19",
             title: "6. 召回 Evidence / RAG 来源"
           },
           {
-            description: "输出阶段性判断，但结论尚未收敛，完整过程仍在当前 Run Trace。",
+            costText: "¥0.29",
+            detail:
+              "输出阶段性判断，但结论尚未收敛。这里只展示标准化后的阶段性摘要，不暴露模型原始推理或原始输出。",
+            durationText: "1.2s",
+            eventId: "event-analysis-margin-follow-up-summary-generated",
+            eventType: "summary_generated",
+            inputSummary: "整合当前指标对比与证据说明，输出阶段性毛利率归因判断。",
             key: "run-trace-margin-summary",
+            modelName: "gpt-4.1-static",
+            outputSummary: "阶段性判断倾向于促销档期重叠，但仍需补充区域与时间窗口拆解。",
             risk: mediumRisk,
             status: warningStateStatus,
+            summary: "生成阶段性摘要，并明确当前结论仍未收敛。",
             timestampText: "10:20",
+            tokenUsageText: "4,180",
             title: "7. 生成分析摘要"
           },
           {
-            description: "等待进一步追问或反馈，本地提交不会创建真实多轮分析。",
+            detail:
+              "等待进一步追问或反馈。本地提交只更新当前 Analysis UI State，不会创建真实多轮分析、streaming 或轮询。",
+            durationText: "0.6s",
+            eventId: "event-analysis-margin-follow-up-feedback-waiting",
+            eventType: "feedback_waiting",
+            inputSummary: "等待用户继续拆分促销折扣、商品结构或区域差异。",
             key: "run-trace-margin-follow-up",
+            outputSummary: "保留当前 conversation 和 run，不离开 Analysis 页面。",
             risk: mediumRisk,
             status: loadingStatus,
+            summary: "等待继续追问，保持当前 run 处于阶段性进行中。",
             timestampText: "10:20",
             title: "8. 等待用户追问 / 反馈"
           }
@@ -445,6 +589,8 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         runId: "analysis-margin-follow-up",
         stageSummary: "已承接上一轮报告结论，正在拆分促销和商品结构的影响。",
         status: loadingStatus,
+        tokenUsageText: "8,920",
+        totalDurationText: "9.4s",
         updatedAtText: "更新于 10:20"
       }),
       session: {
@@ -523,67 +669,135 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         title: "风险结果摘要"
       },
       runTrace: createRunTrace({
+        costText: "¥0.39",
+        errorSummaryText: "1 blocking / 2 warnings",
         events: [
           {
-            description: "解释北区缺货率异常与补货任务冲突的关系。",
+            detail:
+              "用户围绕北区缺货率异常与补货任务冲突发起追问。当前阶段只记录标准化后的问题摘要，不创建真实告警或真实 Agent Run。",
+            durationText: "0.6s",
+            eventId: "event-analysis-stockout-risk-user-input",
+            eventType: "user_input",
+            inputSummary: "解释北区缺货率异常与补货任务冲突的关系。",
             key: "run-trace-stockout-question",
+            outputSummary: "当前 run 已记录风险调查问题，并进入上下文绑定阶段。",
             status: warningStateStatus,
+            summary: "记录库存异常调查问题，并标记当前 run 为风险调查入口。",
             timestampText: "09:42",
             title: "1. 接收用户问题"
           },
           {
-            description: "绑定 Metrics / Stockout、缺货率异常和 Last 12 hours 静态上下文。",
+            detail:
+              "绑定 Metrics / Stockout、缺货率异常和 Last 12 hours 静态上下文。当前只展示标准化上下文摘要，不把局部 key 升格为共享业务 ID。",
+            durationText: "0.9s",
+            eventId: "event-analysis-stockout-risk-context-bound",
+            eventType: "context_bound",
+            inputSummary: "Metrics / Stockout · 缺货率异常 · Last 12 hours",
             key: "run-trace-stockout-context",
+            outputSummary: "当前 run 已定位到指标异常入口和最近 12 小时时间窗口。",
             risk: highRisk,
             status: warningStateStatus,
+            summary: "绑定指标异常上下文，并标记当前 run 的风险级别较高。",
             timestampText: "09:42",
             title: "2. 绑定 Dashboard / Metrics / Reports 上下文"
           },
           {
-            description: "已识别异常入口，但证据冲突导致当前计划停留在风险提示阶段。",
+            detail:
+              "已识别异常入口，但由于门店反馈与补货任务摘要冲突，当前计划停留在风险提示阶段，不继续扩展为确定性归因计划。",
+            durationText: "1.0s",
+            eventId: "event-analysis-stockout-risk-plan-created",
+            eventType: "plan_created",
+            errorType: "conflicting_evidence",
+            inputSummary: "围绕门店反馈、补货任务和时间线冲突做异常调查。",
             key: "run-trace-stockout-plan",
+            outputSummary: "当前只保留风险提示、追问入口和治理/观测承接位。",
             risk: highRisk,
             status: riskStateStatus,
+            summary: "生成风险调查计划，但因证据冲突停留在审慎阶段。",
             timestampText: "09:42",
             title: "3. 生成分析计划"
           },
           {
-            description: "当前只做静态权限检查，不触发真实工具或治理动作。",
+            detail:
+              "当前只做静态权限检查，不触发真实工具调用、治理动作或 SQL Guard。风险仍然保留在当前 run 的标准化摘要里。",
+            durationText: "0.7s",
+            eventId: "event-analysis-stockout-risk-permission-check",
+            eventType: "permission_check",
+            inputSummary: "核对异常调查可用的静态治理与观测入口。",
             key: "run-trace-stockout-permission",
+            outputSummary: "保留 Observability 和 Bad Case 候选入口，但不执行真实动作。",
             risk: highRisk,
             status: warningStateStatus,
+            summary: "检查风险调查可用的静态治理与观测入口。",
             timestampText: "09:44",
             title: "4. 检查工具权限"
           },
           {
-            description: "静态展示指标异常入口和补货任务对比，不读取真实 Metrics API。",
+            costText: "¥0.11",
+            detail:
+              "静态展示指标异常入口和补货任务对比，不读取真实 Metrics API，也不展示底层任务原始字段。",
+            durationText: "1.6s",
+            eventId: "event-analysis-stockout-risk-tool-call-metrics",
+            eventType: "tool_call",
+            inputSummary: "对比缺货率异常、补货任务节奏与门店反馈时间线。",
             key: "run-trace-stockout-metrics",
+            outputSummary: "当前对比结果提示异常存在，但不足以支撑确定性归因。",
             risk: highRisk,
             status: warningStateStatus,
+            summary: "调用静态指标摘要工具，对比缺货异常与补货任务节奏。",
             timestampText: "09:45",
+            tokenUsageText: "1,960",
+            toolName: "metrics.stockout.compare",
             title: "5. 调用指标摘要工具"
           },
           {
-            description: "门店反馈与补货任务摘要存在冲突，Evidence 仅保留风险说明。",
+            detail:
+              "门店反馈与补货任务摘要存在冲突，Evidence 仅保留风险说明和标准化引用，不展示原始文档或原始检索内容。",
+            durationText: "1.0s",
+            eventId: "event-analysis-stockout-risk-evidence-retrieval",
+            eventType: "evidence_retrieval",
+            errorType: "conflicting_evidence",
+            evidenceRefs: ["evidence/store-feedback-north-12h", "evidence/restock-job-north-12h"],
+            inputSummary: "召回门店反馈与补货任务摘要，核对两者是否一致。",
             key: "run-trace-stockout-evidence",
+            outputSummary: "证据仍然冲突，当前只保留调查和治理入口。",
             risk: highRisk,
             status: warningStateStatus,
+            summary: "召回相互冲突的证据引用，并维持风险提示。",
             timestampText: "09:46",
             title: "6. 召回 Evidence / RAG 来源"
           },
           {
-            description: "当前只输出审慎结论和下一步建议，不输出确定性归因。",
+            costText: "¥0.28",
+            detail:
+              "当前只输出审慎结论和下一步建议，不输出确定性归因。这里只展示标准化风险摘要，不暴露模型原始输出。",
+            durationText: "0.7s",
+            eventId: "event-analysis-stockout-risk-summary-generated",
+            eventType: "summary_generated",
+            errorType: "conflicting_evidence",
+            inputSummary: "整合异常指标、补货任务和门店反馈冲突信息。",
             key: "run-trace-stockout-summary",
+            modelName: "gpt-4.1-static",
+            outputSummary: "建议优先保留治理和观测入口，延后做确定性结论。",
             risk: highRisk,
             status: riskStateStatus,
+            summary: "生成审慎结论和下一步调查建议，不输出确定性归因。",
             timestampText: "09:46",
+            tokenUsageText: "4,180",
             title: "7. 生成分析摘要"
           },
           {
-            description: "等待进一步追问、问题标记或 Bad Case 候选确认，不触发真实告警或报告沉淀。",
+            detail:
+              "等待进一步追问、问题标记或 Bad Case 候选确认，不触发真实告警、真实报告沉淀或真实平台动作。",
+            durationText: "0.3s",
+            eventId: "event-analysis-stockout-risk-feedback-waiting",
+            eventType: "feedback_waiting",
+            inputSummary: "等待用户继续缩小门店范围，或确认是否升级为 Bad Case 候选。",
             key: "run-trace-stockout-follow-up",
+            outputSummary: "当前 conversation 与 run 保持不变，仍停留在 Analysis 页面。",
             risk: highRisk,
             status: warningStateStatus,
+            summary: "等待进一步追问、问题标记或 Bad Case 候选确认。",
             timestampText: "09:46",
             title: "8. 等待用户追问 / 反馈"
           }
@@ -593,6 +807,8 @@ export const analysisStaticViewModel: AnalysisViewModel = {
         runId: "analysis-stockout-risk",
         stageSummary: "Evidence 存在冲突，当前只展示风险提示和下一步追问入口。",
         status: warningStateStatus,
+        tokenUsageText: "6,140",
+        totalDurationText: "6.8s",
         updatedAtText: "更新于 09:46"
       }),
       session: {
