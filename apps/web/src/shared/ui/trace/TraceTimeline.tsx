@@ -52,7 +52,6 @@ export function TraceTimeline({ empty, items }: TraceTimelineProps) {
           <button
             aria-label={item.ariaLabel}
             aria-pressed={item.selected}
-            data-trace-timeline-trigger="true"
             onClick={item.onClick}
             style={{
               ...itemContainerStyle,

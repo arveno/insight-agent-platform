@@ -14,6 +14,7 @@ describe("TraceTimeline", () => {
           items={[
             {
               key: "trace-success",
+              onClick: () => undefined,
               risk: { label: "中风险", level: "medium" },
               status: { label: "成功", tone: "success" },
               timestampText: "11:08",
@@ -21,24 +22,28 @@ describe("TraceTimeline", () => {
             },
             {
               key: "trace-processing",
+              onClick: () => undefined,
               status: { label: "加载中", tone: "processing" },
               timestampText: "11:09",
               title: "生成分析计划"
             },
             {
               key: "trace-warning",
+              onClick: () => undefined,
               status: { label: "警告", tone: "warning" },
               timestampText: "11:10",
               title: "检查工具权限"
             },
             {
               key: "trace-error",
+              onClick: () => undefined,
               status: { label: "失败", tone: "error" },
               timestampText: "11:11",
               title: "生成分析摘要"
             },
             {
               key: "trace-default",
+              onClick: () => undefined,
               status: { label: "已取消", tone: "default" },
               timestampText: "11:12",
               title: "等待用户追问"
@@ -63,5 +68,6 @@ describe("TraceTimeline", () => {
       "error",
       "default"
     ]);
+    expect(container.querySelector("[data-trace-timeline-trigger]")).toBeNull();
   });
 });

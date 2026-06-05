@@ -155,7 +155,7 @@ describe("AppShell", () => {
     expect(screen.queryByText(/技术对接：/)).toBeNull();
   });
 
-  it("switches and closes run trace event detail without leaving analysis", () => {
+  it("opens and closes run trace event detail without leaving analysis", () => {
     render(
       <AppProviders>
         <AppShell />
@@ -175,33 +175,12 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" })
     );
 
-    let dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
+    const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
     expect(within(dialog).getByText("1. 接收用户问题")).toBeTruthy();
     expect(within(dialog).getByText("user_input")).toBeTruthy();
     expect(
       within(dialog).getByText("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。")
     ).toBeTruthy();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "查看 Trace 事件详情：5. 调用指标摘要工具" })
-    );
-
-    dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
-    expect(within(dialog).getByText("5. 调用指标摘要工具")).toBeTruthy();
-    expect(within(dialog).getByText("tool_call")).toBeTruthy();
-    expect(within(dialog).getByText("metrics.summary.compare")).toBeTruthy();
-
-    fireEvent.mouseDown(main);
-    fireEvent.click(main);
-
-    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "查看 Trace 事件详情：5. 调用指标摘要工具" })
-    );
-
-    dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
-    expect(within(dialog).getByText("5. 调用指标摘要工具")).toBeTruthy();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭详情" }));
 
