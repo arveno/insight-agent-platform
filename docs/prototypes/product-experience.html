@@ -1,0 +1,3944 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insight Agent Platform · 产品体验事实源</title>
+    <style>
+      :root {
+        --bg: #f4ede3;
+        --panel: rgba(255, 250, 244, 0.88);
+        --panel-strong: #fff7ef;
+        --line: rgba(58, 38, 18, 0.12);
+        --line-strong: rgba(58, 38, 18, 0.24);
+        --ink: #2f2113;
+        --muted: #6d5b4b;
+        --accent: #0f766e;
+        --accent-deep: #0a4b47;
+        --accent-soft: #d9f0eb;
+        --signal: #bf5f2f;
+        --signal-soft: #f4e0d1;
+        --risk-high: #a43c2d;
+        --risk-high-soft: #f7ddd8;
+        --risk-medium: #ad6c17;
+        --risk-medium-soft: #f6ead6;
+        --success: #2a6f4f;
+        --success-soft: #dcefe4;
+        --shadow: 0 24px 60px rgba(58, 38, 18, 0.12);
+        --radius-xl: 28px;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --radius-sm: 999px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        color: var(--ink);
+        font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 28%),
+          radial-gradient(circle at top right, rgba(191, 95, 47, 0.12), transparent 26%),
+          linear-gradient(180deg, #fbf5ed 0%, #f0e6d9 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(58, 38, 18, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(58, 38, 18, 0.04) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent 70%);
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .app-shell {
+        position: relative;
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr) 296px;
+        gap: 18px;
+        min-height: 100vh;
+        padding: 18px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .sidebar,
+      .inspector {
+        position: sticky;
+        top: 18px;
+        height: calc(100vh - 36px);
+        overflow: auto;
+      }
+
+      .sidebar {
+        padding: 22px;
+      }
+
+      .brand {
+        margin-bottom: 20px;
+      }
+
+      .brand-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: var(--radius-sm);
+        background: rgba(15, 118, 110, 0.08);
+        color: var(--accent-deep);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .brand h1,
+      .page-title,
+      .section-title,
+      .inspector-title,
+      .hero-value {
+        font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      }
+
+      .brand h1 {
+        margin: 14px 0 10px;
+        font-size: 30px;
+        line-height: 1.04;
+      }
+
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .workspace-chip {
+        padding: 18px;
+        border-radius: var(--radius-lg);
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(15, 118, 110, 0.04)),
+          var(--panel-strong);
+        border: 1px solid rgba(15, 118, 110, 0.14);
+      }
+
+      .workspace-chip h2 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+
+      .workspace-chip p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .workspace-chip.compact {
+        padding: 14px 16px;
+      }
+
+      .workspace-chip.compact h2 {
+        font-size: 18px;
+      }
+
+      .workspace-actions,
+      .sidebar-filter-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .workspace-action-button,
+      .nav-return-button,
+      .sidebar-filter-button {
+        width: 100%;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.74);
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+        transition: 160ms ease;
+      }
+
+      .workspace-action-button:hover,
+      .workspace-action-button:focus-visible,
+      .nav-return-button:hover,
+      .nav-return-button:focus-visible,
+      .sidebar-filter-button:hover,
+      .sidebar-filter-button:focus-visible {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: rgba(15, 118, 110, 0.1);
+        outline: none;
+      }
+
+      .sidebar-filter-button.active {
+        border-color: rgba(15, 118, 110, 0.28);
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(15, 118, 110, 0.04)),
+          rgba(255, 255, 255, 0.76);
+      }
+
+      .sidebar-search-wrap {
+        margin-top: 18px;
+      }
+
+      .sidebar-search {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.78);
+        color: var(--ink);
+      }
+
+      .sidebar-search:focus {
+        outline: none;
+        border-color: rgba(15, 118, 110, 0.24);
+        box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08);
+      }
+
+      .chip-row,
+      .meta-row,
+      .entry-row,
+      .quick-grid,
+      .fact-grid,
+      .page-grid,
+      .stats-grid,
+      .flow-strip,
+      .action-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.66);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .chip strong {
+        color: var(--ink);
+      }
+
+      .nav-group {
+        margin-top: 22px;
+      }
+
+      .nav-group.featured {
+        margin-top: 24px;
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(15, 118, 110, 0.03)),
+          rgba(255, 255, 255, 0.58);
+      }
+
+      .nav-group h3 {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .nav-group-copy,
+      .module-copy {
+        margin: -4px 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .nav-button {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid transparent;
+        border-radius: 18px;
+        background: transparent;
+        color: var(--ink);
+        text-align: left;
+        cursor: pointer;
+        transition: 160ms ease;
+      }
+
+      .nav-button + .nav-button {
+        margin-top: 6px;
+      }
+
+      .nav-button:hover,
+      .nav-button:focus-visible {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: rgba(15, 118, 110, 0.08);
+        outline: none;
+      }
+
+      .nav-button.active {
+        border-color: rgba(15, 118, 110, 0.28);
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.16), rgba(15, 118, 110, 0.04)),
+          rgba(255, 255, 255, 0.6);
+      }
+
+      .nav-button small {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+      }
+
+      .nav-button strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .nav-button .nav-caption,
+      .nav-button .nav-meta {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+      }
+
+      .nav-button .nav-meta {
+        font-size: 12px;
+      }
+
+      .module-nav-header {
+        margin: 18px 0 12px;
+      }
+
+      .module-nav-header h2 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+
+      .nav-list-note {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .content {
+        min-width: 0;
+        padding: 22px;
+      }
+
+      .page-header {
+        display: grid;
+        gap: 18px;
+        padding: 24px;
+        border-radius: var(--radius-xl);
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.14), transparent 58%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 249, 242, 0.92));
+        border: 1px solid rgba(15, 118, 110, 0.16);
+      }
+
+      .page-title {
+        margin: 0;
+        font-size: 38px;
+        line-height: 1.05;
+      }
+
+      .page-subtitle {
+        margin: 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      .flow-card,
+      .stat-card,
+      .fact-card,
+      .content-card,
+      .timeline-item,
+      .entry-card,
+      .message,
+      .aside-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .flow-card {
+        min-width: 136px;
+        padding: 12px 14px;
+      }
+
+      .flow-card strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .flow-card.active {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: rgba(15, 118, 110, 0.12);
+      }
+
+      .section {
+        margin-top: 22px;
+        padding: 24px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      .section-copy {
+        margin: 8px 0 0;
+        max-width: 760px;
+        color: var(--muted);
+        line-height: 1.68;
+      }
+
+      .stats-grid,
+      .fact-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .page-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .stat-card,
+      .fact-card,
+      .content-card,
+      .aside-card,
+      .entry-card {
+        padding: 18px;
+      }
+
+      .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .hero-value {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.04;
+      }
+
+      .fact-card h4,
+      .content-card h4,
+      .aside-card h4,
+      .entry-card h4,
+      .timeline-item h4,
+      .message h4 {
+        margin: 0 0 10px;
+        font-size: 20px;
+      }
+
+      .soft-list,
+      .tight-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .soft-list li,
+      .tight-list li {
+        margin: 8px 0;
+        line-height: 1.6;
+      }
+
+      .tight-list li {
+        margin: 6px 0;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .tag.status-completed {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .tag.status-running {
+        background: var(--accent-soft);
+        color: var(--accent-deep);
+      }
+
+      .tag.status-failed {
+        background: var(--risk-high-soft);
+        color: var(--risk-high);
+      }
+
+      .tag.risk-high {
+        background: var(--risk-high-soft);
+        color: var(--risk-high);
+      }
+
+      .tag.risk-medium {
+        background: var(--risk-medium-soft);
+        color: var(--risk-medium);
+      }
+
+      .tag.risk-low {
+        background: rgba(42, 111, 79, 0.14);
+        color: var(--success);
+      }
+
+      .entry-card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 246, 238, 0.9));
+      }
+
+      .entry-row {
+        align-items: center;
+      }
+
+      .action-button,
+      .ghost-button,
+      .range-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: 160ms ease;
+      }
+
+      .action-button {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .action-button:hover,
+      .action-button:focus-visible {
+        background: var(--accent-deep);
+        outline: none;
+      }
+
+      .ghost-button,
+      .range-button {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: var(--line);
+        color: var(--ink);
+      }
+
+      .ghost-button:hover,
+      .ghost-button:focus-visible,
+      .range-button:hover,
+      .range-button:focus-visible {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: rgba(15, 118, 110, 0.1);
+        outline: none;
+      }
+
+      .range-button.active {
+        background: var(--signal-soft);
+        border-color: rgba(191, 95, 47, 0.22);
+        color: var(--signal);
+      }
+
+      .entry-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .entry-meta strong {
+        color: var(--ink);
+      }
+
+      .analysis-layout {
+        display: grid;
+        grid-template-columns: 208px minmax(0, 1.45fr) 220px;
+        gap: 16px;
+      }
+
+      .conversation-list button,
+      .report-list button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.76);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .conversation-list button.active,
+      .report-list button.active {
+        border-color: rgba(15, 118, 110, 0.24);
+        background: rgba(15, 118, 110, 0.12);
+      }
+
+      .message-stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .message {
+        padding: 18px;
+      }
+
+      .message.assistant {
+        border-color: rgba(15, 118, 110, 0.18);
+      }
+
+      .message.user {
+        border-color: rgba(191, 95, 47, 0.18);
+      }
+
+      .message-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .message p,
+      .content-card p,
+      .aside-card p,
+      .fact-card p {
+        margin: 0;
+        line-height: 1.72;
+      }
+
+      .run-summary {
+        margin-top: 16px;
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(15, 118, 110, 0.08);
+        border: 1px solid rgba(15, 118, 110, 0.16);
+      }
+
+      .run-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .summary-mini {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.74);
+        border: 1px solid rgba(15, 118, 110, 0.14);
+      }
+
+      .summary-mini strong,
+      .timeline-item strong,
+      .stat-card strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .summary-mini span,
+      .timeline-item span,
+      .stat-card span {
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .composer {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .composer textarea {
+        width: 100%;
+        min-height: 92px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.86);
+        resize: vertical;
+        color: var(--ink);
+      }
+
+      .timeline {
+        display: grid;
+        gap: 12px;
+      }
+
+      .timeline-item {
+        padding: 16px;
+      }
+
+      .table-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .table-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.74);
+      }
+
+      .table-row > div {
+        min-width: 0;
+      }
+
+      .table-row strong {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .table-row span {
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .inspector {
+        padding: 22px;
+      }
+
+      .inspector-title {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      .inspector-block + .inspector-block {
+        margin-top: 18px;
+      }
+
+      .inspector-card {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .ids-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .ids-grid code {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(47, 33, 19, 0.06);
+        color: var(--ink);
+        font-size: 12px;
+        word-break: break-all;
+      }
+
+      .placeholder-note {
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(191, 95, 47, 0.08);
+        border: 1px solid rgba(191, 95, 47, 0.16);
+      }
+
+      .note {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: rgba(15, 118, 110, 0.08);
+        border: 1px solid rgba(15, 118, 110, 0.14);
+        color: var(--muted);
+      }
+
+      @media (max-width: 1360px) {
+        .app-shell {
+          grid-template-columns: 236px minmax(0, 1fr);
+        }
+
+        .inspector {
+          grid-column: 1 / -1;
+          position: static;
+          height: auto;
+        }
+
+        .stats-grid,
+        .fact-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 1120px) {
+        .analysis-layout,
+        .page-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .table-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 860px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          height: auto;
+        }
+
+        .content {
+          padding: 18px;
+        }
+
+        .stats-grid,
+        .fact-grid,
+        .run-summary-grid,
+        .table-row {
+          grid-template-columns: 1fr;
+        }
+
+        .page-title {
+          font-size: 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar panel" id="sidebar-root"></aside>
+      <main class="content panel" id="page-root"></main>
+      <aside class="inspector panel" id="inspector-root"></aside>
+    </div>
+
+    <script>
+      const workspace = {
+        workspaceId: "workspace-cn-retail",
+        name: "Northstar Retail China",
+        role: "Strategy Lead",
+        businessDomain: "零售经营分析",
+        dataSourceCount: 8,
+        metricCount: 26,
+        modelToolCount: 12,
+        memberCount: 14
+      };
+
+      const pageMeta = {
+        workspace: {
+          title: "Workspace 当前空间",
+          hero: "先确认当前企业空间，再进入具体分析页面。",
+          objects: ["Workspace", "User", "Role", "BusinessDomain"],
+          responsibility:
+            "定义当前 Workspace、角色边界、业务域和能力总览；Dashboard、Analysis、Reports 等页面都在这个空间内工作。",
+          notFor: "不承载 Finding 分析过程，不承载 Run Trace 详情。"
+        },
+        dashboard: {
+          title: "Dashboard",
+          hero: "按时间范围发现问题，把 Finding / Anomaly 分发到正确页面。",
+          objects: ["Finding", "Anomaly", "Time Window"],
+          responsibility:
+            "展示当前时间窗口内的问题、影响、证据摘要和来源，并提供进入 Analysis、Metrics、Data & Knowledge、Platform Operations 的入口。",
+          notFor: "不展示完整分析过程，不阅读正式报告，不承载 Run Trace 详情。"
+        },
+        analysis: {
+          title: "Analysis",
+          hero: "Analysis 承载 Conversation / Message，多轮对话下每条 Assistant 回复都可以关联 Run 摘要。",
+          objects: ["Conversation", "Message", "AnalysisRun"],
+          responsibility:
+            "管理多会话、多轮消息、上下文辅助区和 Run 摘要入口，是问题分析的主工作区。",
+          notFor: "不做深度 Trace，不做正式报告全文阅读，不做模型配置管理。"
+        },
+        reports: {
+          title: "Reports",
+          hero: "Reports 沉淀分析结果，面向阅读、决策和动作承接。",
+          objects: ["Report", "ReportSection", "Decision", "ActionSuggestion"],
+          responsibility:
+            "展示报告列表、报告详情、证据引用、决策结论和建议动作，并承接 Feedback 入口。",
+          notFor: "不展示多轮会话过程，不承载 Run Trace 细节，不管理模型工具配置。"
+        },
+        observability: {
+          title: "Observability",
+          hero: "Observability 只回答一件事：这个 Run 在后台是怎么执行的。",
+          objects: ["AnalysisRun", "RunEvent", "ToolCall", "ModelCall"],
+          responsibility: "查看 runId、状态、事件、工具调用、模型调用、成本、耗时和错误摘要。",
+          notFor: "不作为业务会话主入口，不承担正式报告阅读。"
+        },
+        dataKnowledge: {
+          title: "Data & Knowledge",
+          hero: "Data & Knowledge 承载 DataSource、KnowledgeDocument 和 SourceEvidence。",
+          objects: ["DataSource", "DataTable", "DataField", "KnowledgeDocument", "SourceEvidence"],
+          responsibility: "查看数据源、表字段、知识文档、证据来源和数据质量摘要。",
+          notFor: "不承载 Conversation 分析过程。"
+        },
+        metrics: {
+          title: "Metrics",
+          hero: "Metrics 定义指标口径、阈值、血缘和异常规则。",
+          objects: ["Metric", "MetricThreshold", "MetricLineage"],
+          responsibility: "解释指标怎么算、阈值怎么触发、血缘来自哪里。",
+          notFor: "不管理数据源接入，不承载会话分析。"
+        },
+        modelTools: {
+          title: "Models & Tools",
+          hero: "Models & Tools 负责平台能力配置，不直接承载业务分析过程。",
+          objects: ["ModelConfig", "PromptVersion", "ToolDefinition", "RagStrategy"],
+          responsibility: "展示模型配置、Prompt 版本、Tool Registry、RAG Strategy 和工具权限摘要。",
+          notFor: "不做业务会话执行，不展示 Dashboard 问题列表。"
+        },
+        governance: {
+          title: "Governance",
+          hero: "Governance 先作为入口 / 占位，用来标识权限、风险和审计的独立归属。",
+          objects: ["PermissionPolicy", "RiskRule", "AuditLog"],
+          responsibility: "承载权限、风险、审批和审计规则。",
+          notFor: "不做业务分析，不做模型配置编辑。"
+        },
+        feedback: {
+          title: "Feedback",
+          hero: "Feedback 是人工反馈和纠错入口，不与 Evaluation 混用。",
+          objects: ["Feedback"],
+          responsibility:
+            "承载用户对本次分析结果的 useful / incorrect / source_insufficient 等反馈。",
+          notFor: "不运行系统评估，不存长期 Memory。"
+        },
+        evaluation: {
+          title: "Evaluation",
+          hero: "Evaluation 是系统质量评估域，这一版只保留入口。",
+          objects: ["BadCase", "EvaluationRun", "EvaluationDataset"],
+          responsibility: "承载 Bad Case、评估运行、评分与数据集。",
+          notFor: "不处理人工反馈流程。"
+        },
+        memory: {
+          title: "Memory",
+          hero: "Memory 是长期记忆，不与本次会话 Feedback 混用。",
+          objects: ["MemoryItem"],
+          responsibility: "承载系统长期记住的信息。",
+          notFor: "不处理即时反馈和评估运行。"
+        },
+        platformOperations: {
+          title: "Platform Operations",
+          hero: "Platform Operations 先作为入口 / 占位，用于承接调度与平台质量。",
+          objects: ["Job", "Notification", "DataQualityCheck"],
+          responsibility: "承载数据质量、调度任务和平台质量状态。",
+          notFor: "不做业务主流程分析。"
+        },
+        settings: {
+          title: "Settings",
+          hero: "Settings 保持为配置入口，不进入第一版复杂页面。",
+          objects: ["SystemConfig"],
+          responsibility: "承载系统配置、默认策略和环境开关。",
+          notFor: "不承载 Dashboard / Analysis 主流程。"
+        },
+        workspaceManagement: {
+          title: "Workspace 管理",
+          hero: "Workspace 管理单独成入口，避免把成员、角色和业务域配置混进主流程页面。",
+          objects: ["Workspace", "User", "Role", "BusinessDomain"],
+          responsibility: "管理成员、角色、业务域与空间级权限。",
+          notFor: "不展示 Finding，不承载 Conversation。"
+        }
+      };
+
+      const globalNavGroups = [
+        {
+          label: "主工作区",
+          copy: "Workspace 内的主业务工作台。",
+          featured: true,
+          items: [
+            {
+              page: "dashboard",
+              caption: "问题发现与时间窗口",
+              reason: "从当前空间进入 Finding / Anomaly 发现层。",
+              type: "主流程"
+            },
+            {
+              page: "analysis",
+              caption: "会话式分析工作区",
+              reason: "进入 Conversation / Message 主工作区，并切换为 Analysis 模块内导航。",
+              type: "主流程"
+            },
+            {
+              page: "reports",
+              caption: "报告沉淀与阅读",
+              reason: "进入 Reports 模块内导航，查看报告列表与详情。",
+              type: "主流程"
+            }
+          ]
+        },
+        {
+          label: "经营资产",
+          items: [
+            {
+              page: "metrics",
+              caption: "指标口径、阈值与血缘",
+              reason: "查看 Metric / Threshold / Lineage 与异常规则。",
+              type: "查看详情"
+            },
+            {
+              page: "dataKnowledge",
+              caption: "数据源、知识文档与证据来源",
+              reason: "查看 DataSource / KnowledgeDocument / SourceEvidence。",
+              type: "查看详情"
+            }
+          ]
+        },
+        {
+          label: "Agent 平台",
+          items: [
+            {
+              page: "modelTools",
+              caption: "模型、Prompt、Tool 与 RAG Strategy",
+              reason: "查看模型与工具配置归属。",
+              type: "配置入口"
+            },
+            {
+              page: "governance",
+              caption: "权限、风险与审计",
+              reason: "标明 Governance 的独立归属。",
+              type: "配置入口"
+            },
+            {
+              page: "memory",
+              caption: "长期记忆入口",
+              reason: "标明 Memory 不与 Feedback / Evaluation 混用。",
+              type: "查看详情"
+            }
+          ]
+        },
+        {
+          label: "运行与质量",
+          items: [
+            {
+              page: "observability",
+              caption: "Run / Trace / 成本 / 错误",
+              reason: "进入 Run 观测与运行质量视图。",
+              type: "查看详情"
+            },
+            {
+              page: "feedback",
+              caption: "结果反馈与人工纠错",
+              reason: "查看 Feedback 管理入口。",
+              type: "查看详情"
+            },
+            {
+              page: "evaluation",
+              caption: "Bad Case 与 Evaluation Run",
+              reason: "查看 Evaluation 管理入口。",
+              type: "查看详情"
+            }
+          ]
+        },
+        {
+          label: "平台",
+          items: [
+            {
+              page: "platformOperations",
+              caption: "调度、Job 与数据质量",
+              reason: "查看平台运行与数据质量入口。",
+              type: "查看详情"
+            },
+            {
+              page: "settings",
+              caption: "系统配置与默认策略",
+              reason: "查看平台配置入口。",
+              type: "配置入口"
+            }
+          ]
+        }
+      ];
+
+      const analysisModuleConversationIds = [
+        "conv-gmv-east",
+        "conv-margin-alert",
+        "conv-promo-roi",
+        "conv-blank-roi"
+      ];
+
+      const reportFilterOptions = [
+        { id: "all", label: "全部" },
+        { id: "draft", label: "草稿" },
+        { id: "published", label: "已发布" },
+        { id: "pending_feedback", label: "待反馈" }
+      ];
+
+      const landingEntries = {
+        feedback: ["分析结果反馈队列", "人工纠错入口", "incorrect / source_insufficient 分类视图"],
+        evaluation: ["Bad Case 入口", "Evaluation Run 列表", "Evaluation Dataset 占位"],
+        platformOperations: ["调度任务 / Job 列表", "数据质量检查入口", "平台通知与运行占位"]
+      };
+
+      const dashboardFindings = {
+        today: [
+          {
+            findingId: "finding-margin-alert",
+            title: "华东仓毛利率 6 小时内跌破阈值",
+            kind: "Anomaly",
+            impact: "影响本日毛利预测 -1.6pp，并放大退款成本。",
+            evidenceSummary: "退款率高于日常区间 24%，同时仓配成本偏高。",
+            sourceSummary: "来源：orders_daily + logistics_sla + refund_ticket_digest",
+            riskLevel: "high",
+            metricId: "metric-margin-rate",
+            sourceEvidenceId: "source-evidence-margin",
+            conversationId: "conv-margin-alert",
+            runId: "run-margin-411",
+            reportId: "report-margin-411",
+            analysisTaskId: "analysis-task-margin-411"
+          },
+          {
+            findingId: "finding-traffic-drop",
+            title: "站外引流 ROI 在午后快速回落",
+            kind: "Finding",
+            impact: "推广预算使用效率下降，可能需要收缩投放。",
+            evidenceSummary: "点击成本上升，转化率未同步提升。",
+            sourceSummary: "来源：traffic_campaign_daily + promo_calendar",
+            riskLevel: "medium",
+            metricId: "metric-promo-roi",
+            sourceEvidenceId: "source-evidence-promo-policy",
+            conversationId: "conv-promo-roi",
+            runId: "run-roi-221",
+            reportId: "report-roi-221",
+            analysisTaskId: "analysis-task-roi-221"
+          }
+        ],
+        last7d: [
+          {
+            findingId: "finding-gmv-east",
+            title: "华东大区 GMV 同比连续 7 天低于阈值",
+            kind: "Finding",
+            impact: "月度收入预测下修 8.4%，复购和补货策略都受影响。",
+            evidenceSummary: "大促后复购回落，重点 SKU 缺货，退款率略高于基线。",
+            sourceSummary: "来源：dw_orders_daily + promo_policy + category_inventory_brief",
+            riskLevel: "high",
+            metricId: "metric-gmv-growth",
+            sourceEvidenceId: "source-evidence-gmv",
+            conversationId: "conv-gmv-east",
+            runId: "run-gmv-8841",
+            reportId: "report-gmv-511",
+            analysisTaskId: "analysis-task-gmv-20260603"
+          },
+          {
+            findingId: "finding-nps-service",
+            title: "客服 NPS 下滑与补货延迟同时出现",
+            kind: "Anomaly",
+            impact: "高价值用户投诉增加，可能拖累周留存。",
+            evidenceSummary: "补货延迟集中在华东二仓，工单中重复提到发货等待。",
+            sourceSummary: "来源：service_ticket_digest + warehouse_replenishment_weekly",
+            riskLevel: "medium",
+            metricId: "metric-nps",
+            sourceEvidenceId: "source-evidence-service",
+            conversationId: "conv-service-nps",
+            runId: "run-service-109",
+            reportId: "report-service-109",
+            analysisTaskId: "analysis-task-service-109"
+          }
+        ],
+        last30d: [
+          {
+            findingId: "finding-region-shift",
+            title: "区域销售结构向低毛利品类偏移",
+            kind: "Finding",
+            impact: "季度毛利率承压，影响品类预算分配。",
+            evidenceSummary: "低毛利品类贡献上升 12%，高毛利品类转化走弱。",
+            sourceSummary: "来源：category_mix_monthly + pricing_change_log",
+            riskLevel: "medium",
+            metricId: "metric-category-margin",
+            sourceEvidenceId: "source-evidence-category",
+            conversationId: "conv-category-shift",
+            runId: "run-category-305",
+            reportId: "report-category-305",
+            analysisTaskId: "analysis-task-category-305"
+          },
+          {
+            findingId: "finding-membership",
+            title: "会员复购周期拉长",
+            kind: "Finding",
+            impact: "下月 GMV 增长承压，需要调整会员触达节奏。",
+            evidenceSummary: "次月回购率低于阈值，短信转化也下滑。",
+            sourceSummary: "来源：member_repeat_rate + crm_campaign_performance",
+            riskLevel: "medium",
+            metricId: "metric-repeat-rate",
+            sourceEvidenceId: "source-evidence-member",
+            conversationId: "conv-member-repeat",
+            runId: "run-member-818",
+            reportId: "report-member-818",
+            analysisTaskId: "analysis-task-member-818"
+          }
+        ],
+        custom: [
+          {
+            findingId: "finding-quarter-close",
+            title: "自定义窗口：季度收官周收入不及预测",
+            kind: "Finding",
+            impact: "预算兑现风险升高，需要快速聚焦异常门店和活动。",
+            evidenceSummary: "重点门店转化偏弱，广告预算效率下降。",
+            sourceSummary: "来源：quarter_close_scorecard + store_exception_digest",
+            riskLevel: "high",
+            metricId: "metric-quarter-revenue-gap",
+            sourceEvidenceId: "source-evidence-quarter-close",
+            conversationId: "conv-quarter-close",
+            runId: "run-quarter-902",
+            reportId: "report-quarter-902",
+            analysisTaskId: "analysis-task-quarter-902"
+          }
+        ]
+      };
+
+      const conversations = [
+        {
+          conversationId: "conv-gmv-east",
+          title: "GMV 异常回落分析",
+          sourceLabel: "从 Dashboard Finding 带上下文进入",
+          contextSummary:
+            "Finding: 华东大区 GMV 同比连续 7 天低于阈值；Metric: GMV 同比增速；Evidence: promo_policy / category_inventory_brief。",
+          selectedRunId: "run-gmv-8841",
+          reportId: "report-gmv-511",
+          sourceEvidenceId: "source-evidence-gmv",
+          metricId: "metric-gmv-growth",
+          modelConfigId: "model-config-analysis",
+          messages: [
+            {
+              role: "user",
+              summary: "User",
+              content:
+                "分析为什么华东大区 GMV 同比连续 7 天下降，并判断先看库存、促销还是客服体验。"
+            },
+            {
+              role: "assistant",
+              summary: "Assistant",
+              content:
+                "初步结论：这不是单一渠道问题。主因是大促后复购回落与重点 SKU 缺货叠加，客服体验下滑是次级放大因子。建议先验证缺货范围，再检查促销延续是否覆盖高价值客群。",
+              runSummary: {
+                runId: "run-gmv-8841",
+                status: "completed",
+                analysisTaskId: "analysis-task-gmv-20260603",
+                startedAt: "2026-06-03 10:14",
+                duration: "4m 18s",
+                cost: "¥18.40",
+                evidenceCount: 4,
+                toolCallCount: 3,
+                modelCallCount: 2,
+                reportId: "report-gmv-511",
+                sourceEvidenceId: "source-evidence-gmv",
+                metricId: "metric-gmv-growth",
+                modelConfigId: "model-config-analysis"
+              }
+            },
+            {
+              role: "user",
+              summary: "User",
+              content: "把库存影响和促销影响拆开说，哪些结论已经有证据，哪些只是待验证假设？"
+            },
+            {
+              role: "assistant",
+              summary: "Assistant",
+              content:
+                "已确认的证据：缺货发生在高销量 SKU，缺货窗口与 GMV 下滑重叠；已确认的大促后复购回落主要集中在次核心会员层。待验证假设：华东二仓出货节奏是否放大了客服 NPS 下滑。",
+              runSummary: {
+                runId: "run-gmv-8841",
+                status: "completed",
+                analysisTaskId: "analysis-task-gmv-20260603",
+                startedAt: "2026-06-03 10:18",
+                duration: "2m 52s",
+                cost: "¥9.60",
+                evidenceCount: 4,
+                toolCallCount: 2,
+                modelCallCount: 1,
+                reportId: "report-gmv-511",
+                sourceEvidenceId: "source-evidence-gmv",
+                metricId: "metric-gmv-growth",
+                modelConfigId: "model-config-analysis"
+              }
+            }
+          ]
+        },
+        {
+          conversationId: "conv-promo-roi",
+          title: "促销 ROI 分析",
+          sourceLabel: "从 Dashboard Finding 带上下文进入",
+          contextSummary:
+            "Finding: 站外引流 ROI 在午后快速回落；Metric: 促销 ROI；Evidence: traffic_campaign_daily / promo_policy。",
+          selectedRunId: "run-roi-221",
+          reportId: "report-roi-221",
+          sourceEvidenceId: "source-evidence-promo-policy",
+          metricId: "metric-promo-roi",
+          modelConfigId: "model-config-synthesis",
+          messages: [
+            {
+              role: "user",
+              summary: "User",
+              content: "ROI 为什么在午后快速回落？是投放问题，还是人群和库存承接出了问题？"
+            },
+            {
+              role: "assistant",
+              summary: "Assistant",
+              content:
+                "更像是投放、人群和库存承接共同失衡。点击成本上升只是表面现象，核心是券包覆盖变宽后，低价值流量进入得更多，但库存和促销承接没有同步优化。",
+              runSummary: {
+                runId: "run-roi-221",
+                status: "completed",
+                analysisTaskId: "analysis-task-roi-221",
+                startedAt: "2026-06-04 09:42",
+                duration: "3m 06s",
+                cost: "¥11.10",
+                evidenceCount: 3,
+                toolCallCount: 2,
+                modelCallCount: 1,
+                reportId: "report-roi-221",
+                sourceEvidenceId: "source-evidence-promo-policy",
+                metricId: "metric-promo-roi",
+                modelConfigId: "model-config-synthesis"
+              }
+            }
+          ]
+        },
+        {
+          conversationId: "conv-blank-roi",
+          title: "空白会话：追问促销 ROI",
+          sourceLabel: "直接新建空白会话主动提问",
+          contextSummary:
+            "没有预置 Finding；用户直接提出问题，再由系统决定是否补充 Metric / Evidence 上下文。",
+          selectedRunId: "run-roi-221",
+          reportId: "report-roi-221",
+          sourceEvidenceId: "source-evidence-promo-policy",
+          metricId: "metric-promo-roi",
+          modelConfigId: "model-config-synthesis",
+          messages: [
+            {
+              role: "user",
+              summary: "User",
+              content: "五月末的大促 ROI 是否值得在下周继续追加预算？"
+            },
+            {
+              role: "assistant",
+              summary: "Assistant",
+              content:
+                "当前建议先不要直接追加预算。ROI 已低于近 30 天均值，除非复购券覆盖的人群质量和库存准备同步提升，否则预算加码会放大低效流量。",
+              runSummary: {
+                runId: "run-roi-221",
+                status: "completed",
+                analysisTaskId: "analysis-task-roi-221",
+                startedAt: "2026-06-04 09:42",
+                duration: "3m 06s",
+                cost: "¥11.10",
+                evidenceCount: 3,
+                toolCallCount: 2,
+                modelCallCount: 1,
+                reportId: "report-roi-221",
+                sourceEvidenceId: "source-evidence-promo-policy",
+                metricId: "metric-promo-roi",
+                modelConfigId: "model-config-synthesis"
+              }
+            }
+          ]
+        },
+        {
+          conversationId: "conv-margin-alert",
+          title: "毛利率异常排查",
+          sourceLabel: "从 Dashboard Anomaly 带上下文进入",
+          contextSummary:
+            "Finding: 华东仓毛利率 6 小时内跌破阈值；重点查看退款率、运费成本和补贴策略。",
+          selectedRunId: "run-margin-411",
+          reportId: "report-margin-411",
+          sourceEvidenceId: "source-evidence-margin",
+          metricId: "metric-margin-rate",
+          modelConfigId: "model-config-analysis",
+          messages: [
+            {
+              role: "user",
+              summary: "User",
+              content: "毛利率为何短时跌破阈值？"
+            },
+            {
+              role: "assistant",
+              summary: "Assistant",
+              content:
+                "退款率和运费成本同时放大。平台补贴并非主因，但促销后退货集中释放扩大了毛利缺口。",
+              runSummary: {
+                runId: "run-margin-411",
+                status: "completed",
+                analysisTaskId: "analysis-task-margin-411",
+                startedAt: "2026-06-05 11:05",
+                duration: "1m 48s",
+                cost: "¥6.20",
+                evidenceCount: 3,
+                toolCallCount: 2,
+                modelCallCount: 1,
+                reportId: "report-margin-411",
+                sourceEvidenceId: "source-evidence-margin",
+                metricId: "metric-margin-rate",
+                modelConfigId: "model-config-analysis"
+              }
+            }
+          ]
+        }
+      ];
+
+      const reports = [
+        {
+          reportId: "report-gmv-511",
+          runId: "run-gmv-8841",
+          workspaceId: "workspace-cn-retail",
+          title: "华东 GMV 异常分析报告",
+          reportStatus: "pending_feedback",
+          summary:
+            "GMV 回落是复购回落、重点 SKU 缺货和客服体验波动共同作用的结果，建议先处理供应链，再调整促销节奏。",
+          sections: [
+            {
+              reportSectionId: "report-section-gmv-1",
+              title: "现象摘要",
+              content: "过去 7 天 GMV 同比增速持续低于 -8% 阈值，其中华东二仓覆盖门店受影响最明显。"
+            },
+            {
+              reportSectionId: "report-section-gmv-2",
+              title: "原因拆解",
+              content:
+                "重点 SKU 缺货与促销后复购回落是主因；客服 NPS 下滑对高价值会员转化形成次级放大。"
+            },
+            {
+              reportSectionId: "report-section-gmv-3",
+              title: "建议动作",
+              content: "优先保障高销量 SKU 补货，再决定是否延长华东会员定向促销。"
+            }
+          ],
+          sourceEvidence: ["source-evidence-gmv", "source-evidence-service"],
+          decision: {
+            decisionId: "decision-gmv-01",
+            title: "优先提升高销量 SKU 补货，并推迟促销加码决策",
+            status: "pending_approval"
+          },
+          actions: [
+            {
+              actionSuggestionId: "action-gmv-01",
+              summary: "48 小时内完成华东重点 SKU 缺货清单与补货优先级。"
+            },
+            {
+              actionSuggestionId: "action-gmv-02",
+              summary: "对高价值会员补发定向促销券，并监控 3 日复购回升。"
+            }
+          ]
+        },
+        {
+          reportId: "report-roi-221",
+          runId: "run-roi-221",
+          workspaceId: "workspace-cn-retail",
+          title: "促销 ROI 追加预算建议",
+          reportStatus: "draft",
+          summary: "追加预算前需要先确认库存和人群质量，否则会继续放大低效流量。",
+          sections: [
+            {
+              reportSectionId: "report-section-roi-1",
+              title: "ROI 现状",
+              content: "近 7 天 ROI 已低于最近 30 天均值 11%，点击成本抬升明显。"
+            },
+            {
+              reportSectionId: "report-section-roi-2",
+              title: "限制条件",
+              content: "库存准备不足和券包覆盖人群偏宽，会让追加预算边际效益继续下降。"
+            }
+          ],
+          sourceEvidence: ["source-evidence-promo-policy"],
+          decision: {
+            decisionId: "decision-roi-01",
+            title: "暂缓扩预算，先修正促销人群与库存准备",
+            status: "recommended"
+          },
+          actions: [
+            {
+              actionSuggestionId: "action-roi-01",
+              summary: "先调整促销券发放门槛，再复核库存可承接量。"
+            }
+          ]
+        },
+        {
+          reportId: "report-margin-411",
+          runId: "run-margin-411",
+          workspaceId: "workspace-cn-retail",
+          title: "毛利率异常复盘报告",
+          reportStatus: "published",
+          summary: "退款率与运费成本同时偏高，毛利缺口集中发生在华东仓。",
+          sections: [
+            {
+              reportSectionId: "report-section-margin-1",
+              title: "异常窗口",
+              content: "过去 6 小时毛利率连续低于预警线。"
+            }
+          ],
+          sourceEvidence: ["source-evidence-margin"],
+          decision: {
+            decisionId: "decision-margin-01",
+            title: "优先控制退款和异常运费成本",
+            status: "recommended"
+          },
+          actions: [
+            {
+              actionSuggestionId: "action-margin-01",
+              summary: "复核异常订单退货原因和运费补贴策略。"
+            }
+          ]
+        }
+      ];
+
+      const runDetails = {
+        "run-gmv-8841": {
+          runId: "run-gmv-8841",
+          headline: "GMV 异常回落分析主链路 Run",
+          status: "completed",
+          duration: "4m 18s",
+          cost: "¥18.40",
+          errorSummary: "无错误；包含 1 次澄清性追问。",
+          reportId: "report-gmv-511",
+          sourceEvidenceId: "source-evidence-gmv",
+          metricId: "metric-gmv-growth",
+          modelConfigId: "model-config-analysis",
+          events: [
+            {
+              eventId: "event-gmv-01",
+              eventType: "planner",
+              status: "succeeded",
+              nodeName: "planner",
+              agentName: "analysis_orchestrator",
+              toolName: "n/a",
+              inputSummary: "接收 Finding 上下文与用户问题。",
+              outputSummary: "拆出库存、促销、客服三条验证路径。",
+              startedAt: "10:14:03",
+              completedAt: "10:14:22"
+            },
+            {
+              eventId: "event-gmv-02",
+              eventType: "tool_call",
+              status: "succeeded",
+              nodeName: "metric_drilldown",
+              agentName: "analysis_orchestrator",
+              toolName: "metric_drilldown",
+              inputSummary: "查询 metric-gmv-growth 近 7 天趋势和门店分布。",
+              outputSummary: "华东门店集中下滑，华东二仓关联最强。",
+              startedAt: "10:14:24",
+              completedAt: "10:15:08"
+            },
+            {
+              eventId: "event-gmv-03",
+              eventType: "knowledge_retrieval",
+              status: "succeeded",
+              nodeName: "evidence_retrieval",
+              agentName: "evidence_agent",
+              toolName: "knowledge_lookup",
+              inputSummary: "检索促销政策和补货简报。",
+              outputSummary: "命中 promo_policy 与 category_inventory_brief。",
+              startedAt: "10:15:11",
+              completedAt: "10:15:42"
+            },
+            {
+              eventId: "event-gmv-04",
+              eventType: "synthesis",
+              status: "succeeded",
+              nodeName: "report_synthesizer",
+              agentName: "report_agent",
+              toolName: "n/a",
+              inputSummary: "整合指标证据、文档证据和客服摘要。",
+              outputSummary: "生成结论、Evidence 列表与 Report。",
+              startedAt: "10:15:45",
+              completedAt: "10:18:21"
+            }
+          ],
+          toolCalls: [
+            {
+              toolCallId: "tool-call-gmv-01",
+              toolName: "metric_drilldown",
+              status: "succeeded",
+              riskLevel: "medium",
+              permission: "workspace_approved",
+              output: "返回华东门店 GMV 趋势与阈值触发分布。"
+            },
+            {
+              toolCallId: "tool-call-gmv-02",
+              toolName: "knowledge_lookup",
+              status: "succeeded",
+              riskLevel: "low",
+              permission: "workspace_approved",
+              output: "返回促销政策和补货简报摘要。"
+            },
+            {
+              toolCallId: "tool-call-gmv-03",
+              toolName: "ticket_digest_query",
+              status: "succeeded",
+              riskLevel: "medium",
+              permission: "workspace_approved",
+              output: "返回客服体验与投诉热点摘要。"
+            }
+          ],
+          modelCalls: [
+            {
+              modelCallId: "model-call-gmv-01",
+              provider: "OpenAI",
+              modelId: "gpt-5",
+              promptVersionId: "prompt-analysis-v12",
+              inputTokens: 4890,
+              outputTokens: 1420,
+              cost: "¥12.10",
+              latencyMs: 9320,
+              status: "completed"
+            },
+            {
+              modelCallId: "model-call-gmv-02",
+              provider: "Anthropic",
+              modelId: "claude-sonnet-4.5",
+              promptVersionId: "prompt-report-v4",
+              inputTokens: 1820,
+              outputTokens: 610,
+              cost: "¥6.30",
+              latencyMs: 4180,
+              status: "completed"
+            }
+          ]
+        },
+        "run-roi-221": {
+          runId: "run-roi-221",
+          headline: "促销 ROI 分析的上下文补全 Run",
+          status: "completed",
+          duration: "3m 06s",
+          cost: "¥11.10",
+          errorSummary: "无错误；报告生成成功。",
+          reportId: "report-roi-221",
+          sourceEvidenceId: "source-evidence-promo-policy",
+          metricId: "metric-promo-roi",
+          modelConfigId: "model-config-synthesis",
+          events: [
+            {
+              eventId: "event-roi-01",
+              eventType: "planner",
+              status: "succeeded",
+              nodeName: "planner",
+              agentName: "analysis_orchestrator",
+              toolName: "n/a",
+              inputSummary: "接收空白问题，识别需要补充 ROI 和库存上下文。",
+              outputSummary: "自动拉取 ROI 趋势与促销政策文档。",
+              startedAt: "09:42:05",
+              completedAt: "09:42:21"
+            }
+          ],
+          toolCalls: [
+            {
+              toolCallId: "tool-call-roi-01",
+              toolName: "metric_drilldown",
+              status: "succeeded",
+              riskLevel: "medium",
+              permission: "workspace_approved",
+              output: "返回 ROI 趋势与投放渠道拆分。"
+            }
+          ],
+          modelCalls: [
+            {
+              modelCallId: "model-call-roi-01",
+              provider: "OpenAI",
+              modelId: "gpt-5-mini",
+              promptVersionId: "prompt-analysis-v12",
+              inputTokens: 3200,
+              outputTokens: 860,
+              cost: "¥11.10",
+              latencyMs: 6120,
+              status: "completed"
+            }
+          ]
+        },
+        "run-margin-411": {
+          runId: "run-margin-411",
+          headline: "毛利率异常排查 Run",
+          status: "completed",
+          duration: "1m 48s",
+          cost: "¥6.20",
+          errorSummary: "无错误；聚焦退款率与运费成本。",
+          reportId: "report-margin-411",
+          sourceEvidenceId: "source-evidence-margin",
+          metricId: "metric-margin-rate",
+          modelConfigId: "model-config-analysis",
+          events: [
+            {
+              eventId: "event-margin-01",
+              eventType: "planner",
+              status: "succeeded",
+              nodeName: "planner",
+              agentName: "analysis_orchestrator",
+              toolName: "n/a",
+              inputSummary: "接收毛利率异常 Finding 与最近 6 小时窗口。",
+              outputSummary: "拆出退款率、运费成本、补贴策略三条检查路径。",
+              startedAt: "11:05:10",
+              completedAt: "11:05:24"
+            },
+            {
+              eventId: "event-margin-02",
+              eventType: "tool_call",
+              status: "succeeded",
+              nodeName: "metric_drilldown",
+              agentName: "analysis_orchestrator",
+              toolName: "metric_drilldown",
+              inputSummary: "查询 metric-margin-rate 的滚动窗口表现。",
+              outputSummary: "确认退款率与运费成本同步抬升。",
+              startedAt: "11:05:26",
+              completedAt: "11:06:18"
+            }
+          ],
+          toolCalls: [
+            {
+              toolCallId: "tool-call-margin-01",
+              toolName: "metric_drilldown",
+              status: "succeeded",
+              riskLevel: "medium",
+              permission: "workspace_approved",
+              output: "返回毛利率、退款率与运费成本的异常拆分。"
+            }
+          ],
+          modelCalls: [
+            {
+              modelCallId: "model-call-margin-01",
+              provider: "OpenAI",
+              modelId: "gpt-5-mini",
+              promptVersionId: "prompt-analysis-v12",
+              inputTokens: 2100,
+              outputTokens: 520,
+              cost: "¥6.20",
+              latencyMs: 3380,
+              status: "completed"
+            }
+          ]
+        },
+        "run-service-109": {
+          runId: "run-service-109",
+          headline: "补货延迟与 NPS 联动排查 Run",
+          status: "failed",
+          duration: "2m 14s",
+          cost: "¥4.80",
+          errorSummary: "补货周报延迟到达，结论未完成沉淀。",
+          reportId: null,
+          sourceEvidenceId: "source-evidence-gmv",
+          metricId: "metric-gmv-growth",
+          modelConfigId: "model-config-synthesis",
+          events: [
+            {
+              eventId: "event-service-01",
+              eventType: "planner",
+              status: "succeeded",
+              nodeName: "planner",
+              agentName: "analysis_orchestrator",
+              toolName: "n/a",
+              inputSummary: "接收客服 NPS 与补货延迟联动问题。",
+              outputSummary: "计划联合读取客服摘要与补货周报。",
+              startedAt: "12:08:11",
+              completedAt: "12:08:28"
+            },
+            {
+              eventId: "event-service-02",
+              eventType: "knowledge_retrieval",
+              status: "failed",
+              nodeName: "evidence_retrieval",
+              agentName: "evidence_agent",
+              toolName: "knowledge_lookup",
+              inputSummary: "检索最新补货周报。",
+              outputSummary: "因文档延迟未获得完整结果，Run 终止。",
+              startedAt: "12:08:32",
+              completedAt: "12:09:05"
+            }
+          ],
+          toolCalls: [
+            {
+              toolCallId: "tool-call-service-01",
+              toolName: "knowledge_lookup",
+              status: "failed",
+              riskLevel: "low",
+              permission: "workspace_approved",
+              output: "未返回完整补货周报。"
+            }
+          ],
+          modelCalls: [
+            {
+              modelCallId: "model-call-service-01",
+              provider: "OpenAI",
+              modelId: "gpt-5-mini",
+              promptVersionId: "prompt-analysis-v12",
+              inputTokens: 1560,
+              outputTokens: 230,
+              cost: "¥4.80",
+              latencyMs: 2540,
+              status: "failed"
+            }
+          ]
+        }
+      };
+
+      const dataKnowledge = {
+        dataSources: [
+          {
+            dataSourceId: "data-source-orders",
+            sourceType: "mysql",
+            name: "orders_dw",
+            freshness: "15 分钟",
+            summary: "订单与 GMV 主数据。"
+          },
+          {
+            dataSourceId: "data-source-service",
+            sourceType: "warehouse_feed",
+            name: "warehouse_replenishment_weekly",
+            freshness: "每日 07:00",
+            summary: "仓补货状态与缺货清单。"
+          },
+          {
+            dataSourceId: "data-source-policy",
+            sourceType: "knowledge_base",
+            name: "promo_policy",
+            freshness: "文档同步后 5 分钟",
+            summary: "促销政策与券包规则。"
+          }
+        ],
+        tables: [
+          {
+            tableId: "table-orders-daily",
+            name: "dw_orders_daily",
+            fieldSummary: "gmv, orderCount, refundRate, regionId",
+            owner: "Data Platform"
+          },
+          {
+            tableId: "table-campaign-performance",
+            name: "traffic_campaign_daily",
+            fieldSummary: "clickCost, roi, conversionRate, campaignId",
+            owner: "Marketing Data"
+          }
+        ],
+        knowledgeDocuments: [
+          {
+            knowledgeDocumentId: "knowledge-document-promo",
+            title: "华东大促补贴与券包规则",
+            summary: "说明券包门槛、适用人群和活动周期。"
+          },
+          {
+            knowledgeDocumentId: "knowledge-document-inventory",
+            title: "重点 SKU 补货周报",
+            summary: "说明缺货 SKU、到货时间和仓库优先级。"
+          }
+        ],
+        sourceEvidence: [
+          {
+            sourceEvidenceId: "source-evidence-gmv",
+            runId: "run-gmv-8841",
+            sourceType: "knowledge_document",
+            sourceId: "knowledge-document-inventory",
+            title: "重点 SKU 缺货窗口与 GMV 下滑重叠",
+            snippet: "华东二仓 6 个高销量 SKU 在异常窗口内缺货，覆盖最近 7 天下滑最明显的门店。",
+            confidence: 0.92
+          },
+          {
+            sourceEvidenceId: "source-evidence-promo-policy",
+            runId: "run-roi-221",
+            sourceType: "knowledge_document",
+            sourceId: "knowledge-document-promo",
+            title: "促销券包覆盖偏宽，预算追加边际效益下降",
+            snippet: "当前券包覆盖人群范围已扩张到低价值客群，继续加预算会摊薄 ROI。",
+            confidence: 0.87
+          },
+          {
+            sourceEvidenceId: "source-evidence-margin",
+            runId: "run-margin-411",
+            sourceType: "data_table",
+            sourceId: "table-orders-daily",
+            title: "退款率与运费成本在异常窗口同步抬升",
+            snippet: "退款率 6 小时滚动值高于日常区间 24%，运费成本高于阈值 13%。",
+            confidence: 0.89
+          }
+        ],
+        qualityChecks: [
+          {
+            job: "orders freshness",
+            status: "passed",
+            summary: "订单数据在 SLA 内更新。"
+          },
+          {
+            job: "warehouse feed completeness",
+            status: "needs review",
+            summary: "补货周报今天上午延迟 18 分钟。"
+          }
+        ]
+      };
+
+      const metrics = [
+        {
+          metricId: "metric-gmv-growth",
+          name: "GMV 同比增速",
+          formula: "本期 GMV / 去年同期 GMV - 1",
+          threshold: {
+            metricThresholdId: "metric-threshold-gmv",
+            riskLevel: "high",
+            rule: "连续 3 天低于 -8% 触发高风险。"
+          },
+          lineage: ["dw_orders_daily.gmv", "metric-gmv", "metric-gmv-growth"],
+          anomalyRules: [
+            "按 regionId 和 channel 进行异常拆分。",
+            "缺货占比高于 12% 时追加库存上下文。"
+          ]
+        },
+        {
+          metricId: "metric-promo-roi",
+          name: "促销 ROI",
+          formula: "促销带来收入 / 投放与补贴成本",
+          threshold: {
+            metricThresholdId: "metric-threshold-roi",
+            riskLevel: "medium",
+            rule: "低于近 30 天均值 10% 触发预警。"
+          },
+          lineage: ["traffic_campaign_daily.roi", "metric-promo-roi"],
+          anomalyRules: [
+            "按 campaignId 和 regionId 查看低效渠道。",
+            "库存不足时不建议直接追加预算。"
+          ]
+        },
+        {
+          metricId: "metric-margin-rate",
+          name: "毛利率",
+          formula: "(GMV - 成本 - 补贴 - 运费) / GMV",
+          threshold: {
+            metricThresholdId: "metric-threshold-margin",
+            riskLevel: "high",
+            rule: "6 小时滚动值低于目标 1.2pp 触发高风险。"
+          },
+          lineage: ["dw_orders_daily.gmv", "dw_orders_daily.refundRate", "metric-margin-rate"],
+          anomalyRules: ["退款率与运费成本同时抬升时提升优先级。", "按仓库和品类拆解异常。"]
+        }
+      ];
+
+      const modelTools = {
+        modelConfigs: [
+          {
+            modelConfigId: "model-config-analysis",
+            provider: "OpenAI",
+            modelId: "gpt-5",
+            useCase: "复杂归因、多证据综合和多轮推理。"
+          },
+          {
+            modelConfigId: "model-config-synthesis",
+            provider: "OpenAI",
+            modelId: "gpt-5-mini",
+            useCase: "轻量追问、摘要和建议动作整理。"
+          }
+        ],
+        promptVersions: [
+          {
+            promptVersionId: "prompt-analysis-v12",
+            name: "analysis_system",
+            version: "v1.2.0"
+          },
+          {
+            promptVersionId: "prompt-report-v4",
+            name: "report_synthesis",
+            version: "v0.4.3"
+          }
+        ],
+        toolDefinitions: [
+          {
+            toolDefinitionId: "tool-definition-metric",
+            toolName: "metric_drilldown",
+            description: "查询指标趋势、阈值触发和维度拆分。",
+            riskLevel: "medium",
+            permission: "workspace_approved",
+            timeout: "12s"
+          },
+          {
+            toolDefinitionId: "tool-definition-knowledge",
+            toolName: "knowledge_lookup",
+            description: "检索知识文档与 SourceEvidence 片段。",
+            riskLevel: "low",
+            permission: "workspace_approved",
+            timeout: "8s"
+          },
+          {
+            toolDefinitionId: "tool-definition-sql-guarded",
+            toolName: "guarded_sql_query",
+            description: "受 SQL Guard 约束的只读查询。",
+            riskLevel: "high",
+            permission: "approval_required",
+            timeout: "15s"
+          }
+        ],
+        ragStrategies: [
+          {
+            ragStrategyId: "rag-strategy-retail",
+            name: "Retail Executive Briefing",
+            summary: "优先召回最近 30 天经营资料与高权限政策文档，再按证据可信度排序。"
+          }
+        ],
+        permissions: [
+          "low / medium 风险工具可在已授权 Workspace 内自动执行。",
+          "high 风险工具需 Governance 审批后才可运行。",
+          "所有模型调用与工具调用都需要留下成本、延迟和 trace 记录。"
+        ]
+      };
+
+      const state = {
+        currentPage: "workspace",
+        navMode: "global",
+        timeRange: "last7d",
+        globalSearch: "",
+        analysisSearch: "",
+        reportFilter: "all",
+        selectedFindingId: "finding-gmv-east",
+        selectedConversationId: "conv-gmv-east",
+        selectedReportId: "report-gmv-511",
+        selectedRunId: "run-gmv-8841",
+        selectedSourceEvidenceId: "source-evidence-gmv",
+        selectedMetricId: "metric-gmv-growth",
+        selectedModelConfigId: "model-config-analysis",
+        inspectorEntry: {
+          label: "进入当前 Workspace",
+          targetLabel: "Workspace 当前空间",
+          reason: "先确认最上层容器、角色和业务域，再进入具体页面。",
+          type: "主流程"
+        }
+      };
+
+      function normalizeSearch(value) {
+        return value.trim().toLowerCase();
+      }
+
+      function getNavModeLabel() {
+        return {
+          global: "全局导航",
+          analysis: "Analysis 模块内导航",
+          reports: "Reports 模块内导航"
+        }[state.navMode];
+      }
+
+      function getGlobalNavItem(page) {
+        return globalNavGroups.flatMap((group) => group.items).find((item) => item.page === page);
+      }
+
+      function getTimeRangeLabel(range) {
+        return {
+          today: "今天",
+          last7d: "最近 7 天",
+          last30d: "最近 30 天",
+          custom: "自定义"
+        }[range];
+      }
+
+      function getFindings() {
+        return dashboardFindings[state.timeRange];
+      }
+
+      function findFinding(findingId) {
+        return Object.values(dashboardFindings)
+          .flat()
+          .find((item) => item.findingId === findingId);
+      }
+
+      function findConversation(conversationId) {
+        return conversations.find((item) => item.conversationId === conversationId);
+      }
+
+      function findReport(reportId) {
+        return reports.find((item) => item.reportId === reportId);
+      }
+
+      function findMetric(metricId) {
+        return metrics.find((item) => item.metricId === metricId);
+      }
+
+      function findSourceEvidence(sourceEvidenceId) {
+        return dataKnowledge.sourceEvidence.find(
+          (item) => item.sourceEvidenceId === sourceEvidenceId
+        );
+      }
+
+      function findModelConfig(modelConfigId) {
+        return modelTools.modelConfigs.find((item) => item.modelConfigId === modelConfigId);
+      }
+
+      function getSelectedConversation() {
+        return findConversation(state.selectedConversationId) || conversations[0];
+      }
+
+      function getSelectedReport() {
+        return findReport(state.selectedReportId) || reports[0];
+      }
+
+      function getSelectedRun() {
+        return runDetails[state.selectedRunId] || runDetails["run-gmv-8841"];
+      }
+
+      function getSelectedMetric() {
+        return findMetric(state.selectedMetricId) || metrics[0];
+      }
+
+      function getSelectedEvidence() {
+        return (
+          findSourceEvidence(state.selectedSourceEvidenceId) || dataKnowledge.sourceEvidence[0]
+        );
+      }
+
+      function getSelectedModelConfig() {
+        return findModelConfig(state.selectedModelConfigId) || modelTools.modelConfigs[0];
+      }
+
+      function getFilteredGlobalNavGroups() {
+        const term = normalizeSearch(state.globalSearch);
+
+        return globalNavGroups
+          .map((group) => {
+            if (!term) {
+              return group;
+            }
+
+            const filteredItems = group.items.filter((item) => {
+              const meta = pageMeta[item.page];
+              return (
+                meta.title.toLowerCase().includes(term) ||
+                item.caption.toLowerCase().includes(term) ||
+                group.label.toLowerCase().includes(term)
+              );
+            });
+
+            return {
+              ...group,
+              items: filteredItems
+            };
+          })
+          .filter((group) => group.items.length > 0);
+      }
+
+      function getAnalysisNavConversations() {
+        const term = normalizeSearch(state.analysisSearch);
+
+        return analysisModuleConversationIds
+          .map((conversationId) => findConversation(conversationId))
+          .filter(Boolean)
+          .filter((conversation) => {
+            if (!term) {
+              return true;
+            }
+
+            return conversation.title.toLowerCase().includes(term);
+          });
+      }
+
+      function getReportsByFilter(filter) {
+        if (filter === "all") {
+          return reports;
+        }
+
+        return reports.filter((report) => report.reportStatus === filter);
+      }
+
+      function getVisibleReports() {
+        return getReportsByFilter(state.reportFilter);
+      }
+
+      function parseCost(costText) {
+        return Number(costText.replace(/[^\d.]/g, "")) || 0;
+      }
+
+      function getObservabilityGroups() {
+        const runs = Object.values(runDetails);
+        const recentOrder = ["run-margin-411", "run-roi-221", "run-gmv-8841"];
+        const recentRuns = recentOrder.map((runId) => runDetails[runId]).filter(Boolean);
+        const failedRuns = runs.filter((run) => run.status === "failed");
+        const highCostRuns = [...runs]
+          .sort((left, right) => parseCost(right.cost) - parseCost(left.cost))
+          .slice(0, 3);
+
+        return [
+          {
+            title: "最近 Run",
+            copy: "直接从全局导航进入时，先看到近期运行，再决定进入具体 Trace。",
+            runs: recentRuns
+          },
+          {
+            title: "失败 Run",
+            copy: "快速定位需要排障或补跑的后台执行。",
+            runs: failedRuns
+          },
+          {
+            title: "高成本 Run",
+            copy: "优先关注成本占用高的分析链路。",
+            runs: highCostRuns
+          }
+        ];
+      }
+
+      function syncSelectionFromFinding(finding) {
+        if (!finding) {
+          return;
+        }
+
+        state.selectedFindingId = finding.findingId;
+        state.selectedConversationId = finding.conversationId;
+        state.selectedRunId = finding.runId;
+        state.selectedReportId = finding.reportId;
+        state.selectedMetricId = finding.metricId;
+        state.selectedSourceEvidenceId = finding.sourceEvidenceId;
+      }
+
+      function syncSelectionFromConversation(conversation) {
+        if (!conversation) {
+          return;
+        }
+
+        state.selectedConversationId = conversation.conversationId;
+        state.selectedRunId = conversation.selectedRunId;
+        state.selectedReportId = conversation.reportId;
+        state.selectedMetricId = conversation.metricId;
+        state.selectedSourceEvidenceId = conversation.sourceEvidenceId;
+        state.selectedModelConfigId = conversation.modelConfigId;
+      }
+
+      function syncSelectionFromRun(run) {
+        if (!run) {
+          return;
+        }
+
+        state.selectedRunId = run.runId;
+        state.selectedReportId = run.reportId;
+        state.selectedMetricId = run.metricId;
+        state.selectedSourceEvidenceId = run.sourceEvidenceId;
+        state.selectedModelConfigId = run.modelConfigId;
+      }
+
+      function buildAction(actionId, context = {}) {
+        switch (actionId) {
+          case "openPage": {
+            const meta = pageMeta[context.page];
+            const navItem = getGlobalNavItem(context.page) || {
+              reason: "从当前页面打开对应的配置或占位入口。",
+              type: "配置入口"
+            };
+
+            return {
+              label: meta.title,
+              targetPage: context.page,
+              targetLabel: meta.title,
+              reason: navItem.reason,
+              type: navItem.type,
+              apply() {
+                state.currentPage = context.page;
+                state.navMode =
+                  context.page === "analysis"
+                    ? "analysis"
+                    : context.page === "reports"
+                      ? "reports"
+                      : "global";
+                if (context.page === "reports") {
+                  state.reportFilter = "all";
+                }
+              }
+            };
+          }
+
+          case "openDashboard":
+            return {
+              label: "进入 Dashboard",
+              targetPage: "dashboard",
+              targetLabel: "Dashboard",
+              reason: "从当前 Workspace 进入 Finding / Anomaly 发现层。",
+              type: "主流程",
+              apply() {
+                state.currentPage = "dashboard";
+                state.navMode = "global";
+                syncSelectionFromFinding(getFindings()[0]);
+              }
+            };
+
+          case "selectRange":
+            return {
+              label: `切换到 ${getTimeRangeLabel(context.range)}`,
+              targetPage: "dashboard",
+              targetLabel: "Dashboard",
+              reason: "切换时间窗口，查看该范围内的 Finding / Anomaly。",
+              type: "主流程",
+              apply() {
+                state.currentPage = "dashboard";
+                state.navMode = "global";
+                state.timeRange = context.range;
+                syncSelectionFromFinding(getFindings()[0]);
+              }
+            };
+
+          case "analyzeFinding": {
+            const finding = findFinding(context.findingId);
+
+            return {
+              label: "分析这个问题",
+              targetPage: "analysis",
+              targetLabel: "Analysis",
+              reason: "基于当前 Finding 创建 / 打开带上下文的 Conversation。",
+              type: "主流程",
+              apply() {
+                const targetConversation =
+                  findConversation(finding.conversationId) || findConversation("conv-gmv-east");
+                state.currentPage = "analysis";
+                state.navMode = "analysis";
+                syncSelectionFromFinding(finding);
+                syncSelectionFromConversation(targetConversation);
+              }
+            };
+          }
+
+          case "openBlankConversation": {
+            const conversation = findConversation("conv-blank-roi");
+
+            return {
+              label: "新建空白会话",
+              targetPage: "analysis",
+              targetLabel: "Analysis",
+              reason: "不带 Dashboard Finding，直接进入空白会话主动提问。",
+              type: "主流程",
+              apply() {
+                state.currentPage = "analysis";
+                state.navMode = "analysis";
+                syncSelectionFromConversation(conversation);
+              }
+            };
+          }
+
+          case "openConversation": {
+            const conversation = findConversation(context.conversationId);
+
+            return {
+              label: `打开会话：${conversation.title}`,
+              targetPage: "analysis",
+              targetLabel: "Analysis",
+              reason: "查看当前 Workspace 内的历史 Conversation / Message。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "analysis";
+                state.navMode = "analysis";
+                syncSelectionFromConversation(conversation);
+              }
+            };
+          }
+
+          case "openRunTrace": {
+            const run = runDetails[context.runId];
+
+            return {
+              label: "查看运行轨迹",
+              targetPage: "observability",
+              targetLabel: "Observability",
+              reason: "定位 runId，查看 Run / Trace / ToolCall / ModelCall 详情。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "observability";
+                state.navMode = "global";
+                syncSelectionFromRun(run);
+              }
+            };
+          }
+
+          case "openReport": {
+            const report = findReport(context.reportId);
+            const run = runDetails[report.runId];
+
+            return {
+              label: "查看 / 生成报告",
+              targetPage: "reports",
+              targetLabel: "Reports",
+              reason: "从当前分析进入 Report 阅读与决策沉淀。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "reports";
+                state.navMode = "reports";
+                state.reportFilter = "all";
+                state.selectedReportId = report.reportId;
+                state.selectedRunId = report.runId;
+                if (report.sourceEvidence.length > 0) {
+                  state.selectedSourceEvidenceId = report.sourceEvidence[0];
+                }
+                if (run) {
+                  state.selectedMetricId = run.metricId;
+                  state.selectedModelConfigId = run.modelConfigId;
+                }
+              }
+            };
+          }
+
+          case "openEvidence": {
+            const evidence = findSourceEvidence(context.sourceEvidenceId);
+
+            return {
+              label: "查看证据来源",
+              targetPage: "dataKnowledge",
+              targetLabel: "Data & Knowledge",
+              reason: "打开 SourceEvidence，回看 DataSource / KnowledgeDocument。",
+              type: "上下文引用",
+              apply() {
+                state.currentPage = "dataKnowledge";
+                state.navMode = "global";
+                state.selectedSourceEvidenceId = evidence.sourceEvidenceId;
+              }
+            };
+          }
+
+          case "openMetric": {
+            const metric = findMetric(context.metricId);
+
+            return {
+              label: "查看指标口径",
+              targetPage: "metrics",
+              targetLabel: "Metrics",
+              reason: "打开 Metric / Threshold / Lineage，解释指标定义与异常规则。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "metrics";
+                state.navMode = "global";
+                state.selectedMetricId = metric.metricId;
+              }
+            };
+          }
+
+          case "openModelTools": {
+            const modelConfigId = context.modelConfigId || state.selectedModelConfigId;
+
+            return {
+              label: "查看模型工具配置",
+              targetPage: "modelTools",
+              targetLabel: "Models & Tools",
+              reason: "查看 Model / Prompt / Tool / RAG Strategy 和权限摘要。",
+              type: "配置入口",
+              apply() {
+                state.currentPage = "modelTools";
+                state.navMode = "global";
+                state.selectedModelConfigId = modelConfigId;
+              }
+            };
+          }
+
+          case "openPlatformOps":
+            return {
+              label: "查看平台质量",
+              targetPage: "platformOperations",
+              targetLabel: "Platform Operations",
+              reason: "查看数据质量与平台状态，这一版只保留入口 / 占位。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "platformOperations";
+                state.navMode = "global";
+              }
+            };
+
+          case "openFeedback":
+            return {
+              label: "打开反馈入口",
+              targetPage: "feedback",
+              targetLabel: "Feedback",
+              reason: "把本次分析结果送入质量闭环，但不与 Evaluation / Memory 混用。",
+              type: "查看详情",
+              apply() {
+                state.currentPage = "feedback";
+                state.navMode = "global";
+              }
+            };
+
+          case "returnGlobalNav":
+            return {
+              label: "返回主导航",
+              targetPage: state.currentPage,
+              targetLabel: pageMeta[state.currentPage].title,
+              reason: "恢复 Workspace + 主工作区 + 能力分组的全局导航视图。",
+              type: "导航状态",
+              apply() {
+                state.navMode = "global";
+              }
+            };
+
+          case "setReportFilter":
+            return {
+              label: `筛选：${reportFilterOptions.find((item) => item.id === context.filter)?.label || "全部"}`,
+              targetPage: "reports",
+              targetLabel: "Reports",
+              reason: "切换 Reports 模块内列表筛选。",
+              type: "模块内导航",
+              apply() {
+                const visibleReports = getReportsByFilter(context.filter);
+                state.currentPage = "reports";
+                state.navMode = "reports";
+                state.reportFilter = context.filter;
+                if (visibleReports.length > 0) {
+                  state.selectedReportId = visibleReports[0].reportId;
+                  state.selectedRunId = visibleReports[0].runId;
+                }
+              }
+            };
+
+          case "switchWorkspace":
+            return {
+              label: "切换空间",
+              targetPage: "workspaceManagement",
+              targetLabel: "Workspace 管理",
+              reason: "这里只作为切换空间的占位入口，不实现真实空间切换。",
+              type: "配置入口",
+              apply() {
+                state.currentPage = "workspaceManagement";
+                state.navMode = "global";
+              }
+            };
+
+          default:
+            return null;
+        }
+      }
+
+      function performAction(actionId, context = {}) {
+        const action = buildAction(actionId, context);
+
+        if (!action) {
+          return;
+        }
+
+        action.apply();
+        state.inspectorEntry = {
+          label: action.label,
+          targetLabel: action.targetLabel,
+          reason: action.reason,
+          type: action.type
+        };
+        renderApp();
+      }
+
+      function statusTag(status) {
+        const classMap = {
+          completed: "status-completed",
+          running: "status-running",
+          failed: "status-failed",
+          succeeded: "status-completed"
+        };
+
+        return `<span class="tag ${classMap[status] || "status-running"}">${status}</span>`;
+      }
+
+      function riskTag(riskLevel) {
+        return `<span class="tag risk-${riskLevel || "low"}">${riskLevel}</span>`;
+      }
+
+      function actionMarkup(actionId, context = {}, variant = "ghost") {
+        const action = buildAction(actionId, context);
+        const entries = Object.entries(context)
+          .map(
+            ([key, value]) =>
+              `data-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}="${value}"`
+          )
+          .join(" ");
+
+        const buttonClass = variant === "primary" ? "action-button" : "ghost-button";
+
+        return `
+          <div class="entry-card">
+            <div class="entry-row">
+              <button class="${buttonClass}" data-action="${actionId}" ${entries}>${action.label}</button>
+              <span class="entry-meta"><strong>Target</strong> ${action.targetLabel}</span>
+              <span class="entry-meta"><strong>Reason</strong> ${action.reason}</span>
+              <span class="entry-meta"><strong>Type</strong> ${action.type}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderGlobalSidebar() {
+        const groupsMarkup = getFilteredGlobalNavGroups()
+          .map((group) => {
+            const buttons = group.items
+              .map((item) => {
+                const meta = pageMeta[item.page];
+
+                return `
+                  <button class="nav-button ${state.currentPage === item.page ? "active" : ""}" data-action="openPage" data-page="${item.page}">
+                    <strong>${meta.title}</strong>
+                    <span class="nav-caption">${item.caption}</span>
+                    <span class="nav-meta">Target: ${meta.title} · Type: ${item.type}</span>
+                  </button>
+                `;
+              })
+              .join("");
+
+            return `
+              <section class="nav-group ${group.featured ? "featured" : ""}">
+                <h3>${group.label}</h3>
+                ${group.copy ? `<p class="nav-group-copy">${group.copy}</p>` : ""}
+                ${buttons}
+              </section>
+            `;
+          })
+          .join("");
+
+        return `
+          <div class="brand">
+            <span class="brand-kicker">Issue #114 · LeftNav Prototype</span>
+            <p>全局导航采用 Workspace 顶部上下文 + 主工作区 + 能力分组，Analysis / Reports 再进入模块内导航。</p>
+          </div>
+
+          <section class="workspace-chip">
+            <span class="label">当前 Workspace</span>
+            <h2>${workspace.name}</h2>
+            <p>${workspace.businessDomain}</p>
+            <div class="chip-row" style="margin-top: 12px;">
+              <span class="chip"><strong>Role</strong> ${workspace.role}</span>
+              <span class="chip"><strong>workspaceId</strong> ${workspace.workspaceId}</span>
+            </div>
+            <div class="workspace-actions" style="margin-top: 14px;">
+              <button class="workspace-action-button" data-action="openPage" data-page="workspaceManagement">Workspace 管理</button>
+              <button class="workspace-action-button" data-action="switchWorkspace">切换空间</button>
+            </div>
+          </section>
+
+          <div class="sidebar-search-wrap">
+            <input
+              class="sidebar-search"
+              type="search"
+              placeholder="Search..."
+              value="${state.globalSearch}"
+              data-input-model="globalSearch"
+            />
+          </div>
+
+          ${groupsMarkup}
+        `;
+      }
+
+      function renderAnalysisSidebar() {
+        const visibleConversations = getAnalysisNavConversations();
+
+        return `
+          <div class="brand">
+            <span class="brand-kicker">Workspace Context</span>
+            <p>模块内导航覆盖 LeftNav，但顶部仍保留当前 Workspace 语境。</p>
+          </div>
+
+          <section class="workspace-chip compact">
+            <h2>${workspace.name}</h2>
+            <div class="chip-row" style="margin-top: 10px;">
+              <span class="chip"><strong>Domain</strong> ${workspace.businessDomain}</span>
+              <span class="chip"><strong>Role</strong> ${workspace.role}</span>
+            </div>
+          </section>
+
+          <div class="module-nav-header">
+            <button class="nav-return-button" data-action="returnGlobalNav">← 返回主导航</button>
+          </div>
+
+          <section class="nav-group featured">
+            <h3>Analysis</h3>
+            <h2 style="margin: 0 0 8px;">Analysis</h2>
+            <p class="module-copy">会话式分析工作区</p>
+            <div class="workspace-actions">
+              <button class="workspace-action-button" data-action="openBlankConversation">+ 新建分析会话</button>
+            </div>
+            <div class="sidebar-search-wrap" style="margin-top: 14px;">
+              <input
+                class="sidebar-search"
+                type="search"
+                placeholder="搜索会话..."
+                value="${state.analysisSearch}"
+                data-input-model="analysisSearch"
+              />
+            </div>
+          </section>
+
+          <section class="nav-group">
+            <h3>最近会话</h3>
+            <p class="nav-list-note">点击左侧会话切换主区域中的 Conversation。</p>
+            ${visibleConversations
+              .map(
+                (conversation) => `
+                  <button class="nav-button ${state.selectedConversationId === conversation.conversationId && state.currentPage === "analysis" ? "active" : ""}" data-action="openConversation" data-conversation-id="${conversation.conversationId}">
+                    <strong>${conversation.title}</strong>
+                    <span class="nav-caption">${conversation.sourceLabel}</span>
+                  </button>
+                `
+              )
+              .join("")}
+          </section>
+        `;
+      }
+
+      function renderReportsSidebar() {
+        const visibleReports = getVisibleReports();
+
+        return `
+          <div class="brand">
+            <span class="brand-kicker">Workspace Context</span>
+            <p>Reports 模块内导航承接报告筛选与列表，主区域保留报告阅读与决策细节。</p>
+          </div>
+
+          <section class="workspace-chip compact">
+            <h2>${workspace.name}</h2>
+            <div class="chip-row" style="margin-top: 10px;">
+              <span class="chip"><strong>Domain</strong> ${workspace.businessDomain}</span>
+              <span class="chip"><strong>Role</strong> ${workspace.role}</span>
+            </div>
+          </section>
+
+          <div class="module-nav-header">
+            <button class="nav-return-button" data-action="returnGlobalNav">← 返回主导航</button>
+          </div>
+
+          <section class="nav-group featured">
+            <h3>Reports</h3>
+            <h2 style="margin: 0 0 8px;">Reports</h2>
+            <p class="module-copy">报告沉淀与阅读</p>
+          </section>
+
+          <section class="nav-group">
+            <h3>筛选</h3>
+            <div class="sidebar-filter-list">
+              ${reportFilterOptions
+                .map(
+                  (item) => `
+                    <button class="sidebar-filter-button ${state.reportFilter === item.id ? "active" : ""}" data-action="setReportFilter" data-filter="${item.id}">
+                      ${item.label}
+                    </button>
+                  `
+                )
+                .join("")}
+            </div>
+          </section>
+
+          <section class="nav-group">
+            <h3>报告列表</h3>
+            ${visibleReports
+              .map(
+                (report) => `
+                  <button class="nav-button ${state.selectedReportId === report.reportId && state.currentPage === "reports" ? "active" : ""}" data-action="openReport" data-report-id="${report.reportId}">
+                    <strong>${report.title}</strong>
+                    <span class="nav-caption">${reportFilterOptions.find((item) => item.id === report.reportStatus)?.label || "全部"}</span>
+                  </button>
+                `
+              )
+              .join("")}
+          </section>
+        `;
+      }
+
+      function renderSidebar() {
+        if (state.navMode === "analysis") {
+          return renderAnalysisSidebar();
+        }
+
+        if (state.navMode === "reports") {
+          return renderReportsSidebar();
+        }
+
+        return renderGlobalSidebar();
+      }
+
+      function renderFlowStrip() {
+        const flow = [
+          {
+            title: "Workspace",
+            copy: "最上层容器"
+          },
+          {
+            title: "Finding",
+            copy: "Dashboard 识别的问题"
+          },
+          {
+            title: "Conversation",
+            copy: "Analysis 中的分析过程"
+          },
+          {
+            title: "Message / Turn",
+            copy: "多轮对话上下文"
+          },
+          {
+            title: "Run",
+            copy: "Assistant 回复背后的执行记录"
+          },
+          {
+            title: "Trace / Evidence / Report",
+            copy: "详情、依据与沉淀"
+          },
+          {
+            title: "Feedback / Evaluation",
+            copy: "质量闭环"
+          }
+        ];
+
+        return flow
+          .map((item, index) => {
+            const activeMap = {
+              workspace: [0],
+              dashboard: [0, 1],
+              analysis: [0, 1, 2, 3, 4, 5],
+              observability: [4, 5],
+              reports: [5],
+              dataKnowledge: [5],
+              metrics: [1, 5],
+              modelTools: [5, 6]
+            };
+            const isActive = (activeMap[state.currentPage] || []).includes(index);
+
+            return `
+              <div class="flow-card ${isActive ? "active" : ""}">
+                <strong>${item.title}</strong>
+                <span class="muted">${item.copy}</span>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderPageHeader(pageKey) {
+        const meta = pageMeta[pageKey];
+
+        return `
+          <section class="page-header">
+            <div>
+              <div class="chip-row">
+                <span class="chip"><strong>Current Workspace</strong> ${workspace.name}</span>
+                <span class="chip"><strong>Role</strong> ${workspace.role}</span>
+                <span class="chip"><strong>Page</strong> ${meta.title}</span>
+                <span class="chip"><strong>LeftNav</strong> ${getNavModeLabel()}</span>
+              </div>
+              <h2 class="page-title">${meta.title}</h2>
+              <p class="page-subtitle">${meta.hero}</p>
+            </div>
+            <div class="flow-strip">${renderFlowStrip()}</div>
+          </section>
+        `;
+      }
+
+      function renderBoundaryCards(pageKey) {
+        const meta = pageMeta[pageKey];
+
+        return `
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">页面职责与对象归属</h3>
+                <p class="section-copy">每个页面都明确主对象、主职责和“不承载什么”，避免把能力列表直接堆成大杂烩。</p>
+              </div>
+            </div>
+            <div class="page-grid">
+              <article class="fact-card">
+                <span class="label">主对象</span>
+                <div class="chip-row">
+                  ${meta.objects.map((item) => `<span class="chip"><strong>Object</strong> ${item}</span>`).join("")}
+                </div>
+              </article>
+              <article class="fact-card">
+                <span class="label">主职责</span>
+                <p>${meta.responsibility}</p>
+              </article>
+              <article class="fact-card">
+                <span class="label">不承载</span>
+                <p>${meta.notFor}</p>
+              </article>
+              <article class="fact-card">
+                <span class="label">对象关系</span>
+                <ul class="tight-list">
+                  <li>Finding 是问题，Conversation 是分析过程，Message / Turn 是多轮对话。</li>
+                  <li>Run 是后台执行记录，Trace 是执行详情，Evidence 是结论依据，Report 是结果沉淀。</li>
+                  <li>Feedback / Evaluation 用于质量闭环，但不混入主分析页面。</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+        `;
+      }
+
+      function renderWorkspacePage() {
+        return `
+          ${renderPageHeader("workspace")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">当前 Workspace 概览</h3>
+                <p class="section-copy">Workspace 是最上层容器。进入 Workspace 后，Dashboard / Analysis / Reports 等页面都在当前空间内工作。</p>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <article class="stat-card">
+                <span class="label">Workspace</span>
+                <p class="hero-value">${workspace.name}</p>
+                <div class="meta-row"><span class="chip"><strong>workspaceId</strong> ${workspace.workspaceId}</span></div>
+              </article>
+              <article class="stat-card">
+                <span class="label">Role</span>
+                <p class="hero-value">${workspace.role}</p>
+                <span class="muted">当前用户角色决定可以查看哪些 Run、Tool 和 Report。</span>
+              </article>
+              <article class="stat-card">
+                <span class="label">Business Domain</span>
+                <p class="hero-value">${workspace.businessDomain}</p>
+                <span class="muted">这决定当前页面默认使用的业务语境。</span>
+              </article>
+              <article class="stat-card">
+                <span class="label">成员摘要</span>
+                <p class="hero-value">${workspace.memberCount}</p>
+                <span class="muted">成员、角色和业务域配置在 Workspace 管理页承接。</span>
+              </article>
+            </div>
+            <div class="fact-grid" style="margin-top: 14px;">
+              <article class="fact-card">
+                <span class="label">Data Sources</span>
+                <p>${workspace.dataSourceCount} 个数据源为 Finding 和 Evidence 提供底层事实。</p>
+              </article>
+              <article class="fact-card">
+                <span class="label">Metrics</span>
+                <p>${workspace.metricCount} 个指标定义主业务口径，Dashboard 只展示摘要，Metrics 页面解释细节。</p>
+              </article>
+              <article class="fact-card">
+                <span class="label">Models & Tools</span>
+                <p>${workspace.modelToolCount} 个模型 / Tool / RAG 配置归到 Models & Tools 页面，而不是散落在 Analysis 中。</p>
+              </article>
+              <article class="fact-card">
+                <span class="label">Members</span>
+                <p>成员、角色、Workspace 管理只提供边界，不和主业务分析页面混杂。</p>
+              </article>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("workspace")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">主流程入口</h3>
+                <p class="section-copy">先进入 Dashboard 看问题，再决定是否进入 Analysis。</p>
+              </div>
+            </div>
+            <div class="action-stack">
+              ${actionMarkup("openDashboard", {}, "primary")}
+              ${actionMarkup("openPage", { page: "workspaceManagement" })}
+            </div>
+          </section>
+        `;
+      }
+
+      function renderDashboardPage() {
+        const findings = getFindings();
+
+        const rangeButtons = ["today", "last7d", "last30d", "custom"]
+          .map(
+            (range) => `
+              <button class="range-button ${state.timeRange === range ? "active" : ""}" data-action="selectRange" data-range="${range}">
+                ${getTimeRangeLabel(range)}
+              </button>
+            `
+          )
+          .join("");
+
+        const findingCards = findings
+          .map(
+            (finding) => `
+              <article class="content-card">
+                <div class="meta-row" style="justify-content: space-between; align-items: center;">
+                  <span class="label">${finding.kind}</span>
+                  ${riskTag(finding.riskLevel)}
+                </div>
+                <h4>${finding.title}</h4>
+                <p><strong>影响：</strong>${finding.impact}</p>
+                <p style="margin-top: 10px;"><strong>证据摘要：</strong>${finding.evidenceSummary}</p>
+                <p style="margin-top: 10px;"><strong>来源：</strong>${finding.sourceSummary}</p>
+                <div class="chip-row" style="margin-top: 14px;">
+                  <span class="chip"><strong>metricId</strong> ${finding.metricId}</span>
+                  <span class="chip"><strong>runId</strong> ${finding.runId}</span>
+                </div>
+                <div class="action-stack" style="margin-top: 16px;">
+                  ${actionMarkup("analyzeFinding", { findingId: finding.findingId }, "primary")}
+                  ${actionMarkup("openMetric", { metricId: finding.metricId })}
+                  ${actionMarkup("openEvidence", { sourceEvidenceId: finding.sourceEvidenceId })}
+                  ${actionMarkup("openPlatformOps", {})}
+                </div>
+              </article>
+            `
+          )
+          .join("");
+
+        return `
+          ${renderPageHeader("dashboard")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">时间范围与异常列表</h3>
+                <p class="section-copy">Dashboard 只解决“当前时间窗口有哪些问题”，不在这里展开完整分析过程。</p>
+              </div>
+            </div>
+            <div class="chip-row" style="margin-bottom: 18px;">
+              ${rangeButtons}
+            </div>
+            <div class="note">当前时间范围：<strong>${getTimeRangeLabel(state.timeRange)}</strong>。切换时间范围只影响 Dashboard 看到的 Finding / Anomaly 列表。</div>
+            <div class="page-grid" style="margin-top: 18px;">
+              ${findingCards}
+            </div>
+          </section>
+
+          ${renderBoundaryCards("dashboard")}
+        `;
+      }
+
+      function renderAnalysisPage() {
+        const conversation = getSelectedConversation();
+
+        const conversationButtons = analysisModuleConversationIds
+          .map((conversationId) => findConversation(conversationId))
+          .filter(Boolean)
+          .map(
+            (item) => `
+              <button class="${item.conversationId === conversation.conversationId ? "active" : ""}" data-action="openConversation" data-conversation-id="${item.conversationId}">
+                <strong>${item.title}</strong>
+                <div class="muted" style="margin-top: 6px;">${item.sourceLabel}</div>
+                <div class="muted" style="margin-top: 6px;">Target: Analysis · Reason: 切换历史会话 · Type: 查看详情</div>
+              </button>
+            `
+          )
+          .join("");
+
+        const messages = conversation.messages
+          .map((message) => {
+            const runSummary = message.runSummary
+              ? `
+                <div class="run-summary">
+                  <div class="meta-row" style="justify-content: space-between; align-items: center;">
+                    <span class="label">Run 摘要</span>
+                    ${statusTag(message.runSummary.status)}
+                  </div>
+                  <div class="chip-row">
+                    <span class="chip"><strong>runId</strong> ${message.runSummary.runId}</span>
+                    <span class="chip"><strong>analysisTaskId</strong> ${message.runSummary.analysisTaskId}</span>
+                  </div>
+                  <div class="run-summary-grid">
+                    <div class="summary-mini"><strong>Started At</strong><span>${message.runSummary.startedAt}</span></div>
+                    <div class="summary-mini"><strong>Duration</strong><span>${message.runSummary.duration}</span></div>
+                    <div class="summary-mini"><strong>Cost</strong><span>${message.runSummary.cost}</span></div>
+                    <div class="summary-mini"><strong>Evidence</strong><span>${message.runSummary.evidenceCount}</span></div>
+                  </div>
+                  <div class="action-stack" style="margin-top: 16px;">
+                    ${actionMarkup("openRunTrace", { runId: message.runSummary.runId })}
+                    ${actionMarkup("openReport", { reportId: message.runSummary.reportId })}
+                    ${actionMarkup("openEvidence", { sourceEvidenceId: message.runSummary.sourceEvidenceId })}
+                    ${actionMarkup("openFeedback", {})}
+                  </div>
+                </div>
+              `
+              : "";
+
+            return `
+              <article class="message ${message.role}">
+                <span class="message-role">${message.summary}</span>
+                <p>${message.content}</p>
+                ${runSummary}
+              </article>
+            `;
+          })
+          .join("");
+
+        return `
+          ${renderPageHeader("analysis")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">Conversation Workspace</h3>
+                <p class="section-copy">Analysis 同时支持两种入口：从 Dashboard Finding 带上下文进入，以及直接新建空白会话主动提问。</p>
+              </div>
+            </div>
+            <div class="action-stack" style="margin-bottom: 18px;">
+              ${actionMarkup("openBlankConversation", {}, "primary")}
+            </div>
+            <div class="analysis-layout">
+              <aside class="aside-card conversation-list">
+                <span class="label">历史会话列表</span>
+                <h4>Workspace 内历史 Conversation</h4>
+                <p class="muted">主对象是 Conversation，而不是 Finding。Finding 只是进入会话的上游问题。</p>
+                ${conversationButtons}
+              </aside>
+
+              <section class="aside-card">
+                <span class="label">当前会话</span>
+                <h4>${conversation.title}</h4>
+                <p><strong>会话来源：</strong>${conversation.sourceLabel}</p>
+                <p style="margin-top: 10px;"><strong>上下文摘要：</strong>${conversation.contextSummary}</p>
+                <div class="message-stack" style="margin-top: 16px;">
+                  ${messages}
+                </div>
+                <div class="composer">
+                  <textarea placeholder="这里只模拟输入框与入口，不执行真实 Agent Run、模型调用或数据保存。"></textarea>
+                  <div class="note">底部输入框只用于说明 Analysis 的交互承载位。原型阶段不连接真实 API / DB / Agent Runtime。</div>
+                </div>
+              </section>
+
+              <aside class="aside-card">
+                <span class="label">右侧上下文辅助区</span>
+                <h4>Context Assist</h4>
+                <p class="muted">这里承接与当前 Conversation 相关但不属于消息流正文的辅助上下文。</p>
+                <div class="fact-grid" style="grid-template-columns: 1fr; margin-top: 14px;">
+                  <article class="fact-card">
+                    <span class="label">Finding</span>
+                    <p>${findFinding(state.selectedFindingId)?.title || "空白会话主动提问"}</p>
+                  </article>
+                  <article class="fact-card">
+                    <span class="label">Evidence</span>
+                    <p>${getSelectedEvidence().title}</p>
+                    <div class="action-stack" style="margin-top: 14px;">
+                      ${actionMarkup("openEvidence", { sourceEvidenceId: state.selectedSourceEvidenceId })}
+                    </div>
+                  </article>
+                  <article class="fact-card">
+                    <span class="label">Metric</span>
+                    <p>${getSelectedMetric().name}</p>
+                    <div class="action-stack" style="margin-top: 14px;">
+                      ${actionMarkup("openMetric", { metricId: state.selectedMetricId })}
+                    </div>
+                  </article>
+                  <article class="fact-card">
+                    <span class="label">Model / Tool</span>
+                    <p>${getSelectedModelConfig().provider} · ${getSelectedModelConfig().modelId}</p>
+                    <div class="action-stack" style="margin-top: 14px;">
+                      ${actionMarkup("openModelTools", { modelConfigId: state.selectedModelConfigId })}
+                    </div>
+                  </article>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("analysis")}
+        `;
+      }
+
+      function renderReportsPage() {
+        const visibleReports = getVisibleReports();
+        const report = getSelectedReport();
+
+        const reportButtons = visibleReports
+          .map(
+            (item) => `
+              <button class="${item.reportId === report.reportId ? "active" : ""}" data-action="openReport" data-report-id="${item.reportId}">
+                <strong>${item.title}</strong>
+                <div class="muted" style="margin-top: 6px;">${reportFilterOptions.find((option) => option.id === item.reportStatus)?.label || "全部"} · runId: ${item.runId}</div>
+                <div class="muted" style="margin-top: 6px;">Target: Reports · Reason: 查看报告详情 · Type: 查看详情</div>
+              </button>
+            `
+          )
+          .join("");
+
+        return `
+          ${renderPageHeader("reports")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">报告列表与报告详情</h3>
+                <p class="section-copy">Reports 的主对象是 Report / ReportSection / Decision。这里阅读结果，不回放完整会话。</p>
+              </div>
+            </div>
+            <div class="analysis-layout" style="grid-template-columns: 262px minmax(0, 1fr) 276px;">
+              <aside class="aside-card report-list">
+                <span class="label">报告列表</span>
+                <h4>Workspace Reports</h4>
+                <p class="muted">报告与 runId、sourceEvidence 和 decision 关联，但不承载消息流。</p>
+                ${reportButtons}
+              </aside>
+
+              <section class="aside-card">
+                <span class="label">报告详情</span>
+                <h4>${report.title}</h4>
+                <p>${report.summary}</p>
+                <div class="chip-row" style="margin-top: 14px;">
+                  <span class="chip"><strong>reportId</strong> ${report.reportId}</span>
+                  <span class="chip"><strong>runId</strong> ${report.runId}</span>
+                  <span class="chip"><strong>Status</strong> ${reportFilterOptions.find((option) => option.id === report.reportStatus)?.label || "全部"}</span>
+                </div>
+                <div class="table-list" style="margin-top: 16px;">
+                  ${report.sections
+                    .map(
+                      (section) => `
+                        <article class="content-card">
+                          <span class="label">ReportSection</span>
+                          <h4>${section.title}</h4>
+                          <p>${section.content}</p>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </section>
+
+              <aside class="aside-card">
+                <span class="label">决策与动作</span>
+                <h4>${report.decision.title}</h4>
+                <p><strong>Decision Status：</strong>${report.decision.status}</p>
+                <div class="fact-grid" style="grid-template-columns: 1fr; margin-top: 14px;">
+                  <article class="fact-card">
+                    <span class="label">Evidence 引用</span>
+                    <ul class="tight-list">
+                      ${report.sourceEvidence.map((item) => `<li>${item}</li>`).join("")}
+                    </ul>
+                  </article>
+                  <article class="fact-card">
+                    <span class="label">建议动作</span>
+                    <ul class="tight-list">
+                      ${report.actions.map((item) => `<li>${item.summary}</li>`).join("")}
+                    </ul>
+                  </article>
+                </div>
+                <div class="action-stack" style="margin-top: 16px;">
+                  ${actionMarkup("openEvidence", { sourceEvidenceId: report.sourceEvidence[0] })}
+                  ${actionMarkup("openFeedback", {})}
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("reports")}
+        `;
+      }
+
+      function renderObservabilityPage() {
+        const run = getSelectedRun();
+        const observabilityGroups = getObservabilityGroups();
+
+        return `
+          ${renderPageHeader("observability")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">Run / Trace 详情</h3>
+                <p class="section-copy">Observability 的主对象是 Run / Trace。直接从全局导航进入时先看列表，再决定进入具体 Trace。</p>
+              </div>
+            </div>
+            <div class="page-grid" style="margin-bottom: 18px;">
+              ${observabilityGroups
+                .map(
+                  (group) => `
+                    <article class="content-card">
+                      <span class="label">${group.title}</span>
+                      <p class="muted" style="margin-bottom: 14px;">${group.copy}</p>
+                      <div class="table-list">
+                        ${group.runs
+                          .map(
+                            (item) => `
+                              <article class="fact-card">
+                                <div class="meta-row" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                  <h4 style="margin: 0;">${item.headline || item.runId}</h4>
+                                  ${statusTag(item.status)}
+                                </div>
+                                <p><strong>runId：</strong>${item.runId}</p>
+                                <div class="chip-row" style="margin-top: 12px;">
+                                  <span class="chip"><strong>Cost</strong> ${item.cost}</span>
+                                  <span class="chip"><strong>Duration</strong> ${item.duration}</span>
+                                </div>
+                                <div class="action-stack" style="margin-top: 14px;">
+                                  ${actionMarkup("openRunTrace", { runId: item.runId })}
+                                </div>
+                              </article>
+                            `
+                          )
+                          .join("")}
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+            <div class="stats-grid">
+              <article class="stat-card">
+                <span class="label">RunID</span>
+                <p class="hero-value">${run.runId}</p>
+                <div class="meta-row">${statusTag(run.status)}</div>
+              </article>
+              <article class="stat-card">
+                <span class="label">Cost</span>
+                <p class="hero-value">${run.cost}</p>
+                <span class="muted">所有模型调用都应经过 Model Gateway。</span>
+              </article>
+              <article class="stat-card">
+                <span class="label">Duration</span>
+                <p class="hero-value">${run.duration}</p>
+                <span class="muted">RunEvent 时间线说明耗时分布。</span>
+              </article>
+              <article class="stat-card">
+                <span class="label">错误摘要</span>
+                <p>${run.errorSummary}</p>
+              </article>
+            </div>
+            <div class="page-grid" style="margin-top: 18px;">
+              <article class="content-card">
+                <span class="label">RunEvent 时间线</span>
+                <div class="timeline">
+                  ${run.events
+                    .map(
+                      (event) => `
+                        <article class="timeline-item">
+                          <div class="meta-row" style="justify-content: space-between; align-items: center;">
+                            <h4>${event.nodeName}</h4>
+                            ${statusTag(event.status)}
+                          </div>
+                          <div class="chip-row" style="margin-bottom: 10px;">
+                            <span class="chip"><strong>eventId</strong> ${event.eventId}</span>
+                            <span class="chip"><strong>agentName</strong> ${event.agentName}</span>
+                            <span class="chip"><strong>toolName</strong> ${event.toolName}</span>
+                          </div>
+                          <p><strong>Input：</strong>${event.inputSummary}</p>
+                          <p style="margin-top: 8px;"><strong>Output：</strong>${event.outputSummary}</p>
+                          <p style="margin-top: 8px;" class="muted">${event.startedAt} → ${event.completedAt}</p>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">ToolCall / ModelCall</span>
+                <div class="table-list">
+                  ${run.toolCalls
+                    .map(
+                      (toolCall) => `
+                        <div class="table-row">
+                          <div>
+                            <strong>ToolCall</strong>
+                            <span>${toolCall.toolName}</span>
+                          </div>
+                          <div>
+                            <strong>Status</strong>
+                            <span>${toolCall.status}</span>
+                          </div>
+                          <div>
+                            <strong>Risk</strong>
+                            <span>${toolCall.riskLevel}</span>
+                          </div>
+                          <div>
+                            <strong>Permission</strong>
+                            <span>${toolCall.permission}</span>
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                  ${run.modelCalls
+                    .map(
+                      (modelCall) => `
+                        <div class="table-row">
+                          <div>
+                            <strong>ModelCall</strong>
+                            <span>${modelCall.provider} · ${modelCall.modelId}</span>
+                          </div>
+                          <div>
+                            <strong>Prompt</strong>
+                            <span>${modelCall.promptVersionId}</span>
+                          </div>
+                          <div>
+                            <strong>Tokens</strong>
+                            <span>${modelCall.inputTokens + modelCall.outputTokens}</span>
+                          </div>
+                          <div>
+                            <strong>Latency</strong>
+                            <span>${modelCall.latencyMs} ms</span>
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                </div>
+                <div class="action-stack" style="margin-top: 16px;">
+                  ${run.reportId ? actionMarkup("openReport", { reportId: run.reportId }) : ""}
+                  ${actionMarkup("openEvidence", { sourceEvidenceId: run.sourceEvidenceId })}
+                  ${actionMarkup("openModelTools", { modelConfigId: run.modelConfigId })}
+                </div>
+              </article>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("observability")}
+        `;
+      }
+
+      function renderDataKnowledgePage() {
+        const evidence = getSelectedEvidence();
+
+        return `
+          ${renderPageHeader("dataKnowledge")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">数据源、知识文档与证据来源</h3>
+                <p class="section-copy">Data & Knowledge 页面承接 SourceEvidence 的归属关系，解释证据来自哪个 DataSource 或 KnowledgeDocument。</p>
+              </div>
+            </div>
+            <div class="page-grid">
+              <article class="content-card">
+                <span class="label">DataSource</span>
+                <div class="table-list">
+                  ${dataKnowledge.dataSources
+                    .map(
+                      (item) => `
+                        <div class="table-row">
+                          <div>
+                            <strong>Name</strong>
+                            <span>${item.name}</span>
+                          </div>
+                          <div>
+                            <strong>Type</strong>
+                            <span>${item.sourceType}</span>
+                          </div>
+                          <div>
+                            <strong>Freshness</strong>
+                            <span>${item.freshness}</span>
+                          </div>
+                          <div>
+                            <strong>Summary</strong>
+                            <span>${item.summary}</span>
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">DataTable / DataField</span>
+                <div class="table-list">
+                  ${dataKnowledge.tables
+                    .map(
+                      (item) => `
+                        <div class="table-row">
+                          <div>
+                            <strong>Table</strong>
+                            <span>${item.name}</span>
+                          </div>
+                          <div>
+                            <strong>Owner</strong>
+                            <span>${item.owner}</span>
+                          </div>
+                          <div style="grid-column: span 2;">
+                            <strong>Fields</strong>
+                            <span>${item.fieldSummary}</span>
+                          </div>
+                        </div>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">KnowledgeDocument</span>
+                <div class="table-list">
+                  ${dataKnowledge.knowledgeDocuments
+                    .map(
+                      (item) => `
+                        <article class="fact-card">
+                          <h4>${item.title}</h4>
+                          <p>${item.summary}</p>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">SourceEvidence 列表</span>
+                <div class="table-list">
+                  ${dataKnowledge.sourceEvidence
+                    .map(
+                      (item) => `
+                        <article class="fact-card">
+                          <div class="meta-row" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0;">${item.title}</h4>
+                            <span class="chip"><strong>confidence</strong> ${item.confidence}</span>
+                          </div>
+                          <p>${item.snippet}</p>
+                          <div class="chip-row" style="margin-top: 12px;">
+                            <span class="chip"><strong>sourceEvidenceId</strong> ${item.sourceEvidenceId}</span>
+                            <span class="chip"><strong>sourceType</strong> ${item.sourceType}</span>
+                          </div>
+                          <div class="action-stack" style="margin-top: 14px;">
+                            ${actionMarkup("openEvidence", { sourceEvidenceId: item.sourceEvidenceId })}
+                          </div>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">当前聚焦证据</span>
+                <h4>${evidence.title}</h4>
+                <p>${evidence.snippet}</p>
+                <div class="chip-row" style="margin-top: 14px;">
+                  <span class="chip"><strong>sourceEvidenceId</strong> ${evidence.sourceEvidenceId}</span>
+                  <span class="chip"><strong>sourceType</strong> ${evidence.sourceType}</span>
+                  <span class="chip"><strong>confidence</strong> ${evidence.confidence}</span>
+                </div>
+                <div class="action-stack" style="margin-top: 16px;">
+                  ${actionMarkup("openMetric", { metricId: state.selectedMetricId })}
+                </div>
+              </article>
+            </div>
+            <div class="fact-grid" style="margin-top: 16px;">
+              ${dataKnowledge.qualityChecks
+                .map(
+                  (item) => `
+                    <article class="fact-card">
+                      <span class="label">Data Quality</span>
+                      <h4>${item.job}</h4>
+                      <p>${item.summary}</p>
+                      <div class="meta-row" style="margin-top: 12px;">
+                        ${statusTag(item.status === "passed" ? "completed" : "running")}
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+          </section>
+
+          ${renderBoundaryCards("dataKnowledge")}
+        `;
+      }
+
+      function renderMetricsPage() {
+        const metric = getSelectedMetric();
+
+        return `
+          ${renderPageHeader("metrics")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">指标口径、阈值与血缘</h3>
+                <p class="section-copy">Metrics 页面负责回答“这个指标是怎么算的、为什么触发异常、它依赖哪些数据”。</p>
+              </div>
+            </div>
+            <div class="page-grid" style="margin-bottom: 18px;">
+              ${metrics
+                .map(
+                  (item) => `
+                    <article class="content-card">
+                      <div class="meta-row" style="justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">${item.name}</h4>
+                        ${riskTag(item.threshold.riskLevel)}
+                      </div>
+                      <p>${item.threshold.rule}</p>
+                      <div class="chip-row" style="margin-top: 12px;">
+                        <span class="chip"><strong>metricId</strong> ${item.metricId}</span>
+                      </div>
+                      <div class="action-stack" style="margin-top: 14px;">
+                        ${actionMarkup("openMetric", { metricId: item.metricId })}
+                      </div>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+            <div class="page-grid">
+              <article class="content-card">
+                <span class="label">Metric</span>
+                <h4>${metric.name}</h4>
+                <p><strong>metricId：</strong>${metric.metricId}</p>
+                <p style="margin-top: 10px;"><strong>口径：</strong>${metric.formula}</p>
+              </article>
+              <article class="content-card">
+                <span class="label">MetricThreshold</span>
+                <h4>${metric.threshold.rule}</h4>
+                <div class="chip-row" style="margin-top: 14px;">
+                  <span class="chip"><strong>metricThresholdId</strong> ${metric.threshold.metricThresholdId}</span>
+                  ${riskTag(metric.threshold.riskLevel)}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">MetricLineage</span>
+                <ul class="soft-list">
+                  ${metric.lineage.map((item) => `<li>${item}</li>`).join("")}
+                </ul>
+              </article>
+              <article class="content-card">
+                <span class="label">异常规则</span>
+                <ul class="soft-list">
+                  ${metric.anomalyRules.map((item) => `<li>${item}</li>`).join("")}
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("metrics")}
+        `;
+      }
+
+      function renderModelToolsPage() {
+        return `
+          ${renderPageHeader("modelTools")}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">模型、Prompt、Tool 与 RAG Strategy</h3>
+                <p class="section-copy">Analysis 页面只链接到这里查看配置归属；真正的 Model / Prompt / Tool / RAG 定义集中在 Models & Tools。</p>
+              </div>
+            </div>
+            <div class="page-grid">
+              <article class="content-card">
+                <span class="label">ModelConfig</span>
+                <div class="table-list">
+                  ${modelTools.modelConfigs
+                    .map(
+                      (item) => `
+                        <article class="fact-card">
+                          <h4>${item.provider} · ${item.modelId}</h4>
+                          <p><strong>modelConfigId：</strong>${item.modelConfigId}</p>
+                          <p style="margin-top: 8px;">${item.useCase}</p>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">PromptVersion</span>
+                <div class="table-list">
+                  ${modelTools.promptVersions
+                    .map(
+                      (item) => `
+                        <article class="fact-card">
+                          <h4>${item.name}</h4>
+                          <div class="chip-row" style="margin-bottom: 10px;">
+                            <span class="chip"><strong>version</strong> ${item.version}</span>
+                          </div>
+                          <p><strong>promptVersionId：</strong>${item.promptVersionId}</p>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">Tool Registry</span>
+                <div class="table-list">
+                  ${modelTools.toolDefinitions
+                    .map(
+                      (item) => `
+                        <article class="fact-card">
+                          <h4>${item.toolName}</h4>
+                          <p>${item.description}</p>
+                          <div class="chip-row" style="margin-top: 12px;">
+                            ${riskTag(item.riskLevel)}
+                            <span class="chip"><strong>Permission</strong> ${item.permission}</span>
+                            <span class="chip"><strong>Timeout</strong> ${item.timeout}</span>
+                          </div>
+                        </article>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </article>
+              <article class="content-card">
+                <span class="label">RAG Strategy / Permission Summary</span>
+                <h4>${modelTools.ragStrategies[0].name}</h4>
+                <p>${modelTools.ragStrategies[0].summary}</p>
+                <ul class="soft-list" style="margin-top: 14px;">
+                  ${modelTools.permissions.map((item) => `<li>${item}</li>`).join("")}
+                </ul>
+                <div class="action-stack" style="margin-top: 16px;">
+                  ${actionMarkup("openPage", { page: "governance" })}
+                </div>
+              </article>
+            </div>
+          </section>
+
+          ${renderBoundaryCards("modelTools")}
+        `;
+      }
+
+      function renderPlaceholderPage(pageKey) {
+        const meta = pageMeta[pageKey];
+
+        return `
+          ${renderPageHeader(pageKey)}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">入口 / 占位</h3>
+                <p class="section-copy">第一版只明确这个模块的归属与入口，不展开复杂页面，以避免把主链路打散。</p>
+              </div>
+            </div>
+            <div class="placeholder-note">
+              <p><strong>${meta.title}</strong> 当前只作为入口 / 占位存在，用于说明对象归属、导航位置和与主流程的关系。</p>
+            </div>
+            <div class="page-grid" style="margin-top: 16px;">
+              <article class="fact-card">
+                <span class="label">主对象</span>
+                <div class="chip-row">
+                  ${meta.objects.map((item) => `<span class="chip"><strong>Object</strong> ${item}</span>`).join("")}
+                </div>
+              </article>
+              <article class="fact-card">
+                <span class="label">为什么先做入口</span>
+                <p>${meta.responsibility}</p>
+              </article>
+            </div>
+          </section>
+
+          ${renderBoundaryCards(pageKey)}
+        `;
+      }
+
+      function renderEntryLandingPage(pageKey, entryLabel, items) {
+        const meta = pageMeta[pageKey];
+
+        return `
+          ${renderPageHeader(pageKey)}
+
+          <section class="section panel">
+            <div class="section-head">
+              <div>
+                <h3 class="section-title">${entryLabel}</h3>
+                <p class="section-copy">${meta.responsibility}</p>
+              </div>
+            </div>
+            <div class="page-grid">
+              ${items
+                .map(
+                  (item) => `
+                    <article class="content-card">
+                      <span class="label">${meta.title}</span>
+                      <h4>${item}</h4>
+                      <p>这里只做入口 / 占位，用来说明该模块在全局导航中的归属，不实现真实系统能力。</p>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+          </section>
+
+          ${renderBoundaryCards(pageKey)}
+        `;
+      }
+
+      function renderPage() {
+        switch (state.currentPage) {
+          case "workspace":
+            return renderWorkspacePage();
+          case "dashboard":
+            return renderDashboardPage();
+          case "analysis":
+            return renderAnalysisPage();
+          case "reports":
+            return renderReportsPage();
+          case "observability":
+            return renderObservabilityPage();
+          case "dataKnowledge":
+            return renderDataKnowledgePage();
+          case "metrics":
+            return renderMetricsPage();
+          case "feedback":
+            return renderEntryLandingPage("feedback", "反馈管理入口", landingEntries.feedback);
+          case "evaluation":
+            return renderEntryLandingPage(
+              "evaluation",
+              "Evaluation 入口",
+              landingEntries.evaluation
+            );
+          case "platformOperations":
+            return renderEntryLandingPage(
+              "platformOperations",
+              "平台运行与质量入口",
+              landingEntries.platformOperations
+            );
+          case "modelTools":
+            return renderModelToolsPage();
+          case "governance":
+          case "memory":
+          case "settings":
+          case "workspaceManagement":
+            return renderPlaceholderPage(state.currentPage);
+          default:
+            return renderWorkspacePage();
+        }
+      }
+
+      function renderInspector() {
+        const meta = pageMeta[state.currentPage];
+        const finding = findFinding(state.selectedFindingId);
+        const conversation = getSelectedConversation();
+        const run = getSelectedRun();
+        const report = findReport(state.selectedReportId);
+        const evidence = getSelectedEvidence();
+        const metric = getSelectedMetric();
+        const modelConfig = getSelectedModelConfig();
+
+        return `
+          <div>
+            <span class="brand-kicker">Inspector</span>
+            <h2 class="inspector-title">${meta.title}</h2>
+            <p class="page-subtitle">${meta.hero}</p>
+          </div>
+
+          <div class="inspector-block">
+            <div class="inspector-card">
+              <span class="label">最近入口</span>
+              <h4>${state.inspectorEntry.label}</h4>
+              <div class="fact-grid" style="grid-template-columns: 1fr; margin-top: 14px;">
+                <div class="fact-card">
+                  <span class="label">Target</span>
+                  <p>${state.inspectorEntry.targetLabel}</p>
+                </div>
+                <div class="fact-card">
+                  <span class="label">Reason</span>
+                  <p>${state.inspectorEntry.reason}</p>
+                </div>
+                <div class="fact-card">
+                  <span class="label">Type</span>
+                  <p>${state.inspectorEntry.type}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-block">
+            <div class="inspector-card">
+              <span class="label">当前对象快照</span>
+              <div class="ids-grid">
+                <code>navMode: ${state.navMode}</code>
+                <code>workspaceId: ${workspace.workspaceId}</code>
+                <code>findingId: ${finding ? finding.findingId : "n/a"}</code>
+                <code>conversationId: ${conversation.conversationId}</code>
+                <code>runId: ${run.runId}</code>
+                <code>reportId: ${report ? report.reportId : "n/a"}</code>
+                <code>sourceEvidenceId: ${evidence.sourceEvidenceId}</code>
+                <code>metricId: ${metric.metricId}</code>
+                <code>modelConfigId: ${modelConfig.modelConfigId}</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-block">
+            <div class="inspector-card">
+              <span class="label">对象语义</span>
+              <ul class="tight-list">
+                <li><strong>Finding</strong> 是问题，不等于 Conversation。</li>
+                <li><strong>Conversation</strong> 是分析过程，<strong>Message / Turn</strong> 是多轮对话。</li>
+                <li><strong>Run</strong> 是后台执行记录，<strong>Trace</strong> 是执行详情。</li>
+                <li><strong>Evidence</strong> 是结论依据，<strong>Report</strong> 是结果沉淀。</li>
+                <li><strong>Feedback / Evaluation</strong> 是质量闭环，不和 Memory 混用。</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="inspector-block">
+            <div class="inspector-card">
+              <span class="label">Prototype Boundaries</span>
+              <ul class="tight-list">
+                <li>单文件 HTML + CSS + 少量原生 JavaScript。</li>
+                <li>不接真实 API / DB / Agent Run / 模型调用 / RAG / Evaluation。</li>
+                <li>不定义正式 React 组件结构，不定义 API / DB / contracts。</li>
+                <li>正式实现仍需回到 AGENTS.md、docs/ui-design.md、docs/architecture.md、docs/contracts.md 和 packages/contracts。</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderApp() {
+        document.getElementById("sidebar-root").innerHTML = renderSidebar();
+        document.getElementById("page-root").innerHTML = renderPage();
+        document.getElementById("inspector-root").innerHTML = renderInspector();
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-action]");
+
+        if (!target) {
+          return;
+        }
+
+        const context = {};
+
+        Object.entries(target.dataset).forEach(([key, value]) => {
+          if (key !== "action") {
+            context[key] = value;
+          }
+        });
+
+        performAction(target.dataset.action, context);
+      });
+
+      document.addEventListener("input", (event) => {
+        const target = event.target.closest("[data-input-model]");
+
+        if (!target) {
+          return;
+        }
+
+        state[target.dataset.inputModel] = target.value;
+        renderApp();
+      });
+
+      renderApp();
+    </script>
+  </body>
+</html>
