@@ -1,11 +1,14 @@
-import { reportsStaticViewModel } from "../../features/static-view-models";
+import { useReportsReaderState } from "../../features/reports/hooks";
 import { WebPageScaffold, type WebPageProps } from "../_shared";
 import { ReportsSections } from "./sections";
 
-export function ReportsPage({ onNavigate }: WebPageProps) {
+export function ReportsPage({ onNavigate, reportsState }: WebPageProps) {
+  const fallbackReportsState = useReportsReaderState();
+  const controller = reportsState ?? fallbackReportsState;
+
   return (
-    <WebPageScaffold onNavigate={onNavigate} viewModel={reportsStaticViewModel}>
-      <ReportsSections onNavigate={onNavigate} viewModel={reportsStaticViewModel} />
+    <WebPageScaffold onNavigate={onNavigate} viewModel={controller.viewModel}>
+      <ReportsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
     </WebPageScaffold>
   );
 }
