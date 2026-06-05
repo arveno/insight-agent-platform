@@ -67,7 +67,7 @@ describe("AppShell", () => {
     expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
   });
 
-  it("renders route-specific inspector capability notes from the static view model", () => {
+  it("renders route-specific inspector capability and integration notes from the static view model", () => {
     render(
       <AppProviders>
         <AppShell />
@@ -77,12 +77,18 @@ describe("AppShell", () => {
     const navigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
     expect(screen.getByText(/用于查看当前工作区经营概览、异常摘要和关键入口。/)).toBeTruthy();
+    expect(screen.getByText(/Metrics：指标口径、阈值和时间范围数据监测。/)).toBeTruthy();
 
     fireEvent.click(within(navigation).getByRole("button", { name: /分析/ }));
 
     expect(screen.getByText(/用于承接分析会话、追问和问题定位。/)).toBeTruthy();
     expect(
       screen.getByText(/后续会对接 Agent Run、Tool Calling、Run Trace、RAG Evidence。/)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /LangGraph：Agent Runtime，负责分析流程编排、状态流转、Human-in-the-loop 和可恢复执行。/
+      )
     ).toBeTruthy();
   });
 });

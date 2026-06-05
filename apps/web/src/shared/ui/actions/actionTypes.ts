@@ -12,7 +12,7 @@ export type AppActionButtonVariant =
 
 export type AppActionButtonProps = Omit<
   ButtonProps,
-  "children" | "icon" | "size" | "type" | "variant"
+  "children" | "color" | "icon" | "size" | "type" | "variant"
 > & {
   children: ReactNode;
   iconName?: IconName;
