@@ -46,7 +46,11 @@ export function AppShell() {
     ? activeRoute
     : undefined;
   const userPreferenceContent = (
-    <Space direction="vertical" size={shellThemeTokens.shellSectionGap} style={{ minWidth: 240 }}>
+    <Space
+      direction="vertical"
+      size={shellThemeTokens.shellSectionGap}
+      style={{ minWidth: shellThemeTokens.popoverMinWidth }}
+    >
       <Space direction="vertical" size={4}>
         <Typography.Text strong>{appShellStaticViewModel.currentUser.displayName}</Typography.Text>
         <Typography.Text type="secondary">
@@ -137,7 +141,7 @@ export function AppShell() {
           </div>
           <div
             style={{
-              borderTop: `1px solid ${token.colorBorderSecondary}`,
+              borderTop: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
               flex: "0 0 auto",
               padding: shellThemeTokens.shellFooterPadding
             }}

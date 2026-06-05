@@ -40,7 +40,7 @@ export function RightAssistPanel({
       style={{
         alignSelf: "stretch",
         background: token.colorBgElevated,
-        borderLeft: `1px solid ${token.colorBorderSecondary}`,
+        borderLeft: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
         flex: `0 0 ${width}px`,
         maxWidth: width,
         minHeight: 0,

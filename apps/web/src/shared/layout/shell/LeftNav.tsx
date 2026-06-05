@@ -97,7 +97,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                   style={{
                     alignItems: "center",
                     background: itemBackground,
-                    border: `1px solid ${itemBorderColor}`,
+                    border: `${shellThemeTokens.surfaceBorderWidth}px solid ${itemBorderColor}`,
                     borderRadius: shellThemeTokens.borderRadiusLG,
                     boxShadow: "none",
                     display: "flex",
