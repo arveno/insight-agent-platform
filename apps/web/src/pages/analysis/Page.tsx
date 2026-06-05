@@ -1,6 +1,6 @@
 import { useAnalysisConversationState, type AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
-import { analysisStaticViewModel } from "../../features/static-view-models";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
+import { ResponsivePageShell } from "../../shared";
+import { type WebPageProps } from "../_shared";
 import { AnalysisSections } from "./sections";
 
 export type AnalysisPageContentProps = WebPageProps & {
@@ -9,10 +9,9 @@ export type AnalysisPageContentProps = WebPageProps & {
 
 export function AnalysisPageContent({
   conversationState,
-  onNavigate
 }: AnalysisPageContentProps) {
   return (
-    <WebPageScaffold onNavigate={onNavigate} viewModel={analysisStaticViewModel}>
+    <ResponsivePageShell>
       <AnalysisSections
         analysisDraft={conversationState.analysisDraft}
         composerMode={conversationState.composerMode}
@@ -20,15 +19,13 @@ export function AnalysisPageContent({
         interactionMessage={conversationState.interactionMessage}
         onAnalysisDraftChange={conversationState.onAnalysisDraftChange}
         onAnalysisSubmit={conversationState.onAnalysisSubmit}
-        onComposerModeChange={conversationState.onComposerModeChange}
         onFollowUpDraftChange={conversationState.onFollowUpDraftChange}
         onFollowUpSubmit={conversationState.onFollowUpSubmit}
         onSelectAnalysisSuggestion={conversationState.onSelectAnalysisSuggestion}
         onSelectFollowUpSuggestion={conversationState.onSelectFollowUpSuggestion}
         selectedSession={conversationState.selectedSession}
-        viewModel={analysisStaticViewModel}
       />
-    </WebPageScaffold>
+    </ResponsivePageShell>
   );
 }
 

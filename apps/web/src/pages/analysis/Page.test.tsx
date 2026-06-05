@@ -23,7 +23,7 @@ beforeAll(() => {
 });
 
 describe("AnalysisPage", () => {
-  it("renders a chat-style conversation shell and keeps run trace modules out of main", () => {
+  it("renders a pure conversation shell without page header actions", () => {
     render(
       <AppProviders>
         <AnalysisPage />
@@ -32,18 +32,24 @@ describe("AnalysisPage", () => {
 
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
-    expect(within(main).getByText("Conversation")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
+    expect(
+      within(main).getAllByText("来自 Dashboard / Revenue · 收入增速异常 · Last 30 days")
+    ).toHaveLength(2);
     expect(within(main).getByRole("log", { name: "Analysis message list" })).toBeTruthy();
     expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
-    expect(within(main).getByText("当前分析问题")).toBeTruthy();
-    expect(within(main).getByText("静态分析摘要")).toBeTruthy();
+    expect(within(main).getByText("System")).toBeTruthy();
+    expect(within(main).getByText("User")).toBeTruthy();
+    expect(within(main).getByText("Assistant")).toBeTruthy();
     expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
     expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
     expect(within(main).queryByText("报告生成入口")).toBeNull();
   });
 
-  it("keeps analysis submit and follow-up submit local to the page state", () => {
+  it("keeps follow-up submit local to the page state", () => {
     const onNavigate = vi.fn();
 
     render(
@@ -51,15 +57,6 @@ describe("AnalysisPage", () => {
         <AnalysisPage onNavigate={onNavigate} />
       </AppProviders>
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "分析问题" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "分析任务输入区" }), {
-      target: { value: "请重新整理收入异常的归因和建议。" }
-    });
-    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
-
-    expect(screen.getByText(/已记录当前分析问题草稿/)).toBeTruthy();
-    expect(screen.getByRole("textbox", { name: "后续追问" })).toBeTruthy();
 
     fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
       target: { value: "继续追问华东渠道和最近 7 天的差异。" }

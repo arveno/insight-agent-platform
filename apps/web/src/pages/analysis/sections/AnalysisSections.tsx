@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { Alert, Button, List, Space, Typography, theme } from "antd";
+import { Button, List, Space, Typography, theme } from "antd";
 
 import type { AnalysisViewModel } from "../../../features/static-view-models";
-import { RiskBadge, StatusTag } from "../../../shared";
 
 export type AnalysisSectionsProps = {
   analysisDraft: string;
@@ -11,13 +10,11 @@ export type AnalysisSectionsProps = {
   interactionMessage: string;
   onAnalysisDraftChange: (value: string) => void;
   onAnalysisSubmit: () => void;
-  onComposerModeChange: (mode: "analysis" | "follow_up") => void;
   onFollowUpDraftChange: (value: string) => void;
   onFollowUpSubmit: () => void;
   onSelectAnalysisSuggestion: (value: string) => void;
   onSelectFollowUpSuggestion: (value: string) => void;
   selectedSession: AnalysisViewModel["sessions"][number];
-  viewModel: AnalysisViewModel;
 };
 
 export function AnalysisSections({
@@ -27,20 +24,13 @@ export function AnalysisSections({
   interactionMessage,
   onAnalysisDraftChange,
   onAnalysisSubmit,
-  onComposerModeChange,
   onFollowUpDraftChange,
   onFollowUpSubmit,
   onSelectAnalysisSuggestion,
   onSelectFollowUpSuggestion,
-  selectedSession,
-  viewModel
+  selectedSession
 }: AnalysisSectionsProps) {
   const { token } = theme.useToken();
-  const contextSummary = selectedSession.contextItems
-    .slice(0, 3)
-    .map((item) => item.value)
-    .join(" / ");
-  const hasFollowUpDraft = followUpDraft.trim().length > 0;
   const activeComposer =
     composerMode === "analysis" ? selectedSession.inputComposer : selectedSession.followUpComposer;
   const activeDraft = composerMode === "analysis" ? analysisDraft : followUpDraft;
@@ -49,6 +39,7 @@ export function AnalysisSections({
   const onActiveSubmit = composerMode === "analysis" ? onAnalysisSubmit : onFollowUpSubmit;
   const onSelectSuggestion =
     composerMode === "analysis" ? onSelectAnalysisSuggestion : onSelectFollowUpSuggestion;
+  const hasFollowUpDraft = composerMode === "follow_up" && followUpDraft.trim().length > 0;
 
   return (
     <section
@@ -60,44 +51,22 @@ export function AnalysisSections({
         borderRadius: token.borderRadiusLG,
         display: "flex",
         flexDirection: "column",
-        minHeight: 720,
+        height: "calc(100vh - 156px)",
+        maxHeight: 860,
+        minHeight: 620,
         overflow: "hidden",
         width: "100%"
       }}
     >
-      <header
+      <div
         style={{
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          padding: token.paddingLG
+          paddingBlock: token.paddingSM,
+          paddingInline: token.paddingLG
         }}
       >
-        <Space direction="vertical" size={token.marginSM} style={{ width: "100%" }}>
-          <Space align="start" style={{ justifyContent: "space-between", width: "100%" }} wrap>
-            <Space direction="vertical" size={4} style={{ maxWidth: 760 }}>
-              <Typography.Text type="secondary">Conversation</Typography.Text>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                {selectedSession.session.title}
-              </Typography.Title>
-              <Typography.Text type="secondary">{selectedSession.session.summary}</Typography.Text>
-              <Typography.Text type="secondary">
-                当前上下文：{contextSummary || viewModel.contextPanelNote}
-              </Typography.Text>
-            </Space>
-            <Space wrap>
-              <StatusTag {...toStatusTagLabel(selectedSession.session.status)} />
-              {selectedSession.session.risk ? (
-                <RiskBadge {...toRiskBadgeLabel(selectedSession.session.risk)} />
-              ) : null}
-            </Space>
-          </Space>
-          <Alert
-            message={interactionMessage}
-            showIcon
-            style={{ borderRadius: token.borderRadiusLG }}
-            type="info"
-          />
-        </Space>
-      </header>
+        <Typography.Text type="secondary">{selectedSession.contextPack.stripText}</Typography.Text>
+      </div>
 
       <div
         aria-label="Analysis message list"
@@ -108,45 +77,47 @@ export function AnalysisSections({
           flexDirection: "column",
           gap: token.margin,
           minHeight: 0,
+          overflowY: "auto",
           padding: token.paddingLG
         }}
       >
         <ChatMessage
-          content={viewModel.contextPanelNote}
           roleLabel="System"
-          subtitle={selectedSession.inputComposer.contextHint}
           tone="system"
-          title="当前为静态 Analysis UI"
-        />
-        <ChatMessage
-          align="end"
-          content={analysisDraft}
-          roleLabel="User"
-          subtitle={selectedSession.inputComposer.helperText}
-          tone="user"
-          title="当前分析问题"
-        />
-        <ChatMessage
-          findingBullets={selectedSession.resultSummary.findingBullets.slice(0, 2)}
-          note="更完整的 Plan、Evidence、Result 和后续反馈入口已收敛到右侧 Run Trace。"
-          roleLabel="Assistant"
-          subtitle={selectedSession.runOverview.phaseLabel}
-          title="静态分析摘要"
-          tone="assistant"
         >
+          <Typography.Paragraph style={{ margin: 0 }}>
+            {selectedSession.contextPack.systemText}
+          </Typography.Paragraph>
+          <Typography.Text type="secondary">{selectedSession.contextPack.stripText}</Typography.Text>
+        </ChatMessage>
+
+        <ChatMessage align="end" roleLabel="User" tone="user">
+          <Typography.Paragraph style={{ margin: 0 }}>{analysisDraft}</Typography.Paragraph>
+        </ChatMessage>
+
+        <ChatMessage roleLabel="Assistant" tone="assistant">
           <Typography.Paragraph style={{ margin: 0 }}>
             {selectedSession.resultSummary.conclusion}
           </Typography.Paragraph>
+          <div>
+            <Typography.Text strong>关键发现</Typography.Text>
+            <List
+              dataSource={selectedSession.resultSummary.findingBullets.slice(0, 2)}
+              renderItem={(item) => (
+                <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
+                  <Typography.Text>{item}</Typography.Text>
+                </List.Item>
+              )}
+              split={false}
+            />
+          </div>
+          <Typography.Text type="secondary">完整执行过程见右侧 Run Trace。</Typography.Text>
         </ChatMessage>
+
         {hasFollowUpDraft ? (
-          <ChatMessage
-            align="end"
-            content={followUpDraft}
-            roleLabel="Draft"
-            subtitle="当前追问草稿只保留在本地 UI State。"
-            tone="draft"
-            title="待发送追问"
-          />
+          <ChatMessage align="end" roleLabel="Draft" tone="draft">
+            <Typography.Paragraph style={{ margin: 0 }}>{followUpDraft}</Typography.Paragraph>
+          </ChatMessage>
         ) : null}
       </div>
 
@@ -156,33 +127,17 @@ export function AnalysisSections({
         style={{
           background: token.colorBgContainer,
           borderTop: `1px solid ${token.colorBorderSecondary}`,
+          flex: "0 0 auto",
           padding: token.paddingLG
         }}
       >
-        <Space direction="vertical" size={token.margin} style={{ width: "100%" }}>
-          <Space wrap>
-            <Button
-              onClick={() => onComposerModeChange("analysis")}
-              type={composerMode === "analysis" ? "primary" : "default"}
-            >
-              分析问题
-            </Button>
-            <Button
-              onClick={() => onComposerModeChange("follow_up")}
-              type={composerMode === "follow_up" ? "primary" : "default"}
-            >
-              后续追问
-            </Button>
-          </Space>
-          <Space direction="vertical" size={4}>
-            <Typography.Text strong>{activeComposer.title}</Typography.Text>
-            <Typography.Text type="secondary">{activeComposer.helperText}</Typography.Text>
-          </Space>
+        <Space direction="vertical" size={token.marginSM} style={{ width: "100%" }}>
+          <Typography.Text type="secondary">{interactionMessage}</Typography.Text>
           <textarea
             aria-label={activeComposer.title}
             onChange={(event) => onActiveDraftChange(event.target.value)}
             placeholder={activeComposer.placeholder}
-            rows={4}
+            rows={3}
             style={{
               background: token.colorBgElevated,
               border: `1px solid ${token.colorBorderSecondary}`,
@@ -192,7 +147,7 @@ export function AnalysisSections({
               fontSize: token.fontSize,
               lineHeight: token.lineHeight,
               padding: token.padding,
-              resize: "vertical",
+              resize: "none",
               width: "100%"
             }}
             value={activeDraft}
@@ -229,22 +184,12 @@ export function AnalysisSections({
 function ChatMessage({
   align = "start",
   children,
-  content,
-  findingBullets,
-  note,
   roleLabel,
-  subtitle,
-  title,
   tone
 }: {
   align?: "end" | "start";
-  children?: ReactNode;
-  content?: string;
-  findingBullets?: string[];
-  note?: string;
+  children: ReactNode;
   roleLabel: string;
-  subtitle?: string;
-  title: string;
   tone: "assistant" | "draft" | "system" | "user";
 }) {
   const { token } = theme.useToken();
@@ -258,7 +203,7 @@ function ChatMessage({
     assistant: token.colorBorderSecondary,
     draft: token.colorBorder,
     system: token.colorBorderSecondary,
-    user: token.colorText
+    user: token.colorBorder
   };
 
   return (
@@ -274,66 +219,8 @@ function ChatMessage({
     >
       <Space direction="vertical" size={token.marginXS} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{roleLabel}</Typography.Text>
-        <Typography.Text strong>{title}</Typography.Text>
-        {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
-        {content ? <Typography.Paragraph style={{ margin: 0 }}>{content}</Typography.Paragraph> : null}
         {children}
-        {findingBullets?.length ? (
-          <div>
-            <Typography.Text strong>关键发现</Typography.Text>
-            <List
-              dataSource={findingBullets}
-              renderItem={(item) => (
-                <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
-                  <Typography.Text>{item}</Typography.Text>
-                </List.Item>
-              )}
-              split={false}
-            />
-          </div>
-        ) : null}
-        {note ? <Typography.Text type="secondary">{note}</Typography.Text> : null}
       </Space>
     </div>
   );
-}
-
-function toStatusTagLabel(status: AnalysisViewModel["sessions"][number]["session"]["status"]) {
-  return {
-    label:
-      status.status === "loading"
-        ? "加载中"
-        : status.status === "warning"
-          ? "注意"
-          : status.status === "risk"
-            ? "存在风险"
-            : status.status === "success"
-              ? "成功"
-              : "就绪",
-    tone:
-      status.status === "loading"
-        ? "processing"
-        : status.status === "warning" || status.status === "risk"
-          ? "warning"
-          : status.status === "success" || status.status === "ready"
-            ? "success"
-            : "default"
-  } as const;
-}
-
-function toRiskBadgeLabel(
-  risk: NonNullable<AnalysisViewModel["sessions"][number]["session"]["risk"]>
-) {
-  const riskLabelByLevel = {
-    critical: "严重风险",
-    high: "高风险",
-    low: "低风险",
-    medium: "中风险",
-    none: "未知风险"
-  } as const;
-
-  return {
-    label: risk.title ?? riskLabelByLevel[risk.level],
-    level: risk.level === "none" ? "unknown" : risk.level
-  } as const;
 }

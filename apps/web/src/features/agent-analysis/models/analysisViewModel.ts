@@ -32,6 +32,15 @@ export type AnalysisContextItemViewModel = {
   value: string;
 };
 
+export type AnalysisContextPackViewModel = {
+  sourceObject: string;
+  sourceRoute: string;
+  stripText: string;
+  systemText: string;
+  timeRange: string;
+  workspace: string;
+};
+
 export type AnalysisSessionSummaryViewModel = {
   contextLabel: string;
   key: string;
@@ -88,6 +97,16 @@ export type AnalysisTraceSummaryViewModel = {
   updatedAtText: string;
 };
 
+export type AnalysisRunTraceViewModel = {
+  events: AnalysisTimelineItemViewModel[];
+  key: string;
+  risk?: StaticRiskViewModel;
+  runId: string;
+  stageSummary: string;
+  status: StaticStatusViewModel;
+  updatedAtText: string;
+};
+
 export type AnalysisResultSummaryViewModel = {
   actionSuggestions: string[];
   conclusion: string;
@@ -123,6 +142,7 @@ export type AnalysisReportEntryViewModel = {
 };
 
 export type AnalysisSessionDetailViewModel = {
+  contextPack: AnalysisContextPackViewModel;
   contextItems: AnalysisContextItemViewModel[];
   evidenceItems: AnalysisEvidenceItemViewModel[];
   feedback: AnalysisFeedbackViewModel;
@@ -132,6 +152,7 @@ export type AnalysisSessionDetailViewModel = {
   planSteps: AnalysisTimelineItemViewModel[];
   reportEntry: AnalysisReportEntryViewModel;
   resultSummary: AnalysisResultSummaryViewModel;
+  runTrace: AnalysisRunTraceViewModel;
   runOverview: AnalysisRunOverviewViewModel;
   session: AnalysisSessionSummaryViewModel;
   traceSummary: AnalysisTraceSummaryViewModel;

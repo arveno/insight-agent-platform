@@ -88,6 +88,11 @@ describe("AppShell", () => {
     expect(within(analysisNavigation).getByText("Q2 收入异常追问")).toBeTruthy();
     expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
     expect(within(analysisNavigation).getByText("库存异常定位")).toBeTruthy();
+    expect(within(analysisNavigation).queryByText("刚刚更新")).toBeNull();
+    expect(within(analysisNavigation).queryByText("成功")).toBeNull();
+    expect(
+      within(analysisNavigation).queryByText("围绕 Dashboard 收入异常做渠道和时间窗口追问。")
+    ).toBeNull();
 
     fireEvent.change(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" }), {
       target: { value: "毛利率" }
@@ -117,8 +122,12 @@ describe("AppShell", () => {
 
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
-    expect(within(main).getByText("毛利率波动复盘")).toBeTruthy();
-    expect(within(main).getByText(/当前上下文：Northstar Retail China/)).toBeTruthy();
+    expect(within(main).queryByRole("heading", { name: "分析" })).toBeNull();
+    expect(within(main).queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(within(main).queryByRole("button", { name: "查看观测" })).toBeNull();
+    expect(
+      within(main).getAllByText("来自 Reports / Margin · 毛利率复盘 · This quarter")
+    ).toHaveLength(2);
     expect(
       within(main).getByText("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。")
     ).toBeTruthy();
@@ -129,12 +138,13 @@ describe("AppShell", () => {
     expect(within(main).queryByText("Feedback / 采纳入口")).toBeNull();
 
     expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getByText("runId: analysis-margin-follow-up")).toBeTruthy();
     expect(screen.getByText("1. 接收用户问题")).toBeTruthy();
     expect(screen.getByText("6. 召回 Evidence / RAG 来源")).toBeTruthy();
     expect(screen.getByText("8. 等待用户追问 / 反馈")).toBeTruthy();
     expect(screen.queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(screen.queryByText("Feedback / 采纳入口")).toBeNull();
     expect(screen.queryByText("报告补充入口")).toBeNull();
-    expect(screen.getByText(/技术对接：LangGraph \/ LangChain \/ LlamaIndex \/ Milvus。/)).toBeTruthy();
+    expect(screen.queryByText(/技术对接：/)).toBeNull();
   });
 });

@@ -54,9 +54,7 @@ export function AppShell() {
     }
 
     return analysisStaticViewModel.sessions.filter((session) =>
-      [session.session.contextLabel, session.session.summary, session.session.title].some((value) =>
-        value.toLowerCase().includes(normalizedQuery)
-      )
+      session.session.title.toLowerCase().includes(normalizedQuery)
     );
   }, [analysisSessionQuery]);
   const selectedWorkspace =
@@ -232,7 +230,6 @@ export function AppShell() {
         activeRoute === "analysis" ? (
           <AnalysisInspectorPanel
             conversationState={analysisConversationState}
-            inspector={activeInspector}
             workspaceName={selectedWorkspace.name}
           />
         ) : (

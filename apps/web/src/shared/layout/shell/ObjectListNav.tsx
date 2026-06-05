@@ -89,6 +89,7 @@ export function ObjectListNav({
         ) : null}
         {items.map((item) => {
           const isSelected = selectedKey === item.key;
+          const isSimpleItem = !item.description && !item.meta && !item.status;
 
           return (
             <button
@@ -99,39 +100,51 @@ export function ObjectListNav({
                 appearance: "none",
                 background: isSelected ? token.colorFillSecondary : "transparent",
                 border: `${shellThemeTokens.surfaceBorderWidth}px solid ${
-                  isSelected ? token.colorBorder : "transparent"
+                  isSelected ? token.colorBorderSecondary : "transparent"
                 }`,
                 borderRadius: shellThemeTokens.borderRadiusLG,
                 cursor: "pointer",
-                paddingBlock: shellThemeTokens.navPreviewPaddingBlock,
+                paddingBlock: isSimpleItem
+                  ? shellThemeTokens.navPrimaryPaddingBlock
+                  : shellThemeTokens.navPreviewPaddingBlock,
                 paddingInline: shellThemeTokens.navPreviewPaddingInline,
                 textAlign: "left",
                 width: "100%"
               }}
               type="button"
             >
-              <Space direction="vertical" size={2} style={{ width: "100%" }}>
-                <Space
-                  align="start"
-                  size={token.marginXS}
-                  style={{ justifyContent: "space-between", width: "100%" }}
-                  wrap
+              {isSimpleItem ? (
+                <Typography.Text
+                  ellipsis
+                  strong={isSelected}
+                  style={{ color: isSelected ? token.colorText : token.colorTextSecondary }}
                 >
-                  <Typography.Text
-                    strong
-                    style={{ color: isSelected ? token.colorText : token.colorTextSecondary }}
+                  {item.title}
+                </Typography.Text>
+              ) : (
+                <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                  <Space
+                    align="start"
+                    size={token.marginXS}
+                    style={{ justifyContent: "space-between", width: "100%" }}
+                    wrap
                   >
-                    {item.title}
-                  </Typography.Text>
-                  {item.status}
+                    <Typography.Text
+                      strong
+                      style={{ color: isSelected ? token.colorText : token.colorTextSecondary }}
+                    >
+                      {item.title}
+                    </Typography.Text>
+                    {item.status}
+                  </Space>
+                  {item.description ? (
+                    <Typography.Text type="secondary">{item.description}</Typography.Text>
+                  ) : null}
+                  {item.meta ? (
+                    <Typography.Text type="secondary">{item.meta}</Typography.Text>
+                  ) : null}
                 </Space>
-                {item.description ? (
-                  <Typography.Text type="secondary">{item.description}</Typography.Text>
-                ) : null}
-                {item.meta ? (
-                  <Typography.Text type="secondary">{item.meta}</Typography.Text>
-                ) : null}
-              </Space>
+              )}
             </button>
           );
         })}

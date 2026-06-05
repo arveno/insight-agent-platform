@@ -2,7 +2,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
 import type { AnalysisViewModel } from "../../features/static-view-models";
-import { ObjectListNav, StatusTag } from "../../shared";
+import { ObjectListNav } from "../../shared";
 
 export type AnalysisSessionNavProps = {
   onBack: () => void;
@@ -13,18 +13,6 @@ export type AnalysisSessionNavProps = {
   selectedSessionKey: string;
   sessions: AnalysisViewModel["sessions"];
 };
-
-const statusLabelByKey = {
-  disabled: "不可操作",
-  empty: "暂无数据",
-  error: "错误态",
-  loading: "加载中",
-  ready: "就绪",
-  readonly: "只读",
-  risk: "存在风险",
-  success: "成功",
-  warning: "注意"
-} as const;
 
 export function AnalysisSessionNav({
   onBack,
@@ -45,25 +33,7 @@ export function AnalysisSessionNav({
       ariaLabel="Analysis session navigation"
       emptyText="暂无匹配会话"
       items={sessions.map((session) => ({
-        description: session.session.summary,
         key: session.key,
-        meta: `${session.session.contextLabel} · ${session.session.updatedAtText}`,
-        status: (
-          <StatusTag
-            label={statusLabelByKey[session.session.status.status] ?? "就绪"}
-            tone={
-              session.session.status.status === "loading"
-                ? "processing"
-                : session.session.status.status === "warning" ||
-                    session.session.status.status === "risk"
-                  ? "warning"
-                  : session.session.status.status === "success" ||
-                      session.session.status.status === "ready"
-                    ? "success"
-                    : "default"
-            }
-          />
-        ),
         title: session.session.title
       }))}
       onBack={onBack}
