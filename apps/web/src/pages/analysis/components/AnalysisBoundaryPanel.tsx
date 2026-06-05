@@ -36,9 +36,15 @@ const crossPageSources: Array<{
   },
   {
     detailRoute: "evaluation",
-    key: "evaluation-feedback",
-    labelKey: "analysis.source.evaluationFeedback.label",
-    summaryKey: "analysis.source.evaluationFeedback.boundary"
+    key: "evaluation",
+    labelKey: "analysis.source.evaluation.label",
+    summaryKey: "analysis.source.evaluation.boundary"
+  },
+  {
+    detailRoute: "feedback",
+    key: "feedback",
+    labelKey: "analysis.source.feedback.label",
+    summaryKey: "analysis.source.feedback.boundary"
   },
   {
     detailRoute: "model-tools",
@@ -57,14 +63,6 @@ const responsibilityKeys = [
   "analysis.boundary.dataKnowledge",
   "analysis.boundary.metrics",
   "analysis.boundary.platform"
-] as const;
-
-const handlingKeys = [
-  "analysis.gapHandling.noAdHocEntrances",
-  "analysis.gapHandling.noUnreviewedFields",
-  "analysis.gapHandling.useStaticViewModel",
-  "analysis.gapHandling.noRawData",
-  "analysis.gapHandling.returnToReview"
 ] as const;
 
 export function AnalysisBoundaryPanel({ onNavigate }: AnalysisComponentProps) {
@@ -133,23 +131,8 @@ export function AnalysisBoundaryPanel({ onNavigate }: AnalysisComponentProps) {
       >
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
           <Typography.Text>{t("analysis.assist.description")}</Typography.Text>
-          <Typography.Text type="secondary">{t("analysis.assist.drawerBoundary")}</Typography.Text>
+          <Typography.Text type="secondary">{t("analysis.assist.detailBoundary")}</Typography.Text>
         </Space>
-      </AppBaseCard>
-
-      <AppBaseCard
-        eyebrow={t("analysis.gapHandling.cardEyebrow")}
-        title={t("analysis.gapHandling.cardTitle")}
-      >
-        <List
-          dataSource={[...handlingKeys]}
-          renderItem={(key) => (
-            <List.Item>
-              <Typography.Text>{t(key)}</Typography.Text>
-            </List.Item>
-          )}
-          size="small"
-        />
       </AppBaseCard>
     </AppSection>
   );

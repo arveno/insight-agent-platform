@@ -52,9 +52,16 @@ const sourceRows: Array<{
   {
     detailRoute: "evaluation",
     iconName: "evaluation",
-    key: "evaluation-feedback",
-    labelKey: "analysis.source.evaluationFeedback.label",
-    summaryKey: "analysis.source.evaluationFeedback.summary"
+    key: "evaluation",
+    labelKey: "analysis.source.evaluation.label",
+    summaryKey: "analysis.source.evaluation.summary"
+  },
+  {
+    detailRoute: "feedback",
+    iconName: "feedback",
+    key: "feedback",
+    labelKey: "analysis.source.feedback.label",
+    summaryKey: "analysis.source.feedback.summary"
   },
   {
     detailRoute: "model-tools",
