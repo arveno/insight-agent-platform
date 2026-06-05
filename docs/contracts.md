@@ -61,7 +61,21 @@ DataQualityCheck
 
 ## 3. ID 规则
 
-统一使用 camelCase contract 字段：
+统一使用 camelCase contract 字段。
+
+跨前后端共享链路、产品对象链路和 UI 可见业务链路必须使用统一 canonical business id。
+
+同一个业务对象在 `contracts / API / backend / frontend service / mapper / ViewModel / UI / route / action / inspector` 中只能有一个 canonical id。
+
+不得长期存在：
+
+```text
+id || xxxId
+oldId || newId
+metadata.xxxId || xxxId
+```
+
+已进入 `packages/contracts` 的 canonical ID 至少包括：
 
 ```text
 workspaceId
@@ -74,6 +88,9 @@ fieldId
 knowledgeDocumentId
 knowledgeChunkId
 metricId
+metricFormulaId
+metricThresholdId
+metricLineageId
 analysisTaskId
 runId
 eventId
@@ -83,11 +100,65 @@ sourceEvidenceId
 memoryItemId
 feedbackId
 badCaseId
+datasetId
 evaluationRunId
 reportId
+reportSectionId
 decisionId
+actionSuggestionId
+modelConfigId
+routingPolicyId
+promptVersionId
+toolDefinitionId
+ragStrategyId
+jobId
+notificationId
+dataQualityCheckId
 auditLogId
+permissionPolicyId
+riskRuleId
 ```
+
+新产品体验模型中以下对象已经进入审查范围，但本次文档更新不代表 schema 已完成：
+
+```text
+findingId
+conversationId
+messageId
+turnId
+```
+
+这些对象如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts`。
+
+命名边界固定如下：
+
+- `eventId`：当前 `RunEvent` 的 canonical id。
+- `runEventId`：只有在未来引入独立于 `RunEvent` 的新对象并同步更新 `docs/contracts.md` 与 `packages/contracts` 后才允许使用。
+- 在当前链路中，不允许把 `eventId` 和 `runEventId` 当作同义字段混用。
+
+以下字段只允许作为本地表达，不得替代 canonical object id：
+
+```text
+key
+targetId
+pendingId
+draftId
+clientMessageId
+localOnlyId
+```
+
+例如：
+
+- `StaticSummaryItemViewModel.key` 可以作为 UI 列表 key。
+- `StaticFeedbackEntranceViewModel.targetId / targetType` 可以作为 UI 本地表达。
+- 以上字段都不得替代 `runId`、`reportId`、`sourceEvidenceId`、`metricId` 等 canonical object id。
+
+当前已知风险：
+
+- `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
+- `product-experience.html` 已引入 `findingId`、`conversationId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId`。
+- `findingId / conversationId / messageId` 如后续进入共享链路，必须先完成 contracts 文档与 schema 审查。
+- `eventId` 与 `runEventId` 的命名边界必须保持单义，避免在 Observability / Inspector / Action 链路中产生双轨。
 
 禁止混用：
 

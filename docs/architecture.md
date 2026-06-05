@@ -142,6 +142,32 @@ database/mysql/           # MySQL 数据库事实源
 
 后续新能力必须落入这些模块之一，不允许随意新增孤立大模块。
 
+### 产品体验对象层级
+
+产品体验模型固定按以下对象层级组织：
+
+```text
+Workspace
+-> Time Window / Finding
+-> Conversation / Message
+-> Run / RunEvent / ToolCall / ModelCall
+-> Evidence / Source
+-> Report / ReportSection / Decision / ActionSuggestion
+-> Feedback / Evaluation
+```
+
+对象职责固定如下：
+
+- `Workspace`：最上层企业空间上下文，承载租户、业务域、权限和时间窗口。
+- `Finding`：问题、异常或机会点，是 Dashboard 的核心观察对象。
+- `Conversation`：围绕某个问题展开的分析过程。
+- `Message / Turn`：Conversation 内的多轮对话和交互单元。
+- `Run`：后台执行记录，承载状态、成本、事件、工具调用和模型调用。
+- `Trace`：Run 的执行详情视图，不等同于单独业务对象。
+- `Evidence / Source`：结论依据、来源和追溯入口。
+- `Report`：分析结果沉淀，承载报告段落、建议和决策上下文。
+- `Feedback / Evaluation`：结果质量闭环，不与 Memory 混用。
+
 ## 5. 前端架构
 
 前端采用 feature-based architecture。
@@ -219,6 +245,18 @@ API Response
 ```
 
 UI 不得直接消费 raw API response。
+
+### 产品体验页面职责
+
+- `Workspace`：最上层容器和当前空间上下文，不是普通业务菜单项。
+- `Dashboard`：`Finding-first`，承接问题发现、摘要判断和进入 Analysis / Reports / Evidence 的入口。
+- `Analysis`：`Conversation-first`，承接多轮分析、消息流和当前会话上下文。
+- `Reports`：`Report-first`，承接报告列表、报告阅读、报告段落和决策沉淀。
+- `Observability`：`Run / Trace detail`，承接运行详情、事件、ToolCall、ModelCall、成本和错误定位。
+- `Data & Knowledge`：数据、知识和证据资产层。
+- `Metrics`：指标、阈值、口径、血缘和异常规则层。
+- `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层。
+- `Governance / Feedback / Evaluation / Memory / Platform Operations / Settings`：支撑、治理、质量和平台能力页面。
 
 ### 前端职责边界
 

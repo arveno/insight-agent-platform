@@ -18,10 +18,14 @@
 ```text
 需求输入
 -> 需求分析 / 任务拆解
+-> 产品体验原型确认
+-> 文档事实源更新
+-> Issue 体系重整
 -> 创建 Issue
 -> Issue 合规审查
 -> Issue 审查通过
 -> Codex 执行
+-> 人工截图验收
 -> 创建 PR
 -> PR 按 Issue 反查
 -> CI / 测试 / 契约检查
@@ -29,6 +33,22 @@
 ```
 
 任何节点未完成时，不允许跳到后续节点。
+
+产品体验与正式 UI 相关任务固定追加门禁：
+
+```text
+产品体验原型确认
+-> 文档事实源更新
+-> Issue 体系重整
+-> 正式 UI 实现
+-> 人工截图验收
+```
+
+明确禁止：
+
+- 不能从原型直接进入正式代码。
+- 不能用口头规则覆盖文档事实源。
+- Issue 重整必须发生在正式 UI 实现前。
 
 ## 4. 需求分析阶段
 
@@ -61,6 +81,7 @@ Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format
 - `docs/architecture.md`。
 - `docs/contracts.md`。
 - `packages/contracts`。
+- 涉及产品体验、导航、页面职责、Inspector 的任务还必须包含 `docs/prototypes/product-experience.html`。
 
 Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”，必须摘出本次任务相关规则。
 
@@ -97,6 +118,7 @@ Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”�
 - Codex 不能新增无关依赖、无关目录、无关抽象或无关重构。
 - Codex 发现 Issue 不清楚时，必须停止执行，说明问题，退回 Issue 补充。
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
+- 涉及正式 UI 的任务，Codex 不得绕过 `docs/prototypes/product-experience.html`、`docs/ui-design.md`、`docs/contracts.md` 中已确认的产品体验、页面编排和 canonical id 规则。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
 
@@ -158,6 +180,7 @@ Merge 必须同时满足：
 明确禁止：
 
 - 需求直接交给 Codex 写代码。
+- 从产品体验原型直接跳到正式代码。
 - Issue 未审查通过就执行。
 - PR 超出 Issue 范围。
 - 发现规则缺失时直接补代码。

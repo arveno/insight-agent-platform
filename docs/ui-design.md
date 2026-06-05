@@ -25,11 +25,14 @@
 architecture / contracts / database
 = 系统能力、数据对象、字段语义事实源
 
+docs/prototypes/product-experience.html
+= 产品体验事实源，定义页面关系、用户路径、对象归属、页面职责和入口流向
+
 docs/ui-design.md
-= UI 流程、设计语言、Figma 线稿流程、功能覆盖矩阵、设计交接和审查规则事实源
+= 正式 Web UI 编排、导航骨架、InspectorSlot、Page Composition、设计交接和审查规则事实源
 
 Figma Wireframe
-= 页面结构、入口、区域、跳转、Web / Mobile Browser 线稿和交互原型事实源
+= 在不违反前述事实源的前提下，承载 Web / Mobile Browser 线稿和交互表达
 
 Figma Visual Design
 = 最终视觉效果、组件状态、响应式效果事实源
@@ -46,8 +49,10 @@ Code
 
 冲突处理：
 
+- `docs/prototypes/product-experience.html` 不得被当作正式 React 组件结构、API、DB、contracts、ViewModel 或真实 Agent Run 的事实源。
+- HTML 原型用于定义产品体验，不直接定义正式组件树。
 - Figma 不得推翻 `docs/architecture.md`、`docs/contracts.md`、`docs/database.md` 或 `packages/contracts`。
-- Figma 不得静默覆盖 `docs/ui-design.md`。
+- Figma 不得静默覆盖 `docs/ui-design.md` 或 `docs/prototypes/product-experience.html`。
 - Code 不得绕过 GitHub Issue 和 PR 证据要求。
 - 如果 Figma、文档、Issue、PR、Code 之间发生冲突，必须回到 Issue 审查。
 - Issue #8 和 PR #9 只能作为历史背景，不作为当前执行依据。
@@ -57,7 +62,9 @@ Code
 UI/Figma 工作流固定为：
 
 ```text
-docs/ui-design.md
+docs/prototypes/product-experience.html
+-> docs/ui-design.md / docs/architecture.md / docs/contracts.md / docs/workflow.md / AGENTS.md
+-> Issue 体系重整
 -> Function Coverage Matrix
 -> Information Architecture
 -> User Flows
@@ -71,9 +78,24 @@ docs/ui-design.md
 -> Code
 ```
 
+正式 UI 实现追加门禁：
+
+```text
+产品体验原型确认
+-> 文档事实源更新
+-> Issue 体系重整
+-> 正式 UI 实现
+-> 人工截图验收
+```
+
 执行规则：
 
-- `docs/ui-design.md` 先定义流程、规则和审查标准。
+- `docs/prototypes/product-experience.html` 先定义页面关系、对象归属、用户路径和入口流向。
+- 文档事实源必须先承接产品体验模型，再进入 Figma、Issue 和代码。
+- 不能从原型直接进入正式代码。
+- 不能用口头规则覆盖文档事实源。
+- Issue 重整必须发生在正式 UI 实现前。
+- `docs/ui-design.md` 先定义正式 UI 编排规则、导航模型、InspectorSlot 和审查标准。
 - Function Coverage Matrix 先确认功能覆盖、入口和 contracts 对齐。
 - Information Architecture 先确定一级导航、模块分组、页面归属和跨页面关系。
 - User Flows 先确定主任务路径、异常路径和审批 / 反馈路径。
@@ -81,6 +103,7 @@ docs/ui-design.md
 - Figma Visual Design 必须基于已定稿 Wireframe。
 - Design-to-Code Check 必须先判断可实现性，再进入开发 Issue。
 - Dev Handoff 必须提供具体 Page / Frame / 版本或更新时间。
+- 正式 UI 实现后必须进行人工截图验收，再进入 PR 审查。
 - Code 只能按已审查通过的 Issue 执行。
 
 ## 4. 统一 UI 设计语言
@@ -107,9 +130,80 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
 
+### 产品体验事实源承接
+
+- `docs/prototypes/product-experience.html` 是产品体验事实源。
+- 它用于定义页面关系、用户路径、对象归属、页面职责和入口流向。
+- 它不是正式 React 组件结构、API、DB、contracts、ViewModel、真实 Agent Run 的事实源。
+- 正式实现仍以 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 为约束。
+
+### 产品体验页面类型
+
+- `Workspace`：最上层容器和当前空间上下文，不作为普通业务菜单项。
+- `Dashboard = Finding-first`：先承接问题发现，再进入 Analysis、Reports、Evidence、Metrics。
+- `Analysis = Conversation-first`：先承接会话、消息、当前分析上下文和追问。
+- `Reports = Report-first`：先承接报告列表、阅读和报告段落。
+- `Observability = Run / Trace detail`：承接运行详情、Trace、ToolCall、ModelCall 和错误定位。
+- `Data & Knowledge`：数据、知识和证据资产页。
+- `Metrics`：指标、阈值、口径、血缘和异常规则页。
+- `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台配置页。
+- `Governance / Feedback / Evaluation / Memory / Platform Operations / Settings`：支撑、治理、质量和平台能力页。
+
+### LeftNav / 导航模型
+
+- `Workspace` 是顶部上下文，不是普通菜单项。
+- 全局导航只承载主工作区和能力分组。
+- `Analysis`、`Reports` 可以进入模块内导航。
+- 模块内导航覆盖 LeftNav 区域，并提供返回主导航能力。
+- 详情型页面不应默认作为主业务一级入口。
+
+建议结构：
+
+- 全局导航：`Workspace 当前空间`、`Dashboard`、`Analysis`、`Reports`、`Metrics`、`Data & Knowledge`、`Models & Tools`、`Governance`、`Memory`、`Observability`、`Feedback`、`Evaluation`、`Platform Operations`、`Settings`。
+- 模块内导航：`Analysis = 会话列表 / 新建会话 / 搜索会话`；`Reports = 报告列表 / 报告筛选`。
+- 详情型入口：`Observability = Run / Trace detail`；`Data & Knowledge = Evidence / Source detail`；`Metrics = Metric detail`；`Feedback / Evaluation = 质量闭环入口`。
+
+### InspectorSlot
+
+- Inspector 不是每页默认右侧说明栏。
+- Inspector 是统一的可插拔上下文插槽。
+- 页面可以选择是否启用 Inspector。
+- 页面通过当前选中对象提供 `inspectorContext`。
+- Inspector 根据 `subjectType` 插入能力卡片。
+
+默认策略：
+
+- `Dashboard` 默认不启用 Inspector。
+- `Analysis` 需要 Inspector，用于当前 `Conversation / Message / Run / Evidence / Report / Feedback` 上下文。
+- `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
+- `Observability / Metrics / Data & Knowledge / Models & Tools` 第一版默认不强制启用 Inspector。
+
+建议能力卡片类型：
+
+- `RunSummary`
+- `TraceSummary`
+- `Evidence`
+- `Source`
+- `Report`
+- `Feedback`
+- `Metric`
+- `ModelTool`
+
 ## Page Composition Rules
 
-Page Composition 是 Web 页面默认组合层级，Dashboard、#103、#104 后续页面必须优先复用。
+Page Composition 是正式 Web 页面默认组合层级。
+
+默认页面编排必须使用 `AppSectionStack / AppSection / AppCardGrid / AppBaseCard / AppActionGroup / AppActionButton` 单轨。
+
+特殊页面可以不用 `AppCardGrid` 作为主结构，但仍必须复用底层 `Card / Action / Tag / InspectorSlot` 规则。
+
+明确禁止：
+
+- 恢复 `AppContentCard`。
+- 形成 `AppContentCard / AppBaseCard` 双轨。
+- 页面私自重建 `Card / Tag / Action / Grid` 外壳。
+- 万能 JSON 页面渲染器。
+- 万能业务卡片。
 
 ### 默认页面层级
 
@@ -167,7 +261,7 @@ AppShell
 
 Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级页面。
 
-特殊页面可以不使用 CardGrid 主结构，但必须落入 Page Archetype，并继续复用 Action / Card / Tag / RightAssistPanel 等底层规则。
+特殊页面可以不使用 CardGrid 主结构，但必须落入 Page Archetype，并继续复用 Action / Card / Tag / InspectorSlot 等底层规则。
 
 ## Card / Tag / Action Slot Rules
 
@@ -183,7 +277,7 @@ Card / Tag / Action Slot 是 Web 页面卡片结构的长期规则，Dashboard�
 | ReportCard     | 报告摘要 / 建议动作        | 周经营分析报告         | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
 | EvidenceCard   | 证据 / 来源 / 可信度       | 季度收入证据摘要       | `shared/ui/cards/AppBaseCard` / `SourceEvidenceList` |
 | OperationsCard | 任务 / 数据质量 / 运维状态 | 平台质量               | `shared/ui/cards/AppBaseCard` + 页面私有组合         |
-| AssistCard     | 右侧栏上下文               | 相关证据、运行轨迹     | `RightAssistPanel` 内部结构                          |
+| AssistCard     | Inspector 上下文能力卡     | 相关证据、运行轨迹     | `InspectorSlot` / 其内部渲染容器                     |
 
 规则：
 
@@ -242,7 +336,7 @@ Card
 - Section 级模块入口放在 Section Header 右侧。
 - 卡片内部动作统一放在 Footer Actions 左下横向排列。
 - 证据 / Trace 条目动作可以跟随条目展示，但必须弱化，并走 `AppActionGroup` / `AppActionButton`。
-- RightAssistPanel 动作在分组内左对齐横向排列。
+- Inspector 内动作在分组内左对齐横向排列。
 - 证据、来源、运行轨迹等溯源动作统一使用 `sourceLink`，并在 `AppActionGroup` 排序中置后。
 
 ## Section Card Grid Rules
@@ -288,7 +382,7 @@ Section Card Grid 是 Web 页面中卡片排列的长期规则，Dashboard、#10
 
 ## Dashboard Visual Language Rules
 
-Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源规则，只服务视觉层级、主题适配、图标语义、卡片质感和右侧辅助区质感，不改变 #100 已沉淀的 Page Composition / Section / Grid / Card / Tag / Action 结构。
+Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源规则，只服务视觉层级、主题适配、图标语义、卡片质感和 Inspector 质感，不改变 #100 已沉淀的 Page Composition / Section / Grid / Card / Tag / Action 结构。
 
 ### Light / Dark Theme
 
@@ -298,7 +392,7 @@ Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源�
 - 不复制 Dashboard 组件承接 dark theme。
 - 不在 Dashboard 页面组件中硬编码颜色。
 - 不在页面中散写 light / dark 条件分支。
-- 页面背景、卡片背景、卡片边框、弱阴影、右侧栏背景、弱文本、主行动、证据 / Trace / 数据来源链接都必须通过 Ant Design token 或 `shared/theme` 语义 token 承接。
+- 页面背景、卡片背景、卡片边框、弱阴影、Inspector 背景、弱文本、主行动、证据 / Trace / 数据来源链接都必须通过 Ant Design token 或 `shared/theme` 语义 token 承接。
 
 ### Token Usage
 
@@ -318,7 +412,7 @@ Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源�
 
 - `AppIcon` 是项目唯一图标出口。
 - `AppIcon` 支持 `glyph` / `badge` 两种形态。
-- `glyph` 用于 LeftNav、Section、Header、RightAssistPanel 等非按钮场景。
+- `glyph` 用于 LeftNav、Section、Header、Inspector 等非按钮场景。
 - `badge` 用于按钮和能力动作，保留 Capability Badge Icon。
 - `AppActionButton` 继续只接收 `iconName`，内部固定使用 `variant="badge"`。
 - 页面、Dashboard 组件、Card 组件、Action 组件不得直接 import `@ant-design/icons`。
@@ -332,11 +426,12 @@ Dashboard Visual Language 是 #101 Dashboard 专业化视觉语言的事实源�
 - 卡片层级要服务业务扫描：主值 / 标题优先，趋势 / 证据 / 来源为弱层级，动作在 Footer Actions。
 - 不允许为了视觉效果重写 Section / Grid / Card / Tag / Action 结构。
 
-### RightAssistPanel
+### InspectorSlot Visual Rules
 
-- RightAssistPanel 必须像上下文助手，而不是字段清单或一整块黑色文本区。
-- 右侧栏背景、边界、弱阴影、分组标题、证据列表和 Trace 列表必须在 Light / Dark 下均可读。
-- 右侧栏可使用 `glyph` 辅助分组识别，但仍不得展示 raw Trace、Tool raw output、模型原始输出或实现语言。
+- InspectorSlot 必须像上下文助手，而不是字段清单或默认常驻说明栏。
+- 页面未提供 `inspectorContext` 时，默认不渲染 InspectorSlot。
+- Inspector 背景、边界、弱阴影、分组标题、证据列表和 Trace 列表必须在 Light / Dark 下均可读。
+- Inspector 可使用 `glyph` 辅助分组识别，但仍不得展示 raw Trace、Tool raw output、模型原始输出或实现语言。
 
 ### Dependency Boundary
 
@@ -352,7 +447,7 @@ Web 规则：
 
 - 左侧导航和顶部 Header 由 AppShell 承载。
 - 主内容区承载页面核心任务。
-- 右侧辅助区可承载 Trace、Source Evidence、Report Outline、审计详情和配置详情。
+- InspectorSlot 可承载 Trace、Source Evidence、Report Outline、审计详情和配置详情。
 - 表格、图表、报告和详情必须有清晰区域边界。
 - 高风险操作必须有明确确认、权限态和审计入口。
 
@@ -360,7 +455,7 @@ Mobile Browser 规则：
 
 - 左侧导航折叠为 Drawer 或顶部菜单。
 - 主内容区单列优先。
-- 右侧辅助区改为 Drawer、Tabs 或详情页。
+- InspectorSlot 改为 Drawer、Tabs 或详情页。
 - 表格优先卡片化；确需表格时允许横向滚动，但必须保留主字段和状态。
 - 复杂任务拆分为 Steps、Tabs、Collapse 或分段表单。
 - Mobile Browser 设计必须在 Figma Wireframe 和 Visual Design 中独立表达。
@@ -558,7 +653,7 @@ Web Wireframe 必须表达页面结构，不表达最终视觉细节。
 - 顶部区域。
 - 左侧导航或局部导航。
 - 主内容区。
-- 右侧辅助区。
+- InspectorSlot 或其替代承接方式。
 - 主要操作。
 - 次要操作。
 - loading / empty / error 状态位置。
@@ -606,7 +701,7 @@ Shared Regions & Components 用于识别跨页面复用的布局区域和 UI 组
 候选范围：
 
 - `shared/ui`：StatusTag、RiskBadge、EmptyState、ErrorState、LoadingState、FeedbackPanel、SourceEvidenceList、TraceTimeline 等。
-- `shared/layout`：AppShell、PageHeader、FilterBar、RightAssistPanel、ResponsivePageShell 等。
+- `shared/layout`：AppShell、PageHeader、FilterBar、InspectorSlot 容器、ResponsivePageShell 等。
 - `shared/theme`：颜色、间距、字号、圆角、阴影、图表 token。
 - `shared/charts`：指标趋势、成本趋势、评估结果、数据质量图表。
 
