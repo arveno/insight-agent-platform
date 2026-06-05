@@ -7,6 +7,7 @@
 - 页面关系
 - 用户路径
 - 对象归属
+- 页面职责
 - 入口流向
 
 它不代表正式 React 组件结构，不定义 API / DB / contracts，不实现真实 Agent Run。
@@ -28,7 +29,7 @@
 
 LeftNav 原型采用两级导航：
 
-1. 全局导航：Workspace + 主工作区 + 能力分组
-2. 模块内导航：Analysis 会话列表 / Reports 报告列表
+1. 全局导航：Workspace 当前空间 + 主工作区 + 能力分组
+2. 模块内导航：Analysis 会话列表 / Reports 报告列表，并覆盖 LeftNav 区域后提供返回主导航能力
 
 打开方式：直接在浏览器中打开 `docs/prototypes/product-experience.html`。

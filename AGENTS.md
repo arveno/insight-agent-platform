@@ -34,6 +34,8 @@
 
 并在 Issue 中摘出本次任务相关规则。
 
+涉及正式 Web UI、导航、页面职责、Inspector、页面流转的任务，必须额外反查 `docs/prototypes/product-experience.html` 作为产品体验事实源。
+
 ## 3. Issue 合规审查
 
 Issue 建立后必须先完成合规审查，审查通过后才允许进入 Codex 代码执行阶段。
@@ -67,8 +69,12 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 ### Codex 代码生成硬规则
 
 - Codex 只能在已审查通过的 Issue 范围内写代码。
+- 正式实现必须反查 `docs/prototypes/product-experience.html` 作为产品体验事实源。
+- HTML 原型不得作为正式 React 组件结构、API、DB、contracts、ViewModel 或真实 Agent Run 的事实源。
 - Codex 不允许为了“保险”新增双轨实现。
 - Codex 不允许新增 `oldField || newField`、`mockData || realData`、`status === "done" || status === "success"` 这类兜底代码。
+- 代码型 Issue 必须遵守 ID Contract P0 公共守门规则。
+- Codex 不允许新增 `id || xxxId`、`oldId || newId`、`metadata.xxxId || xxxId` 这类 ID fallback / legacy id / 多字段兜底。
 - Codex 不允许新增无关依赖。
 - Codex 不允许无关重构。
 - Codex 不允许为了炫技做过度抽象。
@@ -101,14 +107,17 @@ Issue 建立后必须先完成合规审查，审查通过后才允许进入 Code
 - 一字段一语义。
 - 一语义一字段。
 - 同一链路尽量保持字段名一致。
+- 跨前后端共享链路、产品对象链路和 UI 可见业务链路必须使用 canonical business id。
 - 字段转换只允许出现在 DB repository、API schema、ViewModel mapper 三个明确边界。
+
+`LeftNav`、`Inspector`、`Action`、`Route`、`ViewModel` 任务必须反查 canonical id，不得把本地 `key`、`pendingId`、`draftId`、`targetId` 升格为共享业务 ID。
 
 禁止：
 
 ```ts
-run.id || run.runId || run.analysisRunId
-status === 'done' || status === 'completed' || status === 'success'
-source.sources || source.evidences || source.references
+run.id || run.runId || run.analysisRunId;
+status === "done" || status === "completed" || status === "success";
+source.sources || source.evidences || source.references;
 ```
 
 ## 6. 数据链路
