@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography, theme } from "antd";
 
+import { shellThemeTokens } from "../../theme";
 import { EmptyState, type EmptyStateProps } from "../../ui";
 
 export type RightAssistPanelProps = {
@@ -26,7 +27,7 @@ export function RightAssistPanel({
   empty,
   open = true,
   title,
-  width = 360
+  width = shellThemeTokens.inspectorWidth
 }: RightAssistPanelProps) {
   const { token } = theme.useToken();
 
@@ -39,8 +40,7 @@ export function RightAssistPanel({
       style={{
         alignSelf: "stretch",
         background: token.colorBgElevated,
-        borderLeft: `1px solid ${token.colorBorderSecondary}`,
-        boxShadow: token.boxShadowTertiary,
+        borderLeft: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
         flex: `0 0 ${width}px`,
         maxWidth: width,
         minHeight: 0,
@@ -50,11 +50,11 @@ export function RightAssistPanel({
       }}
     >
       <Card
-        bordered={false}
         style={{ background: "transparent", minHeight: "100%" }}
-        styles={{ body: { padding: token.paddingLG } }}
+        styles={{ body: { padding: shellThemeTokens.panelPadding } }}
+        variant="borderless"
       >
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+        <Space direction="vertical" size={shellThemeTokens.shellSectionGap} style={{ width: "100%" }}>
           <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
             <Space direction="vertical" size={4}>
               <Typography.Text strong>{title}</Typography.Text>

@@ -1,4 +1,11 @@
-export type { AppShellNavigationGroupViewModel, AppShellNavigationItemViewModel, AppShellStaticViewModel } from "./appShellViewModel";
+export type {
+  AppShellInspectorViewModel,
+  AppShellNavigationGroupKind,
+  AppShellNavigationGroupViewModel,
+  AppShellNavigationItemViewModel,
+  AppShellStaticViewModel,
+  AppShellWorkspaceOptionViewModel
+} from "./appShellViewModel";
 export type {
   StaticActionIntent,
   StaticActionViewModel,

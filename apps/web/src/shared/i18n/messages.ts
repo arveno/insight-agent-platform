@@ -146,6 +146,8 @@ export const messages = {
     "nav.group.modelObserve": "模型与观测",
     "nav.group.platform": "平台",
     "nav.group.primary": "主导航",
+    "nav.group.primaryEntrances": "主入口",
+    "nav.group.previewEntrances": "能力预览",
     "nav.group.qualityControl": "质量闭环",
     "nav.group.work": "业务工作区",
     "nav.memory": "记忆",
@@ -302,6 +304,27 @@ export const messages = {
     "rightAssist.section.contextActions.title": "上下文动作",
     "rightAssist.section.evidence.title": "相关证据",
     "rightAssist.section.trace.title": "运行轨迹",
+    "shell.inspector.analysis.description": "分析用于进入当前工作区的分析能力和追问入口。",
+    "shell.inspector.contextLabel": "当前上下文",
+    "shell.inspector.dashboard.description": "仪表盘用于查看当前工作区概览、异常和进入分析。",
+    "shell.inspector.dataKnowledge.description": "数据与知识用于管理数据源、知识资产和相关入口。",
+    "shell.inspector.evaluation.description": "评估用于查看质量评估、评分结果和数据集入口。",
+    "shell.inspector.feedback.description": "反馈用于承接结果纠偏、采纳状态和人工反馈入口。",
+    "shell.inspector.governance.description": "治理用于查看权限、风险策略和审计入口。",
+    "shell.inspector.memory.description": "记忆用于查看系统长期记忆及其使用情况。",
+    "shell.inspector.metrics.description": "指标用于定义口径、阈值、血缘和异常规则。",
+    "shell.inspector.modelTools.description":
+      "模型与工具用于配置模型、Prompt、Tool、RAG 策略等平台能力。",
+    "shell.inspector.observability.description":
+      "观测用于查看运行轨迹、成本、延迟和错误定位入口。",
+    "shell.inspector.platformOperations.description":
+      "平台运维用于查看任务、通知和数据质量入口。",
+    "shell.inspector.reports.description": "报告用于查看当前工作区的报告列表和沉淀结果。",
+    "shell.inspector.settings.description": "设置用于查看系统默认策略、环境配置和偏好入口。",
+    "shell.inspector.workspace.description": "工作区管理用于查看成员、角色、业务域和空间配置入口。",
+    "shell.workspace.currentLabel": "当前工作区",
+    "shell.workspace.manage": "管理工作区",
+    "shell.workspace.switchFeedback": "已模拟刷新当前工作区。",
     settings: "设置",
     "state.disabled.default.message": "当前操作不可用。",
     "state.disabled.default.title": "不可操作",
@@ -495,6 +518,8 @@ export const messages = {
     "nav.group.modelObserve": "Models & Observability",
     "nav.group.platform": "Platform",
     "nav.group.primary": "Primary",
+    "nav.group.primaryEntrances": "Primary",
+    "nav.group.previewEntrances": "Capability Preview",
     "nav.group.qualityControl": "Quality Control",
     "nav.group.work": "Business Workspace",
     "nav.memory": "Memory",
@@ -672,6 +697,38 @@ export const messages = {
     "rightAssist.section.contextActions.title": "Context actions",
     "rightAssist.section.evidence.title": "Related evidence",
     "rightAssist.section.trace.title": "Trace context",
+    "shell.inspector.analysis.description":
+      "Analysis is the entry for workspace analysis capabilities and follow-up questions.",
+    "shell.inspector.contextLabel": "Current context",
+    "shell.inspector.dashboard.description":
+      "Dashboard is used to review the current workspace overview, anomalies, and analysis entry points.",
+    "shell.inspector.dataKnowledge.description":
+      "Data & Knowledge is used to manage data sources, knowledge assets, and related entries.",
+    "shell.inspector.evaluation.description":
+      "Evaluation is used to review quality evaluation, score results, and dataset entries.",
+    "shell.inspector.feedback.description":
+      "Feedback is used for corrections, adoption status, and manual feedback entries.",
+    "shell.inspector.governance.description":
+      "Governance is used to review permissions, risk policies, and audit entries.",
+    "shell.inspector.memory.description":
+      "Memory is used to review long-term system memory and its usage.",
+    "shell.inspector.metrics.description":
+      "Metrics is used to define metric semantics, thresholds, lineage, and anomaly rules.",
+    "shell.inspector.modelTools.description":
+      "Models & Tools is used to configure models, prompts, tools, and RAG strategies.",
+    "shell.inspector.observability.description":
+      "Observability is used to review trace entries, cost, latency, and error diagnosis.",
+    "shell.inspector.platformOperations.description":
+      "Platform Operations is used to review jobs, notifications, and data quality entries.",
+    "shell.inspector.reports.description":
+      "Reports is used to review the current workspace report list and persisted outcomes.",
+    "shell.inspector.settings.description":
+      "Settings is used to review default policies, environment configuration, and preference entries.",
+    "shell.inspector.workspace.description":
+      "Workspace management is used to review members, roles, business domains, and workspace settings.",
+    "shell.workspace.currentLabel": "Current workspace",
+    "shell.workspace.manage": "Manage workspace",
+    "shell.workspace.switchFeedback": "Simulated a workspace refresh for the current view.",
     settings: "Settings",
     "state.disabled.default.message": "The current action is unavailable.",
     "state.disabled.default.title": "Disabled",

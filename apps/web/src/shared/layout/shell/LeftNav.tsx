@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
-import { Badge, Menu, Space } from "antd";
-import type { ItemType, MenuItemType } from "antd/es/menu/interface";
+import { RightOutlined } from "@ant-design/icons";
+import { Button, Flex, Space, Typography, theme } from "antd";
+
+import { shellThemeTokens } from "../../theme";
 
 export type NavigationItem = {
   badge?: ReactNode;
@@ -11,6 +13,7 @@ export type NavigationItem = {
 };
 
 export type NavigationGroup = {
+  kind?: "primary" | "preview";
   items: NavigationItem[];
   key: string;
   label?: ReactNode;
@@ -22,20 +25,6 @@ export type LeftNavProps = {
   selectedKey?: string;
 };
 
-function createMenuItem(item: NavigationItem): MenuItemType {
-  return {
-    disabled: item.disabled,
-    icon: item.icon,
-    key: item.key,
-    label: (
-      <Space>
-        {item.label}
-        {item.badge ? <Badge count={item.badge} size="small" /> : null}
-      </Space>
-    )
-  };
-}
-
 /**
  * Web 左侧导航容器。
  *
@@ -43,27 +32,141 @@ function createMenuItem(item: NavigationItem): MenuItemType {
  * 组件不新增路由、不删除低频入口，也不维护独立导航事实源。
  */
 export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
-  const items = groups.reduce<ItemType[]>((result, group) => {
-    if (!group.label) {
-      result.push(...group.items.map(createMenuItem));
-      return result;
-    }
-
-    result.push({
-      children: group.items.map(createMenuItem),
-      key: group.key,
-      label: group.label,
-      type: "group"
-    });
-    return result;
-  }, []);
+  const { token } = theme.useToken();
 
   return (
-    <Menu
-      items={items}
-      mode="inline"
-      onClick={({ key }) => onSelect?.(String(key))}
-      selectedKeys={selectedKey ? [selectedKey] : []}
-    />
+    <nav
+      aria-label="Shell navigation"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: shellThemeTokens.navGroupGap,
+        paddingInline: shellThemeTokens.navPaddingInline
+      }}
+    >
+      {groups.map((group) => (
+        <section key={group.key}>
+          {group.label ? (
+            <Typography.Text
+              style={{
+                color: token.colorTextDescription,
+                display: "block",
+                fontSize: token.fontSizeSM,
+                fontWeight: token.fontWeightStrong,
+                letterSpacing: 0.2,
+                marginBottom: token.marginSM,
+                textTransform: "uppercase"
+              }}
+            >
+              {group.label}
+            </Typography.Text>
+          ) : null}
+          <Space
+            direction="vertical"
+            size={
+              group.kind === "primary"
+                ? shellThemeTokens.navPrimaryItemGap
+                : shellThemeTokens.navPreviewItemGap
+            }
+            style={{ width: "100%" }}
+          >
+            {group.items.map((item) => {
+              const isPrimary = group.kind === "primary";
+              const isSelected = selectedKey === item.key;
+              const iconColor = isSelected
+                ? token.colorPrimary
+                : isPrimary
+                  ? token.colorText
+                  : token.colorTextSecondary;
+              const itemBackground = isSelected
+                ? isPrimary
+                  ? token.colorBgContainer
+                  : token.colorFillSecondary
+                : "transparent";
+              const itemBorderColor =
+                isSelected && isPrimary ? token.colorBorderSecondary : "transparent";
+              const itemTextColor =
+                isPrimary || isSelected ? token.colorText : token.colorTextSecondary;
+              const showEntryArrow = isPrimary && (item.key === "analysis" || item.key === "reports");
+
+              return (
+                <Button
+                  aria-current={isSelected ? "page" : undefined}
+                  block
+                  disabled={item.disabled}
+                  key={item.key}
+                  onClick={() => onSelect?.(item.key)}
+                  style={{
+                    alignItems: "center",
+                    background: itemBackground,
+                    border: `${shellThemeTokens.surfaceBorderWidth}px solid ${itemBorderColor}`,
+                    borderRadius: shellThemeTokens.borderRadiusLG,
+                    boxShadow: "none",
+                    display: "flex",
+                    height: "auto",
+                    justifyContent: "space-between",
+                    paddingBlock: isPrimary
+                      ? shellThemeTokens.navPrimaryPaddingBlock
+                      : shellThemeTokens.navPreviewPaddingBlock,
+                    paddingInline: isPrimary
+                      ? shellThemeTokens.navPrimaryPaddingInline
+                      : shellThemeTokens.navPreviewPaddingInline
+                  }}
+                  type="text"
+                >
+                  <Flex align="center" gap={token.marginXS} style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        color: iconColor,
+                        display: "inline-flex"
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    <Typography.Text
+                      ellipsis
+                      style={{
+                        color: itemTextColor,
+                        textAlign: "left"
+                      }}
+                    >
+                      {item.label}
+                    </Typography.Text>
+                  </Flex>
+                  {showEntryArrow ? (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        color: isSelected ? token.colorTextSecondary : token.colorTextDescription,
+                        display: "inline-flex",
+                        fontSize: token.fontSizeSM
+                      }}
+                    >
+                      <RightOutlined />
+                    </span>
+                  ) : null}
+                  {item.badge ? (
+                    <span
+                      style={{
+                        background: token.colorFillSecondary,
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                        borderRadius: token.borderRadiusSM,
+                        color: token.colorTextDescription,
+                        fontSize: token.fontSizeSM,
+                        lineHeight: 1,
+                        paddingBlock: 2,
+                        paddingInline: token.paddingXS
+                      }}
+                    >
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </Button>
+              );
+            })}
+          </Space>
+        </section>
+      ))}
+    </nav>
   );
 }
