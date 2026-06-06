@@ -199,13 +199,29 @@ export const messages = {
     "page.dataKnowledge.assetKind.knowledgeDocument": "Doc",
     "page.dataKnowledge.description":
       "当前 Workspace 的数据资产、知识资产、证据来源和数据可信状态总览页。",
+    "page.dataKnowledge.inspector.actions.title": "Actions",
+    "page.dataKnowledge.inspector.quality.title": "Quality & Operations Summary",
+    "page.dataKnowledge.inspector.readonly.title": "Readonly Boundary",
+    "page.dataKnowledge.inspector.technical.title": "Technical Boundary",
+    "page.dataKnowledge.inspector.workspace.title": "Workspace Overview",
     "page.dataKnowledge.nav.empty": "暂无匹配资产",
+    "page.dataKnowledge.nav.group.data": "数据资产 Data",
+    "page.dataKnowledge.nav.group.docs": "知识文档 Docs",
     "page.dataKnowledge.nav.searchLabel": "搜索数据与知识资产",
     "page.dataKnowledge.nav.searchPlaceholder": "搜索数据与知识资产",
     "page.dataKnowledge.nav.title": "数据与知识资产",
     "page.dataKnowledge.rightAssist.description":
-      "当前页默认只显示轻量上下文说明；资产目录、证据和质量摘要以主区只读展示为主。",
+      "Inspector 承接当前 Workspace 的全局摘要、只读边界、质量摘要和导航动作。",
     "page.dataKnowledge.rightAssist.title": "数据与知识上下文",
+    "page.dataKnowledge.section.nodeDetail.description":
+      "节点详情区只围绕当前点击节点和当前资产相关 Evidence Usage 展示。",
+    "page.dataKnowledge.section.nodeDetail.title": "Selected node detail",
+    "page.dataKnowledge.section.relationship.description":
+      "围绕当前资产展示 DataSource 或 KnowledgeDocument 到 Evidence / Usage 的关系主线。",
+    "page.dataKnowledge.section.relationship.title": "Asset relationship graph",
+    "page.dataKnowledge.section.selectedAsset.description":
+      "当前主区只展示选中资产自身摘要，不再堆叠全局总览和质量大卡片。",
+    "page.dataKnowledge.section.selectedAsset.title": "当前资产",
     "page.dataKnowledge.section.assetDetail.description":
       "展示当前选中 DataSource 或 KnowledgeDocument 的标准化详情与导航动作。",
     "page.dataKnowledge.section.assetDetail.title": "当前资产详情",
@@ -638,13 +654,29 @@ export const messages = {
     "page.dataKnowledge.assetKind.knowledgeDocument": "Doc",
     "page.dataKnowledge.description":
       "Overview page for the current Workspace data assets, knowledge assets, evidence sources, and data trust state.",
+    "page.dataKnowledge.inspector.actions.title": "Actions",
+    "page.dataKnowledge.inspector.quality.title": "Quality & Operations Summary",
+    "page.dataKnowledge.inspector.readonly.title": "Readonly Boundary",
+    "page.dataKnowledge.inspector.technical.title": "Technical Boundary",
+    "page.dataKnowledge.inspector.workspace.title": "Workspace Overview",
     "page.dataKnowledge.nav.empty": "No matching assets",
+    "page.dataKnowledge.nav.group.data": "Data assets Data",
+    "page.dataKnowledge.nav.group.docs": "Knowledge docs Docs",
     "page.dataKnowledge.nav.searchLabel": "Search data and knowledge assets",
     "page.dataKnowledge.nav.searchPlaceholder": "Search data and knowledge assets",
     "page.dataKnowledge.nav.title": "Data & Knowledge assets",
     "page.dataKnowledge.rightAssist.description":
-      "The first version keeps Inspector lightweight; asset catalog, evidence, and quality summaries stay in the main content.",
+      "Inspector carries the workspace summary, readonly boundaries, quality summary, and navigation-only actions.",
     "page.dataKnowledge.rightAssist.title": "Data & Knowledge context",
+    "page.dataKnowledge.section.nodeDetail.description":
+      "Shows the clicked node detail together with evidence usage for the current asset.",
+    "page.dataKnowledge.section.nodeDetail.title": "Selected node detail",
+    "page.dataKnowledge.section.relationship.description":
+      "Shows the relationship flow from the selected asset to Evidence and Usage.",
+    "page.dataKnowledge.section.relationship.title": "Asset relationship graph",
+    "page.dataKnowledge.section.selectedAsset.description":
+      "Shows the selected asset summary only and removes the old global overview stack from the main content.",
+    "page.dataKnowledge.section.selectedAsset.title": "Current asset",
     "page.dataKnowledge.section.assetDetail.description":
       "Shows the selected DataSource or KnowledgeDocument detail together with navigation-only actions.",
     "page.dataKnowledge.section.assetDetail.title": "Selected asset detail",

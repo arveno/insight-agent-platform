@@ -12,6 +12,7 @@ import { usePlatformOperationsOverviewState } from "../../features/platform-oper
 import { useReportsReaderState } from "../../features/reports/hooks";
 import { analysisStaticViewModel } from "../../features/static-view-models";
 import { AnalysisPageContent } from "../../pages/analysis/Page";
+import { DataKnowledgeInspectorPanel } from "../../pages/data-knowledge/panels/DataKnowledgeInspectorPanel";
 import {
   AppIcon,
   AppShellLayout,
@@ -306,8 +307,12 @@ export function AppShell() {
             selectedReport={reportsReaderState.viewModel.selectedReport}
             workspaceName={selectedWorkspace.name}
           />
-        ) : activeRoute === "data-knowledge" ||
-          activeRoute === "metrics" ||
+        ) : activeRoute === "data-knowledge" ? (
+          <DataKnowledgeInspectorPanel
+            controller={dataKnowledgeOverviewState}
+            onNavigate={handleNavigate}
+          />
+        ) : activeRoute === "metrics" ||
           activeRoute === "platform-operations" ? null : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )

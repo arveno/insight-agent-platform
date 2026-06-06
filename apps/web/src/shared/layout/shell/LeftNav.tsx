@@ -34,7 +34,7 @@ export type LeftNavProps = {
  */
 export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
   const { token } = theme.useToken();
-  const secondaryListRoutes = new Set(["analysis", "metrics", "reports"]);
+  const secondaryListRoutes = new Set(["analysis", "data-knowledge", "metrics", "reports"]);
 
   return (
     <nav

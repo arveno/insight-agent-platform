@@ -18,6 +18,8 @@ import type {
   DataKnowledgeEvidenceViewModel,
   DataKnowledgeFieldViewModel,
   DataKnowledgeQualityCheckViewModel,
+  DataKnowledgeRelationshipGraphViewModel,
+  DataKnowledgeRelationshipNodeViewModel,
   DataKnowledgeSelectedAssetViewModel,
   DataKnowledgeTableViewModel,
   DataKnowledgeViewModel,
@@ -45,14 +47,21 @@ type FieldPresentation = {
 };
 
 type ChunkPresentation = {
+  groupTitle: string;
   summary: string;
+  title: string;
 };
 
 type QualityCheckPresentation = {
-  relatedIds: string[];
   risk?: StaticRiskViewModel;
   statusLabel: string;
   statusView?: StaticStatusViewModel;
+  summary: string;
+  title: string;
+};
+
+type UsagePresentation = {
+  reportId: string;
   summary: string;
   title: string;
 };
@@ -126,22 +135,29 @@ const fieldPresentationById: Record<string, FieldPresentation> = {
 
 const chunkPresentationById: Record<string, ChunkPresentation> = {
   "knowledge-chunk-channel-weekly-18": {
-    summary: "切片保持结构化摘要，用于 Reports 和 Analysis 的证据追溯。"
+    groupTitle: "渠道复盘章节",
+    summary: "切片保持结构化摘要，用于 Reports 和 Analysis 的证据追溯。",
+    title: "促销与获客成本"
   },
   "knowledge-chunk-channel-weekly-19": {
-    summary: "切片描述后续动作建议，但不在本页发起真实任务或索引。"
+    groupTitle: "行动建议章节",
+    summary: "切片描述后续动作建议，但不在本页发起真实任务或索引。",
+    title: "投放日历与确认窗口"
   },
   "knowledge-chunk-finance-kb-07": {
-    summary: "切片用于统一收入口径和字段语义，不展示原始向量负载。"
+    groupTitle: "收入口径章节",
+    summary: "切片用于统一收入口径和字段语义，不展示原始向量负载。",
+    title: "收入确认规则"
   },
   "knowledge-chunk-finance-kb-08": {
-    summary: "切片用于约束 Evidence 标准化边界，不展示 raw 检索结果。"
+    groupTitle: "Evidence 标准章节",
+    summary: "切片用于约束 Evidence 标准化边界，不展示 raw 检索结果。",
+    title: "Evidence 标准化"
   }
 };
 
 const qualityCheckPresentationById: Record<string, QualityCheckPresentation> = {
   "data-quality-check-knowledge-freshness": {
-    relatedIds: ["knowledge-document-channel-weekly", "knowledge-document-finance-kb"],
     risk: warningRisk,
     statusLabel: "Needs review",
     statusView: warningStatus,
@@ -150,7 +166,6 @@ const qualityCheckPresentationById: Record<string, QualityCheckPresentation> = {
     title: "Knowledge freshness review"
   },
   "data-quality-check-refund-reconciliation": {
-    relatedIds: ["data-source-crm-revenue", "table-refund-order"],
     risk: lowRisk,
     statusLabel: "Ready",
     statusView: readyStatus,
@@ -159,13 +174,25 @@ const qualityCheckPresentationById: Record<string, QualityCheckPresentation> = {
     title: "Refund reconciliation"
   },
   "data-quality-check-revenue-completeness": {
-    relatedIds: ["data-source-crm-revenue", "table-sales-order"],
     risk: warningRisk,
     statusLabel: "Attention",
     statusView: warningStatus,
     summary:
       "Revenue completeness 存在需要复核的缺口波动，可能影响收入类指标和报告证据可信度。",
     title: "Revenue completeness"
+  }
+};
+
+const usagePresentationByRunId: Record<string, UsagePresentation> = {
+  "run-channel-margin-review": {
+    reportId: "report-channel-margin-review",
+    summary: "证据被渠道毛利复盘分析和对应报告段落引用，用于解释促销档期影响。",
+    title: "Channel margin review"
+  },
+  "run-revenue-anomaly-q2": {
+    reportId: "report-revenue-anomaly-q2",
+    summary: "证据被收入异常追问 run 和收入异常报告引用，用于解释确认收入与退款扣减。",
+    title: "Revenue anomaly follow-up"
   }
 };
 
@@ -200,94 +227,7 @@ function resolveSelectedAssetKey(
   assetItems: DataKnowledgeViewModel["assetItems"],
   selectedAssetKey: string
 ) {
-  return (
-    assetItems.find((item) => item.key === selectedAssetKey)?.key ?? assetItems[0]?.key
-  );
-}
-
-function createEvidenceItems(
-  selectedAsset: DataKnowledgeSelectedAssetViewModel
-): DataKnowledgeEvidenceViewModel[] {
-  if (selectedAsset.kind === "data_source" && selectedAsset.dataSource) {
-    const tableIds = dataKnowledgeStaticContracts.dataTables
-      .filter((table) => table.dataSourceId === selectedAsset.dataSource?.dataSourceId)
-      .map((table) => table.tableId);
-
-    return dataKnowledgeStaticContracts.sourceEvidences
-      .filter(
-        (evidence) => evidence.sourceType === "data_table" && tableIds.includes(evidence.sourceId)
-      )
-      .map((evidence) => ({
-        ...evidence,
-        confidenceText: formatConfidence(evidence.confidence)
-      }));
-  }
-
-  if (selectedAsset.kind === "knowledge_document" && selectedAsset.knowledgeDocument) {
-    const chunkIds = dataKnowledgeStaticContracts.knowledgeChunks
-      .filter(
-        (chunk) =>
-          chunk.knowledgeDocumentId === selectedAsset.knowledgeDocument?.knowledgeDocumentId
-      )
-      .map((chunk) => chunk.knowledgeChunkId);
-
-    return dataKnowledgeStaticContracts.sourceEvidences
-      .filter((evidence) => {
-        if (evidence.sourceType === "knowledge_document") {
-          return evidence.sourceId === selectedAsset.knowledgeDocument?.knowledgeDocumentId;
-        }
-
-        return (
-          evidence.sourceType === "knowledge_chunk" && chunkIds.includes(evidence.sourceId)
-        );
-      })
-      .map((evidence) => ({
-        ...evidence,
-        confidenceText: formatConfidence(evidence.confidence)
-      }));
-  }
-
-  return [];
-}
-
-function createQualityChecks(
-  selectedAsset: DataKnowledgeSelectedAssetViewModel,
-  workspaceBinding: DataKnowledgeWorkspaceBindingViewModel
-): DataKnowledgeQualityCheckViewModel[] {
-  const relatedIds = new Set<string>();
-
-  if (selectedAsset.kind === "data_source" && selectedAsset.dataSource) {
-    relatedIds.add(selectedAsset.dataSource.dataSourceId);
-    dataKnowledgeStaticContracts.dataTables
-      .filter((table) => table.dataSourceId === selectedAsset.dataSource?.dataSourceId)
-      .forEach((table) => relatedIds.add(table.tableId));
-  }
-
-  if (selectedAsset.kind === "knowledge_document" && selectedAsset.knowledgeDocument) {
-    relatedIds.add(selectedAsset.knowledgeDocument.knowledgeDocumentId);
-  }
-
-  return withWorkspaceBinding(workspaceBinding).dataQualityChecks
-    .filter((qualityCheck) =>
-      qualityCheckPresentationById[qualityCheck.dataQualityCheckId].relatedIds.some((id) =>
-        relatedIds.has(id)
-      )
-    )
-    .map((qualityCheck) => {
-      const presentation = qualityCheckPresentationById[qualityCheck.dataQualityCheckId];
-
-      return {
-        createdAt: qualityCheck.createdAt,
-        dataQualityCheckId: qualityCheck.dataQualityCheckId,
-        risk: presentation.risk,
-        status: qualityCheck.status,
-        statusLabel: presentation.statusLabel,
-        statusView: presentation.statusView,
-        summary: presentation.summary,
-        title: presentation.title,
-        workspaceId: qualityCheck.workspaceId
-      };
-    });
+  return assetItems.find((item) => item.key === selectedAssetKey)?.key ?? assetItems[0]?.key;
 }
 
 function createSelectedAsset(
@@ -341,8 +281,10 @@ function createTables(
     return [];
   }
 
+  const { dataSourceId } = selectedAsset.dataSource;
+
   return dataKnowledgeStaticContracts.dataTables
-    .filter((table) => table.dataSourceId === selectedAsset.dataSource?.dataSourceId)
+    .filter((table) => table.dataSourceId === dataSourceId)
     .map((table) => ({
       ...table,
       fieldCount: dataKnowledgeStaticContracts.dataFields.filter(
@@ -372,16 +314,359 @@ function createChunks(
 
   return dataKnowledgeStaticContracts.knowledgeChunks
     .filter(
-      (chunk) =>
-        chunk.knowledgeDocumentId === selectedAsset.knowledgeDocument?.knowledgeDocumentId
+      (chunk) => chunk.knowledgeDocumentId === selectedAsset.knowledgeDocument?.knowledgeDocumentId
     )
-    .map((chunk) => ({
-      contentPreview: chunk.content,
-      createdAt: chunk.createdAt,
-      knowledgeChunkId: chunk.knowledgeChunkId,
-      knowledgeDocumentId: chunk.knowledgeDocumentId,
-      summary: chunkPresentationById[chunk.knowledgeChunkId]?.summary ?? ""
-    }));
+    .map((chunk) => {
+      const presentation = chunkPresentationById[chunk.knowledgeChunkId];
+
+      return {
+        chunkGroupTitle: presentation.groupTitle,
+        contentPreview: chunk.content,
+        createdAt: chunk.createdAt,
+        knowledgeChunkId: chunk.knowledgeChunkId,
+        knowledgeDocumentId: chunk.knowledgeDocumentId,
+        summary: presentation.summary,
+        title: presentation.title
+      };
+    });
+}
+
+function createEvidenceItems(
+  selectedAsset: DataKnowledgeSelectedAssetViewModel
+): DataKnowledgeEvidenceViewModel[] {
+  let evidenceContracts = dataKnowledgeStaticContracts.sourceEvidences;
+
+  if (selectedAsset.kind === "data_source" && selectedAsset.dataSource) {
+    const tableIds = dataKnowledgeStaticContracts.dataTables
+      .filter((table) => table.dataSourceId === selectedAsset.dataSource?.dataSourceId)
+      .map((table) => table.tableId);
+
+    evidenceContracts = evidenceContracts.filter(
+      (evidence) => evidence.sourceType === "data_table" && tableIds.includes(evidence.sourceId)
+    );
+  }
+
+  if (selectedAsset.kind === "knowledge_document" && selectedAsset.knowledgeDocument) {
+    const chunkIds = dataKnowledgeStaticContracts.knowledgeChunks
+      .filter(
+        (chunk) =>
+          chunk.knowledgeDocumentId === selectedAsset.knowledgeDocument?.knowledgeDocumentId
+      )
+      .map((chunk) => chunk.knowledgeChunkId);
+
+    evidenceContracts = evidenceContracts.filter((evidence) => {
+      if (evidence.sourceType === "knowledge_document") {
+        return evidence.sourceId === selectedAsset.knowledgeDocument?.knowledgeDocumentId;
+      }
+
+      return evidence.sourceType === "knowledge_chunk" && chunkIds.includes(evidence.sourceId);
+    });
+  }
+
+  return evidenceContracts.map((evidence) => {
+    const usage = usagePresentationByRunId[evidence.runId];
+
+    return {
+      ...evidence,
+      confidenceText: formatConfidence(evidence.confidence),
+      reportId: usage?.reportId,
+      usageSummary: usage?.summary ?? "证据当前只用于静态 Usage 摘要展示。",
+      usageTitle: usage?.title ?? evidence.runId
+    };
+  });
+}
+
+function createWorkspaceQualityChecks(
+  workspaceBinding: DataKnowledgeWorkspaceBindingViewModel
+): DataKnowledgeQualityCheckViewModel[] {
+  return withWorkspaceBinding(workspaceBinding).dataQualityChecks.map((qualityCheck) => {
+    const presentation = qualityCheckPresentationById[qualityCheck.dataQualityCheckId];
+
+    return {
+      createdAt: qualityCheck.createdAt,
+      dataQualityCheckId: qualityCheck.dataQualityCheckId,
+      risk: presentation.risk,
+      status: qualityCheck.status,
+      statusLabel: presentation.statusLabel,
+      statusView: presentation.statusView,
+      summary: presentation.summary,
+      title: presentation.title,
+      workspaceId: qualityCheck.workspaceId
+    };
+  });
+}
+
+function createNode(
+  columnKey: string,
+  key: string,
+  title: string,
+  summary: string,
+  facts: DataKnowledgeRelationshipNodeViewModel["facts"],
+  kind: DataKnowledgeRelationshipNodeViewModel["kind"],
+  status?: StaticStatusViewModel,
+  risk?: StaticRiskViewModel
+): DataKnowledgeRelationshipNodeViewModel {
+  return {
+    columnKey,
+    facts,
+    key,
+    kind,
+    risk,
+    status,
+    summary,
+    title
+  };
+}
+
+function createDataSourceGraph(
+  selectedAsset: DataKnowledgeSelectedAssetViewModel,
+  tables: DataKnowledgeTableViewModel[],
+  fields: DataKnowledgeFieldViewModel[],
+  evidenceItems: DataKnowledgeEvidenceViewModel[]
+): DataKnowledgeRelationshipGraphViewModel {
+  const assetColumnKey = "asset";
+  const tableColumnKey = "tables";
+  const fieldColumnKey = "fields";
+  const evidenceColumnKey = "evidence";
+  const usageColumnKey = "usage";
+
+  const assetNode = createNode(
+    assetColumnKey,
+    `node:data_source:${selectedAsset.dataSource?.dataSourceId ?? selectedAsset.key}`,
+    selectedAsset.title,
+    selectedAsset.summary,
+    [
+      { label: "dataSourceId", value: selectedAsset.dataSource?.dataSourceId ?? "" },
+      { label: "sourceType", value: selectedAsset.dataSource?.sourceType ?? "" },
+      { label: "name", value: selectedAsset.dataSource?.name ?? selectedAsset.title },
+      { label: "createdAt", value: selectedAsset.createdAt },
+      { label: "workspaceId", value: selectedAsset.workspaceId }
+    ],
+    "data_source",
+    selectedAsset.status,
+    selectedAsset.risk
+  );
+
+  const tableNodes = tables.map((table) =>
+    createNode(
+      tableColumnKey,
+      `node:data_table:${table.tableId}`,
+      table.tableName,
+      table.summary,
+      [
+        { label: "tableId", value: table.tableId },
+        { label: "tableName", value: table.tableName },
+        { label: "dataSourceId", value: table.dataSourceId },
+        { label: "createdAt", value: table.createdAt }
+      ],
+      "data_table"
+    )
+  );
+
+  const fieldNodes = fields.map((field) =>
+    createNode(
+      fieldColumnKey,
+      `node:data_field:${field.fieldId}`,
+      field.fieldName,
+      field.summary,
+      [
+        { label: "fieldId", value: field.fieldId },
+        { label: "fieldName", value: field.fieldName },
+        { label: "dataType", value: field.dataType },
+        { label: "tableId", value: field.tableId },
+        { label: "createdAt", value: field.createdAt }
+      ],
+      "data_field"
+    )
+  );
+
+  const evidenceNodes = evidenceItems.map((evidence) =>
+    createNode(
+      evidenceColumnKey,
+      `node:source_evidence:${evidence.sourceEvidenceId}`,
+      evidence.title,
+      evidence.snippet,
+      [
+        { label: "sourceEvidenceId", value: evidence.sourceEvidenceId },
+        { label: "sourceType", value: evidence.sourceType },
+        { label: "sourceId", value: evidence.sourceId },
+        { label: "title", value: evidence.title },
+        { label: "snippet", value: evidence.snippet },
+        { label: "confidence", value: evidence.confidenceText },
+        { label: "runId", value: evidence.runId }
+      ],
+      "source_evidence"
+    )
+  );
+
+  const usageNodes = Array.from(
+    new Map(evidenceItems.map((item) => [item.runId, item])).values()
+  ).map((item) =>
+    createNode(
+      usageColumnKey,
+      `node:usage:${item.runId}`,
+      item.usageTitle,
+      item.usageSummary,
+      [
+        { label: "runId", value: item.runId },
+        { label: "reportId", value: item.reportId ?? "N/A" },
+        { label: "usage", value: item.usageSummary }
+      ],
+      "usage"
+    )
+  );
+
+  return {
+    columns: [
+      { key: assetColumnKey, nodes: [assetNode], title: "Asset" },
+      { key: tableColumnKey, nodes: tableNodes, title: "Tables" },
+      { key: fieldColumnKey, nodes: fieldNodes, title: "Fields" },
+      { key: evidenceColumnKey, nodes: evidenceNodes, title: "Evidence" },
+      { key: usageColumnKey, nodes: usageNodes, title: "Usage" }
+    ],
+    defaultSelectedNodeKey: assetNode.key,
+    description: "DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report",
+    title: "Asset relationship graph"
+  };
+}
+
+function createKnowledgeGraph(
+  selectedAsset: DataKnowledgeSelectedAssetViewModel,
+  chunks: DataKnowledgeChunkViewModel[],
+  evidenceItems: DataKnowledgeEvidenceViewModel[]
+): DataKnowledgeRelationshipGraphViewModel {
+  const documentColumnKey = "document";
+  const groupColumnKey = "chunk-groups";
+  const chunkColumnKey = "chunks";
+  const evidenceColumnKey = "evidence";
+  const usageColumnKey = "usage";
+
+  const documentNode = createNode(
+    documentColumnKey,
+    `node:knowledge_document:${selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? selectedAsset.key}`,
+    selectedAsset.title,
+    selectedAsset.summary,
+    [
+      {
+        label: "knowledgeDocumentId",
+        value: selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? ""
+      },
+      { label: "title", value: selectedAsset.knowledgeDocument?.title ?? selectedAsset.title },
+      { label: "workspaceId", value: selectedAsset.workspaceId },
+      { label: "createdAt", value: selectedAsset.createdAt }
+    ],
+    "knowledge_document",
+    selectedAsset.status,
+    selectedAsset.risk
+  );
+
+  const chunkGroups = Array.from(
+    chunks.reduce((groupMap, chunk) => {
+      const groupChunks = groupMap.get(chunk.chunkGroupTitle) ?? [];
+      groupChunks.push(chunk);
+      groupMap.set(chunk.chunkGroupTitle, groupChunks);
+
+      return groupMap;
+    }, new Map<string, DataKnowledgeChunkViewModel[]>()).entries()
+  );
+
+  const groupNodes = chunkGroups.map(([groupTitle, groupChunks]) =>
+    createNode(
+      groupColumnKey,
+      `node:knowledge_chunk_group:${groupTitle}`,
+      groupTitle,
+      `承接 ${groupChunks.length} 个知识切片的主题分组。`,
+      [
+        { label: "sectionTitle", value: groupTitle },
+        {
+          label: "knowledgeDocumentId",
+          value: selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? ""
+        },
+        { label: "chunkCount", value: String(groupChunks.length) }
+      ],
+      "knowledge_chunk_group"
+    )
+  );
+
+  const chunkNodes = chunks.map((chunk) =>
+    createNode(
+      chunkColumnKey,
+      `node:knowledge_chunk:${chunk.knowledgeChunkId}`,
+      chunk.title,
+      chunk.summary,
+      [
+        { label: "knowledgeChunkId", value: chunk.knowledgeChunkId },
+        { label: "knowledgeDocumentId", value: chunk.knowledgeDocumentId },
+        { label: "contentPreview", value: chunk.contentPreview },
+        { label: "createdAt", value: chunk.createdAt }
+      ],
+      "knowledge_chunk"
+    )
+  );
+
+  const evidenceNodes = evidenceItems.map((evidence) =>
+    createNode(
+      evidenceColumnKey,
+      `node:source_evidence:${evidence.sourceEvidenceId}`,
+      evidence.title,
+      evidence.snippet,
+      [
+        { label: "sourceEvidenceId", value: evidence.sourceEvidenceId },
+        { label: "sourceType", value: evidence.sourceType },
+        { label: "sourceId", value: evidence.sourceId },
+        { label: "title", value: evidence.title },
+        { label: "snippet", value: evidence.snippet },
+        { label: "confidence", value: evidence.confidenceText },
+        { label: "runId", value: evidence.runId }
+      ],
+      "source_evidence"
+    )
+  );
+
+  const usageNodes = Array.from(
+    new Map(evidenceItems.map((item) => [item.runId, item])).values()
+  ).map((item) =>
+    createNode(
+      usageColumnKey,
+      `node:usage:${item.runId}`,
+      item.usageTitle,
+      item.usageSummary,
+      [
+        { label: "runId", value: item.runId },
+        { label: "reportId", value: item.reportId ?? "N/A" },
+        { label: "usage", value: item.usageSummary }
+      ],
+      "usage"
+    )
+  );
+
+  return {
+    columns: [
+      { key: documentColumnKey, nodes: [documentNode], title: "Document" },
+      { key: groupColumnKey, nodes: groupNodes, title: "Chunk groups" },
+      { key: chunkColumnKey, nodes: chunkNodes, title: "Chunks" },
+      { key: evidenceColumnKey, nodes: evidenceNodes, title: "Evidence" },
+      { key: usageColumnKey, nodes: usageNodes, title: "Usage" }
+    ],
+    defaultSelectedNodeKey: documentNode.key,
+    description:
+      "KnowledgeDocument -> KnowledgeChunk / Chunk Group -> SourceEvidence -> Run / Report",
+    title: "Asset relationship graph"
+  };
+}
+
+function createRelationshipGraph(
+  selectedAsset: DataKnowledgeSelectedAssetViewModel,
+  tables: DataKnowledgeTableViewModel[],
+  fields: DataKnowledgeFieldViewModel[],
+  chunks: DataKnowledgeChunkViewModel[],
+  evidenceItems: DataKnowledgeEvidenceViewModel[]
+): DataKnowledgeRelationshipGraphViewModel {
+  if (selectedAsset.kind === "data_source") {
+    return createDataSourceGraph(selectedAsset, tables, fields, evidenceItems);
+  }
+
+  return createKnowledgeGraph(selectedAsset, chunks, evidenceItems);
 }
 
 export function createDataKnowledgeViewModel(
@@ -410,15 +695,25 @@ export function createDataKnowledgeViewModel(
   const selectedKey = selectedAssetKey
     ? resolveSelectedAssetKey(assetItems, selectedAssetKey)
     : undefined;
-  const selectedAsset = createSelectedAsset(
-    selectedKey ?? assetItems[0].key,
-    workspaceBinding
-  );
+  const selectedAsset = createSelectedAsset(selectedKey ?? assetItems[0].key, workspaceBinding);
   const tables = createTables(selectedAsset);
   const fields = createFields(tables);
   const chunks = createChunks(selectedAsset);
   const evidenceItems = createEvidenceItems(selectedAsset);
-  const qualityChecks = createQualityChecks(selectedAsset, workspaceBinding);
+  const qualityChecks = createWorkspaceQualityChecks(workspaceBinding);
+  const readonlyBoundaryItems = [
+    "不接真实 API / DB",
+    "不执行 ingestion",
+    "不执行 schema sync",
+    "不执行 LlamaIndex indexing",
+    "不执行 Milvus vector search",
+    "不执行 DataQualityCheck"
+  ];
+  const technicalBoundaryItems = [
+    "LlamaIndex = 文档解析 / 切片 / 索引 / 检索增强方向",
+    "Milvus = 向量存储 / 相似度检索方向",
+    "SourceEvidence = 标准化证据对象"
+  ];
 
   return {
     assetItems,
@@ -427,37 +722,25 @@ export function createDataKnowledgeViewModel(
     evidenceItems,
     fields,
     implementationStatus: "stable",
-    lastUpdatedAt: "2026-06-06T16:45:00+08:00",
+    lastUpdatedAt: "2026-06-06T20:10:00+08:00",
     mainSections: [
       {
-        descriptionKey: "page.dataKnowledge.section.overview.description",
-        key: "data-knowledge-overview",
+        descriptionKey: "page.dataKnowledge.section.selectedAsset.description",
+        key: "data-knowledge-selected-asset",
         status: readyStatus,
-        titleKey: "page.dataKnowledge.section.overview.title"
+        titleKey: "page.dataKnowledge.section.selectedAsset.title"
       },
       {
-        descriptionKey: "page.dataKnowledge.section.assetDetail.description",
-        key: "data-knowledge-asset-detail",
+        descriptionKey: "page.dataKnowledge.section.relationship.description",
+        key: "data-knowledge-relationship",
         status: readyStatus,
-        titleKey: "page.dataKnowledge.section.assetDetail.title"
+        titleKey: "page.dataKnowledge.section.relationship.title"
       },
       {
-        descriptionKey: "page.dataKnowledge.section.schemaChunk.description",
-        key: "data-knowledge-schema-chunk",
+        descriptionKey: "page.dataKnowledge.section.nodeDetail.description",
+        key: "data-knowledge-node-detail",
         status: readyStatus,
-        titleKey: "page.dataKnowledge.section.schemaChunk.title"
-      },
-      {
-        descriptionKey: "page.dataKnowledge.section.evidenceLineage.description",
-        key: "data-knowledge-evidence-lineage",
-        status: readyStatus,
-        titleKey: "page.dataKnowledge.section.evidenceLineage.title"
-      },
-      {
-        descriptionKey: "page.dataKnowledge.section.qualityOperations.description",
-        key: "data-knowledge-quality-operations",
-        status: readyStatus,
-        titleKey: "page.dataKnowledge.section.qualityOperations.title"
+        titleKey: "page.dataKnowledge.section.nodeDetail.title"
       }
     ],
     metricCards: [],
@@ -473,9 +756,17 @@ export function createDataKnowledgeViewModel(
       targetRoute: "analysis"
     },
     qualityChecks,
+    readonlyBoundaryItems,
     readonlyNotice:
-      "不接真实 API / DB / Agent / LlamaIndex / Milvus，不执行 ingestion、schema sync、索引、向量检索或真实数据质量检查。",
+      "不接真实 API / DB，不执行 ingestion、schema sync、LlamaIndex indexing、Milvus vector search 或 DataQualityCheck。",
     readonlyState: defaultReadonlyState,
+    relationshipGraph: createRelationshipGraph(
+      selectedAsset,
+      tables,
+      fields,
+      chunks,
+      evidenceItems
+    ),
     rightAssistSummary: createRightAssistSummary(
       "data-knowledge-right-assist",
       "page.dataKnowledge.rightAssist.title",
@@ -493,6 +784,12 @@ export function createDataKnowledgeViewModel(
         key: "data-knowledge-open-reports",
         labelKey: "action.dataKnowledgeOpenReports.label",
         targetRoute: "reports"
+      },
+      {
+        intent: "navigation",
+        key: "data-knowledge-open-platform-operations",
+        labelKey: "action.dataKnowledgeOpenPlatformOperations.label",
+        targetRoute: "platform-operations"
       }
     ],
     selectedAsset,
@@ -501,42 +798,42 @@ export function createDataKnowledgeViewModel(
       {
         description: "当前 Workspace 的 DataSource 数量。",
         key: "data-knowledge-summary-data-source-count",
-        label: "DataSource",
+        label: "DataSource count",
         status: readyStatus,
         value: String(dataSources.length)
       },
       {
         description: "当前 Workspace 目录中挂载的 DataTable 数量。",
         key: "data-knowledge-summary-data-table-count",
-        label: "DataTable",
+        label: "DataTable count",
         status: readyStatus,
         value: String(dataKnowledgeStaticContracts.dataTables.length)
       },
       {
         description: "当前 Workspace 字段字典中纳入静态视图的 DataField 数量。",
         key: "data-knowledge-summary-data-field-count",
-        label: "DataField",
+        label: "DataField count",
         status: readyStatus,
         value: String(dataKnowledgeStaticContracts.dataFields.length)
       },
       {
         description: "当前 Workspace 的 KnowledgeDocument 数量。",
         key: "data-knowledge-summary-knowledge-document-count",
-        label: "KnowledgeDocument",
+        label: "KnowledgeDocument count",
         status: readyStatus,
         value: String(knowledgeDocuments.length)
       },
       {
         description: "当前 Workspace 的 KnowledgeChunk 数量。",
         key: "data-knowledge-summary-knowledge-chunk-count",
-        label: "KnowledgeChunk",
+        label: "KnowledgeChunk count",
         status: readyStatus,
         value: String(dataKnowledgeStaticContracts.knowledgeChunks.length)
       },
       {
         description: "当前 Workspace 的 SourceEvidence 数量。",
         key: "data-knowledge-summary-source-evidence-count",
-        label: "SourceEvidence",
+        label: "SourceEvidence count",
         risk: warningRisk,
         status: readyStatus,
         value: String(dataKnowledgeStaticContracts.sourceEvidences.length)
@@ -544,7 +841,7 @@ export function createDataKnowledgeViewModel(
       {
         description: "当前 Workspace 的 DataQualityCheck 摘要数量。",
         key: "data-knowledge-summary-quality-count",
-        label: "DataQualityCheck",
+        label: "DataQualityCheck summary",
         risk: warningRisk,
         status: warningStatus,
         value: String(dataKnowledgeStaticContracts.dataQualityChecks.length)
@@ -565,8 +862,9 @@ export function createDataKnowledgeViewModel(
         status: "ready"
       }
     ],
+    technicalBoundaryItems,
     workspaceBinding,
     workspaceNotice:
-      "当前页面只绑定当前 Workspace 的数据资产、知识资产、证据来源和质量摘要。切换 Workspace 后，左侧资产目录和主区详情都必须重建到当前 Workspace。"
+      "当前页面只绑定当前 Workspace 的数据资产、知识资产、证据来源和质量摘要。切换 Workspace 后，左侧资产目录、关系图和 Inspector 都必须重建到当前 Workspace。"
   };
 }

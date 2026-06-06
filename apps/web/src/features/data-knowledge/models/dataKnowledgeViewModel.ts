@@ -8,6 +8,15 @@ import type {
 
 export type DataKnowledgeAssetKind = "data_source" | "knowledge_document";
 
+export type DataKnowledgeRelationshipNodeKind =
+  | DataKnowledgeAssetKind
+  | "data_table"
+  | "data_field"
+  | "knowledge_chunk_group"
+  | "knowledge_chunk"
+  | "source_evidence"
+  | "usage";
+
 export type DataKnowledgeWorkspaceBindingViewModel = {
   workspaceId: string;
   workspaceName: string;
@@ -63,23 +72,28 @@ export type DataKnowledgeFieldViewModel = {
 };
 
 export type DataKnowledgeChunkViewModel = {
+  chunkGroupTitle: string;
   contentPreview: string;
   createdAt: string;
   knowledgeChunkId: string;
   knowledgeDocumentId: string;
   summary: string;
+  title: string;
 };
 
 export type DataKnowledgeEvidenceViewModel = {
   confidence: number;
   confidenceText: string;
   createdAt: string;
+  reportId?: string;
   runId: string;
   snippet: string;
   sourceEvidenceId: string;
   sourceId: string;
   sourceType: string;
   title: string;
+  usageSummary: string;
+  usageTitle: string;
 };
 
 export type DataKnowledgeQualityCheckViewModel = {
@@ -94,6 +108,35 @@ export type DataKnowledgeQualityCheckViewModel = {
   workspaceId: string;
 };
 
+export type DataKnowledgeRelationshipNodeFactViewModel = {
+  label: string;
+  value: string;
+};
+
+export type DataKnowledgeRelationshipNodeViewModel = {
+  columnKey: string;
+  facts: DataKnowledgeRelationshipNodeFactViewModel[];
+  key: string;
+  kind: DataKnowledgeRelationshipNodeKind;
+  risk?: StaticRiskViewModel;
+  status?: StaticStatusViewModel;
+  summary: string;
+  title: string;
+};
+
+export type DataKnowledgeRelationshipColumnViewModel = {
+  key: string;
+  nodes: DataKnowledgeRelationshipNodeViewModel[];
+  title: string;
+};
+
+export type DataKnowledgeRelationshipGraphViewModel = {
+  columns: DataKnowledgeRelationshipColumnViewModel[];
+  defaultSelectedNodeKey: string;
+  description: string;
+  title: string;
+};
+
 export type DataKnowledgeViewModel = StaticPageViewModelBase & {
   assetItems: DataKnowledgeAssetListItemViewModel[];
   chunks: DataKnowledgeChunkViewModel[];
@@ -101,10 +144,13 @@ export type DataKnowledgeViewModel = StaticPageViewModelBase & {
   evidenceItems: DataKnowledgeEvidenceViewModel[];
   fields: DataKnowledgeFieldViewModel[];
   qualityChecks: DataKnowledgeQualityCheckViewModel[];
+  readonlyBoundaryItems: string[];
   readonlyNotice: string;
+  relationshipGraph: DataKnowledgeRelationshipGraphViewModel;
   selectedAsset: DataKnowledgeSelectedAssetViewModel;
-  tabs: StaticTabViewModel[];
   tables: DataKnowledgeTableViewModel[];
+  tabs: StaticTabViewModel[];
+  technicalBoundaryItems: string[];
   workspaceBinding: DataKnowledgeWorkspaceBindingViewModel;
   workspaceNotice: string;
 };

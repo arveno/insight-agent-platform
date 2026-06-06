@@ -43,15 +43,18 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("能力预览")).toBeTruthy();
     const dashboardButton = within(navigation).getByRole("button", { name: /仪表盘/ });
     const analysisButton = within(navigation).getByRole("button", { name: /分析/ });
+    const dataKnowledgeButton = within(navigation).getByRole("button", { name: /数据与知识/ });
     const reportsButton = within(navigation).getByRole("button", { name: /报告/ });
     const metricsButton = within(navigation).getByRole("button", { name: /指标/ });
 
     expect(dashboardButton).toBeTruthy();
     expect(analysisButton).toBeTruthy();
+    expect(dataKnowledgeButton).toBeTruthy();
     expect(reportsButton).toBeTruthy();
     expect(metricsButton).toBeTruthy();
     expect(dashboardButton.querySelector(".anticon-right")).toBeNull();
     expect(analysisButton.querySelector(".anticon-right")).toBeTruthy();
+    expect(dataKnowledgeButton.querySelector(".anticon-right")).toBeTruthy();
     expect(reportsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(metricsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
@@ -301,26 +304,38 @@ describe("AppShell", () => {
     expect(
       within(dataKnowledgeNavigation).getByRole("textbox", { name: "搜索数据与知识资产" })
     ).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("数据资产 Data")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("知识文档 Docs")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).getByText("CRM Revenue Warehouse")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).getByText("渠道经营周报")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
 
-    expect(screen.getByText("Data & Knowledge 总览")).toBeTruthy();
-    expect(screen.getByText("当前选中资产详情：CRM Revenue Warehouse")).toBeTruthy();
-    expect(screen.getByText("dataSourceId: data-source-crm-revenue")).toBeTruthy();
-    expect(screen.queryByText("能力说明")).toBeNull();
-    expect(screen.queryByText("技术对接")).toBeNull();
-    expect(screen.queryByText("当前阶段只保留数据与知识说明区")).toBeNull();
+    expect(screen.queryByText("Data & Knowledge 总览")).toBeNull();
+    expect(screen.getByText("当前资产")).toBeTruthy();
+    expect(screen.getByText("Asset relationship graph")).toBeTruthy();
+    expect(screen.getAllByText("CRM Revenue Warehouse").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("dataSourceId: data-source-crm-revenue").length).toBeGreaterThan(0);
+    expect(screen.getByText("Workspace Overview")).toBeTruthy();
+    expect(screen.getByText("Readonly Boundary")).toBeTruthy();
+    expect(screen.getByText("Quality & Operations Summary")).toBeTruthy();
+    expect(screen.getByText("Actions")).toBeTruthy();
+    expect(screen.getByText("Technical Boundary")).toBeTruthy();
 
     fireEvent.click(within(dataKnowledgeNavigation).getByText("渠道经营周报"));
 
-    expect(screen.getByText("当前选中资产详情：渠道经营周报")).toBeTruthy();
-    expect(screen.getByText("knowledgeDocumentId: knowledge-document-channel-weekly")).toBeTruthy();
-    expect(screen.getByText("知识切片")).toBeTruthy();
-    expect(screen.getByText("索引与 RAG 准备度")).toBeTruthy();
+    expect(screen.getAllByText("渠道经营周报").length).toBeGreaterThan(0);
+    expect(screen.getByText("Document")).toBeTruthy();
+    expect(screen.getByText("Chunk groups")).toBeTruthy();
+    expect(screen.getByText("Chunks")).toBeTruthy();
+    expect(
+      screen.getAllByText("knowledgeDocumentId: knowledge-document-channel-weekly").length
+    ).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "查看 RAG Strategy" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: "查看 Platform Operations" }).length
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("真实 ingestion")).toBeNull();
     expect(screen.queryByText("真实 vector search")).toBeNull();
   });
