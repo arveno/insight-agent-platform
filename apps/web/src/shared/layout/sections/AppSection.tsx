@@ -14,7 +14,11 @@ export function AppSection({
 }: AppSectionProps) {
   return (
     <section>
-      <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>
+      <Space
+        direction="vertical"
+        size={shellThemeTokens.sectionContentGap}
+        style={{ width: "100%" }}
+      >
         <Flex align="center" justify="space-between" wrap="wrap" gap={12}>
           <Space direction="vertical" size={2}>
             {eyebrow ? (

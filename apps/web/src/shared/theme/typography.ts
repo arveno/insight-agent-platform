@@ -5,31 +5,31 @@ import { shellThemeTokens } from "./tokens";
 export const shellTypographyStyles = {
   body: {
     fontSize: shellThemeTokens.fontSizeBody,
-    lineHeight: 1.5
+    lineHeight: 1.45
   },
   buttonLabel: {
     fontSize: shellThemeTokens.fontSizeButton,
     fontWeight: shellThemeTokens.fontWeightMedium,
-    lineHeight: 1.3
+    lineHeight: 1.2
   },
   cardDescription: {
     fontSize: shellThemeTokens.fontSizeCardLabel,
-    lineHeight: 1.45
+    lineHeight: 1.5
   },
   cardTitle: {
     fontSize: shellThemeTokens.fontSizeCardTitle,
     fontWeight: shellThemeTokens.fontWeightSemibold,
-    lineHeight: 1.35
+    lineHeight: 1.3
   },
   cardValue: {
     fontSize: shellThemeTokens.fontSizeCardTitle,
     fontWeight: shellThemeTokens.fontWeightSemibold,
-    lineHeight: 1.35
+    lineHeight: 1.25
   },
   heroTitle: {
     fontSize: shellThemeTokens.fontSizeHeroTitle,
     fontWeight: shellThemeTokens.fontWeightSemibold,
-    letterSpacing: "-0.02em",
+    letterSpacing: "-0.03em",
     lineHeight: 1.2
   },
   meta: {
@@ -44,8 +44,8 @@ export const shellTypographyStyles = {
   },
   navGroupLabel: {
     fontSize: shellThemeTokens.fontSizeMeta,
-    fontWeight: shellThemeTokens.fontWeightMedium,
-    letterSpacing: "0.02em",
+    fontWeight: 500,
+    letterSpacing: "0.06em",
     lineHeight: 1.4,
     textTransform: "uppercase"
   },
@@ -57,7 +57,7 @@ export const shellTypographyStyles = {
   pageTitle: {
     fontSize: shellThemeTokens.fontSizePageTitle,
     fontWeight: shellThemeTokens.fontWeightSemibold,
-    letterSpacing: "-0.02em",
+    letterSpacing: "-0.03em",
     lineHeight: 1.2
   },
   sectionTitle: {

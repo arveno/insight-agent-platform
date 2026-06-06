@@ -1,7 +1,7 @@
 import { Button, type ButtonProps } from "antd";
 
 import { AppIcon } from "../../icons";
-import { shellTypographyStyles } from "../../theme";
+import { shellThemeTokens, shellTypographyStyles } from "../../theme";
 import type { AppActionButtonProps, AppActionButtonVariant } from "./actionTypes";
 
 const actionButtonPropsByVariant: Record<
@@ -28,9 +28,22 @@ export function AppActionButton({
     <Button
       {...buttonProps}
       {...mappedProps}
-      style={{ ...shellTypographyStyles.buttonLabel, ...style }}
+      icon={
+        iconName ? (
+          <span style={{ display: "inline-flex", marginInlineEnd: -4 }}>
+            <AppIcon name={iconName} variant="badge" />
+          </span>
+        ) : undefined
+      }
+      style={{
+        ...shellTypographyStyles.buttonLabel,
+        alignItems: "center",
+        borderRadius: shellThemeTokens.borderRadiusSM,
+        display: "inline-flex",
+        gap: 0,
+        ...style
+      }}
     >
-      {iconName ? <AppIcon name={iconName} variant="badge" /> : null}
       {children}
     </Button>
   );

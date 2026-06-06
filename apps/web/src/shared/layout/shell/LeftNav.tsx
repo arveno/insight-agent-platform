@@ -43,6 +43,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
         display: "flex",
         flexDirection: "column",
         gap: shellThemeTokens.navGroupGap,
+        paddingBlock: shellThemeTokens.panelPadding,
         paddingInline: shellThemeTokens.navPaddingInline
       }}
     >
@@ -54,7 +55,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                 ...shellTypographyStyles.navGroupLabel,
                 color: token.colorTextDescription,
                 display: "block",
-                marginBottom: token.marginSM
+                marginBottom: 6
               }}
             >
               {group.label}

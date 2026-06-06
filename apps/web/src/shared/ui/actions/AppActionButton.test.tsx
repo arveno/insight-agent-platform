@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
+import { shellThemeTokens } from "../../theme";
 import { AppActionButton } from "./AppActionButton";
 
 afterEach(cleanup);
@@ -44,7 +45,7 @@ describe("AppActionButton", () => {
     const button = screen.getByRole("button", { name: "查看指标" });
     const style = button.getAttribute("style") ?? "";
 
-    expect(style).toContain("font-size: 13px");
-    expect(style).toContain("font-weight: 500");
+    expect(style).toContain(`font-size: ${shellThemeTokens.fontSizeButton}px`);
+    expect(style).toContain(`font-weight: ${shellThemeTokens.fontWeightMedium}`);
   });
 });
