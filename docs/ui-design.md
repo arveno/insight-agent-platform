@@ -185,6 +185,7 @@ AppShell
 - helper 负责把 route、variant、iconName、label、onNavigate 转成 `AppActionGroupItem`。
 - 后续入口跳转不得在页面中随意散写。
 - `Open in Analysis with context` 等能力必须通过统一 action helper 承接上下文，不得页面临时拼按钮。
+- 页面入口只表达导航、Analysis 新聊天草稿态入口或只读摘要入口，不等于真实执行。
 
 ### Page Archetype
 
@@ -199,6 +200,22 @@ AppShell
 - Timeline / Detail Page：`Analysis Run Trace / Drawer`，后续扩展到 `Observability`
 
 Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级页面。
+
+### AI Platform Presentation Boundary
+
+- UI 只展示标准化 `Contract / 聚合对象 -> ViewModel -> Page Composition` 结果，不展示底层 runtime 的 raw 输出。
+- `Conversation Workspace = Analysis`：主区承接 `Conversation / Chat`，Inspector 承接当前 `runId` 的 `Run Trace`，Drawer 承接当前 `run event detail`；页面不得展示 `LangGraph raw state`、`Tool raw output`、`raw provider response`。
+- `Reader Page = Reports`：只展示结构化 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence`，不得把模型 markdown 原文直接当正式报告资产。
+- `Overview Page = Metrics / Platform Operations`：只展示当前 Workspace 的只读语义摘要、平台健康摘要和 Analysis 草稿态入口；入口只表示导航或草稿态，不创建真实 conversation、run、Job 或部署执行。
+- `Management Page = Data & Knowledge / Models & Tools / Governance / Settings`：承接资产、配置、治理和默认策略入口，但不自造执行链路，也不把 Management Page 写成孤岛。
+- `Data & Knowledge` 页面只展示 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck` 的标准化 ViewModel，不直接展示 `raw vector / raw embedding / raw score / raw SQL result`。
+- `Models & Tools` 页面只展示 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy` 及其跳转入口，不直接调用模型或 Tool，不展示密钥，不绕过 `Model Gateway / Tool Registry`。
+- UI 只能展示 `Model Gateway / Tool Registry / Governance Policy` 的标准化 ViewModel，不展示 `provider raw response`、`tool raw output`、`handler payload`、`permission raw policy`、`LangGraph raw state`、`raw vector` 或 `raw embedding`。
+- UI 上的“调用 / 运行 / 检索 / 评估 / 发布”入口，在当前静态阶段只能表示导航、只读预览或草稿态入口，不代表真实执行。
+- `Governance` 页面只展示 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field` 的治理结果，不在 UI 中做权限业务决策或直接写审计。
+- `Timeline / Detail Page = Analysis Run Trace / Drawer`，后续全局 `Observability` 继续承接标准化 `RunEvent / ToolCall / ModelCall / cost / latency / errorType / fallbackReason / external trace mapping`。
+- `Evaluation` 页面承接 `EvaluationDataset / EvaluationRun / EvaluationScore / BadCase` 的标准化结果，保留 `DeepEval / RAGAs / LangSmith Dataset` 对接方向，不把用户 Feedback 直接当 Evaluation。
+- `Settings` 页面只展示当前 Workspace 的默认策略入口和只读配置摘要，默认模型策略跳转 `Models & Tools`，默认 RAG 策略跳转 `Models & Tools / Data & Knowledge`，默认权限策略跳转 `Governance`。
 
 ### Metrics / Platform Operations Composition
 
@@ -318,7 +335,7 @@ Columns 规则：
 - 单一 feature 内部组件不得提前抽到 `shared`。
 - `shared` 组件不得依赖 feature。
 - `shared` 组件只消费 ViewModel、UI State 或 contract 枚举。
-- `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
+- `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出、LangGraph raw state、raw provider response、raw vector、raw embedding 或 raw SQL result。
 
 ### Interaction States
 

@@ -226,6 +226,41 @@ Analysis
 - `血缘 = 指标从哪些表、字段、任务或来源计算而来`；`证据 = 支撑指标异常判断或指标可信度的来源材料`。证据不等于 RAG，RAG 只是证据来源之一。
 - `Platform Operations` 与 `Data & Knowledge`、`Dashboard`、`Analysis`、`Governance`、`Observability` 相关，但当前阶段只承接当前 `Workspace` 的只读平台健康总览，不承接全租户或全平台运维后台。
 
+### 3.6 AI Platform Core Technology Boundary
+
+产品层面的 AI 技术边界固定如下：
+
+- 可以做轻量版本，但不能做玩具版本。
+- 可以先只读展示，但必须按正规技术链路表达。
+- 不能自造 Planner / Agent Runtime / RAG / Trace / Evaluation / Tool Calling 体系。
+- 不能在页面、组件、mapper、service 或函数里散写模型调用、工具调用、向量检索、SQL 风控。
+- `Model Gateway / Tool Registry` 是项目统一边界，不是替代 `LangChain / LangGraph / LlamaIndex` 的自研框架。
+- `Model Gateway` 是“模型调用统一入口”的产品对象边界，不是底层模型框架。
+- `Tool Registry` 是“工具定义和调用统一入口”的产品对象边界，不是底层工具调用框架。
+- 底层运行仍由 `LangGraph / LangChain / LlamaIndex / Milvus` 等成熟框架承接。
+- `SourceEvidence` 是 Analysis、Reports、Metrics、Data & Knowledge 等页面共享的标准化证据对象，不允许页面各自发明证据结构。
+
+按页面固定承接关系：
+
+- `Analysis`：承接 `Conversation / Chat`、当前 `runId` 的 `Run Trace` 和 `run event detail`；真实运行由 `LangGraph` 承接，模型调用走 `Model Gateway + LangChain`，工具调用走 `Tool Registry`，Evidence 必须落到 `SourceEvidence`。
+- `Reports`：承接 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence` 的结构化结果，不承接模型原始 markdown；后续报告质量评估可接 `DeepEval / RAGAs / LangSmith Dataset`。
+- `Metrics`：承接当前 Workspace 的指标语义、业务公式、阈值、血缘、证据和异常上下文；真实分析仍回到 Analysis / LangGraph run，Dashboard 只能消费 Metrics 语义。
+- `Data & Knowledge`：承接 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck`；`LlamaIndex` 承接解析、切片、索引、检索增强，`Milvus` 承接向量存储和相似度检索。
+- `Models & Tools`：承接 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy`；页面只展示 `Model Gateway / Tool Registry / Prompt / RAG` 策略等配置摘要和入口，不执行模型调用，不执行 Tool，不保存真实配置，不展示密钥；`Model Gateway` 是模型调用唯一入口，`Tool Registry` 是工具定义和工具调用唯一入口，`LangSmith / Langfuse` 是运行观测入口。
+- `Governance`：承接 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field Policy / Guardrail`，不把治理判断写进 UI。
+- `Observability`：当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续全局页承接 `RunEvent / ToolCall / ModelCall / cost / latency / errorType / fallbackReason / LangSmith / Langfuse trace mapping`。
+- `Evaluation`：承接 `EvaluationDataset / EvaluationRun / EvaluationScore / BadCase`；`DeepEval` 承接 Agent / Report 质量评估，`RAGAs` 承接 RAG 检索质量评估。
+- `Platform Operations`：承接当前 Workspace 的 `Job / DataQualityCheck / Notification / Deployment / Smoke / Migration` 只读摘要，用于解释 Dashboard / Analysis 可信度，不做执行后台。
+- `Settings`：只承接默认策略入口和只读配置摘要；默认模型策略跳转 `Models & Tools`，默认 RAG 策略跳转 `Models & Tools / Data & Knowledge`，默认权限策略跳转 `Governance`。
+
+后续代码门禁固定如下：
+
+- 如果某个功能要进入真实模型调用，必须走 `Model Gateway`。
+- 如果某个功能要进入真实工具调用，必须走 `Tool Registry`。
+- 如果某个功能要进入真实 `Agent Runtime / Planner`，必须走 `LangGraph`。
+- 如果某个功能要进入真实 `RAG / 向量检索`，必须走 `LlamaIndex + Milvus`。
+- 如果某个功能要进入评估，必须优先对齐 `DeepEval / RAGAs / LangSmith Dataset`。
+
 ## 4. 产品能力地图
 
 | 能力域         | 核心用户任务                                                                                                | 承接模块                                                            | 主要页面或入口                                     | 关联 contracts / 待确认对象                                                                | 成熟度方向 |
@@ -247,6 +282,14 @@ Analysis
 | 经营总览       | 查看经营指标、异常、平台质量摘要                                                                            | Business Dashboard                                                  | Dashboard                                          | Metric, MetricThreshold, SourceEvidence, DataQualityCheck, Job, Dashboard ViewModel 待确认 | L1 -> L3   |
 | 设置与默认策略 | 查看系统默认设置、环境可见项、默认策略入口                                                                  | Admin / Settings                                                    | Settings                                           | Workspace, PermissionPolicy, RoutingPolicy, RagStrategy, Settings 聚合对象待确认           | L1 -> L2   |
 | 平台运维       | 查看当前 Workspace 的 Job、通知、数据质量、部署、smoke、migration 摘要，判断平台与数据链路是否健康          | Platform Operations                                                 | Platform Operations                                | Job, Notification, DataQualityCheck, Deployment / SmokeTest / MigrationResult 待确认       | L1 -> L3   |
+
+能力地图对应的正规技术承接关系固定如下：
+
+- `Analysis / 主动分析 / 运行过程` 默认回到 `LangGraph + Model Gateway + LangChain + Tool Registry + SourceEvidence` 主链路。
+- `Reports / 报告与决策` 默认回到 `Run result + Report schema + SourceEvidence + Evaluation` 链路，不消费模型原文。
+- `Metrics / 经营总览` 默认回到指标语义层和 `SourceEvidence`，不在页面侧发明指标口径或执行真实计算。
+- `Data & Knowledge / 知识与 RAG` 默认回到 `LlamaIndex + Milvus + SourceEvidence + DataQualityCheck` 资产链路，不在页面侧执行检索。
+- `Models & Tools / Governance / Observability / Evaluation / Platform Operations / Settings` 默认只承接配置、治理、观测、评估、平台健康和默认策略入口，不把真实执行链路写进页面。
 
 ## 5. 功能成熟度分级
 
@@ -319,7 +362,22 @@ Analysis
 | Settings              | 设置分组；浏览器可见环境配置；默认策略入口；风险提示                                                                                                                     | 默认策略入口、只读配置摘要、Settings 聚合对象                                       | 密钥展示、权限决策、模型路由执行                                                                                                  |
 | Workspace             | Workspace 总览；成员；角色；业务域；Header workspace selector                                                                                                            | workspace 上下文、成员管理、成员关系查看、角色查看、业务域管理                      | 审计主列表、权限业务决策                                                                                                          |
 
+稳定槽位对应的技术承接边界固定如下：
+
+- `Analysis` 的稳定槽位只承接 `Conversation / Run Trace / RunEvent detail / SourceEvidence / Report 入口`，不承接页面侧直接执行模型、工具、SQL 或 RAG。
+- `Reports` 的稳定槽位只承接结构化 `Report` 资产和 `SourceEvidence` 追溯，不承接模型原始输出或不可追溯报告。
+- `Metrics` 的稳定槽位只承接指标语义、血缘、阈值、证据和 Analysis 草稿态上下文，不承接真实指标计算或数据库查询。
+- `Data & Knowledge` 的稳定槽位只承接数据资产、知识资产、索引状态、检索质量入口和 `SourceEvidence`，不承接前端侧向量检索或 raw Milvus 输出。
+- `Models & Tools` 的稳定槽位只承接 `Model Gateway / Tool Registry / LangChain / LangGraph / LangSmith / Langfuse` 的配置入口和观测跳转，不承接真实执行和密钥展示。
+- `Governance` 的稳定槽位只承接治理结果、权限态、风险态和审计入口，不承接前端侧 SQL Guard、Tool Permission 写入或敏感字段原文。
+- `Observability` 的稳定槽位只承接标准化 `RunEvent / ToolCall / ModelCall` 和成本 / 延迟 / 错误视图，不承接 raw provider response、LangGraph raw state 或 Tool raw output。
+- `Evaluation` 的稳定槽位只承接 `DeepEval / RAGAs / LangSmith Dataset` 方向的评估对象和结果，不承接 UI 自动改 Prompt / Tool / RAG / Model Gateway 配置。
+- `Platform Operations` 的稳定槽位只承接当前 Workspace 的只读平台健康摘要，不承接真实 Job / deployment / migration / smoke 执行。
+- `Settings` 的稳定槽位只承接默认策略跳转和只读配置摘要，不承接真实模型路由修改、权限发布或密钥保存。
+
 ## 9. 模块功能边界
+
+以下模块功能边界不仅定义产品职责，也定义后续必须回到后端 / contracts / `packages/contracts` 审查的技术承接位。
 
 | 模块                                   | 模块解决什么问题                                              | 承接哪些能力                                                                                                               | 不承接哪些能力                                                                                             | 未来增强应落在哪里                                                                      | 是否会影响 UI 结构                                               |
 | -------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
