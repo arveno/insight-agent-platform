@@ -90,16 +90,19 @@ Code
 
 - `Workspace` 是顶部上下文，不是普通菜单项。
 - 全局导航只承载当前 `Workspace` 下的主工作区和能力分组。
-- `Analysis`、`Reports`、`Metrics` 可以进入模块内导航或二级对象列表。
+- `Analysis`、`Reports`、`Metrics`、`Data & Knowledge` 可以进入模块内导航或二级对象列表。
 - 模块内导航覆盖 LeftNav 区域，并提供返回主导航能力。
 - 详情型页面不应默认作为主业务一级入口。
 - 切换 `Workspace` 时，导航可以保留 route，但模块内导航、Inspector 和选中对象必须回到当前 `Workspace` 作用域，不得继续复用上一 `Workspace` 的对象状态。
 - `Metrics` 的 LeftNav 二级列表承接当前 `Workspace` 的 Metric list，复用 `ObjectListNav / ShellNavListItem`；列表项只显示指标名，不展示当前值、趋势、证据数、按钮或大段描述。
+- `Data & Knowledge` 的 LeftNav 二级列表承接当前 `Workspace` 的 grouped asset list，复用 grouped object list；分组固定为 `数据资产 Data` 和 `知识文档 Docs`。
+- `Data & Knowledge` 的分组标题不可选，不代表 route，不代表新的业务对象；列表项只负责选择当前资产，不承载字段、证据、质量摘要或动作按钮。
+- `Data & Knowledge` 一级入口需要和 `Analysis / Reports / Metrics` 等存在二级列表的入口保持一致的可进入提示。
 
 建议结构：
 
 - 全局导航：`Workspace 当前空间`、`Dashboard`、`Analysis`、`Reports`、`Metrics`、`Data & Knowledge`、`Models & Tools`、`Governance`、`Memory`、`Observability`、`Feedback`、`Evaluation`、`Platform Operations`、`Settings`。
-- 模块内导航：`Analysis = 会话列表 / 新建会话 / 搜索会话`；`Reports = 报告列表 / 报告筛选`；`Metrics = 当前 Workspace 指标列表 / 搜索指标`。
+- 模块内导航：`Analysis = 会话列表 / 新建会话 / 搜索会话`；`Reports = 报告列表 / 报告筛选`；`Metrics = 当前 Workspace 指标列表 / 搜索指标`；`Data & Knowledge = 当前 Workspace grouped asset list / 搜索资产`。
 - 详情型入口：`Analysis = Run / Trace detail`；`Data & Knowledge = Evidence / Source detail`；`Metrics = Metric detail`；`Feedback / Evaluation = 质量闭环入口`。
 
 ### InspectorSlot
@@ -115,7 +118,8 @@ Code
 - `Dashboard` 默认不启用 Inspector。
 - `Analysis` 需要 Inspector，用于当前草稿上下文、run、evidence、report、feedback 上下文。
 - `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
-- `Metrics / Data & Knowledge / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
+- `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
+- `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
 
 建议能力卡片类型：
 
@@ -208,7 +212,9 @@ Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级�
 - `Reader Page = Reports`：只展示结构化 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence`，不得把模型 markdown 原文直接当正式报告资产。
 - `Overview Page = Metrics / Platform Operations`：只展示当前 Workspace 的只读语义摘要、平台健康摘要和 Analysis 草稿态入口；入口只表示导航或草稿态，不创建真实 conversation、run、Job 或部署执行。
 - `Management Page = Data & Knowledge / Models & Tools / Governance / Settings`：承接资产、配置、治理和默认策略入口，但不自造执行链路，也不把 Management Page 写成孤岛。
-- `Data & Knowledge` 页面只展示 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck` 的标准化 ViewModel，不直接展示 `raw vector / raw embedding / raw score / raw SQL result`。
+- `Data & Knowledge` 页面采用 `grouped asset navigation + relationship graph + Inspector` 结构；主区核心是当前 selected asset 的 relationship graph，不再以全局总览卡片堆叠作为核心结构。
+- `Data & Knowledge` 页面只展示 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck` 的标准化 ViewModel；`MainContent` 固定为 `SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，`Inspector` 承接 `Workspace Overview / Quality / Actions / Readonly Boundary / Technical Boundary`，不直接展示 `raw vector / raw embedding / raw score / raw SQL result / raw API response`。
+- `Data & Knowledge` 的 `DataSource` 主线固定为 `DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report`；`KnowledgeDocument` 主线固定为 `KnowledgeDocument -> Chunk Group(ViewModel only) -> KnowledgeChunk -> SourceEvidence -> Run / Report`。
 - `Models & Tools` 页面只展示 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy` 及其跳转入口，不直接调用模型或 Tool，不展示密钥，不绕过 `Model Gateway / Tool Registry`。
 - UI 只能展示 `Model Gateway / Tool Registry / Governance Policy` 的标准化 ViewModel，不展示 `provider raw response`、`tool raw output`、`handler payload`、`permission raw policy`、`LangGraph raw state`、`raw vector` 或 `raw embedding`。
 - UI 上的“调用 / 运行 / 检索 / 评估 / 发布”入口，在当前静态阶段只能表示导航、只读预览或草稿态入口，不代表真实执行。
@@ -244,6 +250,7 @@ shared primitive 固定包括：
 - `ErrorState`
 - `LoadingState`
 - `InspectorSlot`
+- `RelationshipGraphCanvas`
 
 统一 UI 设计语言固定如下：
 
@@ -252,6 +259,7 @@ shared primitive 固定包括：
 AI 对话 / 输入 / 回复类场景：Ant Design X
 复杂中后台表格 / 表单 / 详情：ProComponents 按需
 图表：ECharts / Ant Design Charts
+关系图：`shared/graph` 封装的 `RelationshipGraphCanvas`，底层使用 `@antv/g6`
 状态组件：shared/ui
 主题变量：shared/theme
 ```
@@ -262,8 +270,20 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 不每个页面自建按钮、卡片、状态色或反馈样式。
 - 状态标签、风险等级、空态、错误态、加载态必须通过 `shared/ui` 收敛。
 - 颜色、字号、间距、圆角、阴影等必须能映射到 `shared/theme` token。
+- `@antv/g6` 是项目级只读关系图展示底座，不是业务页面直接使用的图谱库。
+- 只有 `apps/web/src/shared/graph/**` 可以直接 import `@antv/g6`；业务页面和 feature 只能传入标准化 `RelationshipGraphViewModel`。
+- `shared/graph` 只承接只读关系图展示、节点点击、选中态、fit view、zoom、pan 等查看能力，不承接可编辑 workflow、创建边、删除节点或写回业务数据。
+- `Data & Knowledge`、后续 `RunTrace`、`Metrics lineage` 等图谱场景必须复用 `shared/graph`，不得各自散写 G6。
 - 页面组件不得直接消费 raw API response。
 - 页面组件不得直接使用数据库字段、模型原始输出、Tool 原始输出或 LangGraph raw state。
+
+明确禁止：
+
+- 业务页面直接 import `@antv/g6`。
+- 在 `Data & Knowledge` 页面内创建业务私有 G6 canvas。
+- 新增 `DataKnowledgeGraphCanvas / RunTraceGraphCanvas / MetricsLineageGraphCanvas` 这类直接包 G6 的业务图组件。
+- 把关系图做成可编辑 Workflow Builder。
+- 把 G6 instance 泄漏到业务页面。
 
 ### Card Slot 结构
 
