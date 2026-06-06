@@ -6,6 +6,7 @@ import type { StaticRouteKey } from "../models";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
 import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
+import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks";
 import { useMetricsOverviewState } from "../../features/metrics/hooks";
 import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks";
 import { useReportsReaderState } from "../../features/reports/hooks";
@@ -27,6 +28,7 @@ import {
 import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
 import { AnalysisSessionNav } from "./AnalysisSessionNav";
 import { AppShellInspector } from "./AppShellInspector";
+import { DataKnowledgeListNav } from "./DataKnowledgeListNav";
 import { MetricsListNav } from "./MetricsListNav";
 import { ReportsInspectorPanel } from "./ReportsInspectorPanel";
 import { ReportsListNav } from "./ReportsListNav";
@@ -38,7 +40,9 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
-  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "metrics" | "reports" | "root">(
+  const [leftNavMode, setLeftNavMode] = useState<
+    "analysis" | "data-knowledge" | "metrics" | "reports" | "root"
+  >(
     appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
   );
   const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
@@ -51,6 +55,10 @@ export function AppShell() {
       (workspace) => workspace.workspaceId === selectedWorkspaceId
     ) ?? appShellStaticViewModel.workspace;
   const analysisConversationState = useAnalysisConversationState();
+  const dataKnowledgeOverviewState = useDataKnowledgeOverviewState({
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
   const metricsOverviewState = useMetricsOverviewState({
     workspaceId: selectedWorkspace.workspaceId,
     workspaceName: selectedWorkspace.name
@@ -87,11 +95,23 @@ export function AppShell() {
   const handleNavigate = (route: StaticRouteKey) => {
     setActiveRoute(route);
     setLeftNavMode(
-      route === "analysis" ? "analysis" : route === "metrics" ? "metrics" : route === "reports" ? "reports" : "root"
+      route === "analysis"
+        ? "analysis"
+        : route === "data-knowledge"
+          ? "data-knowledge"
+          : route === "metrics"
+            ? "metrics"
+            : route === "reports"
+              ? "reports"
+              : "root"
     );
 
     if (route !== "analysis") {
       setAnalysisSessionQuery("");
+    }
+
+    if (route !== "data-knowledge") {
+      dataKnowledgeOverviewState.onSearchChange("");
     }
 
     if (route !== "metrics") {
@@ -219,6 +239,11 @@ export function AppShell() {
                 controller={reportsReaderState}
                 onBack={() => setLeftNavMode("root")}
               />
+            ) : activeRoute === "data-knowledge" && leftNavMode === "data-knowledge" ? (
+              <DataKnowledgeListNav
+                controller={dataKnowledgeOverviewState}
+                onBack={() => setLeftNavMode("root")}
+              />
             ) : activeRoute === "metrics" && leftNavMode === "metrics" ? (
               <MetricsListNav
                 controller={metricsOverviewState}
@@ -281,7 +306,9 @@ export function AppShell() {
             selectedReport={reportsReaderState.viewModel.selectedReport}
             workspaceName={selectedWorkspace.name}
           />
-        ) : activeRoute === "metrics" || activeRoute === "platform-operations" ? null : (
+        ) : activeRoute === "data-knowledge" ||
+          activeRoute === "metrics" ||
+          activeRoute === "platform-operations" ? null : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )
       }
@@ -295,6 +322,9 @@ export function AppShell() {
       ) : (
         <ActivePage
           key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+          dataKnowledgeState={
+            activeRoute === "data-knowledge" ? dataKnowledgeOverviewState : undefined
+          }
           metricsState={activeRoute === "metrics" ? metricsOverviewState : undefined}
           onNavigate={handleNavigate}
           platformOperationsState={

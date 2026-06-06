@@ -282,6 +282,49 @@ describe("AppShell", () => {
     expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
   });
 
+  it("enters data knowledge secondary navigation mode and updates the selected asset detail", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /数据与知识/ }));
+
+    const dataKnowledgeNavigation = screen.getByRole("navigation", {
+      name: "Data & Knowledge navigation"
+    });
+
+    expect(within(dataKnowledgeNavigation).getByText("数据与知识资产")).toBeTruthy();
+    expect(
+      within(dataKnowledgeNavigation).getByRole("textbox", { name: "搜索数据与知识资产" })
+    ).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("CRM Revenue Warehouse")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("渠道经营周报")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
+
+    expect(screen.getByText("Data & Knowledge 总览")).toBeTruthy();
+    expect(screen.getByText("当前选中资产详情：CRM Revenue Warehouse")).toBeTruthy();
+    expect(screen.getByText("dataSourceId: data-source-crm-revenue")).toBeTruthy();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
+    expect(screen.queryByText("当前阶段只保留数据与知识说明区")).toBeNull();
+
+    fireEvent.click(within(dataKnowledgeNavigation).getByText("渠道经营周报"));
+
+    expect(screen.getByText("当前选中资产详情：渠道经营周报")).toBeTruthy();
+    expect(screen.getByText("knowledgeDocumentId: knowledge-document-channel-weekly")).toBeTruthy();
+    expect(screen.getByText("知识切片")).toBeTruthy();
+    expect(screen.getByText("索引与 RAG 准备度")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "查看 RAG Strategy" })).toBeTruthy();
+    expect(screen.queryByText("真实 ingestion")).toBeNull();
+    expect(screen.queryByText("真实 vector search")).toBeNull();
+  });
+
   it("opens platform operations without the old inspector and keeps the page readonly", () => {
     render(
       <AppProviders>
