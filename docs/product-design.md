@@ -234,7 +234,10 @@ Analysis
 - 可以先只读展示，但必须按正规技术链路表达。
 - 不能自造 Planner / Agent Runtime / RAG / Trace / Evaluation / Tool Calling 体系。
 - 不能在页面、组件、mapper、service 或函数里散写模型调用、工具调用、向量检索、SQL 风控。
-- `Model Gateway / Tool Registry` 是项目统一边界，不是替代 `LangChain / LangGraph` 的自研框架。
+- `Model Gateway / Tool Registry` 是项目统一边界，不是替代 `LangChain / LangGraph / LlamaIndex` 的自研框架。
+- `Model Gateway` 是“模型调用统一入口”的产品对象边界，不是底层模型框架。
+- `Tool Registry` 是“工具定义和调用统一入口”的产品对象边界，不是底层工具调用框架。
+- 底层运行仍由 `LangGraph / LangChain / LlamaIndex / Milvus` 等成熟框架承接。
 - `SourceEvidence` 是 Analysis、Reports、Metrics、Data & Knowledge 等页面共享的标准化证据对象，不允许页面各自发明证据结构。
 
 按页面固定承接关系：
@@ -243,12 +246,20 @@ Analysis
 - `Reports`：承接 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence` 的结构化结果，不承接模型原始 markdown；后续报告质量评估可接 `DeepEval / RAGAs / LangSmith Dataset`。
 - `Metrics`：承接当前 Workspace 的指标语义、业务公式、阈值、血缘、证据和异常上下文；真实分析仍回到 Analysis / LangGraph run，Dashboard 只能消费 Metrics 语义。
 - `Data & Knowledge`：承接 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck`；`LlamaIndex` 承接解析、切片、索引、检索增强，`Milvus` 承接向量存储和相似度检索。
-- `Models & Tools`：承接 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy`；`Model Gateway` 是模型调用唯一入口，`Tool Registry` 是工具定义和工具调用唯一入口，`LangSmith / Langfuse` 是运行观测入口。
+- `Models & Tools`：承接 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy`；页面只展示 `Model Gateway / Tool Registry / Prompt / RAG` 策略等配置摘要和入口，不执行模型调用，不执行 Tool，不保存真实配置，不展示密钥；`Model Gateway` 是模型调用唯一入口，`Tool Registry` 是工具定义和工具调用唯一入口，`LangSmith / Langfuse` 是运行观测入口。
 - `Governance`：承接 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field Policy / Guardrail`，不把治理判断写进 UI。
 - `Observability`：当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续全局页承接 `RunEvent / ToolCall / ModelCall / cost / latency / errorType / fallbackReason / LangSmith / Langfuse trace mapping`。
 - `Evaluation`：承接 `EvaluationDataset / EvaluationRun / EvaluationScore / BadCase`；`DeepEval` 承接 Agent / Report 质量评估，`RAGAs` 承接 RAG 检索质量评估。
 - `Platform Operations`：承接当前 Workspace 的 `Job / DataQualityCheck / Notification / Deployment / Smoke / Migration` 只读摘要，用于解释 Dashboard / Analysis 可信度，不做执行后台。
 - `Settings`：只承接默认策略入口和只读配置摘要；默认模型策略跳转 `Models & Tools`，默认 RAG 策略跳转 `Models & Tools / Data & Knowledge`，默认权限策略跳转 `Governance`。
+
+后续代码门禁固定如下：
+
+- 如果某个功能要进入真实模型调用，必须走 `Model Gateway`。
+- 如果某个功能要进入真实工具调用，必须走 `Tool Registry`。
+- 如果某个功能要进入真实 `Agent Runtime / Planner`，必须走 `LangGraph`。
+- 如果某个功能要进入真实 `RAG / 向量检索`，必须走 `LlamaIndex + Milvus`。
+- 如果某个功能要进入评估，必须优先对齐 `DeepEval / RAGAs / LangSmith Dataset`。
 
 ## 4. 产品能力地图
 

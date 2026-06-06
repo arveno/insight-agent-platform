@@ -38,8 +38,8 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - Milvus：主向量库，负责知识库、RAG、Source Evidence 和后续 Memory 检索的向量存储。
 - DeepEval / RAGAs：Evaluation 工具，分别用于 Agent / 报告质量评估和 RAG 检索质量评估。
 - LangSmith / Langfuse：Observability 工具，用于 Trace、调试、评估记录和后续私有化观测预留。
-- 自研 Model Gateway：模型调用唯一入口，统一模型路由、重试、fallback、token、成本、延迟和错误类型。
-- 自研 Tool Registry：Agent 工具调用唯一入口，统一工具 schema、权限、风险等级、trace 和 handler。
+- 自研 Model Gateway：模型调用统一入口，负责模型路由、Provider 选择、重试、fallback、token、成本、延迟、错误类型、权限和审计归口；不是自研 LLM 框架，也不能替代 LangChain。
+- 自研 Tool Registry：工具定义和工具调用统一入口，负责 tool schema、权限、风险等级、handler 归口、trace 和审计归口；不是自研 Tool Calling 框架，也不能替代 LangChain / LangGraph。
 - 自研 Governance / SQL Guard / Policy：企业安全治理层，负责权限、SQL 风险、工具风险、敏感字段和审计。
 
 ### AI Platform Core Technology Boundary
@@ -50,21 +50,24 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - 可以先只读展示，但必须按正规技术链路表达。
 - 不能自造 Planner / Agent Runtime / RAG / Trace / Evaluation / Tool Calling 体系。
 - 不能在页面、组件、mapper、service 或函数里散写模型调用、工具调用、向量检索、SQL 风控。
-- `Model Gateway / Tool Registry` 是项目统一边界，不是自研替代 `LangChain / LangGraph` 的框架。
+- `Model Gateway` 不是自研 LLM 框架。
+- `Tool Registry` 不是自研 Tool Calling 框架。
+- `Model Gateway / Tool Registry` 是项目统一边界，不是自研替代 `LangChain / LangGraph / LlamaIndex` 的框架。
+- `Model Gateway / Tool Registry` 不能替代 `LangChain / LangGraph / LlamaIndex`。
 - `Model Gateway / Tool Registry` 负责企业级路由、权限、审计、fallback、成本、错误类型和 handler 归口。
 - 底层模型调用、Tool Calling、RAG、Agent Runtime 必须优先基于成熟框架承接。
 
 固定技术边界：
 
-- `Agent Runtime / Planner / Graph 编排 -> LangGraph`
-- `Model / Tool 调用能力层 -> LangChain`
-- `Knowledge / RAG 资产层 -> LlamaIndex`
-- `向量存储与相似度检索 -> Milvus`
+- `LangGraph = Agent Runtime / Planner / Graph 编排 / 状态机 / Human-in-the-loop / 可恢复执行`
+- `LangChain = 模型调用 / Tool Calling / 结构化输出 / Provider Adapter`
+- `LlamaIndex = 文档解析 / 切片 / 索引 / 检索增强`
+- `Milvus = 向量存储 / 相似度检索`
 - `评估 -> DeepEval / RAGAs`
 - `Trace / Observability / 调试 / 评估记录 -> LangSmith / Langfuse`
-- `模型调用统一入口 -> Model Gateway`
-- `工具定义和工具调用统一入口 -> Tool Registry`
-- `权限、SQL 风险、工具风险、敏感字段、审计 -> Governance Policy / SQL Guard / Tool Permission / AuditLog`
+- `Model Gateway = 模型调用统一入口，负责模型路由、Provider 选择、重试、fallback、token、成本、延迟、错误类型、权限和审计归口`
+- `Tool Registry = 工具定义和工具调用统一入口，负责 tool schema、权限、风险等级、handler 归口、trace 和审计归口`
+- `Governance Policy / SQL Guard / Tool Permission = 权限、SQL 风险、工具风险、敏感字段和审计策略`
 - `证据标准化 -> SourceEvidence`
 
 页面与运行边界固定如下：
@@ -72,6 +75,16 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - 前端页面只承接标准化 `Contract -> ViewModel -> UI` 链路，不承接真实模型、工具、RAG、SQL Guard 或向量检索执行。
 - 后端 `runtime / model_gateway / tools / governance / evaluation / observability` 才是 AI 平台能力的正式运行承接位。
 - 如果未来某个页面需要把新对象、ID 或共享动作带入 `API / mapper / ViewModel / Action / Inspector` 链路，必须先补 `docs/contracts.md` 与 `packages/contracts` schema。
+
+后续代码硬规则固定如下：
+
+- 不得在页面、组件、mapper、service、Cloud Function 或任意业务函数中直接散写 provider 调用。
+- 不得绕过 `Model Gateway` 调模型。
+- 不得绕过 `Tool Registry` 调工具。
+- 不得在 `Tool Registry` 外部散落 tool schema、handler、riskLevel 或 permission 判断。
+- 不得自建与 `LangGraph` 并行的 Planner / Agent Runtime。
+- 不得自建与 `LangChain` 并行的 Tool Calling / Provider Adapter。
+- 不得自建与 `LlamaIndex + Milvus` 并行的 RAG / Vector Search 链路。
 
 ### Infrastructure
 
