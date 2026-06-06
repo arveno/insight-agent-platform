@@ -276,7 +276,7 @@ export function AppShell() {
             selectedReport={reportsReaderState.viewModel.selectedReport}
             workspaceName={selectedWorkspace.name}
           />
-        ) : (
+        ) : activeRoute === "metrics" ? null : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )
       }

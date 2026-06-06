@@ -262,6 +262,9 @@ describe("AppShell", () => {
     expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
     expect(screen.queryByText("公式与阈值")).toBeNull();
     expect(screen.queryByText("趋势与异常")).toBeNull();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
+    expect(screen.queryByText("当前阶段只保留指标说明区")).toBeNull();
 
     fireEvent.click(within(metricsNavigation).getByText("毛利率"));
 
