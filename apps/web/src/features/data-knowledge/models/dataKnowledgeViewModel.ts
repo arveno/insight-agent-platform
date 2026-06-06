@@ -5,6 +5,7 @@ import type {
   StaticStatusViewModel,
   StaticTabViewModel
 } from "../../../app/models";
+import type { RelationshipGraphViewModel } from "../../../shared/graph";
 
 export type DataKnowledgeAssetKind = "data_source" | "knowledge_document";
 
@@ -15,7 +16,8 @@ export type DataKnowledgeRelationshipNodeKind =
   | "knowledge_chunk_group"
   | "knowledge_chunk"
   | "source_evidence"
-  | "usage";
+  | "usage"
+  | "empty";
 
 export type DataKnowledgeWorkspaceBindingViewModel = {
   workspaceId: string;
@@ -114,26 +116,12 @@ export type DataKnowledgeRelationshipNodeFactViewModel = {
 };
 
 export type DataKnowledgeRelationshipNodeViewModel = {
-  columnKey: string;
   facts: DataKnowledgeRelationshipNodeFactViewModel[];
-  key: string;
   kind: DataKnowledgeRelationshipNodeKind;
+  nodeId: string;
   risk?: StaticRiskViewModel;
   status?: StaticStatusViewModel;
   summary: string;
-  title: string;
-};
-
-export type DataKnowledgeRelationshipColumnViewModel = {
-  key: string;
-  nodes: DataKnowledgeRelationshipNodeViewModel[];
-  title: string;
-};
-
-export type DataKnowledgeRelationshipGraphViewModel = {
-  columns: DataKnowledgeRelationshipColumnViewModel[];
-  defaultSelectedNodeKey: string;
-  description: string;
   title: string;
 };
 
@@ -146,7 +134,8 @@ export type DataKnowledgeViewModel = StaticPageViewModelBase & {
   qualityChecks: DataKnowledgeQualityCheckViewModel[];
   readonlyBoundaryItems: string[];
   readonlyNotice: string;
-  relationshipGraph: DataKnowledgeRelationshipGraphViewModel;
+  relationshipGraph: RelationshipGraphViewModel;
+  relationshipNodeDetails: DataKnowledgeRelationshipNodeViewModel[];
   selectedAsset: DataKnowledgeSelectedAssetViewModel;
   tables: DataKnowledgeTableViewModel[];
   tabs: StaticTabViewModel[];

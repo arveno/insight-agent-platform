@@ -5,8 +5,6 @@ export type {
   DataKnowledgeEvidenceViewModel,
   DataKnowledgeFieldViewModel,
   DataKnowledgeQualityCheckViewModel,
-  DataKnowledgeRelationshipColumnViewModel,
-  DataKnowledgeRelationshipGraphViewModel,
   DataKnowledgeRelationshipNodeFactViewModel,
   DataKnowledgeRelationshipNodeKind,
   DataKnowledgeRelationshipNodeViewModel,

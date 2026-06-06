@@ -18,13 +18,12 @@ import type {
   DataKnowledgeEvidenceViewModel,
   DataKnowledgeFieldViewModel,
   DataKnowledgeQualityCheckViewModel,
-  DataKnowledgeRelationshipGraphViewModel,
-  DataKnowledgeRelationshipNodeViewModel,
   DataKnowledgeSelectedAssetViewModel,
   DataKnowledgeTableViewModel,
   DataKnowledgeViewModel,
   DataKnowledgeWorkspaceBindingViewModel
 } from "../models";
+import { createDataKnowledgeRelationshipGraph } from "./createDataKnowledgeRelationshipGraph";
 
 const lowRisk = {
   level: "low",
@@ -396,279 +395,6 @@ function createWorkspaceQualityChecks(
   });
 }
 
-function createNode(
-  columnKey: string,
-  key: string,
-  title: string,
-  summary: string,
-  facts: DataKnowledgeRelationshipNodeViewModel["facts"],
-  kind: DataKnowledgeRelationshipNodeViewModel["kind"],
-  status?: StaticStatusViewModel,
-  risk?: StaticRiskViewModel
-): DataKnowledgeRelationshipNodeViewModel {
-  return {
-    columnKey,
-    facts,
-    key,
-    kind,
-    risk,
-    status,
-    summary,
-    title
-  };
-}
-
-function createDataSourceGraph(
-  selectedAsset: DataKnowledgeSelectedAssetViewModel,
-  tables: DataKnowledgeTableViewModel[],
-  fields: DataKnowledgeFieldViewModel[],
-  evidenceItems: DataKnowledgeEvidenceViewModel[]
-): DataKnowledgeRelationshipGraphViewModel {
-  const assetColumnKey = "asset";
-  const tableColumnKey = "tables";
-  const fieldColumnKey = "fields";
-  const evidenceColumnKey = "evidence";
-  const usageColumnKey = "usage";
-
-  const assetNode = createNode(
-    assetColumnKey,
-    `node:data_source:${selectedAsset.dataSource?.dataSourceId ?? selectedAsset.key}`,
-    selectedAsset.title,
-    selectedAsset.summary,
-    [
-      { label: "dataSourceId", value: selectedAsset.dataSource?.dataSourceId ?? "" },
-      { label: "sourceType", value: selectedAsset.dataSource?.sourceType ?? "" },
-      { label: "name", value: selectedAsset.dataSource?.name ?? selectedAsset.title },
-      { label: "createdAt", value: selectedAsset.createdAt },
-      { label: "workspaceId", value: selectedAsset.workspaceId }
-    ],
-    "data_source",
-    selectedAsset.status,
-    selectedAsset.risk
-  );
-
-  const tableNodes = tables.map((table) =>
-    createNode(
-      tableColumnKey,
-      `node:data_table:${table.tableId}`,
-      table.tableName,
-      table.summary,
-      [
-        { label: "tableId", value: table.tableId },
-        { label: "tableName", value: table.tableName },
-        { label: "dataSourceId", value: table.dataSourceId },
-        { label: "createdAt", value: table.createdAt }
-      ],
-      "data_table"
-    )
-  );
-
-  const fieldNodes = fields.map((field) =>
-    createNode(
-      fieldColumnKey,
-      `node:data_field:${field.fieldId}`,
-      field.fieldName,
-      field.summary,
-      [
-        { label: "fieldId", value: field.fieldId },
-        { label: "fieldName", value: field.fieldName },
-        { label: "dataType", value: field.dataType },
-        { label: "tableId", value: field.tableId },
-        { label: "createdAt", value: field.createdAt }
-      ],
-      "data_field"
-    )
-  );
-
-  const evidenceNodes = evidenceItems.map((evidence) =>
-    createNode(
-      evidenceColumnKey,
-      `node:source_evidence:${evidence.sourceEvidenceId}`,
-      evidence.title,
-      evidence.snippet,
-      [
-        { label: "sourceEvidenceId", value: evidence.sourceEvidenceId },
-        { label: "sourceType", value: evidence.sourceType },
-        { label: "sourceId", value: evidence.sourceId },
-        { label: "title", value: evidence.title },
-        { label: "snippet", value: evidence.snippet },
-        { label: "confidence", value: evidence.confidenceText },
-        { label: "runId", value: evidence.runId }
-      ],
-      "source_evidence"
-    )
-  );
-
-  const usageNodes = Array.from(
-    new Map(evidenceItems.map((item) => [item.runId, item])).values()
-  ).map((item) =>
-    createNode(
-      usageColumnKey,
-      `node:usage:${item.runId}`,
-      item.usageTitle,
-      item.usageSummary,
-      [
-        { label: "runId", value: item.runId },
-        { label: "reportId", value: item.reportId ?? "N/A" },
-        { label: "usage", value: item.usageSummary }
-      ],
-      "usage"
-    )
-  );
-
-  return {
-    columns: [
-      { key: assetColumnKey, nodes: [assetNode], title: "Asset" },
-      { key: tableColumnKey, nodes: tableNodes, title: "Tables" },
-      { key: fieldColumnKey, nodes: fieldNodes, title: "Fields" },
-      { key: evidenceColumnKey, nodes: evidenceNodes, title: "Evidence" },
-      { key: usageColumnKey, nodes: usageNodes, title: "Usage" }
-    ],
-    defaultSelectedNodeKey: assetNode.key,
-    description: "DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report",
-    title: "Asset relationship graph"
-  };
-}
-
-function createKnowledgeGraph(
-  selectedAsset: DataKnowledgeSelectedAssetViewModel,
-  chunks: DataKnowledgeChunkViewModel[],
-  evidenceItems: DataKnowledgeEvidenceViewModel[]
-): DataKnowledgeRelationshipGraphViewModel {
-  const documentColumnKey = "document";
-  const groupColumnKey = "chunk-groups";
-  const chunkColumnKey = "chunks";
-  const evidenceColumnKey = "evidence";
-  const usageColumnKey = "usage";
-
-  const documentNode = createNode(
-    documentColumnKey,
-    `node:knowledge_document:${selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? selectedAsset.key}`,
-    selectedAsset.title,
-    selectedAsset.summary,
-    [
-      {
-        label: "knowledgeDocumentId",
-        value: selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? ""
-      },
-      { label: "title", value: selectedAsset.knowledgeDocument?.title ?? selectedAsset.title },
-      { label: "workspaceId", value: selectedAsset.workspaceId },
-      { label: "createdAt", value: selectedAsset.createdAt }
-    ],
-    "knowledge_document",
-    selectedAsset.status,
-    selectedAsset.risk
-  );
-
-  const chunkGroups = Array.from(
-    chunks.reduce((groupMap, chunk) => {
-      const groupChunks = groupMap.get(chunk.chunkGroupTitle) ?? [];
-      groupChunks.push(chunk);
-      groupMap.set(chunk.chunkGroupTitle, groupChunks);
-
-      return groupMap;
-    }, new Map<string, DataKnowledgeChunkViewModel[]>()).entries()
-  );
-
-  const groupNodes = chunkGroups.map(([groupTitle, groupChunks]) =>
-    createNode(
-      groupColumnKey,
-      `node:knowledge_chunk_group:${groupTitle}`,
-      groupTitle,
-      `承接 ${groupChunks.length} 个知识切片的主题分组。`,
-      [
-        { label: "sectionTitle", value: groupTitle },
-        {
-          label: "knowledgeDocumentId",
-          value: selectedAsset.knowledgeDocument?.knowledgeDocumentId ?? ""
-        },
-        { label: "chunkCount", value: String(groupChunks.length) }
-      ],
-      "knowledge_chunk_group"
-    )
-  );
-
-  const chunkNodes = chunks.map((chunk) =>
-    createNode(
-      chunkColumnKey,
-      `node:knowledge_chunk:${chunk.knowledgeChunkId}`,
-      chunk.title,
-      chunk.summary,
-      [
-        { label: "knowledgeChunkId", value: chunk.knowledgeChunkId },
-        { label: "knowledgeDocumentId", value: chunk.knowledgeDocumentId },
-        { label: "contentPreview", value: chunk.contentPreview },
-        { label: "createdAt", value: chunk.createdAt }
-      ],
-      "knowledge_chunk"
-    )
-  );
-
-  const evidenceNodes = evidenceItems.map((evidence) =>
-    createNode(
-      evidenceColumnKey,
-      `node:source_evidence:${evidence.sourceEvidenceId}`,
-      evidence.title,
-      evidence.snippet,
-      [
-        { label: "sourceEvidenceId", value: evidence.sourceEvidenceId },
-        { label: "sourceType", value: evidence.sourceType },
-        { label: "sourceId", value: evidence.sourceId },
-        { label: "title", value: evidence.title },
-        { label: "snippet", value: evidence.snippet },
-        { label: "confidence", value: evidence.confidenceText },
-        { label: "runId", value: evidence.runId }
-      ],
-      "source_evidence"
-    )
-  );
-
-  const usageNodes = Array.from(
-    new Map(evidenceItems.map((item) => [item.runId, item])).values()
-  ).map((item) =>
-    createNode(
-      usageColumnKey,
-      `node:usage:${item.runId}`,
-      item.usageTitle,
-      item.usageSummary,
-      [
-        { label: "runId", value: item.runId },
-        { label: "reportId", value: item.reportId ?? "N/A" },
-        { label: "usage", value: item.usageSummary }
-      ],
-      "usage"
-    )
-  );
-
-  return {
-    columns: [
-      { key: documentColumnKey, nodes: [documentNode], title: "Document" },
-      { key: groupColumnKey, nodes: groupNodes, title: "Chunk groups" },
-      { key: chunkColumnKey, nodes: chunkNodes, title: "Chunks" },
-      { key: evidenceColumnKey, nodes: evidenceNodes, title: "Evidence" },
-      { key: usageColumnKey, nodes: usageNodes, title: "Usage" }
-    ],
-    defaultSelectedNodeKey: documentNode.key,
-    description:
-      "KnowledgeDocument -> KnowledgeChunk / Chunk Group -> SourceEvidence -> Run / Report",
-    title: "Asset relationship graph"
-  };
-}
-
-function createRelationshipGraph(
-  selectedAsset: DataKnowledgeSelectedAssetViewModel,
-  tables: DataKnowledgeTableViewModel[],
-  fields: DataKnowledgeFieldViewModel[],
-  chunks: DataKnowledgeChunkViewModel[],
-  evidenceItems: DataKnowledgeEvidenceViewModel[]
-): DataKnowledgeRelationshipGraphViewModel {
-  if (selectedAsset.kind === "data_source") {
-    return createDataSourceGraph(selectedAsset, tables, fields, evidenceItems);
-  }
-
-  return createKnowledgeGraph(selectedAsset, chunks, evidenceItems);
-}
-
 export function createDataKnowledgeViewModel(
   selectedAssetKey?: string,
   workspaceBinding: DataKnowledgeWorkspaceBindingViewModel = defaultDataKnowledgeWorkspaceBinding
@@ -714,6 +440,13 @@ export function createDataKnowledgeViewModel(
     "Milvus = 向量存储 / 相似度检索方向",
     "SourceEvidence = 标准化证据对象"
   ];
+  const relationship = createDataKnowledgeRelationshipGraph({
+    chunks,
+    evidenceItems,
+    fields,
+    selectedAsset,
+    tables
+  });
 
   return {
     assetItems,
@@ -760,13 +493,8 @@ export function createDataKnowledgeViewModel(
     readonlyNotice:
       "不接真实 API / DB，不执行 ingestion、schema sync、LlamaIndex indexing、Milvus vector search 或 DataQualityCheck。",
     readonlyState: defaultReadonlyState,
-    relationshipGraph: createRelationshipGraph(
-      selectedAsset,
-      tables,
-      fields,
-      chunks,
-      evidenceItems
-    ),
+    relationshipGraph: relationship.graph,
+    relationshipNodeDetails: relationship.nodeDetails,
     rightAssistSummary: createRightAssistSummary(
       "data-knowledge-right-assist",
       "page.dataKnowledge.rightAssist.title",

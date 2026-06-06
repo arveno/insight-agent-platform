@@ -12,7 +12,9 @@ import type {
 
 const defaultViewModel = createDataKnowledgeViewModel();
 const defaultSelectedAssetKey = defaultViewModel.selectedAsset.key;
-const defaultSelectedNodeKey = defaultViewModel.relationshipGraph.defaultSelectedNodeKey;
+const defaultSelectedNodeId =
+  defaultViewModel.relationshipGraph.selectedNodeId ??
+  defaultViewModel.relationshipNodeDetails[0].nodeId;
 
 function findAssetKey(viewModel: DataKnowledgeViewModel, assetKey: string) {
   return viewModel.assetItems.find((item) => item.key === assetKey)?.key ?? defaultSelectedAssetKey;
@@ -20,22 +22,20 @@ function findAssetKey(viewModel: DataKnowledgeViewModel, assetKey: string) {
 
 function findRelationshipNode(
   viewModel: DataKnowledgeViewModel,
-  nodeKey: string
+  nodeId: string
 ): DataKnowledgeRelationshipNodeViewModel | undefined {
-  return viewModel.relationshipGraph.columns
-    .flatMap((column) => column.nodes)
-    .find((node) => node.key === nodeKey);
+  return viewModel.relationshipNodeDetails.find((node) => node.nodeId === nodeId);
 }
 
 export type DataKnowledgeOverviewController = {
   filteredAssetItems: DataKnowledgeViewModel["assetItems"];
   onSearchChange: (value: string) => void;
   onSelectAsset: (key: string) => void;
-  onSelectNode: (key: string) => void;
+  onSelectNode: (nodeId: string) => void;
   searchValue: string;
   selectedAssetKey: string;
   selectedNode: DataKnowledgeRelationshipNodeViewModel;
-  selectedNodeKey: string;
+  selectedNodeId: string;
   viewModel: DataKnowledgeViewModel;
 };
 
@@ -44,7 +44,7 @@ export function useDataKnowledgeOverviewState(
 ): DataKnowledgeOverviewController {
   const [searchValue, setSearchValue] = useState("");
   const [selectedAssetKey, setSelectedAssetKey] = useState(defaultSelectedAssetKey);
-  const [selectedNodeKey, setSelectedNodeKey] = useState(defaultSelectedNodeKey);
+  const [selectedNodeId, setSelectedNodeId] = useState(defaultSelectedNodeId);
   const viewModel = useMemo(
     () => createDataKnowledgeViewModel(selectedAssetKey, workspaceBinding),
     [selectedAssetKey, workspaceBinding]
@@ -59,19 +59,21 @@ export function useDataKnowledgeOverviewState(
     return viewModel.assetItems.filter((item) => item.title.toLowerCase().includes(normalizedQuery));
   }, [searchValue, viewModel.assetItems]);
   const selectedNode =
-    findRelationshipNode(viewModel, selectedNodeKey) ??
-    findRelationshipNode(viewModel, viewModel.relationshipGraph.defaultSelectedNodeKey) ??
-    viewModel.relationshipGraph.columns[0].nodes[0];
+    findRelationshipNode(viewModel, selectedNodeId) ??
+    findRelationshipNode(viewModel, viewModel.relationshipGraph.selectedNodeId ?? "") ??
+    viewModel.relationshipNodeDetails[0];
 
   useEffect(() => {
     setSearchValue("");
     setSelectedAssetKey(defaultSelectedAssetKey);
-    setSelectedNodeKey(defaultSelectedNodeKey);
+    setSelectedNodeId(defaultSelectedNodeId);
   }, [workspaceBinding.workspaceId]);
 
   useEffect(() => {
-    setSelectedNodeKey(viewModel.relationshipGraph.defaultSelectedNodeKey);
-  }, [viewModel.relationshipGraph.defaultSelectedNodeKey]);
+    setSelectedNodeId(
+      viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
+    );
+  }, [viewModel.relationshipGraph.selectedNodeId, viewModel.relationshipNodeDetails]);
 
   return {
     filteredAssetItems,
@@ -79,13 +81,17 @@ export function useDataKnowledgeOverviewState(
     onSelectAsset: (key) => {
       setSelectedAssetKey(findAssetKey(viewModel, key));
     },
-    onSelectNode: (key) => {
-      setSelectedNodeKey(findRelationshipNode(viewModel, key)?.key ?? viewModel.relationshipGraph.defaultSelectedNodeKey);
+    onSelectNode: (nodeId) => {
+      setSelectedNodeId(
+        findRelationshipNode(viewModel, nodeId)?.nodeId ??
+          viewModel.relationshipGraph.selectedNodeId ??
+          viewModel.relationshipNodeDetails[0].nodeId
+      );
     },
     searchValue,
     selectedAssetKey,
     selectedNode,
-    selectedNodeKey,
+    selectedNodeId,
     viewModel
   };
 }

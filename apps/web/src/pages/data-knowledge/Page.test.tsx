@@ -7,6 +7,33 @@ import { createDataKnowledgeViewModel } from "../../features/data-knowledge/mapp
 import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks";
 import { DataKnowledgePage } from "./Page";
 
+vi.mock("../../shared/graph", () => ({
+  RelationshipGraphCanvas: ({
+    graph,
+    onSelectNode,
+    selectedNodeId
+  }: {
+    graph: {
+      description?: string;
+      nodes: Array<{ label: string; nodeId: string }>;
+      selectedNodeId?: string;
+      title: string;
+    };
+    onSelectNode?: (nodeId: string) => void;
+    selectedNodeId?: string;
+  }) => (
+    <div aria-label={graph.title}>
+      <p>{graph.description}</p>
+      <p>{`selectedNodeId: ${selectedNodeId ?? graph.selectedNodeId ?? ""}`}</p>
+      {graph.nodes.map((node) => (
+        <button key={node.nodeId} onClick={() => onSelectNode?.(node.nodeId)} type="button">
+          {node.label}
+        </button>
+      ))}
+    </div>
+  )
+}));
+
 afterEach(cleanup);
 
 beforeAll(() => {
@@ -30,10 +57,9 @@ function createController(
 ): DataKnowledgeOverviewController {
   const viewModel = createDataKnowledgeViewModel(selectedAssetKey);
   const selectedNode =
-    viewModel.relationshipGraph.columns
-      .flatMap((column) => column.nodes)
-      .find((node) => node.key === viewModel.relationshipGraph.defaultSelectedNodeKey) ??
-    viewModel.relationshipGraph.columns[0].nodes[0];
+    viewModel.relationshipNodeDetails.find(
+      (node) => node.nodeId === viewModel.relationshipGraph.selectedNodeId
+    ) ?? viewModel.relationshipNodeDetails[0];
 
   return {
     filteredAssetItems: viewModel.assetItems,
@@ -42,7 +68,7 @@ function createController(
     onSelectNode: vi.fn(),
     searchValue: "",
     selectedAssetKey: viewModel.selectedAsset.key,
-    selectedNodeKey: viewModel.relationshipGraph.defaultSelectedNodeKey,
+    selectedNodeId: viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId,
     selectedNode,
     viewModel
   };
@@ -60,28 +86,28 @@ function InteractiveDataKnowledgePage({
     () => createDataKnowledgeViewModel(currentAssetKey),
     [currentAssetKey]
   );
-  const [selectedNodeKey, setSelectedNodeKey] = useState(
-    viewModel.relationshipGraph.defaultSelectedNodeKey
+  const [selectedNodeId, setSelectedNodeId] = useState(
+    viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
   );
 
   useEffect(() => {
-    setSelectedNodeKey(viewModel.relationshipGraph.defaultSelectedNodeKey);
-  }, [viewModel.relationshipGraph.defaultSelectedNodeKey]);
+    setSelectedNodeId(
+      viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
+    );
+  }, [viewModel.relationshipGraph.selectedNodeId, viewModel.relationshipNodeDetails]);
 
   const selectedNode =
-    viewModel.relationshipGraph.columns
-      .flatMap((column) => column.nodes)
-      .find((node) => node.key === selectedNodeKey) ??
-    viewModel.relationshipGraph.columns[0].nodes[0];
+    viewModel.relationshipNodeDetails.find((node) => node.nodeId === selectedNodeId) ??
+    viewModel.relationshipNodeDetails[0];
   const controller: DataKnowledgeOverviewController = {
     filteredAssetItems: viewModel.assetItems,
     onSearchChange: vi.fn(),
     onSelectAsset: setCurrentAssetKey,
-    onSelectNode: setSelectedNodeKey,
+    onSelectNode: setSelectedNodeId,
     searchValue: "",
     selectedAssetKey: viewModel.selectedAsset.key,
     selectedNode,
-    selectedNodeKey,
+    selectedNodeId,
     viewModel
   };
 
@@ -103,13 +129,8 @@ describe("DataKnowledgePage", () => {
     expect(screen.getByText("当前资产")).toBeTruthy();
     expect(screen.getByText("Asset relationship graph")).toBeTruthy();
     expect(screen.getByText("Selected node detail")).toBeTruthy();
-    expect(screen.getByText("Evidence usage")).toBeTruthy();
+    expect(screen.queryByText("Evidence usage")).toBeNull();
     expect(screen.getAllByText("CRM Revenue Warehouse").length).toBeGreaterThan(0);
-    expect(screen.getByText("Asset")).toBeTruthy();
-    expect(screen.getByText("Tables")).toBeTruthy();
-    expect(screen.getByText("Fields")).toBeTruthy();
-    expect(screen.getByText("Evidence")).toBeTruthy();
-    expect(screen.getByText("Usage")).toBeTruthy();
     expect(screen.getAllByText("dataSourceId: data-source-crm-revenue").length).toBeGreaterThan(0);
     expect(onNavigate).not.toHaveBeenCalled();
   });
@@ -136,13 +157,11 @@ describe("DataKnowledgePage", () => {
     );
 
     expect(screen.getAllByText("Finance Knowledge Base").length).toBeGreaterThan(0);
-    expect(screen.getByText("Document")).toBeTruthy();
-    expect(screen.getByText("Chunk groups")).toBeTruthy();
-    expect(screen.getByText("Chunks")).toBeTruthy();
-    expect(screen.getByText("Evidence")).toBeTruthy();
-    expect(screen.getByText("Usage")).toBeTruthy();
-    expect(screen.queryByText("Tables")).toBeNull();
-    expect(screen.queryByText("Fields")).toBeNull();
+    expect(screen.getByRole("button", { name: "收入口径章节" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "收入确认规则" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "sales_order" })).toBeNull();
+    expect(screen.getByRole("button", { name: "No source evidence yet" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "No run or report usage yet" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "收入确认规则" }));
 

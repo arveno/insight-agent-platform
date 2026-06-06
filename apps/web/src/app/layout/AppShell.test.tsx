@@ -1,8 +1,35 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../providers/AppProviders";
 import { AppShell } from "./AppShell";
+
+vi.mock("../../shared/graph", () => ({
+  RelationshipGraphCanvas: ({
+    graph,
+    onSelectNode,
+    selectedNodeId
+  }: {
+    graph: {
+      description?: string;
+      nodes: Array<{ label: string; nodeId: string }>;
+      selectedNodeId?: string;
+      title: string;
+    };
+    onSelectNode?: (nodeId: string) => void;
+    selectedNodeId?: string;
+  }) => (
+    <div aria-label={graph.title}>
+      <p>{graph.description}</p>
+      <p>{`selectedNodeId: ${selectedNodeId ?? graph.selectedNodeId ?? ""}`}</p>
+      {graph.nodes.map((node) => (
+        <button key={node.nodeId} onClick={() => onSelectNode?.(node.nodeId)} type="button">
+          {node.label}
+        </button>
+      ))}
+    </div>
+  )
+}));
 
 afterEach(cleanup);
 
@@ -326,9 +353,9 @@ describe("AppShell", () => {
     fireEvent.click(within(dataKnowledgeNavigation).getByText("渠道经营周报"));
 
     expect(screen.getAllByText("渠道经营周报").length).toBeGreaterThan(0);
-    expect(screen.getByText("Document")).toBeTruthy();
-    expect(screen.getByText("Chunk groups")).toBeTruthy();
-    expect(screen.getByText("Chunks")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "渠道复盘章节" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "促销与获客成本" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "渠道经营周报文档证据" })).toBeTruthy();
     expect(
       screen.getAllByText("knowledgeDocumentId: knowledge-document-channel-weekly").length
     ).toBeGreaterThan(0);
