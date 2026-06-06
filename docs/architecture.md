@@ -147,7 +147,8 @@ database/mysql/           # MySQL 数据库事实源
 产品体验模型固定按以下对象层级组织：
 
 ```text
-Workspace
+Tenant / Org
+-> Workspace
 -> Time Window / Finding
 -> Conversation / Message
 -> Run / RunEvent / ToolCall / ModelCall
@@ -158,7 +159,8 @@ Workspace
 
 对象职责固定如下：
 
-- `Workspace`：最上层企业空间上下文，承载租户、业务域、权限和时间窗口。
+- `Tenant / Org`：客户级隔离边界，不作为日常业务页面的默认主对象。
+- `Workspace`：Tenant / Org 内的业务空间上下文，承载业务域、权限、时间窗口和当前页面作用域。
 - `Finding`：问题、异常或机会点，是 Dashboard 的核心观察对象。
 - `Conversation`：围绕某个问题展开的分析过程。
 - `Message / Turn`：Conversation 内的多轮对话和交互单元。
@@ -167,6 +169,28 @@ Workspace
 - `Evidence / Source`：结论依据、来源和追溯入口。
 - `Report`：分析结果沉淀，承载报告段落、建议和决策上下文。
 - `Feedback / Evaluation`：结果质量闭环，不与 Memory 混用。
+
+### Workspace / Tenant / IAM Boundary
+
+- `Tenant / Org`：客户级隔离边界。
+- `Workspace`：业务空间边界。
+- `User`：账号。
+- `WorkspaceMembership`：用户在某个 `Workspace` 的成员关系。
+- `Role`：用户在某个 `Workspace` 内的角色。
+- `PermissionPolicy`：角色 / 用户 / 资源动作的权限策略。
+- `Resource`：`Metric`、`Dashboard`、`Conversation`、`Run`、`Report`、`Evidence`、`Job` 等业务对象。
+
+架构规则：
+
+- 一个 `Tenant` 可以有多个 `Workspace`。
+- 一个 `Workspace` 可以有多个 `User`。
+- 一个 `User` 可以加入多个 `Workspace`。
+- 一个 `User` 在不同 `Workspace` 中可以拥有不同 `Role`。
+- 所有核心业务对象默认归属 `workspaceId`。
+- 跨 `Workspace` 访问默认禁止。
+- 跨 `Workspace` 共享必须显式建模为 global resource / shared template。
+- 后端 API 必须基于 `userId + workspaceId + action + resourceId` 做权限判断。
+- 前端只展示权限态和只读 / 禁用状态，不作为权限事实源。
 
 ## 5. 前端架构
 
@@ -254,9 +278,9 @@ UI 不得直接消费 raw API response。
 - `Dashboard`：`Finding-first`，承接问题发现、摘要判断和进入 Analysis / Reports / Evidence 的入口。
 - `Analysis`：`Conversation-first`，承接多轮分析、消息流和当前会话上下文。
 - `Reports`：`Report-first`，承接报告列表、报告阅读、报告段落和决策沉淀。
-- `Observability`：`Run / Trace detail`，承接运行详情、事件、ToolCall、ModelCall、成本和错误定位。
+- `Observability`：`Run / Trace detail`，全局页后置；当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续承接运行详情、事件、ToolCall、ModelCall、成本和错误定位。
 - `Data & Knowledge`：数据、知识和证据资产层。
-- `Metrics`：指标、阈值、口径、血缘和异常规则层。
+- `Metrics`：指标、阈值、口径、血缘和异常规则层，当前阶段只读。
 - `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层。
 - `Governance / Feedback / Evaluation / Memory / Platform Operations / Settings`：支撑、治理、质量和平台能力页面。
 

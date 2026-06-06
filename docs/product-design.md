@@ -7,7 +7,7 @@
 - `docs/architecture.md` 定义系统骨架、模块、目录职责、技术边界和依赖方向。
 - `docs/contracts.md` 与 `packages/contracts` 定义业务对象、字段语义、状态、ID 和契约。
 - `docs/database.md` 定义数据库结构、字段命名、migration 和数据库边界。
-- `docs/ui-design.md` 定义 UI / Figma 工作流、线稿、高保真、交接和审查规则。
+- `docs/ui-design.md` 定义 UI Composition、导航模型、Page Composition、Inspector 和 shared primitive 规则。
 - `docs/product-design.md` 只定义产品能力、问题域、任务主线、功能边界和体验目标。
 
 ## 1. 目标与定位
@@ -19,7 +19,7 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 - 产品能力必须落入 `docs/architecture.md` 定义的 17 个一级模块。
 - 产品能力必须能够回到 `docs/contracts.md` 和 `packages/contracts` 中的业务对象，或显式标记为待确认对象。
 - 产品增强不能以 UI 方便为理由改变 architecture / contracts / database 事实源。
-- UI / Figma 定稿后，导航结构、页面职责、主要入口和核心区域原则上不因后续功能增强反复推翻。
+- 正式 UI 结构定稿后，导航结构、页面职责、主要入口和核心区域原则上不因后续功能增强反复推翻。
 - 后续功能优化、企业痛点补充、通用体验增强，应优先落在既定页面结构和扩展槽位内。
 - 如果新增能力会改变 IA、页面职责、导航结构或核心区域，必须先回到 product-design / architecture / ui-design 对应事实源审查。
 
@@ -35,6 +35,17 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 | 评估与质量负责人 | 管理反馈、Bad Case、Evaluation、回归质量 | Feedback、Evaluation、Reports | Evaluation、Feedback | Memory / Feedback / Evaluation 三域不得混用 |
 | 移动端轻操作用户 | 查看状态、追问、确认、反馈和轻量排障 | Dashboard、Analysis、Reports、Platform Operations | Mobile Browser 导航 | 移动端不删除必要状态、证据、Trace 或审计入口 |
 
+### 2.1 Workspace / Tenant / IAM 产品规则
+
+- `Tenant / Org` 是客户级隔离边界。
+- `Workspace` 是业务空间隔离边界。
+- `User` 通过 `WorkspaceMembership` 进入 `Workspace`。
+- 同一 `User` 可以加入多个 `Workspace`，并在不同 `Workspace` 中拥有不同 `Role`。
+- `Role / PermissionPolicy` 决定用户在当前 `Workspace` 中能查看哪些数据、使用哪些能力、触发哪些动作。
+- Dashboard、Metrics、Analysis、Reports、Data & Knowledge、Observability、Platform Operations、Feedback、Evaluation 等业务对象默认只展示当前 `Workspace` 下的数据、对象和能力。
+- 切换 `Workspace` 后可以保留 route，但必须重新加载 / 重建当前 `Workspace` 的 ViewModel，不得继续复用上一 `Workspace` 的 selected metric / conversation / run / report / evidence / job。
+- 跨 `Workspace` 复用对象必须显式建模为 global resource 或 shared template；默认业务对象不得跨 `Workspace` 直接复用。
+
 ## 3. 核心产品主线
 
 ### 3.1 主动分析主线
@@ -45,9 +56,10 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 
 ```text
 用户主动进入 Analysis
--> 输入业务问题 / 选择业务域 / 选择数据范围 / 选择知识上下文
--> 创建 AnalysisTask
--> 生成 AnalysisRun
+-> 进入新聊天草稿态 / 选择业务域 / 选择数据范围 / 选择知识上下文
+-> 用户发送问题
+-> 创建 Conversation / AnalysisTask
+-> 创建 AnalysisRun
 -> 查看 Evidence / Trace / Report
 -> 继续追问
 ```
@@ -55,7 +67,9 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 产品规则：
 
 - `Analysis` 必须保留主动分析输入入口，不能只作为 Dashboard 异常的承接页。
+- `Analysis` 是 `Conversation-first` 页面；进入页面先落在新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
 - 主动分析问题必须能绑定 `workspaceId`、`userId`、`businessDomainId`、`analysisTaskId` 和后续 `runId` 链路。
+- 用户发送后才创建 conversation；创建 conversation 后才创建 run。
 - 数据范围和知识上下文只能引用 Data / Knowledge / Metrics / RAG 已有能力，不在 Analysis 中重新定义数据源或知识库。
 - Evidence、Trace、Report、Follow-up 追问是主动分析的核心产品闭环入口。
 
@@ -79,16 +93,22 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 固定主线：
 
 ```text
-Dashboard / Metrics / Data Quality / Observability / Platform Operations 发现异常
--> 带上下文进入 Analysis
--> 发起追问或深度分析
+Dashboard / Metrics / Data Quality / Platform Operations / 单 run Trace 发现异常
+-> 生成带来源对象的 context pack
+-> 带上下文进入 Analysis 新聊天草稿态
+-> 用户发送追问
+-> 创建 Conversation / AnalysisTask
+-> 创建 AnalysisRun
 -> 生成 Report / Feedback / Evaluation 输入
 ```
 
 产品规则：
 
-- Dashboard、Metrics、Data Quality、Observability、Platform Operations 发现异常后，必须能把上下文带入 Analysis。
+- Dashboard、Metrics、Data Quality、Platform Operations，以及当前由 Analysis Run Trace / Drawer 承接的单 run 详情，发现异常后都必须能把上下文带入 Analysis。
+- Dashboard 必须支持 Dashboard-level / Finding-level / Metric-level context pack 进入 Analysis。
+- 带上下文进入 Analysis 只进入新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
 - 异常上下文必须表达来源对象，例如 Metric、MetricThreshold、DataQualityCheck、RunEvent、ToolCall、ModelCall、Job。
+- 用户发送后才创建 conversation；创建 conversation 后才创建 run。
 - 异常追问不是独立分析链路，仍然进入 AnalysisTask / AnalysisRun 主链路。
 - 异常追问不能让 UI 直接解析 raw API response、DB row、Tool 原始输出、模型原始输出或 LangGraph raw state。
 
@@ -117,7 +137,9 @@ Dashboard / Metrics / Data Quality / Observability / Platform Operations 发现�
 ```text
 Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 -> Open in Analysis with context
--> 创建带上下文的 AnalysisTask
+-> 进入带上下文的新聊天草稿态
+-> 用户发送追问
+-> 创建 Conversation / AnalysisTask
 -> 生成新的 AnalysisRun
 -> 查看新 Evidence / Trace / Report
 ```
@@ -126,6 +148,7 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 
 - `Open in Analysis with context` 是产品能力，不是某个页面临时发明的按钮。
 - 上下文必须带明确业务 ID，例如 `reportId`、`sourceEvidenceId`、`runId`、`toolCallId`、`modelCallId`、`jobId`。
+- 带上下文进入 Analysis 时，不立即创建 conversation 或 run；只有用户发送后才进入新的分析链路。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
 
@@ -184,13 +207,22 @@ Analysis
 - RiskRule
 - AuditLog
 
+### 3.5 Dashboard / Analysis / Reports / Metrics / Observability 产品关系
+
+- `Dashboard = Finding-first`：承接问题发现、摘要判断和带上下文进入 Analysis。
+- `Analysis = Conversation-first`：承接新聊天草稿态、多轮追问、上下文分析和当前 run 详情。
+- `Reports = Report-first`：承接正式结果沉淀、报告阅读、证据追溯和反馈入口。
+- `Metrics = 指标语义层`：当前阶段只读，承接指标目录、口径、阈值、血缘和异常上下文，不做新增指标、编辑公式或编辑阈值。
+- `Observability` 全局页需要真实 `RunEvent / ModelCall / ToolCall / cost / latency / error` 数据支撑，当前阶段后置；单 run 详情由 Analysis Run Trace / Drawer 承接。
+- Reports 是正式结果沉淀，`Report` 不等于模型原始输出，不等于 `Run Trace`。
+
 ## 4. 产品能力地图
 
 | 能力域 | 核心用户任务 | 承接模块 | 主要页面或入口 | 关联 contracts / 待确认对象 | 成熟度方向 |
 | --- | --- | --- | --- | --- | --- |
-| 工作区与身份 | 切换 workspace、查看成员、角色、业务域 | Workspace / IAM | Workspace、Header workspace selector | Workspace, User, Role, BusinessDomain, PermissionPolicy, workspace_members 待确认 | L1 -> L2 |
+| 工作区与身份 | 切换 workspace、查看成员、角色、业务域 | Workspace / IAM | Workspace、Header workspace selector | Workspace, User, Role, BusinessDomain, PermissionPolicy, WorkspaceMembership 待确认 | L1 -> L2 |
 | 数据可信 | 查看数据源、字段、质量、schema sync、ingestion job | Data Source & Ingestion, Platform Operations | Data & Knowledge、Platform Operations | DataSource, DataTable, DataField, DataQualityCheck, Job, IngestionJob 待确认 | L1 -> L3 |
-| 指标语义 | 查看指标、公式、阈值、血缘、异常 | Metric & Semantic Layer, Business Dashboard | Metrics、Dashboard | Metric, MetricFormula, MetricThreshold, MetricLineage | L1 -> L3 |
+| 指标语义 | 查看指标、公式、阈值、血缘、异常，只读理解指标语义 | Metric & Semantic Layer, Business Dashboard | Metrics、Dashboard | Metric, MetricFormula, MetricThreshold, MetricLineage | L1 -> L3 |
 | 知识与 RAG | 查看文档、切片、入库、索引、RAG 策略入口 | Knowledge & RAG, Model / Prompt / Tool / RAG Management, Evaluation | Data & Knowledge、Models & Tools、Evaluation | KnowledgeDocument, KnowledgeChunk, RagStrategy, Job, retrieval quality 待确认 | L1 -> L3 |
 | 主动分析 | 主动提问、选择上下文、发起 run、继续追问 | Agent Analysis, Multi-Agent Runtime | Analysis | AnalysisTask, AnalysisRun, RunEvent, SourceEvidence | L2 -> L3 |
 | 运行过程 | 查看 timeline、审批态、节点详情 | Multi-Agent Runtime, Observability & Monitoring | Analysis、Observability | AnalysisRun, RunEvent, ToolCall, ModelCall, PermissionPolicy | L1 -> L3 |
@@ -200,7 +232,7 @@ Analysis
 | 评估能力 | 管理 dataset、run、score、Bad Case、rubric | Evaluation Center | Evaluation | EvaluationDataset, EvaluationRun, EvaluationScore, BadCase, Rubric / DatasetItem 待确认 | L1 -> L3 |
 | 模型与策略 | 管理模型、路由、Prompt、RAG 策略 | Model / Prompt / Tool / RAG Management | Models & Tools | ModelConfig, RoutingPolicy, PromptVersion, RagStrategy | L1 -> L3 |
 | 治理与安全 | 管理权限、风险、SQL Guard、审计、敏感字段 | Governance & Security | Governance、Settings、Observability | PermissionPolicy, RiskRule, AuditLog, ToolDefinition, SQL Guard 待确认 | L1 -> L3 |
-| 观测与成本 | 查看 Trace、模型调用、工具调用、成本、延迟、错误率 | Observability & Monitoring | Observability | RunEvent, ToolCall, ModelCall, AuditLog, external trace mapping 待确认 | L1 -> L3 |
+| 观测与成本 | 查看单 run Trace，并为后续全局成本、延迟、错误率观测预留事实源 | Observability & Monitoring | Analysis Run Trace / Drawer、Observability（后置） | RunEvent, ToolCall, ModelCall, AuditLog, external trace mapping 待确认 | L0 -> L3 |
 | 报告与决策 | 阅读报告、证据、决策建议、发起反馈 | Report & Decision | Reports | Report, ReportSection, SourceEvidence, Decision, ActionSuggestion, Feedback | L2 -> L3 |
 | 经营总览 | 查看经营指标、异常、平台质量摘要 | Business Dashboard | Dashboard | Metric, MetricThreshold, SourceEvidence, DataQualityCheck, Job, Dashboard ViewModel 待确认 | L1 -> L3 |
 | 设置与默认策略 | 查看系统默认设置、环境可见项、默认策略入口 | Admin / Settings | Settings | Workspace, PermissionPolicy, RoutingPolicy, RagStrategy, Settings 聚合对象待确认 | L1 -> L2 |
@@ -262,28 +294,28 @@ Analysis
 
 | 页面 | 稳定槽位 | 可承接增强 | 不承接内容 |
 | --- | --- | --- | --- |
-| Analysis | 主动分析输入区；上下文选择区；Run 列表 / 会话列表；Run 状态区；结果预览区；Evidence 入口；Trace 入口；Report 入口；Follow-up 追问入口；右侧辅助区 / Drawer | 主动分析、异常追问、结果追问、审批态、流式状态、重试、Open in Analysis with context | 深度 Trace 主页面、正式报告阅读、Evaluation 管理、模型配置 |
+| Analysis | 新聊天草稿态；主动分析输入区；上下文选择区；Run 列表 / 会话列表；Run 状态区；结果预览区；Evidence 入口；Trace 入口；Report 入口；Follow-up 追问入口；右侧辅助区 / Drawer | 主动分析、异常追问、结果追问、审批态、流式状态、重试、Open in Analysis with context | 深度 Trace 主页面、正式报告阅读、Evaluation 管理、模型配置 |
 | Dashboard | 经营指标摘要；异常与风险摘要；平台质量摘要；Evidence / Analysis 跳转入口 | 异常发现、异常追问、平台质量摘要、经营风险提示 | 指标定义、真实分析执行、评估引擎 |
 | Reports | Report 列表；Report 阅读区；ReportSection；SourceEvidence 入口；Decision / ActionSuggestion；Feedback 入口 | 报告可信、证据追溯、结果追问、反馈提交 | 模型原始输出、反馈主列表、Evaluation 管理 |
 | Data & Knowledge | 数据源 Tabs；知识 Tabs；字段 / chunk 详情；质量摘要；ingestion / index 入口 | 数据可信、知识入库、schema sync、检索质量入口 | Job 主执行页、RAG 策略配置主页面 |
-| Metrics | 指标目录；公式 / 阈值详情；血缘入口；异常追问入口 | 指标语义、异常发现、指标证据 | 指标计算实现、数据清洗实现 |
+| Metrics | 指标目录；公式 / 阈值详情（只读）；血缘入口；异常追问入口 | 指标语义、异常发现、指标证据 | 新增指标、编辑公式、编辑阈值、指标计算实现、数据清洗实现 |
 | Models & Tools | ModelConfig Tab；RoutingPolicy Tab；PromptVersion Tab；ToolDefinition Tab；RagStrategy Tab；配置详情 Drawer | 模型 / Prompt / Tool / RAG 管理、Tool Permission 入口、runtime 观测跳转 | 模型密钥展示、运行监控主图表、Tool 执行 |
-| Observability | Run Trace；Tool / Model Trace；成本 / 延迟 / 错误率图表；外部 trace 映射入口；详情 Drawer | Trace、模型成本与延迟、失败定位、Model Gateway runtime / quota / fallback | 配置管理、业务报告阅读、原始 provider 响应 |
+| Observability（后置） | Analysis Run Trace / Drawer；后续全局成本 / 延迟 / 错误率视图；外部 trace 映射入口 | 单 run 详情承接、后续全局观测、失败定位、Model Gateway runtime / quota / fallback | 配置管理、业务报告阅读、原始 provider 响应 |
 | Governance | PermissionPolicy；RiskRule；SQL Guard；Tool Permission；Audit Log；敏感字段规则提示 | 权限、审计、SQL Guard、工具风险、敏感字段 | Tool 定义维护、模型路由配置、业务权限决策实现 |
 | Evaluation | Dataset；EvaluationRun；Score；BadCase；Rubric / rule；Dataset item 详情 | 评估、Bad Case、反馈闭环、检索质量入口 | 模型调用执行、RAG 执行、Feedback 主列表 |
 | Memory | Memory 列表；Memory 类型筛选；关联对象详情；Memory 使用痕迹入口；Analysis / Trace 跳转入口 | MemoryItem 查看、关联 run / decision、Memory 使用痕迹、上下文追问入口 | Feedback 主列表、Evaluation 执行、Memory 写入决策 |
 | Feedback | Feedback 列表；反馈类型筛选；人工纠错详情；BadCase 跳转 | 用户反馈、纠错、闭环入口 | Memory 写入决策、Evaluation 执行 |
 | Platform Operations | Job Tabs；Notification；DataQualityCheck；Deployment / smoke / migration 只读状态；详情 Drawer | 长任务状态、失败恢复、数据质量、部署健康 | 业务执行逻辑、手工改数据库、设计工作流 |
 | Settings | 设置分组；浏览器可见环境配置；默认策略入口；风险提示 | 默认策略入口、只读配置摘要、Settings 聚合对象 | 密钥展示、权限决策、模型路由执行 |
-| Workspace | Workspace 总览；成员；角色；业务域；Header workspace selector | workspace 上下文、成员管理、角色查看、业务域管理 | 审计主列表、权限业务决策 |
+| Workspace | Workspace 总览；成员；角色；业务域；Header workspace selector | workspace 上下文、成员管理、成员关系查看、角色查看、业务域管理 | 审计主列表、权限业务决策 |
 
 ## 9. 模块功能边界
 
 | 模块 | 模块解决什么问题 | 承接哪些能力 | 不承接哪些能力 | 未来增强应落在哪里 | 是否会影响 UI 结构 |
 | --- | --- | --- | --- | --- | --- |
-| Workspace / IAM | workspace、用户、角色、业务域和上下文边界 | Workspace 切换、成员、角色、业务域 | 权限业务决策、审计主列表 | Workspace 页面、Header workspace selector、Governance 跳转 | 通常不影响；新增 IAM 主能力需审查 |
+| Workspace / IAM | tenant / org、workspace、成员关系、角色、权限和上下文边界 | Workspace 切换、成员、角色、业务域、workspace scoped permission context | 权限业务决策、审计主列表 | Workspace 页面、Header workspace selector、Governance 跳转 | 通常不影响；新增 IAM 主能力需审查 |
 | Data Source & Ingestion | 数据源、数据表、字段、连接配置和 ingestion 上下文 | 数据源状态、字段字典、连接配置、schema sync 入口 | Job 主执行、数据库 migration、手工改库 | Data & Knowledge 主区、Platform Operations Job 跳转 | 不应影响导航；新增数据接入类型优先用既定 Tabs / Drawer |
-| Metric & Semantic Layer | 指标定义、公式、阈值、血缘和口径透明 | 指标目录、阈值、血缘、异常追问入口 | 指标计算实现、数据清洗 | Metrics 页面、Dashboard 指标卡、Data & Knowledge 血缘跳转 | 通常不影响；复杂血缘需在 Wireframe 标注 |
+| Metric & Semantic Layer | 指标定义、公式、阈值、血缘和口径透明 | 指标目录、阈值、血缘、异常追问入口、只读指标语义 | 指标计算实现、数据清洗、在当前阶段直接编辑指标公式或阈值 | Metrics 页面、Dashboard 指标卡、Data & Knowledge 血缘跳转 | 通常不影响；复杂血缘需在 UI Composition 中标注 |
 | Knowledge & RAG | 知识文档、知识切片、入库、索引和 RAG 上下文 | KnowledgeDocument、KnowledgeChunk、索引状态、检索质量入口 | RAG 策略主配置、RAG 执行实现 | Data & Knowledge、Models & Tools、Evaluation | 不应新增导航；检索质量需跨 Evaluation |
 | Agent Analysis | 用户问题、AnalysisTask、AnalysisRun 和追问主线 | 主动分析、异常追问、结果追问、run 状态、结果预览 | 正式报告阅读、深度 Trace 主页面、Evaluation 管理 | Analysis 页面核心槽位 | 是核心结构，变更需审查 |
 | Multi-Agent Runtime | Agent 运行过程、节点、事件和审批态 | Run timeline、Human-in-the-loop、节点详情 | LangGraph raw state 展示、前端执行 Runtime | Analysis 轻量 timeline、Observability full trace | 通常不影响导航；审批对象新增需审查 |
@@ -293,7 +325,7 @@ Analysis
 | Evaluation Center | 质量评估、数据集、评分、Bad Case 和回归输入 | EvaluationDataset、EvaluationRun、EvaluationScore、BadCase、rubric / dataset item 风险 | 用户反馈主列表、模型调用执行 | Evaluation 页面 | Rubric / DatasetItem 若成主对象需审查 |
 | Model / Prompt / Tool / RAG Management | 模型、路由、Prompt、Tool、RAG 策略配置 | ModelConfig、RoutingPolicy、PromptVersion、ToolDefinition、RagStrategy | Model Gateway 运行观测、密钥展示、Tool 执行 | Models & Tools、Observability 跳转 | 不应改变导航；复杂配置扩展在 Tabs 内 |
 | Governance & Security | 权限、SQL Guard、Tool Permission、风险和审计 | PermissionPolicy、RiskRule、AuditLog、SQL Guard、Tool Permission、敏感字段提示 | Tool 定义维护、模型路由配置、权限业务决策实现 | Governance、Settings、Observability | SQL Guard / Tool Permission 必须在 Governance 明确承接 |
-| Observability & Monitoring | Trace、成本、延迟、错误率、外部 trace 映射 | RunEvent、ToolCall、ModelCall、成本 / 延迟 / 错误、external trace mapping | 配置管理、业务报告阅读 | Observability 页面 | 不影响导航；聚合 ViewModel 待确认 |
+| Observability & Monitoring | 单 run Trace、成本、延迟、错误率和外部 trace 映射 | 当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续扩展为全局 Observability | 配置管理、业务报告阅读 | Analysis Trace / Drawer、Observability（后置） | 不影响导航；聚合 ViewModel 待确认 |
 | Report & Decision | 报告、证据、决策和行动建议 | Report、ReportSection、SourceEvidence、Decision、ActionSuggestion、Feedback 入口 | 模型原始输出、Feedback 主列表、Evaluation 管理 | Reports 页面 | 通常不影响；新报告结构需 contract 审查 |
 | Business Dashboard | 经营总览、异常风险和平台质量摘要 | MetricCard、异常摘要、平台质量摘要、Analysis 跳转 | 指标定义、真实分析执行、评估引擎 | Dashboard、Analysis 跳转、Platform Operations 跳转 | Dashboard 聚合 ViewModel 待确认，不应推翻指标 contracts |
 | Admin / Settings | 系统默认设置、可见环境配置和默认策略入口 | Workspace 设置、默认 Permission / Routing / RAG 策略入口、只读配置摘要 | 密钥展示、权限决策、模型路由执行 | Settings 页面、Governance / Models & Tools 跳转 | Settings 聚合对象待确认，通常不影响导航 |
@@ -311,7 +343,7 @@ Analysis
 6. 如果会改变 IA、页面职责、导航结构或核心区域，必须先更新 product-design / architecture / ui-design 对应事实源并重新审查。
 7. 如果会新增或改变核心业务对象、字段、状态或 ID，必须先进入 contracts / packages/contracts 事实源审查。
 8. 如果涉及数据库结构，必须先进入 database / migration 审查。
-9. 如果涉及 Figma，必须按 `docs/ui-design.md` 记录 Figma 文件链接、Page、Frame、设计阶段、版本或更新时间。
+9. 如未来涉及外部设计稿或 Figma，必须在对应 Issue 或 PR 中单独记录链接、Page、Frame、设计阶段、版本或更新时间，且不得覆盖正式文档事实源。
 10. Issue 只能作为执行边界，不能替代产品能力事实源。
 
 ## 11. 不做什么
@@ -328,7 +360,7 @@ Analysis
 - 不和 `docs/ui-design.md` 职责重叠。
 - 不把 `docs/product-design.md` 写成页面说明书。
 - 不把 Issue 作为产品设计源头。
-- 不把 Figma 作为可以推翻产品能力事实源的依据。
+- 不把 Figma 或任何外部设计稿作为可以推翻产品能力事实源的依据。
 - 不允许 mock / real 双链路、old / new 双轨或兼容字段兜底成为产品能力设计的一部分。
 
 ## 12. Issue 引用规则
@@ -351,9 +383,9 @@ Analysis
 
 - 是否影响 `docs/architecture.md` 的一级模块、目录职责或依赖方向。
 - 是否影响 `docs/contracts.md` 或 `packages/contracts` 的业务对象、字段语义、状态或 ID。
-- 是否影响 `docs/ui-design.md` 的 IA、页面职责、线稿、Figma 交接或 PR 证据规则。
+- 是否影响 `docs/ui-design.md` 的 UI Composition、导航规则、Inspector 规则或 shared primitive 规则。
 - 是否改变既定页面稳定槽位。
-- 是否涉及 Figma 文件、Page、Frame、版本或更新时间。
+- 如未来涉及外部设计稿或 Figma，是否需要在 Issue / PR 中记录文件、Page、Frame、版本或更新时间。
 - 是否涉及业务代码、数据库、后端 runtime、Model Gateway、Tool Registry、Evaluation 或 RAG。
 
 如果某个功能增强会改变 IA、页面职责、导航结构或核心区域，必须先回到 product-design / architecture / ui-design 事实源审查。
