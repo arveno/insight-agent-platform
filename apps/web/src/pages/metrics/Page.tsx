@@ -1,11 +1,14 @@
-import { metricsStaticViewModel } from "../../features/static-view-models";
+import { useMetricsOverviewState } from "../../features/metrics/hooks";
 import { WebPageScaffold, type WebPageProps } from "../_shared";
 import { MetricsSections } from "./sections";
 
-export function MetricsPage({ onNavigate }: WebPageProps) {
+export function MetricsPage({ metricsState, onNavigate }: WebPageProps) {
+  const fallbackMetricsState = useMetricsOverviewState();
+  const controller = metricsState ?? fallbackMetricsState;
+
   return (
-    <WebPageScaffold onNavigate={onNavigate} viewModel={metricsStaticViewModel}>
-      <MetricsSections onNavigate={onNavigate} viewModel={metricsStaticViewModel} />
+    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+      <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
     </WebPageScaffold>
   );
 }

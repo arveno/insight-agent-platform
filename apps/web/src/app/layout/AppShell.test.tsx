@@ -44,13 +44,16 @@ describe("AppShell", () => {
     const dashboardButton = within(navigation).getByRole("button", { name: /仪表盘/ });
     const analysisButton = within(navigation).getByRole("button", { name: /分析/ });
     const reportsButton = within(navigation).getByRole("button", { name: /报告/ });
+    const metricsButton = within(navigation).getByRole("button", { name: /指标/ });
 
     expect(dashboardButton).toBeTruthy();
     expect(analysisButton).toBeTruthy();
     expect(reportsButton).toBeTruthy();
+    expect(metricsButton).toBeTruthy();
     expect(dashboardButton.querySelector(".anticon-right")).toBeNull();
     expect(analysisButton.querySelector(".anticon-right")).toBeTruthy();
     expect(reportsButton.querySelector(".anticon-right")).toBeTruthy();
+    expect(metricsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /观测/ })).toBeTruthy();
     expect(within(navigation).queryByRole("button", { name: /工作区/ })).toBeNull();
@@ -230,5 +233,52 @@ describe("AppShell", () => {
     expect(screen.queryByText("能力说明")).toBeNull();
     expect(screen.queryByText("技术对接")).toBeNull();
     expect(screen.queryByText("Run Trace")).toBeNull();
+  });
+
+  it("enters metrics secondary navigation mode and updates the selected metric detail", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /指标/ }));
+
+    const metricsNavigation = screen.getByRole("navigation", { name: "Metrics navigation" });
+
+    expect(within(metricsNavigation).getByText("指标")).toBeTruthy();
+    expect(within(metricsNavigation).getByRole("textbox", { name: "搜索指标" })).toBeTruthy();
+    expect(within(metricsNavigation).getByText("确认收入")).toBeTruthy();
+    expect(within(metricsNavigation).getByText("毛利率")).toBeTruthy();
+    expect(within(metricsNavigation).getByText("获客成本")).toBeTruthy();
+    expect(within(metricsNavigation).queryByText("¥12.8M")).toBeNull();
+    expect(within(metricsNavigation).queryByText("最近 30 天环比 -3.2%")).toBeNull();
+    expect(within(metricsNavigation).queryByRole("button", { name: "带上下文进入 Analysis" })).toBeNull();
+
+    expect(screen.getByText("指标总览")).toBeTruthy();
+    expect(screen.getByText("当前指标详情：确认收入")).toBeTruthy();
+    expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
+    expect(screen.queryByText("公式与阈值")).toBeNull();
+    expect(screen.queryByText("趋势与异常")).toBeNull();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
+    expect(screen.queryByText("当前阶段只保留指标说明区")).toBeNull();
+
+    fireEvent.click(within(metricsNavigation).getByText("毛利率"));
+
+    expect(screen.getByText("当前指标详情：毛利率")).toBeTruthy();
+    expect(screen.getByText("收入扣除销售成本后保留的利润比例。")).toBeTruthy();
+    expect(screen.getByText("当前摘要")).toBeTruthy();
+    expect(screen.getByText("业务定义")).toBeTruthy();
+    expect(screen.getByText("阈值 / 异常规则")).toBeTruthy();
+    expect(screen.getByText("字段血缘摘要")).toBeTruthy();
+    expect(screen.getByText("证据摘要")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "带上下文进入 Analysis" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "查看完整数据血缘" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "新增指标" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
   });
 });

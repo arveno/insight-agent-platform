@@ -34,6 +34,7 @@ export type LeftNavProps = {
  */
 export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
   const { token } = theme.useToken();
+  const secondaryListRoutes = new Set(["analysis", "metrics", "reports"]);
 
   return (
     <nav
@@ -70,8 +71,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
           >
             {group.items.map((item) => {
               const isSelected = selectedKey === item.key;
-              const showEntryArrow =
-                group.kind === "primary" && (item.key === "analysis" || item.key === "reports");
+              const showEntryArrow = secondaryListRoutes.has(item.key);
               const badge = item.badge ? (
                 <span
                   style={{

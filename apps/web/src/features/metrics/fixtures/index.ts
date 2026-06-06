@@ -1,1 +1,5 @@
-export { metricsStaticViewModel } from "./metricsStaticViewModel";
+export {
+  createMetricsViewModel,
+  defaultMetricsWorkspaceBinding,
+  metricsStaticViewModel
+} from "./metricsStaticViewModel";

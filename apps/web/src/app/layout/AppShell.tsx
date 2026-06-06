@@ -6,6 +6,7 @@ import type { StaticRouteKey } from "../models";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
 import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
+import { useMetricsOverviewState } from "../../features/metrics/hooks";
 import { useReportsReaderState } from "../../features/reports/hooks";
 import { analysisStaticViewModel } from "../../features/static-view-models";
 import { AnalysisPageContent } from "../../pages/analysis/Page";
@@ -25,6 +26,7 @@ import {
 import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
 import { AnalysisSessionNav } from "./AnalysisSessionNav";
 import { AppShellInspector } from "./AppShellInspector";
+import { MetricsListNav } from "./MetricsListNav";
 import { ReportsInspectorPanel } from "./ReportsInspectorPanel";
 import { ReportsListNav } from "./ReportsListNav";
 
@@ -35,7 +37,7 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
-  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "reports" | "root">(
+  const [leftNavMode, setLeftNavMode] = useState<"analysis" | "metrics" | "reports" | "root">(
     appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
   );
   const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
@@ -43,7 +45,15 @@ export function AppShell() {
     appShellStaticViewModel.workspace.workspaceId
   );
   const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(false);
+  const selectedWorkspace =
+    appShellStaticViewModel.workspaces.find(
+      (workspace) => workspace.workspaceId === selectedWorkspaceId
+    ) ?? appShellStaticViewModel.workspace;
   const analysisConversationState = useAnalysisConversationState();
+  const metricsOverviewState = useMetricsOverviewState({
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
   const reportsReaderState = useReportsReaderState();
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
@@ -62,10 +72,6 @@ export function AppShell() {
       session.session.title.toLowerCase().includes(normalizedQuery)
     );
   }, [analysisSessionQuery]);
-  const selectedWorkspace =
-    appShellStaticViewModel.workspaces.find(
-      (workspace) => workspace.workspaceId === selectedWorkspaceId
-    ) ?? appShellStaticViewModel.workspace;
   const selectedNavigationKey = navigationGroups.some((group) =>
     group.items.some((item) => item.key === activeRoute)
   )
@@ -75,10 +81,16 @@ export function AppShell() {
     : undefined;
   const handleNavigate = (route: StaticRouteKey) => {
     setActiveRoute(route);
-    setLeftNavMode(route === "analysis" ? "analysis" : route === "reports" ? "reports" : "root");
+    setLeftNavMode(
+      route === "analysis" ? "analysis" : route === "metrics" ? "metrics" : route === "reports" ? "reports" : "root"
+    );
 
     if (route !== "analysis") {
       setAnalysisSessionQuery("");
+    }
+
+    if (route !== "metrics") {
+      metricsOverviewState.onSearchChange("");
     }
 
     if (route !== "reports") {
@@ -202,6 +214,11 @@ export function AppShell() {
                 controller={reportsReaderState}
                 onBack={() => setLeftNavMode("root")}
               />
+            ) : activeRoute === "metrics" && leftNavMode === "metrics" ? (
+              <MetricsListNav
+                controller={metricsOverviewState}
+                onBack={() => setLeftNavMode("root")}
+              />
             ) : (
               <LeftNav
                 groups={navigationGroups}
@@ -259,7 +276,7 @@ export function AppShell() {
             selectedReport={reportsReaderState.viewModel.selectedReport}
             workspaceName={selectedWorkspace.name}
           />
-        ) : (
+        ) : activeRoute === "metrics" ? null : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )
       }
@@ -273,6 +290,7 @@ export function AppShell() {
       ) : (
         <ActivePage
           key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+          metricsState={activeRoute === "metrics" ? metricsOverviewState : undefined}
           onNavigate={handleNavigate}
           reportsState={activeRoute === "reports" ? reportsReaderState : undefined}
         />
