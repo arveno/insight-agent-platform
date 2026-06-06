@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../app/providers/AppProviders";
@@ -14,7 +14,8 @@ const {
   graphRender,
   graphResize,
   graphSetElementState,
-  graphSetOptions
+  graphSetOptions,
+  graphZoomBy
 } = vi.hoisted(() => {
   const hoistedGraphDestroy = vi.fn();
   const hoistedGraphFitView = vi.fn().mockResolvedValue(undefined);
@@ -24,6 +25,7 @@ const {
   const hoistedGraphSetElementState = vi.fn().mockResolvedValue(undefined);
   const hoistedGraphSetOptions = vi.fn();
   const hoistedGraphGetSize = vi.fn(() => [720, 480] as const);
+  const hoistedGraphZoomBy = vi.fn().mockResolvedValue(undefined);
   const hoistedGraphMock = vi.fn().mockImplementation(() => ({
     destroy: hoistedGraphDestroy,
     destroyed: false,
@@ -33,7 +35,8 @@ const {
     render: hoistedGraphRender,
     resize: hoistedGraphResize,
     setElementState: hoistedGraphSetElementState,
-    setOptions: hoistedGraphSetOptions
+    setOptions: hoistedGraphSetOptions,
+    zoomBy: hoistedGraphZoomBy
   }));
 
   return {
@@ -45,7 +48,8 @@ const {
     graphRender: hoistedGraphRender,
     graphResize: hoistedGraphResize,
     graphSetElementState: hoistedGraphSetElementState,
-    graphSetOptions: hoistedGraphSetOptions
+    graphSetOptions: hoistedGraphSetOptions,
+    graphZoomBy: hoistedGraphZoomBy
   };
 });
 
@@ -67,6 +71,7 @@ afterEach(() => {
   graphResize.mockClear();
   graphSetElementState.mockClear();
   graphSetOptions.mockClear();
+  graphZoomBy.mockClear();
 });
 
 beforeAll(() => {
@@ -158,6 +163,23 @@ describe("RelationshipGraphCanvas", () => {
           },
           type: "view"
         },
+        edge: expect.objectContaining({
+          state: {
+            selected: expect.objectContaining({
+              stroke: "#2563EB"
+            })
+          },
+          style: expect.objectContaining({
+            stroke: "#CBD5E1"
+          })
+        }),
+        node: expect.objectContaining({
+          state: {
+            selected: expect.objectContaining({
+              stroke: "#2563EB"
+            })
+          }
+        }),
         padding: 28
       })
     );
@@ -170,6 +192,18 @@ describe("RelationshipGraphCanvas", () => {
         false
       )
     );
+
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reset view" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset view" }));
+
+    expect(graphZoomBy).toHaveBeenNthCalledWith(1, 0.8, false);
+    expect(graphZoomBy).toHaveBeenNthCalledWith(2, 1.2, false);
+    await waitFor(() => expect(graphFitView).toHaveBeenCalledTimes(2));
 
     const clickHandler = graphOn.mock.calls.find(([eventName]) => eventName === "node:click")?.[1];
     expect(clickHandler).toBeTypeOf("function");

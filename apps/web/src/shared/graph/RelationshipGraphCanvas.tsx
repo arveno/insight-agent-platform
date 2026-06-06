@@ -1,6 +1,11 @@
 import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { Graph, NodeEvent, type GraphOptions } from "@antv/g6";
-import { Space, Typography, theme } from "antd";
+import {
+  AimOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined
+} from "@ant-design/icons";
+import { Button, Space, Tooltip, Typography, theme } from "antd";
 
 import { shellThemeTokens, shellTypographyStyles } from "../theme";
 import type {
@@ -8,6 +13,10 @@ import type {
   RelationshipGraphNodeKind,
   RelationshipGraphViewModel
 } from "./models";
+import {
+  getRelationshipGraphEdgeColors,
+  getRelationshipGraphNodeColors
+} from "./relationshipGraphTheme";
 
 const defaultGraphHeight = 480;
 const defaultGraphWidth = 720;
@@ -35,54 +44,6 @@ function resolveGraphSize(container: HTMLDivElement) {
     height: Math.max(container.clientHeight, defaultGraphHeight),
     width: Math.max(container.clientWidth, defaultGraphWidth)
   };
-}
-
-function getNodeFill(kind: RelationshipGraphNodeKind, isDarkMode: boolean) {
-  if (kind === "asset" || kind === "document") {
-    return isDarkMode ? "#16325c" : "#e6f4ff";
-  }
-
-  if (kind === "table" || kind === "chunk_group") {
-    return isDarkMode ? "#193c32" : "#f6ffed";
-  }
-
-  if (kind === "field" || kind === "chunk") {
-    return isDarkMode ? "#3f2f13" : "#fffbe6";
-  }
-
-  if (kind === "evidence") {
-    return isDarkMode ? "#45271b" : "#fff2e8";
-  }
-
-  if (kind === "usage") {
-    return isDarkMode ? "#2d2a4a" : "#f9f0ff";
-  }
-
-  return isDarkMode ? "#262626" : "#fafafa";
-}
-
-function getNodeStroke(kind: RelationshipGraphNodeKind, isDarkMode: boolean) {
-  if (kind === "asset" || kind === "document") {
-    return isDarkMode ? "#69b1ff" : "#91caff";
-  }
-
-  if (kind === "table" || kind === "chunk_group") {
-    return isDarkMode ? "#73d13d" : "#b7eb8f";
-  }
-
-  if (kind === "field" || kind === "chunk") {
-    return isDarkMode ? "#ffd666" : "#ffe58f";
-  }
-
-  if (kind === "evidence") {
-    return isDarkMode ? "#ff9c6e" : "#ffbb96";
-  }
-
-  if (kind === "usage") {
-    return isDarkMode ? "#b37feb" : "#d3adf7";
-  }
-
-  return isDarkMode ? "#595959" : "#d9d9d9";
 }
 
 function createSelectionStateMap(
@@ -113,6 +74,8 @@ function createGraphOptions(
   width: number,
   token: ReturnType<typeof theme.useToken>["token"]
 ): GraphOptions {
+  const edgeColors = getRelationshipGraphEdgeColors(isDarkMode);
+
   return {
     animation: false,
     autoFit: {
@@ -150,12 +113,12 @@ function createGraphOptions(
         labelText: (datum) => String(datum.data?.label ?? ""),
         lineWidth: 1.5,
         radius: 12,
-        stroke: token.colorBorder
+        stroke: edgeColors.stroke
       },
       state: {
         selected: {
           lineWidth: 2,
-          stroke: token.colorPrimary
+          stroke: edgeColors.selectedStroke
         }
       },
       type: "polyline"
@@ -173,12 +136,16 @@ function createGraphOptions(
         selected: {
           lineWidth: 2.5,
           shadowBlur: 18,
-          shadowColor: token.colorPrimaryBorder,
-          stroke: token.colorPrimary
+          shadowColor: isDarkMode ? "rgba(96, 165, 250, 0.24)" : "rgba(37, 99, 235, 0.18)",
+          stroke: edgeColors.selectedStroke
         }
       },
       style: {
-        fill: (datum) => getNodeFill(datum.data?.kind as RelationshipGraphNodeKind, isDarkMode),
+        fill: (datum) =>
+          getRelationshipGraphNodeColors(
+            datum.data?.kind as RelationshipGraphNodeKind,
+            isDarkMode
+          ).fill,
         labelFill: token.colorText,
         labelFontSize: 13,
         labelFontWeight: 600,
@@ -205,7 +172,11 @@ function createGraphOptions(
 
           return [220, 88];
         },
-        stroke: (datum) => getNodeStroke(datum.data?.kind as RelationshipGraphNodeKind, isDarkMode)
+        stroke: (datum) =>
+          getRelationshipGraphNodeColors(
+            datum.data?.kind as RelationshipGraphNodeKind,
+            isDarkMode
+          ).stroke
       },
       type: "rect"
     },
@@ -231,8 +202,17 @@ export function RelationshipGraphCanvas({
   const handleSelectNode = useEffectEvent((nodeId: string) => {
     onSelectNode?.(nodeId);
   });
-  const fitGraphView = useEffectEvent((graphInstance: Graph) => {
+  const fitRelationshipGraphView = useEffectEvent((graphInstance: Graph) => {
     void graphInstance.fitView(fitViewOptions, false).catch(() => undefined);
+  });
+  const withActiveGraph = useEffectEvent((callback: (graphInstance: Graph) => void) => {
+    const graphInstance = graphRef.current;
+
+    if (!graphInstance || graphInstance.destroyed) {
+      return;
+    }
+
+    callback(graphInstance);
   });
 
   const applySelectionState = useEffectEvent((graphInstance: Graph) => {
@@ -315,7 +295,7 @@ export function RelationshipGraphCanvas({
 
         const nextSize = resolveGraphSize(currentContainer);
         currentGraph.resize(nextSize.width, nextSize.height);
-        fitGraphView(currentGraph);
+        fitRelationshipGraphView(currentGraph);
       });
       resizeObserverRef.current.observe(container);
     }
@@ -323,7 +303,7 @@ export function RelationshipGraphCanvas({
     return () => {
       cancelled = true;
     };
-  }, [applySelectionState, fitGraphView, graph, handleSelectNode, isDarkMode, token]);
+  }, [applySelectionState, fitRelationshipGraphView, graph, handleSelectNode, isDarkMode, token]);
 
   useEffect(() => {
     const graphInstance = graphRef.current;
@@ -383,18 +363,72 @@ export function RelationshipGraphCanvas({
           {graph.description}
         </Typography.Text>
       ) : null}
-      <div
-        aria-label={graph.title}
-        ref={containerRef}
-        style={{
-          background: token.colorBgContainer,
-          border: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
-          borderRadius: shellThemeTokens.borderRadiusLG,
-          height: defaultGraphHeight,
-          overflow: "hidden",
-          width: "100%"
-        }}
-      />
+      <div style={{ position: "relative", width: "100%" }}>
+        <Space
+          size={8}
+          style={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            zIndex: 1
+          }}
+        >
+          <Tooltip title="Zoom out">
+            <Button
+              aria-label="Zoom out"
+              icon={<ZoomOutOutlined />}
+              onClick={() => {
+                withActiveGraph((graphInstance) => {
+                  void graphInstance.zoomBy(0.8, false).catch(() => undefined);
+                });
+              }}
+              shape="circle"
+              size="small"
+              type="default"
+            />
+          </Tooltip>
+          <Tooltip title="Reset view">
+            <Button
+              aria-label="Reset view"
+              icon={<AimOutlined />}
+              onClick={() => {
+                withActiveGraph((graphInstance) => {
+                  fitRelationshipGraphView(graphInstance);
+                });
+              }}
+              shape="circle"
+              size="small"
+              type="default"
+            />
+          </Tooltip>
+          <Tooltip title="Zoom in">
+            <Button
+              aria-label="Zoom in"
+              icon={<ZoomInOutlined />}
+              onClick={() => {
+                withActiveGraph((graphInstance) => {
+                  void graphInstance.zoomBy(1.2, false).catch(() => undefined);
+                });
+              }}
+              shape="circle"
+              size="small"
+              type="default"
+            />
+          </Tooltip>
+        </Space>
+        <div
+          aria-label={graph.title}
+          ref={containerRef}
+          style={{
+            background: token.colorBgContainer,
+            border: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
+            borderRadius: shellThemeTokens.borderRadiusLG,
+            height: defaultGraphHeight,
+            overflow: "hidden",
+            width: "100%"
+          }}
+        />
+      </div>
     </Space>
   );
 }
