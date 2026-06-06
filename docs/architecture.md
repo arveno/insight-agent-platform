@@ -42,6 +42,37 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - 自研 Tool Registry：Agent 工具调用唯一入口，统一工具 schema、权限、风险等级、trace 和 handler。
 - 自研 Governance / SQL Guard / Policy：企业安全治理层，负责权限、SQL 风险、工具风险、敏感字段和审计。
 
+### AI Platform Core Technology Boundary
+
+核心原则固定如下：
+
+- 可以做轻量版本，但不能做玩具版本。
+- 可以先只读展示，但必须按正规技术链路表达。
+- 不能自造 Planner / Agent Runtime / RAG / Trace / Evaluation / Tool Calling 体系。
+- 不能在页面、组件、mapper、service 或函数里散写模型调用、工具调用、向量检索、SQL 风控。
+- `Model Gateway / Tool Registry` 是项目统一边界，不是自研替代 `LangChain / LangGraph` 的框架。
+- `Model Gateway / Tool Registry` 负责企业级路由、权限、审计、fallback、成本、错误类型和 handler 归口。
+- 底层模型调用、Tool Calling、RAG、Agent Runtime 必须优先基于成熟框架承接。
+
+固定技术边界：
+
+- `Agent Runtime / Planner / Graph 编排 -> LangGraph`
+- `Model / Tool 调用能力层 -> LangChain`
+- `Knowledge / RAG 资产层 -> LlamaIndex`
+- `向量存储与相似度检索 -> Milvus`
+- `评估 -> DeepEval / RAGAs`
+- `Trace / Observability / 调试 / 评估记录 -> LangSmith / Langfuse`
+- `模型调用统一入口 -> Model Gateway`
+- `工具定义和工具调用统一入口 -> Tool Registry`
+- `权限、SQL 风险、工具风险、敏感字段、审计 -> Governance Policy / SQL Guard / Tool Permission / AuditLog`
+- `证据标准化 -> SourceEvidence`
+
+页面与运行边界固定如下：
+
+- 前端页面只承接标准化 `Contract -> ViewModel -> UI` 链路，不承接真实模型、工具、RAG、SQL Guard 或向量检索执行。
+- 后端 `runtime / model_gateway / tools / governance / evaluation / observability` 才是 AI 平台能力的正式运行承接位。
+- 如果未来某个页面需要把新对象、ID 或共享动作带入 `API / mapper / ViewModel / Action / Inspector` 链路，必须先补 `docs/contracts.md` 与 `packages/contracts` schema。
+
 ### Infrastructure
 
 - Docker：后端服务容器化基础，保证 Agent Runtime 可构建、可部署、可回滚。
@@ -281,13 +312,17 @@ UI 不得直接消费 raw API response。
 
 - `Workspace`：最上层容器和当前空间上下文，不是普通业务菜单项。
 - `Dashboard`：`Finding-first`，承接问题发现、摘要判断和进入 Analysis / Reports / Evidence 的入口。
-- `Analysis`：`Conversation-first`，承接多轮分析、消息流和当前会话上下文。
-- `Reports`：`Report-first`，承接报告列表、报告阅读、报告段落和决策沉淀。
-- `Observability`：`Run / Trace detail`，全局页后置；当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续承接运行详情、事件、ToolCall、ModelCall、成本和错误定位。
-- `Data & Knowledge`：数据、知识和证据资产层。
-- `Metrics`：指标、阈值、口径、血缘和异常规则层，当前阶段只读。
-- `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层。
-- `Governance / Feedback / Evaluation / Memory / Platform Operations / Settings`：支撑、治理、质量和平台能力页面。
+- `Analysis`：`Conversation-first`，承接多轮分析、消息流和当前会话上下文；用户发送后才创建 `run`，底层由 `LangGraph` 承接 `Agent Runtime / Planner / Graph`，模型调用走 `Model Gateway + LangChain`，工具调用走 `Tool Registry`，Evidence 落到 `SourceEvidence`，Inspector 承接当前 `runId` 的 `Run Trace`，Drawer 承接当前 `run event detail`。
+- `Reports`：`Report-first`，承接报告列表、报告阅读、报告段落和决策沉淀；正式报告必须来自 `LangGraph run result + SourceEvidence + Report schema` 的结构化资产，而不是模型 markdown 原文。
+- `Observability`：`Run / Trace detail`，全局页后置；当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续承接 `RunEvent / ToolCall / ModelCall / cost / latency / error / fallbackReason` 和 `LangSmith / Langfuse trace mapping`。
+- `Data & Knowledge`：数据、知识和证据资产层；`DataSource / DataTable / DataField` 表达结构化数据资产，`KnowledgeDocument / KnowledgeChunk` 表达知识资产，`LlamaIndex` 承接解析 / 切片 / 索引 / 检索增强，`Milvus` 承接向量存储与相似度检索，`SourceEvidence` 承接可引用证据对象。
+- `Metrics`：指标、阈值、口径、血缘和异常规则层，当前阶段只读；页面承接指标定义、业务公式、阈值、血缘、证据和异常上下文，真实分析仍由 Analysis / LangGraph run 承接，Dashboard 只能消费 Metrics 语义。
+- `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层；`ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy` 是核心对象，页面只承接配置摘要与跳转，模型调用唯一入口是 `Model Gateway`，工具定义与调用唯一入口是 `Tool Registry`。
+- `Governance`：治理与安全页面；承接 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field Policy / Guardrail`，不把权限决策、SQL 风控和审计写进 UI。
+- `Evaluation`：质量评估页面；承接 `EvaluationDataset / EvaluationRun / EvaluationScore / BadCase`，由 `DeepEval / RAGAs` 和后续 `LangSmith Dataset / Eval` 方向承接质量评估，不与 Feedback 混用。
+- `Platform Operations`：当前 Workspace 的平台与数据链路健康页；只读展示 `Job / DataQualityCheck / Notification / Deployment / Smoke / Migration` 摘要，用于解释 Dashboard / Analysis 可信度，不是全局 SRE 运维后台。
+- `Settings`：当前 Workspace 的默认策略入口和只读配置摘要；默认模型策略跳转 `Models & Tools`，默认 RAG 策略跳转 `Models & Tools / Data & Knowledge`，默认权限策略跳转 `Governance`，不承接密钥展示和真实系统配置写入。
+- `Feedback / Memory`：反馈和长期记忆页面；仍需通过 `SourceEvidence / Report / Evaluation` 链路回到正式对象，不引入页面侧自造执行框架。
 
 正式对象层级和页面职责以 `docs/architecture.md` 为准，而不是以 HTML 原型中的页面结构为准。
 
@@ -298,6 +333,8 @@ UI 不得直接消费 raw API response。
 - `features/*/mappers` 只做 Contract -> ViewModel 转换和展示派生。
 - `features/*/models` 定义 ViewModel 和展示模型。
 - `features/*/components` 只展示 ViewModel，不解析 raw API response。
+- 前端页面、组件、mapper 和页面 service 不得直接执行模型、工具、SQL、RAG、向量检索或 SQL Guard。
+- 前端页面不得展示 raw provider response、raw Tool output、LangGraph raw state、raw vector、raw embedding 或 raw SQL result。
 - `shared` 只放真正跨模块复用内容。
 - 状态标签、风险等级、空态、错误态必须使用 shared UI。
 - UI 必须使用 Ant Design 体系，不引入第二套 UI 组件库。
