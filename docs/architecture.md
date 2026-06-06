@@ -142,6 +142,11 @@ database/mysql/           # MySQL 数据库事实源
 
 后续新能力必须落入这些模块之一，不允许随意新增孤立大模块。
 
+### Platform Operations Boundary
+
+- `Platform Operations` 默认是当前 `Workspace` 的平台支撑状态页面，承接当前 `Workspace` 下的 `Job`、`DataQualityCheck`、`Notification` 以及 `Deployment / Smoke / Migration` 摘要。
+- 如未来需要跨 `Workspace`、跨租户或全平台运维能力，必须单独建模为 `admin / global operation`，不能默认混入当前 `Workspace` 的 Platform Operations 页面和对象链路。
+
 ### 产品体验对象层级
 
 产品体验模型固定按以下对象层级组织：
@@ -217,7 +222,7 @@ apps/web/src/
 │  ├─ governance/         # 权限、SQL Guard、Tool Permission、审计页面入口
 │  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率页面入口
 │  ├─ settings/           # 系统设置、环境配置、默认策略
-│  └─ platform-operations/ # Job、通知、数据质量、运维任务页面入口
+│  └─ platform-operations/ # 当前 Workspace 的 Job、通知、数据质量、Deployment / Smoke / Migration 摘要页面入口
 ├─ features/              # 按业务域组织的前端功能模块
 │  ├─ workspace/          # 企业空间、成员、角色、业务域
 │  ├─ data-knowledge/     # 数据源、字段字典、业务知识、知识切片
@@ -232,7 +237,7 @@ apps/web/src/
 │  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率
 │  ├─ reports/            # 分析报告、报告段落、决策建议
 │  ├─ settings/           # 系统设置、环境配置、默认策略
-│  └─ platform-operations/ # Job、通知、数据质量、运维任务
+│  └─ platform-operations/ # 当前 Workspace 的 Job、通知、数据质量、Deployment / Smoke / Migration 摘要
 ├─ shared/                # 跨业务域复用的 API、UI、布局、图表、hooks、stores、types、utils
 │  ├─ api/                # 跨域 API 基础能力
 │  ├─ ui/                 # 跨域 UI 组件
