@@ -1,8 +1,35 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../providers/AppProviders";
 import { AppShell } from "./AppShell";
+
+vi.mock("../../shared/graph", () => ({
+  RelationshipGraphCanvas: ({
+    graph,
+    onSelectNode,
+    selectedNodeId
+  }: {
+    graph: {
+      description?: string;
+      nodes: Array<{ label: string; nodeId: string }>;
+      selectedNodeId?: string;
+      title: string;
+    };
+    onSelectNode?: (nodeId: string) => void;
+    selectedNodeId?: string;
+  }) => (
+    <div aria-label={graph.title}>
+      <p>{graph.description}</p>
+      <p>{`selectedNodeId: ${selectedNodeId ?? graph.selectedNodeId ?? ""}`}</p>
+      {graph.nodes.map((node) => (
+        <button key={node.nodeId} onClick={() => onSelectNode?.(node.nodeId)} type="button">
+          {node.label}
+        </button>
+      ))}
+    </div>
+  )
+}));
 
 afterEach(cleanup);
 
@@ -43,15 +70,18 @@ describe("AppShell", () => {
     expect(within(navigation).getByText("能力预览")).toBeTruthy();
     const dashboardButton = within(navigation).getByRole("button", { name: /仪表盘/ });
     const analysisButton = within(navigation).getByRole("button", { name: /分析/ });
+    const dataKnowledgeButton = within(navigation).getByRole("button", { name: /数据与知识/ });
     const reportsButton = within(navigation).getByRole("button", { name: /报告/ });
     const metricsButton = within(navigation).getByRole("button", { name: /指标/ });
 
     expect(dashboardButton).toBeTruthy();
     expect(analysisButton).toBeTruthy();
+    expect(dataKnowledgeButton).toBeTruthy();
     expect(reportsButton).toBeTruthy();
     expect(metricsButton).toBeTruthy();
     expect(dashboardButton.querySelector(".anticon-right")).toBeNull();
     expect(analysisButton.querySelector(".anticon-right")).toBeTruthy();
+    expect(dataKnowledgeButton.querySelector(".anticon-right")).toBeTruthy();
     expect(reportsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(metricsButton.querySelector(".anticon-right")).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
@@ -280,6 +310,98 @@ describe("AppShell", () => {
     expect(screen.queryByRole("button", { name: "新增指标" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
+  });
+
+  it("enters data knowledge secondary navigation mode and updates the selected asset detail", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /数据与知识/ }));
+
+    const dataKnowledgeNavigation = screen.getByRole("navigation", {
+      name: "Data & Knowledge navigation"
+    });
+
+    expect(within(dataKnowledgeNavigation).getByText("数据与知识资产")).toBeTruthy();
+    expect(
+      within(dataKnowledgeNavigation).getByRole("textbox", { name: "搜索数据与知识资产" })
+    ).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("数据资产 Data")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("知识文档 Docs")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("CRM Revenue Warehouse")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).getByText("渠道经营周报")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).queryByText("ready")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByText("low")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByText("medium")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
+
+    expect(screen.queryByText("Data & Knowledge 总览")).toBeNull();
+    expect(screen.getByText("当前资产")).toBeTruthy();
+    expect(screen.getByText("Asset relationship graph")).toBeTruthy();
+    expect(screen.getAllByText("CRM Revenue Warehouse").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("dataSourceId: data-source-crm-revenue").length).toBeGreaterThan(0);
+    expect(screen.getByText("Workspace Overview")).toBeTruthy();
+    expect(screen.getByText("Readonly Boundary")).toBeTruthy();
+    expect(screen.getByText("Quality & Operations Summary")).toBeTruthy();
+    expect(screen.getByText("Actions")).toBeTruthy();
+    expect(screen.getByText("Technical Boundary")).toBeTruthy();
+
+    fireEvent.click(within(dataKnowledgeNavigation).getByText("渠道经营周报"));
+
+    expect(screen.getAllByText("渠道经营周报").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "渠道复盘章节" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "促销与获客成本" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "渠道经营周报文档证据" })).toBeTruthy();
+    expect(
+      screen.getAllByText("knowledgeDocumentId: knowledge-document-channel-weekly").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "查看 RAG Strategy" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: "查看 Platform Operations" }).length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("真实 ingestion")).toBeNull();
+    expect(screen.queryByText("真实 vector search")).toBeNull();
+  });
+
+  it("keeps the selected relationship node within one asset and resets only after switching assets", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /数据与知识/ }));
+
+    const dataKnowledgeNavigation = screen.getByRole("navigation", {
+      name: "Data & Knowledge navigation"
+    });
+
+    expect(screen.getByText("selectedNodeId: data_source:data-source-crm-revenue")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "recognized_revenue" }));
+
+    expect(
+      screen.getByText("selectedNodeId: data_field:field-sales-order-recognized-revenue")
+    ).toBeTruthy();
+    expect(screen.getByText("fieldId: field-sales-order-recognized-revenue")).toBeTruthy();
+
+    fireEvent.click(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base"));
+
+    expect(
+      screen.getByText("selectedNodeId: knowledge_document:knowledge-document-finance-kb")
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText("knowledgeDocumentId: knowledge-document-finance-kb").length
+    ).toBeGreaterThan(0);
   });
 
   it("opens platform operations without the old inspector and keeps the page readonly", () => {

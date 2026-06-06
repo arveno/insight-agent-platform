@@ -1,11 +1,14 @@
-import { dataKnowledgeStaticViewModel } from "../../features/static-view-models";
+import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks";
 import { WebPageScaffold, type WebPageProps } from "../_shared";
 import { DataKnowledgeSections } from "./sections";
 
-export function DataKnowledgePage({ onNavigate }: WebPageProps) {
+export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: WebPageProps) {
+  const fallbackDataKnowledgeState = useDataKnowledgeOverviewState();
+  const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
+
   return (
-    <WebPageScaffold onNavigate={onNavigate} viewModel={dataKnowledgeStaticViewModel}>
-      <DataKnowledgeSections onNavigate={onNavigate} viewModel={dataKnowledgeStaticViewModel} />
+    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+      <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />
     </WebPageScaffold>
   );
 }

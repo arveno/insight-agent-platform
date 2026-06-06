@@ -213,6 +213,7 @@ Analysis
 - `Analysis = Conversation-first`：承接新聊天草稿态、多轮追问、上下文分析和当前 run 详情。
 - `Reports = Report-first`：承接正式结果沉淀、报告阅读、证据追溯和反馈入口。
 - `Metrics = 当前 Workspace 的指标语义层`：当前阶段只读，承接指标目录、业务定义、口径、阈值、血缘、证据和异常上下文；页面结构固定为 LeftNav 二级指标列表 + 主区指标总览与当前指标详情，不做新增指标、编辑公式或编辑阈值。
+- `Data & Knowledge = 当前 Workspace 的数据资产、知识资产、证据来源和数据可信状态页`：当前阶段只读；页面结构固定为 `LeftNav secondary list = 当前 Workspace 的 grouped asset list`、`MainContent = 当前选中资产的关系图和节点详情`、`Inspector = 全局摘要和辅助入口`。
 - `Platform Operations = 当前 Workspace 的平台与数据链路健康页`：当前阶段只读，承接 Job、DataQualityCheck、Notification / Alert、Deployment / Smoke / Migration 摘要与风险入口，不做全局 SRE 运维后台或代码 / 数据库执行台。
 - `Observability` 全局页需要真实 `RunEvent / ModelCall / ToolCall / cost / latency / error` 数据支撑，当前阶段后置；单 run 详情由 Analysis Run Trace / Drawer 承接。
 - Reports 是正式结果沉淀，`Report` 不等于模型原始输出，不等于 `Run Trace`。
@@ -222,6 +223,14 @@ Analysis
 - `Metrics` 当前结构固定为：`LeftNav secondary list = 当前 Workspace 的 Metric list`，`MainContent = 指标总览 + 当前指标详情`，`Inspector = 当前阶段不强制启用`。
 - `Metrics` 左侧二级列表只负责选择当前指标，只显示指标名；不显示当前值、趋势、证据数、按钮或大段描述。
 - `Metrics` 的 `Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
+- `Data & Knowledge` 当前结构固定为：`LeftNav secondary list = grouped asset list`，其中 `数据资产 Data` 和 `知识文档 Docs` 只是页面内部二级列表分组，不是新的一级模块，不新增 `Data route / Knowledge route`，也不拆 `Data & Knowledge` 一级入口。
+- `Data & Knowledge` 的 `MainContent` 固定为：`SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，不再以全局总览卡片堆叠作为主线。
+- `Data & Knowledge` 的 `Inspector` 固定承接：`Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
+- `DataSource` 关系图语义固定为：`DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report`。
+- `KnowledgeDocument` 关系图语义固定为：`KnowledgeDocument -> Chunk Group(ViewModel 展示派生) -> KnowledgeChunk -> SourceEvidence -> Run / Report`。
+- `Chunk Group` 只是 ViewModel 展示派生，不是 contract 字段，不是正式业务对象，不新增 `packages/contracts` schema。
+- `Data & Knowledge` 当前只读，不执行真实 ingestion、schema sync、indexing、vector search 或 `DataQualityCheck`。
+- `Data & Knowledge` 的 `Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不创建真实 conversation 或 run。
 - Metric-level context 至少表达：`metricId`、`metricName`、`currentValue`、`timeRange`、`trend`、`threshold`、`riskLevel`、`formula`、`lineage`、`evidenceRefs`、`workspaceId`。
 - `血缘 = 指标从哪些表、字段、任务或来源计算而来`；`证据 = 支撑指标异常判断或指标可信度的来源材料`。证据不等于 RAG，RAG 只是证据来源之一。
 - `Platform Operations` 与 `Data & Knowledge`、`Dashboard`、`Analysis`、`Governance`、`Observability` 相关，但当前阶段只承接当前 `Workspace` 的只读平台健康总览，不承接全租户或全平台运维后台。
@@ -245,7 +254,7 @@ Analysis
 - `Analysis`：承接 `Conversation / Chat`、当前 `runId` 的 `Run Trace` 和 `run event detail`；真实运行由 `LangGraph` 承接，模型调用走 `Model Gateway + LangChain`，工具调用走 `Tool Registry`，Evidence 必须落到 `SourceEvidence`。
 - `Reports`：承接 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence` 的结构化结果，不承接模型原始 markdown；后续报告质量评估可接 `DeepEval / RAGAs / LangSmith Dataset`。
 - `Metrics`：承接当前 Workspace 的指标语义、业务公式、阈值、血缘、证据和异常上下文；真实分析仍回到 Analysis / LangGraph run，Dashboard 只能消费 Metrics 语义。
-- `Data & Knowledge`：承接 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck`；`LlamaIndex` 承接解析、切片、索引、检索增强，`Milvus` 承接向量存储和相似度检索。
+- `Data & Knowledge`：承接 `DataSource / DataTable / DataField / KnowledgeDocument / KnowledgeChunk / SourceEvidence / DataQualityCheck`；`SourceEvidence` 是页面共享的标准化证据对象；`LlamaIndex` 承接解析、切片、索引、检索增强，`Milvus` 承接向量存储和相似度检索；页面只读展示 `DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report` 与 `KnowledgeDocument -> Chunk Group(ViewModel only) -> KnowledgeChunk -> SourceEvidence -> Run / Report`，不执行真实 ingestion、schema sync、indexing、vector search 或 `DataQualityCheck`。
 - `Models & Tools`：承接 `ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy`；页面只展示 `Model Gateway / Tool Registry / Prompt / RAG` 策略等配置摘要和入口，不执行模型调用，不执行 Tool，不保存真实配置，不展示密钥；`Model Gateway` 是模型调用唯一入口，`Tool Registry` 是工具定义和工具调用唯一入口，`LangSmith / Langfuse` 是运行观测入口。
 - `Governance`：承接 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field Policy / Guardrail`，不把治理判断写进 UI。
 - `Observability`：当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续全局页承接 `RunEvent / ToolCall / ModelCall / cost / latency / errorType / fallbackReason / LangSmith / Langfuse trace mapping`。

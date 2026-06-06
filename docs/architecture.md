@@ -21,6 +21,7 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 - TanStack Query：服务端状态管理，负责 API 请求缓存、加载态、错误态和重新获取。
 - Zustand：前端本地 UI 状态管理，负责页面局部状态、面板状态、筛选状态等。
 - ECharts / Ant Design Charts：图表能力，负责指标趋势、经营看板、评估结果和成本趋势展示。
+- AntV G6：项目级只读关系图展示底座，用于 `Data & Knowledge` 资产关系以及后续 `Metrics lineage`、`RunTrace / Step` 等关系展示；必须通过 `shared/graph` 封装使用，不替代普通图表能力。
 
 ### Backend
 
@@ -287,6 +288,7 @@ apps/web/src/
 │  ├─ ui/                 # 跨域 UI 组件
 │  ├─ layout/             # 跨域布局能力
 │  ├─ charts/             # 跨域图表能力
+│  ├─ graph/              # 项目级关系图展示底座，封装 @antv/g6，只接收标准化 RelationshipGraphViewModel
 │  ├─ theme/              # 设计 token 和主题能力
 │  ├─ hooks/              # 跨域 hooks
 │  ├─ stores/             # 跨域状态承载位
@@ -328,7 +330,7 @@ UI 不得直接消费 raw API response。
 - `Analysis`：`Conversation-first`，承接多轮分析、消息流和当前会话上下文；用户发送后才创建 `run`，底层由 `LangGraph` 承接 `Agent Runtime / Planner / Graph`，模型调用走 `Model Gateway + LangChain`，工具调用走 `Tool Registry`，Evidence 落到 `SourceEvidence`，Inspector 承接当前 `runId` 的 `Run Trace`，Drawer 承接当前 `run event detail`。
 - `Reports`：`Report-first`，承接报告列表、报告阅读、报告段落和决策沉淀；正式报告必须来自 `LangGraph run result + SourceEvidence + Report schema` 的结构化资产，而不是模型 markdown 原文。
 - `Observability`：`Run / Trace detail`，全局页后置；当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续承接 `RunEvent / ToolCall / ModelCall / cost / latency / error / fallbackReason` 和 `LangSmith / Langfuse trace mapping`。
-- `Data & Knowledge`：数据、知识和证据资产层；`DataSource / DataTable / DataField` 表达结构化数据资产，`KnowledgeDocument / KnowledgeChunk` 表达知识资产，`LlamaIndex` 承接解析 / 切片 / 索引 / 检索增强，`Milvus` 承接向量存储与相似度检索，`SourceEvidence` 承接可引用证据对象。
+- `Data & Knowledge`：数据、知识和证据资产层；`DataSource / DataTable / DataField` 表达结构化数据资产，`KnowledgeDocument / KnowledgeChunk` 表达知识资产，`SourceEvidence` 承接可引用证据对象；页面使用只读关系图表达 `DataSource -> DataTable -> DataField -> SourceEvidence -> Run / Report` 与 `KnowledgeDocument -> Chunk Group(ViewModel only) -> KnowledgeChunk -> SourceEvidence -> Run / Report`；`LlamaIndex` 承接解析 / 切片 / 索引 / 检索增强，`Milvus` 承接向量存储与相似度检索，但页面不执行真实 indexing、vector search 或 raw 数据展示。
 - `Metrics`：指标、阈值、口径、血缘和异常规则层，当前阶段只读；页面承接指标定义、业务公式、阈值、血缘、证据和异常上下文，真实分析仍由 Analysis / LangGraph run 承接，Dashboard 只能消费 Metrics 语义。
 - `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台能力配置层；`ModelConfig / RoutingPolicy / PromptVersion / ToolDefinition / RagStrategy` 是核心对象，页面只承接配置摘要与跳转，模型调用唯一入口是 `Model Gateway`，工具定义与调用唯一入口是 `Tool Registry`。
 - `Governance`：治理与安全页面；承接 `PermissionPolicy / RiskRule / SQL Guard / Tool Permission / AuditLog / Sensitive Field Policy / Guardrail`，不把权限决策、SQL 风控和审计写进 UI。
@@ -343,9 +345,12 @@ UI 不得直接消费 raw API response。
 
 - `pages` 只做页面编排，不做数据清洗。
 - `features/*/api` 只做请求封装。
-- `features/*/mappers` 只做 Contract -> ViewModel 转换和展示派生。
+- `features/*/mappers` 只做 Contract -> ViewModel 转换和展示派生；关系图场景由各 feature mapper 负责把业务对象转成 `RelationshipGraphViewModel`。
 - `features/*/models` 定义 ViewModel 和展示模型。
 - `features/*/components` 只展示 ViewModel，不解析 raw API response。
+- `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
+- `pages` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
+- 业务页面和 feature 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
 - 前端页面、组件、mapper 和页面 service 不得直接执行模型、工具、SQL、RAG、向量检索或 SQL Guard。
 - 前端页面不得展示 raw provider response、raw Tool output、LangGraph raw state、raw vector、raw embedding 或 raw SQL result。
 - `shared` 只放真正跨模块复用内容。
