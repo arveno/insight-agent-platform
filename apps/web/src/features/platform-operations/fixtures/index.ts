@@ -1,1 +1,5 @@
-export { platformOperationsStaticViewModel } from "./platformOperationsStaticViewModel";
+export {
+  createPlatformOperationsViewModel,
+  defaultPlatformOperationsWorkspaceBinding,
+  platformOperationsStaticViewModel
+} from "./platformOperationsStaticViewModel";

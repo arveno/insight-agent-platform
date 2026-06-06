@@ -281,4 +281,25 @@ describe("AppShell", () => {
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
   });
+
+  it("opens platform operations without the old inspector and keeps the page readonly", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /平台运维/ }));
+
+    expect(screen.getByText("平台运维总览")).toBeTruthy();
+    expect(screen.getByText("当前选中对象详情：nightly-data-quality")).toBeTruthy();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
+    expect(screen.queryByText("当前阶段只保留平台运维说明区")).toBeNull();
+    expect(screen.queryByText("平台运维辅助区")).toBeNull();
+    expect(screen.queryByRole("button", { name: "执行真实 Job" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "执行部署" })).toBeNull();
+  });
 });

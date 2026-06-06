@@ -48,9 +48,11 @@ export const messages = {
     "action.observabilityOpenAnalysis.label": "回到分析",
     "action.observabilityOpenModelTools.label": "查看模型与工具",
     "action.openInAnalysisWithContext.label": "带上下文分析",
-    "action.platformOpenDashboard.label": "回到仪表盘",
-    "action.platformRunJobDisabled.description": "请先确认任务配置和执行窗口。",
-    "action.platformRunJobDisabled.label": "运行任务",
+    "action.platformOpenAnalysis.description":
+      "带着当前 Platform Operations 上下文进入 Analysis 新聊天草稿态，不创建真实 conversation 或 run。",
+    "action.platformOpenAnalysis.label": "带上下文进入 Analysis",
+    "action.platformOpenDashboard.label": "查看 Dashboard",
+    "action.platformOpenDataKnowledge.label": "查看 Data & Knowledge",
     "action.reportFollowUp.label": "基于报告继续分析",
     "action.reportsOpenAnalysis.label": "进入分析",
     "action.reportsOpenEvaluation.label": "进入评估",
@@ -282,16 +284,23 @@ export const messages = {
     "page.observability.section.traceOverview.description": "运行轨迹总览信息区。",
     "page.observability.section.traceOverview.title": "运行轨迹总览",
     "page.observability.title": "观测",
-    "page.platformOperations.description": "平台运维工作台。",
+    "page.platformOperations.description":
+      "当前 Workspace 的只读平台与数据链路健康页，解释 Job、数据质量、通知和部署状态如何影响结果可信度。",
     "page.platformOperations.rightAssist.description":
-      "展示平台运维相关证据、运行轨迹和上下文入口。",
-    "page.platformOperations.rightAssist.title": "平台运维辅助区",
-    "page.platformOperations.section.jobsQuality.description": "任务与质量检查信息区。",
-    "page.platformOperations.section.jobsQuality.title": "任务与质量检查",
-    "page.platformOperations.section.opsStatus.description": "运维状态信息区。",
-    "page.platformOperations.section.opsStatus.title": "运维状态",
-    "page.platformOperations.tab.jobs.label": "任务",
-    "page.platformOperations.tab.quality.label": "质量检查",
+      "Platform Operations 第一版不强制启用 Inspector，相关上下文留在主区只读展示。",
+    "page.platformOperations.rightAssist.title": "平台运维上下文",
+    "page.platformOperations.section.jobsDataQuality.description":
+      "展示当前 Workspace 的 Job 与数据质量摘要，不执行真实 Job 或真实检查。",
+    "page.platformOperations.section.jobsDataQuality.title": "Job 与数据质量",
+    "page.platformOperations.section.overview.description":
+      "展示当前 Workspace 的平台与数据链路健康总览、Workspace 绑定和只读边界。",
+    "page.platformOperations.section.overview.title": "平台运维总览",
+    "page.platformOperations.section.platformStatus.description":
+      "只读展示 Deployment、Smoke、Migration 和通知状态摘要。",
+    "page.platformOperations.section.platformStatus.title": "平台状态摘要",
+    "page.platformOperations.section.riskNavigation.description":
+      "提供风险解释和跨页面跳转入口，但不创建真实 conversation、run 或执行链路。",
+    "page.platformOperations.section.riskNavigation.title": "风险与跳转入口",
     "page.platformOperations.title": "平台运维",
     "page.reports.description": "Report-first Reader Page，承接正式报告资产的阅读、追溯、反馈和继续追问。",
     "page.reports.rightAssist.description": "仅保留轻量报告上下文、目录和证据摘要。",
@@ -446,10 +455,11 @@ export const messages = {
     "action.observabilityOpenAnalysis.label": "Back to analysis",
     "action.observabilityOpenModelTools.label": "View models and tools",
     "action.openInAnalysisWithContext.label": "Analyze with context",
-    "action.platformOpenDashboard.label": "Back to dashboard",
-    "action.platformRunJobDisabled.description":
-      "Confirm the job configuration and execution window first.",
-    "action.platformRunJobDisabled.label": "Run job",
+    "action.platformOpenAnalysis.description":
+      "Open an Analysis draft with Platform Operations context only. Do not create a real conversation or run.",
+    "action.platformOpenAnalysis.label": "Open Analysis with context",
+    "action.platformOpenDashboard.label": "View Dashboard",
+    "action.platformOpenDataKnowledge.label": "View Data & Knowledge",
     "action.reportFollowUp.label": "Continue analysis from report",
     "action.reportsOpenAnalysis.label": "Open analysis",
     "action.reportsOpenEvaluation.label": "Open evaluation",
@@ -711,18 +721,23 @@ export const messages = {
     "page.observability.section.traceOverview.description": "Workspace area for Trace overview.",
     "page.observability.section.traceOverview.title": "Trace overview",
     "page.observability.title": "Observability",
-    "page.platformOperations.description": "Workspace for Platform Operations.",
+    "page.platformOperations.description":
+      "Readonly workspace health page for platform and data pipeline signals that affect result trust.",
     "page.platformOperations.rightAssist.description":
-      "Shows evidence, traces, and context entries for Platform Operations.",
-    "page.platformOperations.rightAssist.title": "Platform Operations assist",
-    "page.platformOperations.section.jobsQuality.description":
-      "Workspace area for Jobs and quality checks.",
-    "page.platformOperations.section.jobsQuality.title": "Jobs and quality checks",
-    "page.platformOperations.section.opsStatus.description":
-      "Workspace area for Operations status.",
-    "page.platformOperations.section.opsStatus.title": "Operations status",
-    "page.platformOperations.tab.jobs.label": "Jobs",
-    "page.platformOperations.tab.quality.label": "Quality checks",
+      "Platform Operations v1 keeps context in the main area and does not require an Inspector.",
+    "page.platformOperations.rightAssist.title": "Platform Operations context",
+    "page.platformOperations.section.jobsDataQuality.description":
+      "Shows readonly job and data quality summaries for the current workspace.",
+    "page.platformOperations.section.jobsDataQuality.title": "Jobs and data quality",
+    "page.platformOperations.section.overview.description":
+      "Shows workspace binding, readonly boundaries, and the overall health summary.",
+    "page.platformOperations.section.overview.title": "Platform Operations overview",
+    "page.platformOperations.section.platformStatus.description":
+      "Readonly status summary for deployment, smoke, migration, and notifications.",
+    "page.platformOperations.section.platformStatus.title": "Platform status summary",
+    "page.platformOperations.section.riskNavigation.description":
+      "Navigation-only entries for risk follow-up without starting real execution.",
+    "page.platformOperations.section.riskNavigation.title": "Risk and navigation entries",
     "page.platformOperations.title": "Platform Operations",
     "page.reports.description":
       "Report-first reader page for formal report assets, evidence, feedback, and follow-up questions.",
