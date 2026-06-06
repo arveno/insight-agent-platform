@@ -79,7 +79,8 @@ Code
 - `Dashboard = Finding-first`：先承接问题发现，再进入 Analysis、Reports、Evidence、Metrics。
 - `Analysis = Conversation-first`：先承接新聊天草稿态、多轮追问、当前分析上下文和 run 详情。
 - `Reports = Report-first`：先承接报告列表、阅读和报告段落。
-- `Metrics = 指标语义层`：先承接指标、阈值、口径、血缘和异常上下文；当前阶段只读。
+- `Metrics = 当前 Workspace 的指标语义层`：先承接指标、阈值、口径、血缘、证据和异常上下文；当前阶段只读，采用 LeftNav 二级对象列表 + 主区指标总览与当前指标详情。
+- `Platform Operations = 当前 Workspace 的平台与数据链路健康页`：先承接 Job、DataQualityCheck、Notification / Alert、Deployment / Smoke / Migration 摘要；第一版只读，不做全局运维后台。
 - `Observability = Run / Trace detail`：全局页后置；当前由 Analysis Run Trace / Drawer 承接单 run 详情，后续再扩展全局观测页。
 - `Data & Knowledge`：数据、知识和证据资产页。
 - `Models & Tools`：模型、Prompt、Tool、RAG 策略等平台配置页。
@@ -89,15 +90,16 @@ Code
 
 - `Workspace` 是顶部上下文，不是普通菜单项。
 - 全局导航只承载当前 `Workspace` 下的主工作区和能力分组。
-- `Analysis`、`Reports` 可以进入模块内导航。
+- `Analysis`、`Reports`、`Metrics` 可以进入模块内导航或二级对象列表。
 - 模块内导航覆盖 LeftNav 区域，并提供返回主导航能力。
 - 详情型页面不应默认作为主业务一级入口。
 - 切换 `Workspace` 时，导航可以保留 route，但模块内导航、Inspector 和选中对象必须回到当前 `Workspace` 作用域，不得继续复用上一 `Workspace` 的对象状态。
+- `Metrics` 的 LeftNav 二级列表承接当前 `Workspace` 的 Metric list，复用 `ObjectListNav / ShellNavListItem`；列表项只显示指标名，不展示当前值、趋势、证据数、按钮或大段描述。
 
 建议结构：
 
 - 全局导航：`Workspace 当前空间`、`Dashboard`、`Analysis`、`Reports`、`Metrics`、`Data & Knowledge`、`Models & Tools`、`Governance`、`Memory`、`Observability`、`Feedback`、`Evaluation`、`Platform Operations`、`Settings`。
-- 模块内导航：`Analysis = 会话列表 / 新建会话 / 搜索会话`；`Reports = 报告列表 / 报告筛选`。
+- 模块内导航：`Analysis = 会话列表 / 新建会话 / 搜索会话`；`Reports = 报告列表 / 报告筛选`；`Metrics = 当前 Workspace 指标列表 / 搜索指标`。
 - 详情型入口：`Analysis = Run / Trace detail`；`Data & Knowledge = Evidence / Source detail`；`Metrics = Metric detail`；`Feedback / Evaluation = 质量闭环入口`。
 
 ### InspectorSlot
@@ -197,6 +199,16 @@ AppShell
 - Timeline / Detail Page：`Analysis Run Trace / Drawer`，后续扩展到 `Observability`
 
 Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级页面。
+
+### Metrics / Platform Operations Composition
+
+- `Metrics` 属于 `Overview Page`，但允许在 LeftNav 区域使用二级对象列表承接当前 `Workspace` 的指标目录。
+- `Metrics` 左侧列表必须复用 `ObjectListNav / ShellNavListItem`，只负责选择当前指标。
+- `Metrics` 主区固定为 `指标总览 + selectedMetric detail`，详情区承接业务定义、当前摘要、公式、阈值 / 异常规则、字段血缘摘要、证据摘要和动作区。
+- `Metrics` 第一版不强制启用 `InspectorSlot`；`Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不立即创建 conversation 或 run。
+- `Platform Operations` 属于 `Overview Page`，第一版默认使用 `AppSectionStack / AppSection / AppCardGrid / AppBaseCard / StatusTag / RiskBadge / AppActionGroup` 单轨组合。
+- `Platform Operations` 第一版固定承接当前 `Workspace` 的平台运维总览、Job 状态、数据质量检查、通知 / 告警摘要、Deployment / Smoke / Migration 状态和风险 / 详情入口。
+- `Platform Operations` 第一版不强制启用 `InspectorSlot`，也不应被设计成全局 SRE / admin 运维后台 UI。
 
 ## 5. Shared Primitive Rules
 
