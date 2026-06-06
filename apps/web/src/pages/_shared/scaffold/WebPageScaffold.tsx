@@ -15,11 +15,17 @@ import type { NavigateToRoute } from "../types";
 
 export type WebPageScaffoldProps = {
   children: ReactNode;
+  hideHeaderActions?: boolean;
   onNavigate?: NavigateToRoute;
   viewModel: StaticPageViewModelBase;
 };
 
-export function WebPageScaffold({ children, onNavigate, viewModel }: WebPageScaffoldProps) {
+export function WebPageScaffold({
+  children,
+  hideHeaderActions = false,
+  onNavigate,
+  viewModel
+}: WebPageScaffoldProps) {
   const { t } = useI18n();
   const actions = [viewModel.primaryAction, ...viewModel.secondaryActions];
 
@@ -27,7 +33,11 @@ export function WebPageScaffold({ children, onNavigate, viewModel }: WebPageScaf
     <ResponsivePageShell
       header={
         <PageHeader
-          actions={<ActionBar actions={actions} onNavigate={onNavigate} t={t} />}
+          actions={
+            hideHeaderActions ? undefined : (
+              <ActionBar actions={actions} onNavigate={onNavigate} t={t} />
+            )
+          }
           meta={
             <Space wrap>
               <Typography.Text type="secondary" style={shellTypographyStyles.meta}>

@@ -23,7 +23,7 @@ beforeAll(() => {
 });
 
 describe("MetricsPage", () => {
-  it("renders the metrics overview sections with readonly workspace-bound semantics", () => {
+  it("renders metrics as overview plus selected metric detail instead of flat capability sections", () => {
     const onNavigate = vi.fn();
 
     render(
@@ -33,15 +33,20 @@ describe("MetricsPage", () => {
     );
 
     expect(screen.getByText("指标总览")).toBeTruthy();
-    expect(screen.getByText("指标目录")).toBeTruthy();
-    expect(screen.getByText("公式与阈值")).toBeTruthy();
-    expect(screen.getByText("趋势与异常")).toBeTruthy();
-    expect(screen.getByText("血缘与字段来源")).toBeTruthy();
-    expect(screen.getAllByText("证据入口").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("带上下文进入 Analysis").length).toBeGreaterThan(0);
-
+    expect(screen.getByText("当前指标详情：确认收入")).toBeTruthy();
+    expect(screen.getByText("业务定义")).toBeTruthy();
+    expect(screen.getByText("当前摘要")).toBeTruthy();
+    expect(screen.getByText("公式")).toBeTruthy();
+    expect(screen.getByText("阈值 / 异常规则")).toBeTruthy();
+    expect(screen.getByText("字段血缘摘要")).toBeTruthy();
+    expect(screen.getByText("证据摘要")).toBeTruthy();
+    expect(screen.getByText("动作")).toBeTruthy();
+    expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
     expect(screen.getByText("当前指标目录属于当前 Workspace。")).toBeTruthy();
     expect(screen.getByText("Metrics 当前阶段只读展示指标语义，不提供新增、编辑或真实计算。")).toBeTruthy();
+    expect(screen.queryByText("指标目录")).toBeNull();
+    expect(screen.queryByText("公式与阈值")).toBeNull();
+    expect(screen.queryByText("趋势与异常")).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -54,12 +59,13 @@ describe("MetricsPage", () => {
       </AppProviders>
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "带上下文进入 Analysis" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "带上下文进入 Analysis" }));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith("analysis");
     expect(screen.queryByRole("button", { name: "新增指标" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
+    expect(screen.queryByText("真实 conversation")).toBeNull();
   });
 });

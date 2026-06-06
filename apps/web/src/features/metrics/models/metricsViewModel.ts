@@ -1,30 +1,40 @@
 import type {
   StaticEvidenceEntranceViewModel,
-  StaticMetricCardViewModel,
-  StaticActionViewModel,
   StaticPageStateViewModel,
   StaticPageViewModelBase,
   StaticRiskViewModel,
-  StaticStatusViewModel,
-  StaticSummaryItemViewModel
+  StaticStatusViewModel
 } from "../../../app/models";
 
-export type MetricsDetailCardViewModel = {
-  description: string;
-  eyebrow?: string;
-  key: string;
-  meta?: string;
-  risk?: StaticRiskViewModel;
-  status?: StaticStatusViewModel;
-  title: string;
-  value?: string;
+export type MetricsWorkspaceBinding = {
+  workspaceId: string;
+  workspaceName: string;
 };
 
-export type MetricsAnalysisContextViewModel = {
+export type MetricListItemViewModel = {
+  key: string;
+  metricId: string;
+  metricName: string;
+};
+
+export type MetricThresholdRuleViewModel = {
+  condition: string;
+  key: string;
+  label: string;
+  risk?: StaticRiskViewModel;
+};
+
+export type MetricLineageSourceViewModel = {
+  description: string;
+  key: string;
+  label: string;
+  source: string;
+};
+
+export type MetricAnalysisContextViewModel = {
   currentValue: string;
   evidenceRefs: string[];
   formula: string;
-  key: string;
   lineage: string;
   metricId: string;
   metricName: string;
@@ -35,16 +45,32 @@ export type MetricsAnalysisContextViewModel = {
   workspaceId: string;
 };
 
+export type MetricDetailViewModel = {
+  analysisContext: MetricAnalysisContextViewModel;
+  businessDomain: string;
+  currentValue: string;
+  definition: string;
+  evidenceItems: StaticEvidenceEntranceViewModel[];
+  formula: {
+    businessFormula: string;
+    technicalFormula: string;
+  };
+  key: string;
+  lineageSources: MetricLineageSourceViewModel[];
+  metricId: string;
+  metricName: string;
+  risk?: StaticRiskViewModel;
+  status?: StaticStatusViewModel;
+  thresholdRules: MetricThresholdRuleViewModel[];
+  timeRange: string;
+  trend: string;
+  workspaceId: string;
+};
+
 export type MetricsViewModel = StaticPageViewModelBase & {
-  dashboardEntrances: StaticActionViewModel[];
-  evidenceEntrances: StaticEvidenceEntranceViewModel[];
-  formulaThresholdCards: MetricsDetailCardViewModel[];
-  lineageSourceCards: MetricsDetailCardViewModel[];
-  metricCatalogCards: StaticMetricCardViewModel[];
-  metricContexts: MetricsAnalysisContextViewModel[];
-  metricDirectory: StaticSummaryItemViewModel[];
+  metrics: MetricListItemViewModel[];
   metricsState: StaticPageStateViewModel;
   readonlyNotice: string;
-  trendAnomalyCards: StaticMetricCardViewModel[];
+  selectedMetric: MetricDetailViewModel;
   workspaceNotice: string;
 };

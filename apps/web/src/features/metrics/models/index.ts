@@ -1,5 +1,9 @@
 export type {
-  MetricsAnalysisContextViewModel,
-  MetricsDetailCardViewModel,
+  MetricAnalysisContextViewModel,
+  MetricDetailViewModel,
+  MetricLineageSourceViewModel,
+  MetricListItemViewModel,
+  MetricThresholdRuleViewModel,
+  MetricsWorkspaceBinding,
   MetricsViewModel
 } from "./metricsViewModel";

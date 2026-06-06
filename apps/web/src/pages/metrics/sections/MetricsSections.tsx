@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
-import type { MetricsViewModel } from "../../../features/static-view-models";
 import type {
-  MetricsAnalysisContextViewModel,
-  MetricsDetailCardViewModel
-} from "../../../features/metrics/models";
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../app/models";
+import type { MetricsViewModel } from "../../../features/static-view-models";
+import type { MetricDetailViewModel } from "../../../features/metrics/models";
 import {
   AppActionGroup,
   AppBaseCard,
@@ -36,8 +36,8 @@ function buildTagSlot(
     risk,
     status
   }: {
-    risk?: MetricsDetailCardViewModel["risk"];
-    status?: MetricsDetailCardViewModel["status"];
+    risk?: StaticRiskViewModel;
+    status?: StaticStatusViewModel;
   }
 ) {
   const statusTag = toStatusTag(t, status);
@@ -86,92 +86,156 @@ function buildLineageAction(
   });
 }
 
-function buildEvidenceAction(
-  contextKey: string,
-  onNavigate: MetricsSectionsProps["onNavigate"],
-  t: ReturnType<typeof useI18n>["t"]
-) {
-  return createRouteAction({
-    iconName: "evidence",
-    key: `${contextKey}-evidence`,
-    label: t("action.metricsOpenEvidence.label"),
-    onNavigate,
-    route: "reports",
-    variant: "sourceLink"
-  });
-}
-
-function MetricsDetailCard({
-  card,
-  t,
-  footerActions
-}: {
-  card: MetricsDetailCardViewModel;
-  footerActions?: ReactNode;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
+function MetricDefinitionCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <AppBaseCard
-      description={card.description}
-      eyebrow={card.eyebrow}
-      footerActions={footerActions}
-      meta={card.meta ? <Typography.Text type="secondary">{card.meta}</Typography.Text> : null}
-      tagSlot={buildTagSlot(t, card)}
-      title={card.title}
+      description="当前阶段只展示指标业务定义，不提供配置写入或规则编辑。"
+      eyebrow={metric.businessDomain}
+      title="业务定义"
     >
-      {card.value ? (
-        <Typography.Text style={{ display: "block", fontWeight: 600 }}>{card.value}</Typography.Text>
-      ) : null}
+      <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+        {metric.definition}
+      </Typography.Text>
     </AppBaseCard>
   );
 }
 
-function MetricContextCard({
-  context,
-  footerActions
+function MetricSummaryCard({
+  metric,
+  t
 }: {
-  context: MetricsAnalysisContextViewModel;
-  footerActions: ReactNode;
+  metric: MetricDetailViewModel;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <MetricCard
+      description={`时间范围：${metric.timeRange}`}
+      evidenceSummary={`${metric.evidenceItems.length} 条证据`}
+      key={`${metric.key}-summary`}
+      meta={<Typography.Text type="secondary">业务域：{metric.businessDomain}</Typography.Text>}
+      risk={toRiskBadge(t, metric.risk)}
+      status={toStatusTag(t, metric.status)}
+      title="当前摘要"
+      trend={metric.trend}
+      value={metric.currentValue}
+    />
+  );
+}
+
+function MetricFormulaCard({ metric }: { metric: MetricDetailViewModel }) {
+  return (
+    <AppBaseCard
+      description="业务公式和技术字段映射只读展示，不触发真实计算或更新。"
+      title="公式"
+    >
+      <Space direction="vertical" size={8} style={{ width: "100%" }}>
+        <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+          业务公式：{metric.formula.businessFormula}
+        </Typography.Text>
+        <Typography.Text>技术字段：{metric.formula.technicalFormula}</Typography.Text>
+      </Space>
+    </AppBaseCard>
+  );
+}
+
+function MetricThresholdCard({
+  metric,
+  t
+}: {
+  metric: MetricDetailViewModel;
+  t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
     <AppBaseCard
-      description="点击入口只表示带上下文进入 Analysis 新聊天草稿态，不创建真实 conversation 或 run。"
-      eyebrow={context.workspaceId}
-      footerActions={footerActions}
-      meta={
-        <Space direction="vertical" size={4} style={{ width: "100%" }}>
-          <Typography.Text type="secondary">timeRange: {context.timeRange}</Typography.Text>
-          <Typography.Text type="secondary">trend: {context.trend}</Typography.Text>
-          <Typography.Text type="secondary">riskLevel: {context.riskLevel}</Typography.Text>
-          <Typography.Text type="secondary">threshold: {context.threshold}</Typography.Text>
-        </Space>
-      }
-      title={context.metricName}
+      description="阈值和异常规则只解释什么时候需要追问，不运行真实规则引擎。"
+      title="阈值 / 异常规则"
     >
-      <Space direction="vertical" size={6} style={{ width: "100%" }}>
-        <Typography.Text style={{ fontWeight: 600 }}>
-          metricId: {context.metricId}
-        </Typography.Text>
-        <Typography.Text>currentValue: {context.currentValue}</Typography.Text>
-        <Typography.Text>formula: {context.formula}</Typography.Text>
-        <Typography.Text>lineage: {context.lineage}</Typography.Text>
-        <Typography.Text>evidenceRefs: {context.evidenceRefs.join(", ")}</Typography.Text>
+      <Space direction="vertical" size={10} style={{ width: "100%" }}>
+        {metric.thresholdRules.map((rule) => (
+          <Space direction="vertical" key={rule.key} size={4} style={{ width: "100%" }}>
+            <Space wrap>
+              <Typography.Text style={{ fontWeight: 600 }}>{rule.label}</Typography.Text>
+              {rule.risk ? <RiskBadge {...toRiskBadge(t, rule.risk)!} /> : null}
+            </Space>
+            <Typography.Text>{rule.condition}</Typography.Text>
+          </Space>
+        ))}
       </Space>
+    </AppBaseCard>
+  );
+}
+
+function MetricLineageCard({ metric }: { metric: MetricDetailViewModel }) {
+  return (
+    <AppBaseCard
+      description="字段来源只做语义解释，不执行真实 SQL、真实查询或跨 Workspace 下钻。"
+      title="字段血缘摘要"
+    >
+      <Space direction="vertical" size={10} style={{ width: "100%" }}>
+        {metric.lineageSources.map((source) => (
+          <Space direction="vertical" key={source.key} size={4} style={{ width: "100%" }}>
+            <Typography.Text style={{ fontWeight: 600 }}>{source.label}</Typography.Text>
+            <Typography.Text>{source.source}</Typography.Text>
+            <Typography.Text type="secondary">{source.description}</Typography.Text>
+          </Space>
+        ))}
+      </Space>
+    </AppBaseCard>
+  );
+}
+
+function MetricEvidenceCard({
+  metric,
+  t
+}: {
+  metric: MetricDetailViewModel;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <AppBaseCard
+      description="证据入口只展示当前指标的静态摘要，不展示 raw API、DB row、Tool 输出或模型原文。"
+      title="证据摘要"
+    >
+      <SourceEvidenceList items={metric.evidenceItems.map((item) => toEvidenceItem(t, item))} />
+    </AppBaseCard>
+  );
+}
+
+function MetricActionsCard({
+  metric,
+  onNavigate,
+  t
+}: {
+  metric: MetricDetailViewModel;
+  onNavigate: MetricsSectionsProps["onNavigate"];
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <AppBaseCard
+      description="动作只表示导航到 Analysis 草稿态或数据血缘页面，不创建真实 conversation、run 或 Agent 执行。"
+      title="动作"
+    >
+      <AppActionGroup
+        actions={[
+          buildAnalysisAction(metric.analysisContext.metricId, onNavigate, t),
+          buildLineageAction(metric.metricId, onNavigate, t)
+        ]}
+      />
     </AppBaseCard>
   );
 }
 
 export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps) {
   const { t } = useI18n();
-  const sectionByKey = Object.fromEntries(viewModel.mainSections.map((section) => [section.key, section]));
-  const analysisSectionAction = buildAnalysisAction("metrics-section", onNavigate, t);
-  const lineageSectionAction = buildLineageAction("metrics-lineage", onNavigate, t);
-  const evidenceSectionAction = buildEvidenceAction("metrics-evidence", onNavigate, t);
+  const sectionByKey = Object.fromEntries(
+    viewModel.mainSections.map((section) => [section.key, section])
+  );
+  const selectedMetric = viewModel.selectedMetric;
 
   return (
     <AppSectionStack>
       <AppSection
-        columns={4}
+        columns={3}
         title={translateKey(t, sectionByKey["metrics-overview"].titleKey)}
       >
         {viewModel.summaryCards.map((item) => (
@@ -200,135 +264,15 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
 
       <AppSection
         columns={2}
-        title={translateKey(t, sectionByKey["metric-catalog"].titleKey)}
+        title={`${translateKey(t, sectionByKey["selected-metric-detail"].titleKey)}：${selectedMetric.metricName}`}
       >
-        {viewModel.metricCatalogCards.map((metricCard) => (
-          <MetricCard
-            description="业务指标卡片只解释当前值、趋势、风险和证据入口。"
-            evidenceSummary={`${metricCard.evidenceCount ?? 0} 条证据`}
-            footerActions={
-              <AppActionGroup
-                actions={[
-                  buildAnalysisAction(metricCard.key, onNavigate, t),
-                  buildLineageAction(metricCard.key, onNavigate, t)
-                ]}
-              />
-            }
-            key={metricCard.key}
-            risk={toRiskBadge(t, metricCard.risk)}
-            status={toStatusTag(t, metricCard.status)}
-            title={metricCard.label}
-            trend={metricCard.trendText}
-            value={metricCard.valueText}
-          />
-        ))}
-        {viewModel.metricDirectory.map((item) => (
-          <AppBaseCard
-            description={item.description}
-            footerActions={
-              <AppActionGroup
-                actions={[
-                  buildAnalysisAction(item.key, onNavigate, t),
-                  buildLineageAction(item.key, onNavigate, t)
-                ]}
-              />
-            }
-            key={item.key}
-            meta={item.meta ? <Typography.Text type="secondary">{item.meta}</Typography.Text> : null}
-            tagSlot={buildTagSlot(t, item)}
-            title={item.label}
-          >
-            <Typography.Text style={{ display: "block", fontWeight: 600 }}>{item.value}</Typography.Text>
-          </AppBaseCard>
-        ))}
-      </AppSection>
-
-      <AppSection
-        columns={2}
-        title={translateKey(t, sectionByKey["formula-threshold"].titleKey)}
-      >
-        {viewModel.formulaThresholdCards.map((card) => (
-          <MetricsDetailCard
-            card={card}
-            footerActions={<AppActionGroup actions={[buildAnalysisAction(card.key, onNavigate, t)]} />}
-            key={card.key}
-            t={t}
-          />
-        ))}
-      </AppSection>
-
-      <AppSection
-        columns={2}
-        title={translateKey(t, sectionByKey["trend-anomaly"].titleKey)}
-      >
-        {viewModel.trendAnomalyCards.map((metricCard) => (
-          <MetricCard
-            description="趋势 / 异常只解释为什么值得追问，不执行真实异常规则。"
-            evidenceSummary={`${metricCard.evidenceCount ?? 0} 条证据`}
-            footerActions={
-              <AppActionGroup actions={[buildAnalysisAction(`${metricCard.key}-anomaly`, onNavigate, t)]} />
-            }
-            key={metricCard.key}
-            risk={toRiskBadge(t, metricCard.risk)}
-            status={toStatusTag(t, metricCard.status)}
-            title={metricCard.label}
-            trend={metricCard.trendText}
-            value={metricCard.valueText}
-          />
-        ))}
-      </AppSection>
-
-      <AppSection
-        action={lineageSectionAction}
-        columns={2}
-        title={translateKey(t, sectionByKey["lineage-source"].titleKey)}
-      >
-        {viewModel.lineageSourceCards.map((card) => (
-          <MetricsDetailCard
-            card={card}
-            footerActions={<AppActionGroup actions={[buildLineageAction(card.key, onNavigate, t)]} />}
-            key={card.key}
-            t={t}
-          />
-        ))}
-      </AppSection>
-
-      <AppSection
-        action={evidenceSectionAction}
-        columns={2}
-        title={translateKey(t, sectionByKey["evidence-entry"].titleKey)}
-      >
-        <AppBaseCard
-          description="证据入口只展示脱敏后的静态摘要，不展示 raw API、DB row、Tool 输出或模型原文。"
-          key="metrics-evidence-list"
-          title="指标证据入口"
-        >
-          <SourceEvidenceList items={viewModel.evidenceEntrances.map((item) => toEvidenceItem(t, item))} />
-        </AppBaseCard>
-        <AppBaseCard
-          description="证据入口与 Workspace 绑定；切换 Workspace 后证据引用和来源对象都可能变化。"
-          key="metrics-evidence-scope"
-          title="证据范围"
-        >
-          <Space direction="vertical" size={6} style={{ width: "100%" }}>
-            <Typography.Text>sourceEvidence 只作为只读入口展示。</Typography.Text>
-            <Typography.Text>证据不会在本页触发真实查询、真实分析或真实 Agent Run。</Typography.Text>
-          </Space>
-        </AppBaseCard>
-      </AppSection>
-
-      <AppSection
-        action={analysisSectionAction}
-        columns={2}
-        title={translateKey(t, sectionByKey["analysis-context"].titleKey)}
-      >
-        {viewModel.metricContexts.map((context) => (
-          <MetricContextCard
-            context={context}
-            footerActions={<AppActionGroup actions={[buildAnalysisAction(context.key, onNavigate, t)]} />}
-            key={context.key}
-          />
-        ))}
+        <MetricDefinitionCard metric={selectedMetric} />
+        <MetricSummaryCard metric={selectedMetric} t={t} />
+        <MetricFormulaCard metric={selectedMetric} />
+        <MetricThresholdCard metric={selectedMetric} t={t} />
+        <MetricLineageCard metric={selectedMetric} />
+        <MetricEvidenceCard metric={selectedMetric} t={t} />
+        <MetricActionsCard metric={selectedMetric} onNavigate={onNavigate} t={t} />
       </AppSection>
     </AppSectionStack>
   );
