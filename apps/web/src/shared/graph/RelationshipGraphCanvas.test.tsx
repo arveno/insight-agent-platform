@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../app/providers/AppProviders";
@@ -8,6 +8,7 @@ import type { RelationshipGraphViewModel } from "./models";
 const {
   GraphMock,
   graphDestroy,
+  graphFitView,
   graphGetSize,
   graphOn,
   graphRender,
@@ -16,6 +17,7 @@ const {
   graphSetOptions
 } = vi.hoisted(() => {
   const hoistedGraphDestroy = vi.fn();
+  const hoistedGraphFitView = vi.fn().mockResolvedValue(undefined);
   const hoistedGraphOn = vi.fn();
   const hoistedGraphRender = vi.fn().mockResolvedValue(undefined);
   const hoistedGraphResize = vi.fn();
@@ -25,6 +27,7 @@ const {
   const hoistedGraphMock = vi.fn().mockImplementation(() => ({
     destroy: hoistedGraphDestroy,
     destroyed: false,
+    fitView: hoistedGraphFitView,
     getSize: hoistedGraphGetSize,
     on: hoistedGraphOn,
     render: hoistedGraphRender,
@@ -36,6 +39,7 @@ const {
   return {
     GraphMock: hoistedGraphMock,
     graphDestroy: hoistedGraphDestroy,
+    graphFitView: hoistedGraphFitView,
     graphGetSize: hoistedGraphGetSize,
     graphOn: hoistedGraphOn,
     graphRender: hoistedGraphRender,
@@ -56,6 +60,7 @@ afterEach(() => {
   cleanup();
   GraphMock.mockClear();
   graphDestroy.mockClear();
+  graphFitView.mockClear();
   graphGetSize.mockClear();
   graphOn.mockClear();
   graphRender.mockClear();
@@ -144,6 +149,27 @@ describe("RelationshipGraphCanvas", () => {
     expect(GraphMock).toHaveBeenCalledTimes(1);
     expect(graphSetOptions).toHaveBeenCalledTimes(1);
     expect(graphRender).toHaveBeenCalledTimes(1);
+    expect(graphSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        autoFit: {
+          options: {
+            direction: "both",
+            when: "always"
+          },
+          type: "view"
+        },
+        padding: 28
+      })
+    );
+    await waitFor(() =>
+      expect(graphFitView).toHaveBeenCalledWith(
+        {
+          direction: "both",
+          when: "always"
+        },
+        false
+      )
+    );
 
     const clickHandler = graphOn.mock.calls.find(([eventName]) => eventName === "node:click")?.[1];
     expect(clickHandler).toBeTypeOf("function");

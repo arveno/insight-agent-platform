@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createDataKnowledgeViewModel,
@@ -45,6 +45,7 @@ export function useDataKnowledgeOverviewState(
   const [searchValue, setSearchValue] = useState("");
   const [selectedAssetKey, setSelectedAssetKey] = useState(defaultSelectedAssetKey);
   const [selectedNodeId, setSelectedNodeId] = useState(defaultSelectedNodeId);
+  const previousAssetKeyRef = useRef(selectedAssetKey);
   const viewModel = useMemo(
     () => createDataKnowledgeViewModel(selectedAssetKey, workspaceBinding),
     [selectedAssetKey, workspaceBinding]
@@ -62,18 +63,42 @@ export function useDataKnowledgeOverviewState(
     findRelationshipNode(viewModel, selectedNodeId) ??
     findRelationshipNode(viewModel, viewModel.relationshipGraph.selectedNodeId ?? "") ??
     viewModel.relationshipNodeDetails[0];
+  const defaultRelationshipNodeId =
+    viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId;
 
   useEffect(() => {
     setSearchValue("");
     setSelectedAssetKey(defaultSelectedAssetKey);
     setSelectedNodeId(defaultSelectedNodeId);
+    previousAssetKeyRef.current = defaultSelectedAssetKey;
   }, [workspaceBinding.workspaceId]);
 
   useEffect(() => {
-    setSelectedNodeId(
-      viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
+    const currentAssetKey = viewModel.selectedAsset.key;
+    const hasCurrentSelection = viewModel.relationshipNodeDetails.some(
+      (node) => node.nodeId === selectedNodeId
     );
-  }, [viewModel.relationshipGraph.selectedNodeId, viewModel.relationshipNodeDetails]);
+    const assetChanged = previousAssetKeyRef.current !== currentAssetKey;
+
+    previousAssetKeyRef.current = currentAssetKey;
+
+    if (assetChanged) {
+      if (selectedNodeId !== defaultRelationshipNodeId) {
+        setSelectedNodeId(defaultRelationshipNodeId);
+      }
+
+      return;
+    }
+
+    if (!hasCurrentSelection && selectedNodeId !== defaultRelationshipNodeId) {
+      setSelectedNodeId(defaultRelationshipNodeId);
+    }
+  }, [
+    defaultRelationshipNodeId,
+    selectedNodeId,
+    viewModel.relationshipNodeDetails,
+    viewModel.selectedAsset.key
+  ]);
 
   return {
     filteredAssetItems,

@@ -1,5 +1,3 @@
-import { Space, Typography } from "antd";
-
 import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks";
 import { GroupedObjectListNav, useI18n } from "../../shared";
 
@@ -19,19 +17,6 @@ export function DataKnowledgeListNav({
         .filter((item) => item.kind === "data_source")
         .map((item) => ({
           key: item.key,
-          rightContent: (
-            <Space size={6}>
-              {item.risk ? (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item.risk.level}
-                </Typography.Text>
-              ) : item.status ? (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item.status.status}
-                </Typography.Text>
-              ) : null}
-            </Space>
-          ),
           title: item.title
         })),
       key: "data-assets",
@@ -42,19 +27,6 @@ export function DataKnowledgeListNav({
         .filter((item) => item.kind === "knowledge_document")
         .map((item) => ({
           key: item.key,
-          rightContent: (
-            <Space size={6}>
-              {item.risk ? (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item.risk.level}
-                </Typography.Text>
-              ) : item.status ? (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item.status.status}
-                </Typography.Text>
-              ) : null}
-            </Space>
-          ),
           title: item.title
         })),
       key: "knowledge-docs",

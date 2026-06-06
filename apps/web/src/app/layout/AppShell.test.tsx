@@ -336,6 +336,9 @@ describe("AppShell", () => {
     expect(within(dataKnowledgeNavigation).getByText("CRM Revenue Warehouse")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base")).toBeTruthy();
     expect(within(dataKnowledgeNavigation).getByText("渠道经营周报")).toBeTruthy();
+    expect(within(dataKnowledgeNavigation).queryByText("ready")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByText("low")).toBeNull();
+    expect(within(dataKnowledgeNavigation).queryByText("medium")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
 
@@ -365,6 +368,40 @@ describe("AppShell", () => {
     ).toBeGreaterThan(0);
     expect(screen.queryByText("真实 ingestion")).toBeNull();
     expect(screen.queryByText("真实 vector search")).toBeNull();
+  });
+
+  it("keeps the selected relationship node within one asset and resets only after switching assets", () => {
+    render(
+      <AppProviders>
+        <AppShell />
+      </AppProviders>
+    );
+
+    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
+
+    fireEvent.click(within(rootNavigation).getByRole("button", { name: /数据与知识/ }));
+
+    const dataKnowledgeNavigation = screen.getByRole("navigation", {
+      name: "Data & Knowledge navigation"
+    });
+
+    expect(screen.getByText("selectedNodeId: data_source:data-source-crm-revenue")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "recognized_revenue" }));
+
+    expect(
+      screen.getByText("selectedNodeId: data_field:field-sales-order-recognized-revenue")
+    ).toBeTruthy();
+    expect(screen.getByText("fieldId: field-sales-order-recognized-revenue")).toBeTruthy();
+
+    fireEvent.click(within(dataKnowledgeNavigation).getByText("Finance Knowledge Base"));
+
+    expect(
+      screen.getByText("selectedNodeId: knowledge_document:knowledge-document-finance-kb")
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText("knowledgeDocumentId: knowledge-document-finance-kb").length
+    ).toBeGreaterThan(0);
   });
 
   it("opens platform operations without the old inspector and keeps the page readonly", () => {

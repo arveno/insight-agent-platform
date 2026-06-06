@@ -11,6 +11,11 @@ import type {
 
 const defaultGraphHeight = 480;
 const defaultGraphWidth = 720;
+const graphViewportPadding = 28;
+const fitViewOptions = {
+  direction: "both",
+  when: "always"
+} as const;
 
 type NodeClickEvent = {
   target?: {
@@ -111,10 +116,7 @@ function createGraphOptions(
   return {
     animation: false,
     autoFit: {
-      options: {
-        direction: "both",
-        when: "always"
-      },
+      options: fitViewOptions,
       type: "view"
     },
     behaviors: ["drag-canvas", "zoom-canvas"],
@@ -207,6 +209,7 @@ function createGraphOptions(
       },
       type: "rect"
     },
+    padding: graphViewportPadding,
     width
   };
 }
@@ -227,6 +230,9 @@ export function RelationshipGraphCanvas({
 
   const handleSelectNode = useEffectEvent((nodeId: string) => {
     onSelectNode?.(nodeId);
+  });
+  const fitGraphView = useEffectEvent((graphInstance: Graph) => {
+    void graphInstance.fitView(fitViewOptions, false).catch(() => undefined);
   });
 
   const applySelectionState = useEffectEvent((graphInstance: Graph) => {
@@ -287,9 +293,15 @@ export function RelationshipGraphCanvas({
     let cancelled = false;
 
     void graphInstance.render().then(() => {
-      if (!cancelled) {
-        applySelectionState(graphInstance);
+      if (cancelled) {
+        return;
       }
+
+      void graphInstance.fitView(fitViewOptions, false).finally(() => {
+        if (!cancelled) {
+          applySelectionState(graphInstance);
+        }
+      });
     });
 
     if (!resizeObserverRef.current && "ResizeObserver" in window) {
@@ -303,6 +315,7 @@ export function RelationshipGraphCanvas({
 
         const nextSize = resolveGraphSize(currentContainer);
         currentGraph.resize(nextSize.width, nextSize.height);
+        fitGraphView(currentGraph);
       });
       resizeObserverRef.current.observe(container);
     }
@@ -310,7 +323,7 @@ export function RelationshipGraphCanvas({
     return () => {
       cancelled = true;
     };
-  }, [applySelectionState, graph, handleSelectNode, isDarkMode, token]);
+  }, [applySelectionState, fitGraphView, graph, handleSelectNode, isDarkMode, token]);
 
   useEffect(() => {
     const graphInstance = graphRef.current;
