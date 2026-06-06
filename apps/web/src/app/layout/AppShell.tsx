@@ -1,30 +1,28 @@
 import { useMemo, useState } from "react";
 import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
 
-import { appShellStaticViewModel } from "../fixtures";
-import type { StaticRouteKey } from "../models";
+import { appShellStaticViewModel } from "../fixtures/appShellStaticViewModel";
+import type { StaticRouteKey } from "../models/staticViewModelTypes";
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
-import { useAppTheme } from "../theme";
+import { useAppTheme } from "../theme/AppThemeProvider";
 import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
-import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks";
-import { useMetricsOverviewState } from "../../features/metrics/hooks";
-import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks";
-import { useReportsReaderState } from "../../features/reports/hooks";
+import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
+import { useMetricsOverviewState } from "../../features/metrics/hooks/useMetricsOverviewState";
+import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks/usePlatformOperationsOverviewState";
+import { useReportsReaderState } from "../../features/reports/hooks/useReportsReaderState";
 import { analysisStaticViewModel } from "../../features/static-view-models";
 import { AnalysisPageContent } from "../../pages/analysis/Page";
 import { DataKnowledgeInspectorPanel } from "../../pages/data-knowledge/panels/DataKnowledgeInspectorPanel";
-import {
-  AppIcon,
-  AppShellLayout,
-  HeaderBar,
-  LeftNav,
-  localeOptions,
-  shellThemeTokens,
-  shellTypographyStyles,
-  type AppLocale,
-  type ThemeMode,
-  useI18n
-} from "../../shared";
+import { AppIcon } from "../../shared/icons/AppIcon";
+import { AppShellLayout } from "../../shared/layout/shell/AppShellLayout";
+import { HeaderBar } from "../../shared/layout/shell/HeaderBar";
+import { LeftNav } from "../../shared/layout/shell/LeftNav";
+import { localeOptions } from "../../shared/i18n/localeTypes";
+import { shellThemeTokens } from "../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../shared/theme/typography";
+import type { AppLocale } from "../../shared/i18n/localeTypes";
+import type { ThemeMode } from "../../shared/theme/themeTypes";
+import { useI18n } from "../../shared/i18n/I18nProvider";
 
 import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
 import { AnalysisSessionNav } from "./AnalysisSessionNav";

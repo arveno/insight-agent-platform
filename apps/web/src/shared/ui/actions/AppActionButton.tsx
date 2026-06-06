@@ -1,7 +1,8 @@
 import { Button, type ButtonProps } from "antd";
 
-import { AppIcon } from "../../icons";
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { AppIcon } from "../../icons/AppIcon";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 import type { AppActionButtonProps, AppActionButtonVariant } from "./actionTypes";
 
 const actionButtonPropsByVariant: Record<

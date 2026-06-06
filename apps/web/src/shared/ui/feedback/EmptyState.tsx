@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Empty, Space, Typography } from "antd";
 
-import { shellTypographyStyles } from "../../theme";
+import { shellTypographyStyles } from "../../theme/typography";
 
 export type EmptyStateProps = {
   action?: ReactNode;

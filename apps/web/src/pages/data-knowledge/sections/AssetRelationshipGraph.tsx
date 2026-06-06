@@ -1,5 +1,5 @@
-import type { RelationshipGraphViewModel } from "../../../shared/graph";
-import { RelationshipGraphCanvas } from "../../../shared/graph";
+import type { RelationshipGraphViewModel } from "../../../shared/graph/models";
+import { RelationshipGraphCanvas } from "../../../shared/graph/RelationshipGraphCanvas";
 
 export type AssetRelationshipGraphProps = {
   graph: RelationshipGraphViewModel;

@@ -4,10 +4,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../app/providers/AppProviders";
 import { createDataKnowledgeViewModel } from "../../features/data-knowledge/mappers/createDataKnowledgeViewModel";
-import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks";
+import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgePage } from "./Page";
 
-vi.mock("../../shared/graph", () => ({
+vi.mock("../../shared/graph/RelationshipGraphCanvas", () => ({
   RelationshipGraphCanvas: ({
     graph,
     onSelectNode,

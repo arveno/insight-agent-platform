@@ -1,8 +1,10 @@
 import { Typography } from "antd";
 
-import type { StaticSummaryItemViewModel } from "../../../app/models";
-import { CardList, shellTypographyStyles, useI18n } from "../../../shared";
-import { toRiskBadge, toStatusTag } from "../adapters";
+import type { StaticSummaryItemViewModel } from "../../../app/models/staticViewModelTypes";
+import { CardList } from "../../../shared/ui/data/CardList";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge, toStatusTag } from "../adapters/viewModelAdapters";
 import { translateKey } from "../text";
 
 export type SummaryCardGridProps = {

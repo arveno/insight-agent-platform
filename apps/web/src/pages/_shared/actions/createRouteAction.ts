@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 
-import type { StaticRouteKey } from "../../../app/models";
-import type { AppActionButtonVariant, AppActionGroupItem, IconName } from "../../../shared";
+import type { StaticRouteKey } from "../../../app/models/staticViewModelTypes";
+import type { AppActionButtonVariant, AppActionGroupItem } from "../../../shared/ui/actions/actionTypes";
+import type { IconName } from "../../../shared/icons/iconTypes";
 import type { NavigateToRoute } from "../types";
 
 export type CreateRouteActionArgs = {

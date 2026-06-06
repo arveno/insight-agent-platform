@@ -1,6 +1,7 @@
 import { workspaceStaticViewModel } from "../../features/static-view-models";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { WorkspaceSections } from "./sections";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { WorkspaceSections } from "./sections/WorkspaceSections";
 
 export function WorkspacePage({ onNavigate }: WebPageProps) {
   return (

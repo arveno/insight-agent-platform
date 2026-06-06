@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
 import { AppShell } from "./AppShell";
 
-vi.mock("../../shared/graph", () => ({
+vi.mock("../../shared/graph/RelationshipGraphCanvas", () => ({
   RelationshipGraphCanvas: ({
     graph,
     onSelectNode,

@@ -1,30 +1,21 @@
 import { Space, Typography } from "antd";
 
-import type {
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
 import type { MetricsViewModel } from "../../../features/static-view-models";
-import type { MetricDetailViewModel } from "../../../features/metrics/models";
-import {
-  AppActionGroup,
-  AppBaseCard,
-  AppSection,
-  AppSectionStack,
-  MetricCard,
-  RiskBadge,
-  SourceEvidenceList,
-  StatusTag,
-  useI18n
-} from "../../../shared";
-import {
-  createRouteAction,
-  toEvidenceItem,
-  toRiskBadge,
-  toStatusTag,
-  translateKey,
-  type WebPageProps
-} from "../../_shared";
+import type { MetricDetailViewModel } from "../../../features/metrics/models/metricsViewModel";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import { MetricCard } from "../../../shared/ui/cards/MetricCard";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { SourceEvidenceList } from "../../../shared/ui/evidence/SourceEvidenceList";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
+import { toEvidenceItem, toRiskBadge, toStatusTag } from "../../_shared/adapters/viewModelAdapters";
+import { translateKey } from "../../_shared/text";
+import type { WebPageProps } from "../../_shared/types";
 
 export type MetricsSectionsProps = WebPageProps & {
   viewModel: MetricsViewModel;

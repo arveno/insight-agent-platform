@@ -1,12 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { WorkspaceViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { WorkspaceViewModel } from "../models/workspaceViewModel";
 
 const member = {
   description: "成员摘要，真实用户管理不在 #67。",

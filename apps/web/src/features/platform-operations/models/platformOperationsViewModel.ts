@@ -1,10 +1,4 @@
-import type {
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticRiskViewModel,
-  StaticStatusViewModel,
-  StaticSummaryItemViewModel
-} from "../../../app/models";
+import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel, StaticSummaryItemViewModel } from "../../../app/models/staticViewModelTypes";
 
 export type PlatformOperationCategory =
   | "job"

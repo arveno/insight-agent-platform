@@ -1,5 +1,6 @@
-import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks";
-import { GroupedObjectListNav, useI18n } from "../../shared";
+import type { DataKnowledgeOverviewController } from "../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
+import { GroupedObjectListNav } from "../../shared/layout/shell/GroupedObjectListNav";
+import { useI18n } from "../../shared/i18n/I18nProvider";
 
 export type DataKnowledgeListNavProps = {
   controller: DataKnowledgeOverviewController;

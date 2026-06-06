@@ -1,6 +1,6 @@
 import { Space } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
 import type { AppSectionStackProps } from "./sectionTypes";
 
 export function AppSectionStack({ children }: AppSectionStackProps) {

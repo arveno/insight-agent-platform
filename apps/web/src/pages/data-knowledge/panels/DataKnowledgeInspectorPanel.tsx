@@ -1,25 +1,17 @@
 import { Space, Typography, theme } from "antd";
 
-import type {
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
-import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks";
-import {
-  AppActionGroup,
-  RightAssistPanel,
-  RiskBadge,
-  StatusTag,
-  shellThemeTokens,
-  shellTypographyStyles,
-  useI18n
-} from "../../../shared";
-import {
-  createRouteAction,
-  toRiskBadge,
-  toStatusTag,
-  type NavigateToRoute
-} from "../../_shared";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
+import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { RightAssistPanel } from "../../../shared/layout/shell/RightAssistPanel";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
+import { toRiskBadge, toStatusTag } from "../../_shared/adapters/viewModelAdapters";
+import type { NavigateToRoute } from "../../_shared/types";
 
 export type DataKnowledgeInspectorPanelProps = {
   controller: DataKnowledgeOverviewController;

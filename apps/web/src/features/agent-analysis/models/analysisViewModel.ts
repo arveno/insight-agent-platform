@@ -1,9 +1,4 @@
-import type {
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
+import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
 
 export type AnalysisComposerSuggestionViewModel = {
   key: string;

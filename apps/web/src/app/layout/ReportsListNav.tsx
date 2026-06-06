@@ -1,5 +1,5 @@
-import type { ReportsReaderController } from "../../features/reports/hooks";
-import { ObjectListNav } from "../../shared";
+import type { ReportsReaderController } from "../../features/reports/hooks/useReportsReaderState";
+import { ObjectListNav } from "../../shared/layout/shell/ObjectListNav";
 
 export type ReportsListNavProps = {
   controller: ReportsReaderController;

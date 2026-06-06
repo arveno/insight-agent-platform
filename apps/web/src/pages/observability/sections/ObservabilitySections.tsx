@@ -1,15 +1,13 @@
 import { Space } from "antd";
 
 import type { ObservabilityViewModel } from "../../../features/static-view-models";
-import {
-  MetricCardGrid,
-  StaticChart,
-  SummaryCardGrid,
-  SummaryTable,
-  TracePanel,
-  WebSection,
-  type WebPageProps
-} from "../../_shared";
+import { MetricCardGrid } from "../../_shared/metrics/MetricCardGrid";
+import { StaticChart } from "../../_shared/charts/StaticChart";
+import { SummaryCardGrid } from "../../_shared/lists/SummaryCardGrid";
+import { SummaryTable } from "../../_shared/lists/SummaryTable";
+import { TracePanel } from "../../_shared/panels/TracePanel";
+import { WebSection } from "../../_shared/sections/WebSection";
+import type { WebPageProps } from "../../_shared/types";
 
 export type ObservabilitySectionsProps = WebPageProps & {
   viewModel: ObservabilityViewModel;

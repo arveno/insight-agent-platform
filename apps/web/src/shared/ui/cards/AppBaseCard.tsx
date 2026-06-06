@@ -1,6 +1,7 @@
 import { Card, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 import type { AppBaseCardProps } from "./cardTypes";
 
 export function AppBaseCard({

@@ -1,13 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { ModelToolsViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { ModelToolsViewModel } from "../models/modelToolsViewModel";
 
 const modelConfig = {
   description: "模型配置摘要，不展示 provider secret。",

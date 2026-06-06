@@ -1,6 +1,7 @@
-import type { StaticRightAssistSummaryViewModel } from "../../../app/models";
-import { TraceTimeline, useI18n } from "../../../shared";
-import { toTraceItem } from "../adapters";
+import type { StaticRightAssistSummaryViewModel } from "../../../app/models/staticViewModelTypes";
+import { TraceTimeline } from "../../../shared/ui/trace/TraceTimeline";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toTraceItem } from "../adapters/viewModelAdapters";
 import { translateKey } from "../text";
 
 export type TracePanelProps = {

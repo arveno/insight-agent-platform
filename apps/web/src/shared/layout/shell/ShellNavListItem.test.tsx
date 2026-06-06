@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
 import { ShellNavListItem } from "./ShellNavListItem";
 
 afterEach(cleanup);

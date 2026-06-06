@@ -1,8 +1,10 @@
 import { Space, Typography } from "antd";
 
-import { AppActionGroup, MetricCard, useI18n } from "../../../shared";
-import { toRiskBadge } from "../../_shared";
-import { createRouteAction } from "../../_shared/actions";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { MetricCard } from "../../../shared/ui/cards/MetricCard";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge } from "../../_shared/adapters/viewModelAdapters";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
 import type { DashboardMetricCardProps } from "./dashboardComponentTypes";
 
 export function DashboardMetricOverview({ metric, onNavigate }: DashboardMetricCardProps) {

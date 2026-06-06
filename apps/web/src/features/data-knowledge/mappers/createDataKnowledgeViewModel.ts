@@ -1,28 +1,10 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk,
-  warningStatus
-} from "../../../app/fixtures";
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../app/fixtures/staticStateFixtures";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
 import {
   dataKnowledgeStaticContracts,
   defaultDataKnowledgeWorkspaceBinding
 } from "../fixtures/dataKnowledgeStaticContracts";
-import type {
-  DataKnowledgeAssetKind,
-  DataKnowledgeChunkViewModel,
-  DataKnowledgeEvidenceViewModel,
-  DataKnowledgeFieldViewModel,
-  DataKnowledgeQualityCheckViewModel,
-  DataKnowledgeSelectedAssetViewModel,
-  DataKnowledgeTableViewModel,
-  DataKnowledgeViewModel,
-  DataKnowledgeWorkspaceBindingViewModel
-} from "../models";
+import type { DataKnowledgeAssetKind, DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeQualityCheckViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel, DataKnowledgeViewModel, DataKnowledgeWorkspaceBindingViewModel } from "../models/dataKnowledgeViewModel";
 import { createDataKnowledgeRelationshipGraph } from "./createDataKnowledgeRelationshipGraph";
 
 const lowRisk = {

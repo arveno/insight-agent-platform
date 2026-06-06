@@ -1,5 +1,5 @@
 import type { DashboardViewModel } from "../../../features/static-view-models";
-import type { NavigateToRoute } from "../../_shared";
+import type { NavigateToRoute } from "../../_shared/types";
 
 export type DashboardComponentProps = {
   onNavigate?: NavigateToRoute;

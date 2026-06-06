@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import type { StaticSectionViewModel } from "../../../app/models";
-import { shellThemeTokens, shellTypographyStyles, StatusTag, useI18n } from "../../../shared";
-import { toStatusTag } from "../adapters";
+import type { StaticSectionViewModel } from "../../../app/models/staticViewModelTypes";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toStatusTag } from "../adapters/viewModelAdapters";
 import { translateKey } from "../text";
 
 export type WebSectionProps = {

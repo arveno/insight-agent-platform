@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { analysisStaticViewModel } from "../fixtures";
-import type { AnalysisViewModel } from "../models";
+import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
+import type { AnalysisViewModel } from "../models/analysisViewModel";
 
 const defaultSession = analysisStaticViewModel.sessions[0];
 const analysisComposerModels = [

@@ -2,16 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Space, Typography } from "antd";
 
 import type { AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
-import {
-  AppBaseCard,
-  RightAssistPanel,
-  RiskBadge,
-  shellTypographyStyles,
-  StatusTag,
-  TraceTimeline,
-  useI18n
-} from "../../shared";
-import { toRiskBadge, toStatusTag } from "../../pages/_shared";
+import { AppBaseCard } from "../../shared/ui/cards/AppBaseCard";
+import { RightAssistPanel } from "../../shared/layout/shell/RightAssistPanel";
+import { RiskBadge } from "../../shared/ui/status/RiskBadge";
+import { shellTypographyStyles } from "../../shared/theme/typography";
+import { StatusTag } from "../../shared/ui/status/StatusTag";
+import { TraceTimeline } from "../../shared/ui/trace/TraceTimeline";
+import { useI18n } from "../../shared/i18n/I18nProvider";
+import { toRiskBadge, toStatusTag } from "../../pages/_shared/adapters/viewModelAdapters";
 
 import { RunTraceDetailDrawer } from "./RunTraceDetailDrawer";
 

@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
-import { RiskBadge, type RiskBadgeProps } from "../status";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
+import { RiskBadge } from "../status/RiskBadge";
+import type { RiskBadgeProps } from "../status/RiskBadge";
 
 export type ReportSectionProps = {
   actions?: ReactNode;

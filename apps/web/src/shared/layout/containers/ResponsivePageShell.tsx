@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Grid, Space } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
 
 export type ResponsivePageShellProps = {
   children: ReactNode;

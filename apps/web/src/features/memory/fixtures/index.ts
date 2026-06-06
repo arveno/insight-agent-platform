@@ -1,1 +1,0 @@
-export { memoryStaticViewModel } from "./memoryStaticViewModel";

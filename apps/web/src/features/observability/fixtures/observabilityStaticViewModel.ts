@@ -1,13 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  sharedTraceEntrances,
-  warningRisk
-} from "../../../app/fixtures";
-import type { ObservabilityViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, sharedTraceEntrances, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { ObservabilityViewModel } from "../models/observabilityViewModel";
 
 const selectedTrace = sharedTraceEntrances[0];
 

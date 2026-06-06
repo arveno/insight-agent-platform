@@ -1,5 +1,5 @@
-import type { StaticSummaryItemViewModel } from "../../../app/models";
-import { SummaryCardGrid } from "../lists";
+import type { StaticSummaryItemViewModel } from "../../../app/models/staticViewModelTypes";
+import { SummaryCardGrid } from "../lists/SummaryCardGrid";
 
 export type ReportEntranceListProps = {
   items: StaticSummaryItemViewModel[];

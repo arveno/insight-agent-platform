@@ -1,10 +1,4 @@
-import type {
-  StaticActionViewModel,
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticSummaryItemViewModel,
-  StaticTabViewModel
-} from "../../../app/models";
+import type { StaticActionViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel, StaticTabViewModel } from "../../../app/models/staticViewModelTypes";
 
 export type ModelToolsViewModel = StaticPageViewModelBase & {
   configDetail: StaticSummaryItemViewModel;

@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { Table, type TableProps } from "antd";
 
-import { EmptyState, type EmptyStateProps, ErrorState, type ErrorStateProps } from "../feedback";
+import { EmptyState } from "../feedback/EmptyState";
+import type { EmptyStateProps } from "../feedback/EmptyState";
+import { ErrorState } from "../feedback/ErrorState";
+import type { ErrorStateProps } from "../feedback/ErrorState";
 
 export type DataTableState =
   | { kind: "ready" }

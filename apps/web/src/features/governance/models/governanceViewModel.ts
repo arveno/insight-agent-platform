@@ -1,8 +1,4 @@
-import type {
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticSummaryItemViewModel
-} from "../../../app/models";
+import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../app/models/staticViewModelTypes";
 
 export type GovernanceViewModel = StaticPageViewModelBase & {
   auditLogs: StaticSummaryItemViewModel[];

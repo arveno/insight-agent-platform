@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
-import { createReportsViewModel, reportCatalog } from "../fixtures";
-import type { ReportsViewModel } from "../models";
+import { createReportsViewModel, reportCatalog } from "../fixtures/reportsStaticViewModel";
+import type { ReportsViewModel } from "../models/reportsViewModel";
 
 const defaultSelectedReport = reportCatalog[0];
 

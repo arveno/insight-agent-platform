@@ -1,1 +1,0 @@
-export { ObservabilityPage } from "./Page";

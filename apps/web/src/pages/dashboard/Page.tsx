@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 import { dashboardStaticViewModel } from "../../features/static-view-models";
-import type { WebPageProps } from "../_shared";
-import { DashboardSections } from "./sections";
+import type { WebPageProps } from "../_shared/types";
+import { DashboardSections } from "./sections/DashboardSections";
 
 export function DashboardPage({ onNavigate }: WebPageProps) {
   const [selectedTimeRangeKey, setSelectedTimeRangeKey] = useState(

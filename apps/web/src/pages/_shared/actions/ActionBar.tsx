@@ -1,6 +1,8 @@
-import type { StaticActionViewModel, StaticRouteKey } from "../../../app/models";
-import { AppActionGroup, type AppActionButtonVariant, type IconName } from "../../../shared";
-import { actionDescription } from "../adapters";
+import type { StaticActionViewModel, StaticRouteKey } from "../../../app/models/staticViewModelTypes";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import type { AppActionButtonVariant } from "../../../shared/ui/actions/actionTypes";
+import type { IconName } from "../../../shared/icons/iconTypes";
+import { actionDescription } from "../adapters/viewModelAdapters";
 import { translateKey, type Translate } from "../text";
 import type { NavigateToRoute } from "../types";
 import { createRouteAction } from "./createRouteAction";

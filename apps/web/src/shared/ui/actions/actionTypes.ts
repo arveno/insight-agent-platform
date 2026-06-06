@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ButtonProps } from "antd";
 
-import type { IconName } from "../../icons";
+import type { IconName } from "../../icons/iconTypes";
 
 export type AppActionButtonVariant =
   | "globalPrimary"

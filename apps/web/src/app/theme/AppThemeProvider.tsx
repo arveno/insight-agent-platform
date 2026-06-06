@@ -1,11 +1,8 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
-import {
-  defaultThemeMode,
-  getAntdThemeConfig,
-  type ResolvedThemeMode,
-  type ThemeMode
-} from "../../shared/theme";
+import { defaultThemeMode } from "../../shared/theme/themeTypes";
+import { getAntdThemeConfig } from "../../shared/theme/antdTheme";
+import type { ResolvedThemeMode, ThemeMode } from "../../shared/theme/themeTypes";
 
 type AppThemeContextValue = {
   antdTheme: ReturnType<typeof getAntdThemeConfig>;

@@ -1,8 +1,10 @@
 import { Space, Typography } from "antd";
 
-import { AppActionGroup, AppBaseCard, useI18n } from "../../../shared";
-import { toEvidenceItem } from "../../_shared";
-import { createRouteAction } from "../../_shared/actions";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toEvidenceItem } from "../../_shared/adapters/viewModelAdapters";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
 import type { DashboardReportEvidencePanelProps } from "./dashboardComponentTypes";
 
 export function DashboardReportEvidencePanel({

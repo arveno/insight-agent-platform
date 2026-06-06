@@ -1,1 +1,0 @@
-export { workspaceStaticViewModel } from "./workspaceStaticViewModel";

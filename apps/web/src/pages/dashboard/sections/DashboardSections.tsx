@@ -1,13 +1,14 @@
 import type { DashboardViewModel } from "../../../features/static-view-models";
-import { AppSection, AppSectionStack, useI18n } from "../../../shared";
-import { createRouteAction, type WebPageProps } from "../../_shared";
-import {
-  DashboardHero,
-  DashboardMetricOverview,
-  DashboardQualityPanel,
-  DashboardReportEvidencePanel,
-  DashboardRiskOverview
-} from "../components";
+import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
+import type { WebPageProps } from "../../_shared/types";
+import { DashboardHero } from "../components/DashboardHero";
+import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
+import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
+import { DashboardReportEvidencePanel } from "../components/DashboardReportEvidencePanel";
+import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
 
 export type DashboardSectionsProps = WebPageProps & {
   onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;

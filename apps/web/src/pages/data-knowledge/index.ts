@@ -1,1 +1,0 @@
-export { DataKnowledgePage } from "./Page";

@@ -1,6 +1,7 @@
-import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { PlatformOperationsSections } from "./sections";
+import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks/usePlatformOperationsOverviewState";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { PlatformOperationsSections } from "./sections/PlatformOperationsSections";
 
 export function PlatformOperationsPage({ onNavigate, platformOperationsState }: WebPageProps) {
   const fallbackPlatformOperationsState = usePlatformOperationsOverviewState();

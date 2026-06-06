@@ -2,8 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
-import { dashboardStaticViewModel } from "../../../features/dashboard/fixtures";
-import { shellThemeTokens } from "../../../shared/theme";
+import { dashboardStaticViewModel } from "../../../features/dashboard/fixtures/dashboardStaticViewModel";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { DashboardHero } from "./DashboardHero";
 
 afterEach(cleanup);

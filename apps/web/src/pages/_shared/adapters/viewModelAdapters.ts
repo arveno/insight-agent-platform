@@ -1,13 +1,7 @@
-import type {
-  StaticEvidenceEntranceViewModel,
-  StaticReportEntranceViewModel,
-  StaticRiskLevel,
-  StaticRiskViewModel,
-  StaticStatusViewModel,
-  StaticSummaryItemViewModel,
-  StaticTraceEntranceViewModel
-} from "../../../app/models";
-import type { I18nMessageKey, RiskBadgeProps, RiskLevel, StatusTagProps } from "../../../shared";
+import type { StaticEvidenceEntranceViewModel, StaticReportEntranceViewModel, StaticRiskLevel, StaticRiskViewModel, StaticStatusViewModel, StaticSummaryItemViewModel, StaticTraceEntranceViewModel } from "../../../app/models/staticViewModelTypes";
+import type { I18nMessageKey } from "../../../shared/i18n/messages";
+import type { RiskBadgeProps, RiskLevel } from "../../../shared/ui/status/RiskBadge";
+import type { StatusTagProps } from "../../../shared/ui/status/StatusTag";
 import { translateKey, type Translate } from "../text";
 
 const statusToneByKind: Record<StaticStatusViewModel["status"], StatusTagProps["tone"]> = {

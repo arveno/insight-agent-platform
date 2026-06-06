@@ -1,27 +1,19 @@
 import { Button, Space, Typography } from "antd";
 
-import type {
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
-import type { PlatformOperationsOverviewController } from "../../../features/platform-operations/hooks";
-import type { PlatformOperationListItemViewModel } from "../../../features/platform-operations/models";
-import {
-  AppActionGroup,
-  AppBaseCard,
-  AppSection,
-  AppSectionStack,
-  RiskBadge,
-  StatusTag,
-  useI18n
-} from "../../../shared";
-import {
-  createRouteAction,
-  toRiskBadge,
-  toStatusTag,
-  translateKey,
-  type WebPageProps
-} from "../../_shared";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
+import type { PlatformOperationsOverviewController } from "../../../features/platform-operations/hooks/usePlatformOperationsOverviewState";
+import type { PlatformOperationListItemViewModel } from "../../../features/platform-operations/models/platformOperationsViewModel";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
+import { toRiskBadge, toStatusTag } from "../../_shared/adapters/viewModelAdapters";
+import { translateKey } from "../../_shared/text";
+import type { WebPageProps } from "../../_shared/types";
 
 export type PlatformOperationsSectionsProps = WebPageProps & {
   controller: PlatformOperationsOverviewController;

@@ -1,15 +1,13 @@
 import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
-import type { StaticPageViewModelBase } from "../../../app/models";
-import {
-  PageHeader,
-  ResponsivePageShell,
-  shellThemeTokens,
-  shellTypographyStyles,
-  useI18n
-} from "../../../shared";
-import { ActionBar } from "../actions";
+import type { StaticPageViewModelBase } from "../../../app/models/staticViewModelTypes";
+import { PageHeader } from "../../../shared/layout/containers/PageHeader";
+import { ResponsivePageShell } from "../../../shared/layout/containers/ResponsivePageShell";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ActionBar } from "../actions/ActionBar";
 import { translateKey } from "../text";
 import type { NavigateToRoute } from "../types";
 

@@ -1,35 +1,27 @@
 import type { ComponentType } from "react";
 
-import type {
-  AppShellNavigationGroupViewModel,
-  AppShellNavigationItemViewModel,
-  StaticRouteKey
-} from "../models";
-import { appShellStaticViewModel } from "../fixtures";
-import {
-  AnalysisPage,
-  DashboardPage,
-  DataKnowledgePage,
-  EvaluationPage,
-  FeedbackPage,
-  GovernancePage,
-  MemoryPage,
-  MetricsPage,
-  ModelToolsPage,
-  ObservabilityPage,
-  PlatformOperationsPage,
-  ReportsPage,
-  SettingsPage,
-  WorkspacePage
-} from "../../pages";
-import type { WebPageProps } from "../../pages/_shared";
-import {
-  AppIcon,
-  type I18nMessageKey,
-  type IconName,
-  type NavigationGroup,
-  type NavigationItem
-} from "../../shared";
+import type { AppShellNavigationGroupViewModel, AppShellNavigationItemViewModel } from "../models/appShellViewModel";
+import type { StaticRouteKey } from "../models/staticViewModelTypes";
+import { appShellStaticViewModel } from "../fixtures/appShellStaticViewModel";
+import { AnalysisPage } from "../../pages/analysis/Page";
+import { DashboardPage } from "../../pages/dashboard/Page";
+import { DataKnowledgePage } from "../../pages/data-knowledge/Page";
+import { EvaluationPage } from "../../pages/evaluation/Page";
+import { FeedbackPage } from "../../pages/feedback/Page";
+import { GovernancePage } from "../../pages/governance/Page";
+import { MemoryPage } from "../../pages/memory/Page";
+import { MetricsPage } from "../../pages/metrics/Page";
+import { ModelToolsPage } from "../../pages/model-tools/Page";
+import { ObservabilityPage } from "../../pages/observability/Page";
+import { PlatformOperationsPage } from "../../pages/platform-operations/Page";
+import { ReportsPage } from "../../pages/reports/Page";
+import { SettingsPage } from "../../pages/settings/Page";
+import { WorkspacePage } from "../../pages/workspace/Page";
+import type { WebPageProps } from "../../pages/_shared/types";
+import { AppIcon } from "../../shared/icons/AppIcon";
+import type { I18nMessageKey } from "../../shared/i18n/messages";
+import type { IconName } from "../../shared/icons/iconTypes";
+import type { NavigationGroup, NavigationItem } from "../../shared/layout/shell/LeftNav";
 
 type Translate = (key: I18nMessageKey) => string;
 

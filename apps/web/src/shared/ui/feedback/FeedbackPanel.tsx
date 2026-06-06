@@ -1,6 +1,7 @@
 import { Button, Card, Radio, Space, Typography } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 
 export type FeedbackOption = {
   disabled?: boolean;

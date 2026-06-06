@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
-import type { EmptyStateProps, ErrorStateProps, LoadingStateProps } from "../ui";
+import type { EmptyStateProps } from "../ui/feedback/EmptyState";
+import type { ErrorStateProps } from "../ui/feedback/ErrorState";
+import type { LoadingStateProps } from "../ui/feedback/LoadingState";
 
 export type ChartPointViewModel = {
   key: string;
