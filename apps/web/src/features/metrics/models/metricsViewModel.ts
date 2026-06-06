@@ -1,21 +1,50 @@
 import type {
-  StaticActionViewModel,
   StaticEvidenceEntranceViewModel,
+  StaticMetricCardViewModel,
+  StaticActionViewModel,
   StaticPageStateViewModel,
   StaticPageViewModelBase,
+  StaticRiskViewModel,
+  StaticStatusViewModel,
   StaticSummaryItemViewModel
 } from "../../../app/models";
 
+export type MetricsDetailCardViewModel = {
+  description: string;
+  eyebrow?: string;
+  key: string;
+  meta?: string;
+  risk?: StaticRiskViewModel;
+  status?: StaticStatusViewModel;
+  title: string;
+  value?: string;
+};
+
+export type MetricsAnalysisContextViewModel = {
+  currentValue: string;
+  evidenceRefs: string[];
+  formula: string;
+  key: string;
+  lineage: string;
+  metricId: string;
+  metricName: string;
+  riskLevel: string;
+  threshold: string;
+  timeRange: string;
+  trend: string;
+  workspaceId: string;
+};
+
 export type MetricsViewModel = StaticPageViewModelBase & {
-  analysisEntrances: StaticActionViewModel[];
-  anomalyEntrances: StaticActionViewModel[];
   dashboardEntrances: StaticActionViewModel[];
-  metricCatalog: StaticSummaryItemViewModel[];
-  metricEvidenceEntrances: StaticEvidenceEntranceViewModel[];
-  metricFormula: StaticSummaryItemViewModel;
-  metricLineage: StaticSummaryItemViewModel[];
-  metricThresholds: StaticSummaryItemViewModel[];
+  evidenceEntrances: StaticEvidenceEntranceViewModel[];
+  formulaThresholdCards: MetricsDetailCardViewModel[];
+  lineageSourceCards: MetricsDetailCardViewModel[];
+  metricCatalogCards: StaticMetricCardViewModel[];
+  metricContexts: MetricsAnalysisContextViewModel[];
+  metricDirectory: StaticSummaryItemViewModel[];
   metricsState: StaticPageStateViewModel;
-  relatedDataFields: StaticSummaryItemViewModel[];
-  selectedMetric: StaticSummaryItemViewModel;
+  readonlyNotice: string;
+  trendAnomalyCards: StaticMetricCardViewModel[];
+  workspaceNotice: string;
 };

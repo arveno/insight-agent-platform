@@ -1,1 +1,5 @@
-export type { MetricsViewModel } from "./metricsViewModel";
+export type {
+  MetricsAnalysisContextViewModel,
+  MetricsDetailCardViewModel,
+  MetricsViewModel
+} from "./metricsViewModel";
