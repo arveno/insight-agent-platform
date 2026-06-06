@@ -3,6 +3,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
 import { dashboardStaticViewModel } from "../../../features/dashboard/fixtures";
+import { shellThemeTokens } from "../../../shared/theme";
 import { DashboardHero } from "./DashboardHero";
 
 afterEach(cleanup);
@@ -48,8 +49,10 @@ describe("DashboardHero", () => {
     const eyebrow = screen.getByText("经营工作台");
     const title = screen.getByText("经营状态总览");
 
-    expect(eyebrow.getAttribute("style")).toContain("font-size: 12px");
-    expect(title.getAttribute("style")).toContain("font-size: 24px");
+    expect(eyebrow.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeMeta}px`);
+    expect(title.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeHeroTitle}px`
+    );
     expect(title.getAttribute("style")).toContain("font-weight: 600");
   });
 });

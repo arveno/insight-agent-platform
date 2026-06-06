@@ -27,13 +27,12 @@ export function ShellNavListItem({
   const { token } = theme.useToken();
   const [isHovered, setIsHovered] = useState(false);
   const textColor = selected ? token.colorText : token.colorTextSecondary;
+  const iconColor = selected ? token.colorTextSecondary : token.colorTextDescription;
   const background = selected
     ? token.colorFillSecondary
     : isHovered && !disabled
       ? token.colorFillTertiary
       : "transparent";
-  const borderColor =
-    selected || (isHovered && !disabled) ? token.colorBorderSecondary : "transparent";
 
   return (
     <button
@@ -48,12 +47,13 @@ export function ShellNavListItem({
       style={{
         appearance: "none",
         background,
-        border: `${shellThemeTokens.surfaceBorderWidth}px solid ${borderColor}`,
-        borderRadius: shellThemeTokens.borderRadiusLG,
+        border: `${shellThemeTokens.surfaceBorderWidth}px solid transparent`,
+        borderRadius: shellThemeTokens.borderRadius,
         color: textColor,
         cursor: disabled ? "not-allowed" : "pointer",
         display: "flex",
         justifyContent: "space-between",
+        minHeight: 34,
         minWidth: 0,
         opacity: disabled ? 0.5 : 1,
         paddingBlock: shellThemeTokens.navPrimaryPaddingBlock,
@@ -68,7 +68,7 @@ export function ShellNavListItem({
         {icon ? (
           <span
             style={{
-              color: textColor,
+              color: iconColor,
               display: "inline-flex",
               flex: "0 0 auto"
             }}
@@ -84,7 +84,7 @@ export function ShellNavListItem({
         </Typography.Text>
       </Flex>
       {rightContent ? (
-        <Space size={token.marginXS} style={{ color: textColor, flex: "0 0 auto" }}>
+        <Space size={4} style={{ color: iconColor, flex: "0 0 auto" }}>
           {rightContent}
         </Space>
       ) : null}

@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
+import { shellThemeTokens } from "../../theme";
 import { PageHeader } from "./PageHeader";
 
 afterEach(cleanup);
@@ -21,8 +22,8 @@ describe("PageHeader", () => {
     const title = screen.getByText("Business health overview");
     const subtitle = screen.getByText("Compact subtitle");
 
-    expect(title.getAttribute("style")).toContain("font-size: 24px");
+    expect(title.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizePageTitle}px`);
     expect(title.getAttribute("style")).toContain("font-weight: 600");
-    expect(subtitle.getAttribute("style")).toContain("font-size: 14px");
+    expect(subtitle.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeBody}px`);
   });
 });

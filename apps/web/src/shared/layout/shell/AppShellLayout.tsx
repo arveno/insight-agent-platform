@@ -27,7 +27,7 @@ export function AppShellLayout({
   rightAssistPanel
 }: AppShellLayoutProps) {
   const { token } = theme.useToken();
-  const border = `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`;
+  const border = `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorder}`;
 
   return (
     <Layout
@@ -41,7 +41,7 @@ export function AppShellLayout({
       {leftNav ? (
         <Sider
           style={{
-            background: token.colorBgElevated,
+            background: token.colorBgLayout,
             borderInlineEnd: border,
             height: "100%",
             overflow: "hidden"
@@ -55,7 +55,7 @@ export function AppShellLayout({
         {header ? (
           <Header
             style={{
-              background: token.colorBgContainer,
+              background: token.colorBgLayout,
               borderBottom: border,
               flex: `0 0 ${shellThemeTokens.headerHeight}px`,
               height: shellThemeTokens.headerHeight,

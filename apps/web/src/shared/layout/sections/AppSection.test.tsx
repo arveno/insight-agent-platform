@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
+import { shellThemeTokens } from "../../theme";
 import { AppSection } from "./AppSection";
 
 afterEach(cleanup);
@@ -37,8 +38,10 @@ describe("AppSection", () => {
     const eyebrow = screen.getByText("Overview");
     const title = screen.getByText("Operating health");
 
-    expect(eyebrow.getAttribute("style")).toContain("font-size: 12px");
-    expect(title.getAttribute("style")).toContain("font-size: 16px");
+    expect(eyebrow.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeMeta}px`);
+    expect(title.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeSectionTitle}px`
+    );
     expect(title.getAttribute("style")).toContain("font-weight: 600");
   });
 });
