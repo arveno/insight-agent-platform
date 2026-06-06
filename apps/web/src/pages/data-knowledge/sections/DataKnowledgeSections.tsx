@@ -70,6 +70,15 @@ function SelectedAssetHeader({
   selectedAsset: DataKnowledgeSelectedAssetViewModel;
   t: ReturnType<typeof useI18n>["t"];
 }) {
+  const assetKindLabel =
+    selectedAsset.kind === "data_source"
+      ? t("page.dataKnowledge.assetKind.dataSourceFull")
+      : t("page.dataKnowledge.assetKind.knowledgeDocumentFull");
+  const lineageDescription =
+    selectedAsset.kind === "data_source"
+      ? t("page.dataKnowledge.selectedAsset.dataSourceLineage")
+      : t("page.dataKnowledge.selectedAsset.knowledgeDocumentLineage");
+
   return (
     <AppBaseCard
       description={selectedAsset.summary}
@@ -78,13 +87,9 @@ function SelectedAssetHeader({
     >
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
         <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-          {selectedAsset.kind === "data_source" ? "DataSource" : "KnowledgeDocument"}
+          {assetKindLabel}
         </Typography.Text>
-        <Typography.Text type="secondary">
-          {selectedAsset.kind === "data_source"
-            ? "Read-only asset lineage from DataSource to Evidence usage."
-            : "Read-only asset lineage from KnowledgeDocument to Evidence usage."}
-        </Typography.Text>
+        <Typography.Text type="secondary">{lineageDescription}</Typography.Text>
       </Space>
     </AppBaseCard>
   );
@@ -116,29 +121,26 @@ function SelectedNodeDetailCard({
 export function DataKnowledgeSections({ controller }: DataKnowledgeSectionsProps) {
   const { t } = useI18n();
   const { relationshipGraph, selectedAsset } = controller.viewModel;
+  const relationshipTitle =
+    selectedAsset.kind === "data_source"
+      ? t("page.dataKnowledge.relationship.dataSourceTitle")
+      : t("page.dataKnowledge.relationship.knowledgeDocumentTitle");
 
   return (
     <AppSectionStack>
       <AppSection
-        eyebrow="Selected asset"
+        eyebrow={t("page.dataKnowledge.section.selectedAsset.eyebrow")}
         title={t("page.dataKnowledge.section.selectedAsset.title")}
       >
         <SelectedAssetHeader selectedAsset={selectedAsset} t={t} />
       </AppSection>
 
       <AppSection
-        eyebrow="Relationship"
+        eyebrow={t("page.dataKnowledge.section.relationship.eyebrow")}
         title={t("page.dataKnowledge.section.relationship.title")}
         useGrid={false}
       >
-        <AppBaseCard
-          description={relationshipGraph.description}
-          title={
-            selectedAsset.kind === "data_source"
-              ? "DataSource relationship"
-              : "Knowledge document relationship"
-          }
-        >
+        <AppBaseCard description={relationshipGraph.description} title={relationshipTitle}>
           <AssetRelationshipGraph
             graph={relationshipGraph}
             onSelectNode={controller.onSelectNode}
@@ -147,7 +149,10 @@ export function DataKnowledgeSections({ controller }: DataKnowledgeSectionsProps
         </AppBaseCard>
       </AppSection>
 
-      <AppSection eyebrow="Selected node" title={t("page.dataKnowledge.section.nodeDetail.title")}>
+      <AppSection
+        eyebrow={t("page.dataKnowledge.section.nodeDetail.eyebrow")}
+        title={t("page.dataKnowledge.section.nodeDetail.title")}
+      >
         <SelectedNodeDetailCard selectedNode={controller.selectedNode} t={t} />
       </AppSection>
     </AppSectionStack>

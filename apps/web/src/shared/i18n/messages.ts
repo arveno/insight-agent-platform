@@ -196,7 +196,9 @@ export const messages = {
     "page.dashboard.section.riskAnomaly.title": "风险与异常",
     "page.dashboard.title": "仪表盘",
     "page.dataKnowledge.assetKind.dataSource": "Data",
+    "page.dataKnowledge.assetKind.dataSourceFull": "DataSource",
     "page.dataKnowledge.assetKind.knowledgeDocument": "Doc",
+    "page.dataKnowledge.assetKind.knowledgeDocumentFull": "KnowledgeDocument",
     "page.dataKnowledge.description":
       "当前 Workspace 的数据资产、知识资产、证据来源和数据可信状态总览页。",
     "page.dataKnowledge.inspector.actions.title": "Actions",
@@ -210,18 +212,28 @@ export const messages = {
     "page.dataKnowledge.nav.searchLabel": "搜索数据与知识资产",
     "page.dataKnowledge.nav.searchPlaceholder": "搜索数据与知识资产",
     "page.dataKnowledge.nav.title": "数据与知识资产",
+    "page.dataKnowledge.relationship.dataSourceTitle": "DataSource relationship",
+    "page.dataKnowledge.relationship.knowledgeDocumentTitle":
+      "Knowledge document relationship",
     "page.dataKnowledge.rightAssist.description":
       "Inspector 承接当前 Workspace 的全局摘要、只读边界、质量摘要和导航动作。",
     "page.dataKnowledge.rightAssist.title": "数据与知识上下文",
     "page.dataKnowledge.section.nodeDetail.description":
       "节点详情区只围绕当前点击节点和当前资产相关 Evidence Usage 展示。",
+    "page.dataKnowledge.section.nodeDetail.eyebrow": "Selected node",
     "page.dataKnowledge.section.nodeDetail.title": "Selected node detail",
     "page.dataKnowledge.section.relationship.description":
       "围绕当前资产展示 DataSource 或 KnowledgeDocument 到 Evidence / Usage 的关系主线。",
+    "page.dataKnowledge.section.relationship.eyebrow": "Relationship",
     "page.dataKnowledge.section.relationship.title": "Asset relationship graph",
     "page.dataKnowledge.section.selectedAsset.description":
       "当前主区只展示选中资产自身摘要，不再堆叠全局总览和质量大卡片。",
+    "page.dataKnowledge.section.selectedAsset.eyebrow": "Selected asset",
     "page.dataKnowledge.section.selectedAsset.title": "当前资产",
+    "page.dataKnowledge.selectedAsset.dataSourceLineage":
+      "Read-only asset lineage from DataSource to Evidence usage.",
+    "page.dataKnowledge.selectedAsset.knowledgeDocumentLineage":
+      "Read-only asset lineage from KnowledgeDocument to Evidence usage.",
     "page.dataKnowledge.section.assetDetail.description":
       "展示当前选中 DataSource 或 KnowledgeDocument 的标准化详情与导航动作。",
     "page.dataKnowledge.section.assetDetail.title": "当前资产详情",
@@ -651,7 +663,9 @@ export const messages = {
     "page.dashboard.section.riskAnomaly.title": "Risk and anomaly",
     "page.dashboard.title": "Dashboard",
     "page.dataKnowledge.assetKind.dataSource": "Data",
+    "page.dataKnowledge.assetKind.dataSourceFull": "DataSource",
     "page.dataKnowledge.assetKind.knowledgeDocument": "Doc",
+    "page.dataKnowledge.assetKind.knowledgeDocumentFull": "KnowledgeDocument",
     "page.dataKnowledge.description":
       "Overview page for the current Workspace data assets, knowledge assets, evidence sources, and data trust state.",
     "page.dataKnowledge.inspector.actions.title": "Actions",
@@ -665,18 +679,28 @@ export const messages = {
     "page.dataKnowledge.nav.searchLabel": "Search data and knowledge assets",
     "page.dataKnowledge.nav.searchPlaceholder": "Search data and knowledge assets",
     "page.dataKnowledge.nav.title": "Data & Knowledge assets",
+    "page.dataKnowledge.relationship.dataSourceTitle": "DataSource relationship",
+    "page.dataKnowledge.relationship.knowledgeDocumentTitle":
+      "Knowledge document relationship",
     "page.dataKnowledge.rightAssist.description":
       "Inspector carries the workspace summary, readonly boundaries, quality summary, and navigation-only actions.",
     "page.dataKnowledge.rightAssist.title": "Data & Knowledge context",
     "page.dataKnowledge.section.nodeDetail.description":
       "Shows the clicked node detail together with evidence usage for the current asset.",
+    "page.dataKnowledge.section.nodeDetail.eyebrow": "Selected node",
     "page.dataKnowledge.section.nodeDetail.title": "Selected node detail",
     "page.dataKnowledge.section.relationship.description":
       "Shows the relationship flow from the selected asset to Evidence and Usage.",
+    "page.dataKnowledge.section.relationship.eyebrow": "Relationship",
     "page.dataKnowledge.section.relationship.title": "Asset relationship graph",
     "page.dataKnowledge.section.selectedAsset.description":
       "Shows the selected asset summary only and removes the old global overview stack from the main content.",
+    "page.dataKnowledge.section.selectedAsset.eyebrow": "Selected asset",
     "page.dataKnowledge.section.selectedAsset.title": "Current asset",
+    "page.dataKnowledge.selectedAsset.dataSourceLineage":
+      "Read-only asset lineage from DataSource to Evidence usage.",
+    "page.dataKnowledge.selectedAsset.knowledgeDocumentLineage":
+      "Read-only asset lineage from KnowledgeDocument to Evidence usage.",
     "page.dataKnowledge.section.assetDetail.description":
       "Shows the selected DataSource or KnowledgeDocument detail together with navigation-only actions.",
     "page.dataKnowledge.section.assetDetail.title": "Selected asset detail",
