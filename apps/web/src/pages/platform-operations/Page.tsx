@@ -1,14 +1,14 @@
-import { platformOperationsStaticViewModel } from "../../features/static-view-models";
+import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks";
 import { WebPageScaffold, type WebPageProps } from "../_shared";
 import { PlatformOperationsSections } from "./sections";
 
-export function PlatformOperationsPage({ onNavigate }: WebPageProps) {
+export function PlatformOperationsPage({ onNavigate, platformOperationsState }: WebPageProps) {
+  const fallbackPlatformOperationsState = usePlatformOperationsOverviewState();
+  const controller = platformOperationsState ?? fallbackPlatformOperationsState;
+
   return (
-    <WebPageScaffold onNavigate={onNavigate} viewModel={platformOperationsStaticViewModel}>
-      <PlatformOperationsSections
-        onNavigate={onNavigate}
-        viewModel={platformOperationsStaticViewModel}
-      />
+    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+      <PlatformOperationsSections controller={controller} onNavigate={onNavigate} />
     </WebPageScaffold>
   );
 }

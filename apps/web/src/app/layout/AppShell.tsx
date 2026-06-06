@@ -7,6 +7,7 @@ import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../theme";
 import { useAnalysisConversationState } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
 import { useMetricsOverviewState } from "../../features/metrics/hooks";
+import { usePlatformOperationsOverviewState } from "../../features/platform-operations/hooks";
 import { useReportsReaderState } from "../../features/reports/hooks";
 import { analysisStaticViewModel } from "../../features/static-view-models";
 import { AnalysisPageContent } from "../../pages/analysis/Page";
@@ -51,6 +52,10 @@ export function AppShell() {
     ) ?? appShellStaticViewModel.workspace;
   const analysisConversationState = useAnalysisConversationState();
   const metricsOverviewState = useMetricsOverviewState({
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
+  const platformOperationsOverviewState = usePlatformOperationsOverviewState({
     workspaceId: selectedWorkspace.workspaceId,
     workspaceName: selectedWorkspace.name
   });
@@ -276,7 +281,7 @@ export function AppShell() {
             selectedReport={reportsReaderState.viewModel.selectedReport}
             workspaceName={selectedWorkspace.name}
           />
-        ) : activeRoute === "metrics" ? null : (
+        ) : activeRoute === "metrics" || activeRoute === "platform-operations" ? null : (
           <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
         )
       }
@@ -292,6 +297,9 @@ export function AppShell() {
           key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
           metricsState={activeRoute === "metrics" ? metricsOverviewState : undefined}
           onNavigate={handleNavigate}
+          platformOperationsState={
+            activeRoute === "platform-operations" ? platformOperationsOverviewState : undefined
+          }
           reportsState={activeRoute === "reports" ? reportsReaderState : undefined}
         />
       )}
