@@ -76,15 +76,26 @@ pnpm help:scripts
 ## 目录概览
 
 ```text
-apps/web                 React 前端 Console
-services/agent-runtime   Python / FastAPI / LangGraph 后端
-packages/contracts       JSON Schema / OpenAPI / generated types
-docs                     少量事实源文档
-database                 MySQL migration / seed / query / diagram 事实源
-deploy                   Docker / CloudBase Run 部署配置
-scripts                  verify / build / package / deploy / rollback / migration / contracts / smoke / load / failure-simulation / security 脚本
-.github                  Issue / PR / CI 模板
+apps/
+  web/                             React 前端 Console
+services/
+  agent-runtime/                   Python / FastAPI / LangGraph 后端
+packages/
+  contracts/                       JSON Schema / OpenAPI / generated types
+database/
+  mysql/                           migration / seed / query / diagram 事实源
+deploy/                            Docker / CloudBase Run 部署资产
+scripts/                           build / contracts / deploy / smoke / verify 等工程脚本
+docs/                              项目事实源文档
+.github/                           Issue / PR / CI 模板
 ```
+
+后端服务根目录固定为 `services/agent-runtime/src`，内部采用：
+
+- `app/`：启动、配置、路由注册、中间件。
+- `modules/`：按业务垂直切片组织 `workspace`、`conversations`、`agent-runs`、`data-knowledge`、`model-tools`、`governance`、`metrics`、`reports`、`platform-operations`。
+- `infrastructure/`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座。
+- `shared/`：无业务语义的错误、校验、工具和类型。
 
 ## 文档事实源
 

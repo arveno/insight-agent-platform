@@ -23,7 +23,7 @@
 后端配置入口：
 
 ```text
-services/agent-runtime/app/core/config.py
+services/agent-runtime/src/app/config.py
 ```
 
 前端只能使用浏览器可见配置，不允许暴露模型密钥、数据库连接串、向量库密钥。

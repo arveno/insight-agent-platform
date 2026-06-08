@@ -1,5 +1,5 @@
-from app.main import app
 from fastapi.testclient import TestClient
+from src.app.main import app
 
 
 def test_health_returns_service_status() -> None:
