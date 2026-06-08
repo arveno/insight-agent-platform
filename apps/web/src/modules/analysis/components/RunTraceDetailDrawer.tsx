@@ -7,10 +7,10 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { AnalysisRunTraceEventViewModel } from "../models/analysisViewModel";
+import type { AnalysisRunEvent } from "../models/analysisRun";
 
 export type RunTraceDetailDrawerProps = {
-  event?: AnalysisRunTraceEventViewModel;
+  event?: AnalysisRunEvent;
   onClose: () => void;
   open: boolean;
 };
@@ -104,12 +104,16 @@ export function RunTraceDetailDrawer({
               {
                 key: "status",
                 label: "Status",
-                children: <StatusTag {...toStatusTag(t, event.status)!} />
+                children: <StatusTag {...toStatusTag(t, event.statusViewModel)!} />
               },
               {
                 key: "risk",
                 label: "Risk",
-                children: event.risk ? <RiskBadge {...toRiskBadge(t, event.risk)!} /> : "None"
+                children: event.riskViewModel ? (
+                  <RiskBadge {...toRiskBadge(t, event.riskViewModel)!} />
+                ) : (
+                  "None"
+                )
               },
               {
                 key: "timestamp",

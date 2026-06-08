@@ -10,11 +10,7 @@ import type { AppLocale } from "../../shared/i18n/localeTypes";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
-import { AnalysisSessionNav } from "../../modules/analysis/navigation/AnalysisSessionNav";
-import { AnalysisInspectorPanel } from "../../modules/analysis/panels/AnalysisInspectorPanel";
-import { useAnalysisConversationState } from "../../modules/analysis/hooks/useAnalysisConversationState";
-import { analysisStaticViewModel } from "../../modules/analysis/fixtures/analysisStaticViewModel";
-import { AnalysisPageContent } from "../../modules/analysis/Page";
+import { useAnalysisWorkspaceSlots } from "../../modules/analysis/hooks/useAnalysisWorkspaceSlots";
 import { DataKnowledgeListNav } from "../../modules/data-knowledge/navigation/DataKnowledgeListNav";
 import { useDataKnowledgeOverviewState } from "../../modules/data-knowledge/hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeInspectorPanel } from "../../modules/data-knowledge/panels/DataKnowledgeInspectorPanel";
@@ -45,7 +41,6 @@ export function AppShell() {
   >(
     appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
   );
-  const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
     appShellStaticViewModel.workspace.workspaceId
   );
@@ -54,7 +49,6 @@ export function AppShell() {
     appShellStaticViewModel.workspaces.find(
       (workspace) => workspace.workspaceId === selectedWorkspaceId
     ) ?? appShellStaticViewModel.workspace;
-  const analysisConversationState = useAnalysisConversationState();
   const dataKnowledgeOverviewState = useDataKnowledgeOverviewState({
     workspaceId: selectedWorkspace.workspaceId,
     workspaceName: selectedWorkspace.name
@@ -70,21 +64,14 @@ export function AppShell() {
   const reportsReaderState = useReportsReaderState();
   const ActivePage = webCompositionRoutes[activeRoute];
   const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
+  const analysisWorkspaceSlots = useAnalysisWorkspaceSlots({
+    onBackToRoot: () => setLeftNavMode("root"),
+    workspaceName: selectedWorkspace.name
+  });
   const navigationGroups = useMemo(
     () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
     [t]
   );
-  const filteredAnalysisSessions = useMemo(() => {
-    const normalizedQuery = analysisSessionQuery.trim().toLowerCase();
-
-    if (normalizedQuery.length === 0) {
-      return analysisStaticViewModel.sessions;
-    }
-
-    return analysisStaticViewModel.sessions.filter((session) =>
-      session.session.title.toLowerCase().includes(normalizedQuery)
-    );
-  }, [analysisSessionQuery]);
   const selectedNavigationKey = navigationGroups.some((group) =>
     group.items.some((item) => item.key === activeRoute)
   )
@@ -105,10 +92,6 @@ export function AppShell() {
               ? "reports"
               : "root"
     );
-
-    if (route !== "analysis") {
-      setAnalysisSessionQuery("");
-    }
 
     if (route !== "data-knowledge") {
       dataKnowledgeOverviewState.onSearchChange("");
@@ -216,24 +199,7 @@ export function AppShell() {
           </div>
           <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
             {activeRoute === "analysis" && leftNavMode === "analysis" ? (
-              <AnalysisSessionNav
-                onBack={() => setLeftNavMode("root")}
-                onCreateNewAnalysis={() => {
-                  setActiveRoute("analysis");
-                  setLeftNavMode("analysis");
-                  setAnalysisSessionQuery("");
-                  analysisConversationState.onResetForNewAnalysis();
-                }}
-                onSearchChange={setAnalysisSessionQuery}
-                onSelectSession={(sessionKey) => {
-                  setActiveRoute("analysis");
-                  setLeftNavMode("analysis");
-                  analysisConversationState.onSelectSession(sessionKey);
-                }}
-                searchValue={analysisSessionQuery}
-                selectedSessionKey={analysisConversationState.selectedSessionKey}
-                sessions={filteredAnalysisSessions}
-              />
+              analysisWorkspaceSlots.leftNav
             ) : activeRoute === "reports" && leftNavMode === "reports" ? (
               <ReportsListNav
                 controller={reportsReaderState}
@@ -296,10 +262,7 @@ export function AppShell() {
       }
       rightAssistPanel={
         activeRoute === "analysis" ? (
-          <AnalysisInspectorPanel
-            conversationState={analysisConversationState}
-            workspaceName={selectedWorkspace.name}
-          />
+          analysisWorkspaceSlots.rightAssistPanel
         ) : activeRoute === "reports" ? (
           <ReportsInspectorPanel
             reportSections={reportsReaderState.viewModel.reportSections}
@@ -318,11 +281,7 @@ export function AppShell() {
       }
     >
       {activeRoute === "analysis" ? (
-        <AnalysisPageContent
-          conversationState={analysisConversationState}
-          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
-          onNavigate={handleNavigate}
-        />
+        analysisWorkspaceSlots.mainContent
       ) : (
         <ActivePage
           key={`${selectedWorkspace.workspaceId}:${activeRoute}`}

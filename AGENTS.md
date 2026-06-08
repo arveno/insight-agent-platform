@@ -168,6 +168,10 @@ External Raw Data
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，不保留自动 header 链路。
 - 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `Analysis` 的 canonical 结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不得强行套入 `PageIntro / ContentSection` 主链路。
+- `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 不得直接拼 `AnalysisSessionNav / MessageList / Composer / Inspector / Drawer` 等低层业务组件，只能消费 module 暴露的 workspace 入口或 slots adapter。
+- `Analysis` 状态必须由 workspace controller 集中承接；`sessions / selectedSessionId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得在 `AppShell`、`AnalysisInspectorPanel` 或多个组件内多处维护。
+- `AnalysisMessageList` 只展示 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须保留独立落点，不得继续塞回 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；不得再新增 `filters / rightAside / header / viewModel / actions / hideHeader / hideHeaderActions`。
 - 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏，不得承接 page padding、header 或页面壳 slot。
 - `PageIntro` 是 `shared/layout/containers` 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。

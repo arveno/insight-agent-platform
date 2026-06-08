@@ -2,16 +2,16 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
 import { SelectableList } from "../../../shared/ui/lists/SelectableList";
-import type { AnalysisViewModel } from "../models/analysisViewModel";
+import type { AnalysisSessionViewModel } from "../models/analysisViewModel";
 
 export type AnalysisSessionNavProps = {
   onBack: () => void;
   onCreateNewAnalysis: () => void;
   onSearchChange: (value: string) => void;
-  onSelectSession: (key: string) => void;
+  onSelectSession: (sessionId: string) => void;
   searchValue: string;
-  selectedSessionKey: string;
-  sessions: AnalysisViewModel["sessions"];
+  selectedSessionId: string;
+  sessions: AnalysisSessionViewModel[];
 };
 
 export function AnalysisSessionNav({
@@ -20,7 +20,7 @@ export function AnalysisSessionNav({
   onSearchChange,
   onSelectSession,
   searchValue,
-  selectedSessionKey,
+  selectedSessionId,
   sessions
 }: AnalysisSessionNavProps) {
   return (
@@ -33,8 +33,8 @@ export function AnalysisSessionNav({
       ariaLabel="Analysis session navigation"
       emptyText="暂无匹配会话"
       items={sessions.map((session) => ({
-        key: session.key,
-        title: session.session.title
+        key: session.sessionId,
+        title: session.sessionSummary.title
       }))}
       onBack={onBack}
       onSearchChange={onSearchChange}
@@ -42,7 +42,7 @@ export function AnalysisSessionNav({
       searchLabel="搜索会话"
       searchPlaceholder="搜索会话"
       searchValue={searchValue}
-      selectedKey={selectedSessionKey}
+      selectedKey={selectedSessionId}
       title="分析"
     />
   );

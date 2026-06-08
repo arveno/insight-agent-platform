@@ -721,6 +721,65 @@ const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/m
     message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro"
   }
 ]);
+const appShellAnalysisImportViolations = collectFilePathContentViolations(
+  "apps/web/src/app/shell/AppShell.tsx",
+  [
+    {
+      pattern:
+        /\bfrom\s+["'][^"']*(AnalysisSections|AnalysisInspectorPanel|AnalysisSessionNav|RunTraceDetailDrawer|useAnalysisConversationState)["']/,
+      message:
+        "AppShell 不得直接依赖低层 Analysis 组件或旧 controller；只能消费 module 暴露的 workspace 入口或 slots adapter"
+    }
+  ]
+);
+const analysisSectionHardcodedMessageViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/analysis/sections/AnalysisSections.tsx",
+  [
+    {
+      pattern:
+        /roleLabel="System"|roleLabel="User"|roleLabel="Assistant"|committedUserMessage|selectedSession\.resultSummary\.conclusion/,
+      message:
+        "AnalysisSections 不得继续硬编码 system / user / assistant 消息；消息区必须消费 canonical messages[]"
+    }
+  ]
+);
+const analysisInspectorPanelStateViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/analysis/panels/AnalysisInspectorPanel.tsx",
+  [
+    {
+      pattern: /\buseState\b|\bselectedTraceEventId\b|\bdrawerOpen\b|\bselectedEvent\b/,
+      message:
+        "AnalysisInspectorPanel 不得本地维护 run trace 选中态或 drawer 开关；这些状态必须由 workspace controller 集中承接"
+    }
+  ]
+);
+const analysisStandardPageStructureViolations = collectScopedFileContentViolations(
+  "apps/web/src/modules/analysis",
+  (filePath) => !/\.test\.tsx?$/.test(filePath),
+  [
+    {
+      pattern: /\bPageIntro\b|\bContentSection\b/,
+      message:
+        "Analysis 是会话工作区例外，不得回流 PageIntro / ContentSection 主链路"
+    }
+  ]
+);
+const analysisIdFallbackViolations = collectScopedFileContentViolations(
+  "apps/web/src/modules/analysis",
+  (filePath) => !/\.test\.tsx?$/.test(filePath),
+  [
+    {
+      pattern: /\b(runId|messageId|clientMessageId|eventId|sessionId)\s*\|\|/,
+      message:
+        "Analysis 不得出现 canonical id fallback；禁止使用 runId || messageId || clientMessageId 等兼容式写法"
+    },
+    {
+      pattern: /metadata\.[A-Za-z0-9_]*Id\s*\|\|/,
+      message:
+        "Analysis 不得通过 metadata.xxxId || xxxId 做兼容；必须直接使用 canonical id 字段"
+    }
+  ]
+);
 const moduleSectionLayoutViolations = collectScopedFileContentViolations(
   "apps/web/src/modules",
   (filePath) => filePath.includes("/sections/") && !filePath.includes("/modules/analysis/"),
@@ -916,6 +975,35 @@ if (dashboardHeroLayoutViolations.length > 0) {
 
 if (modulePageHeaderImportViolations.length > 0) {
   fail("modules 检测到已禁止的 PageHeader 依赖：", modulePageHeaderImportViolations);
+}
+
+if (appShellAnalysisImportViolations.length > 0) {
+  fail("AppShell 检测到越界依赖 Analysis 低层组件：", appShellAnalysisImportViolations);
+}
+
+if (analysisSectionHardcodedMessageViolations.length > 0) {
+  fail(
+    "AnalysisSections 检测到已禁止的硬编码消息结构：",
+    analysisSectionHardcodedMessageViolations
+  );
+}
+
+if (analysisInspectorPanelStateViolations.length > 0) {
+  fail(
+    "AnalysisInspectorPanel 检测到已禁止的本地 run trace 状态：",
+    analysisInspectorPanelStateViolations
+  );
+}
+
+if (analysisStandardPageStructureViolations.length > 0) {
+  fail(
+    "Analysis 模块检测到回流的标准模块页结构组件：",
+    analysisStandardPageStructureViolations
+  );
+}
+
+if (analysisIdFallbackViolations.length > 0) {
+  fail("Analysis 模块检测到已禁止的 canonical id fallback：", analysisIdFallbackViolations);
 }
 
 if (moduleSectionLayoutViolations.length > 0) {

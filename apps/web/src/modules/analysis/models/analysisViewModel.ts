@@ -1,4 +1,7 @@
-import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type { SharedRiskViewModel, SharedStatusViewModel } from "../../../shared/utils/viewModelState";
+
+import type { AnalysisMessage } from "./analysisMessage";
+import type { AnalysisRun, AnalysisRunEvent } from "./analysisRun";
 
 export type AnalysisComposerSuggestionViewModel = {
   key: string;
@@ -27,61 +30,12 @@ export type AnalysisContextPackViewModel = {
 
 export type AnalysisSessionSummaryViewModel = {
   contextLabel: string;
-  key: string;
-  risk?: StaticRiskViewModel;
+  riskViewModel?: SharedRiskViewModel;
   runLabel: string;
-  status: StaticStatusViewModel;
+  sessionId: string;
+  statusViewModel: SharedStatusViewModel;
   summary: string;
   title: string;
-  updatedAtText: string;
-};
-
-export type AnalysisRunTraceEventType =
-  | "user_input"
-  | "context_bound"
-  | "plan_created"
-  | "permission_check"
-  | "model_call"
-  | "tool_call"
-  | "evidence_retrieval"
-  | "summary_generated"
-  | "feedback_waiting"
-  | "report_draft_created"
-  | "error"
-  | "cancelled";
-
-export type AnalysisRunTraceEventViewModel = {
-  costText?: string;
-  detail: string;
-  durationText?: string;
-  errorType?: string;
-  eventId: string;
-  eventType: AnalysisRunTraceEventType;
-  evidenceRefs?: string[];
-  inputSummary?: string;
-  key: string;
-  modelName?: string;
-  outputSummary?: string;
-  risk?: StaticRiskViewModel;
-  status: StaticStatusViewModel;
-  summary: string;
-  timestampText?: string;
-  tokenUsageText?: string;
-  toolName?: string;
-  title: string;
-};
-
-export type AnalysisRunTraceViewModel = {
-  costText: string;
-  errorSummaryText: string;
-  events: AnalysisRunTraceEventViewModel[];
-  key: string;
-  risk?: StaticRiskViewModel;
-  runId: string;
-  stageSummary: string;
-  status: StaticStatusViewModel;
-  tokenUsageText: string;
-  totalDurationText: string;
   updatedAtText: string;
 };
 
@@ -91,23 +45,67 @@ export type AnalysisResultSummaryViewModel = {
   evidenceSummary: string;
   findingBullets: string[];
   key: string;
-  risk?: StaticRiskViewModel;
-  status: StaticStatusViewModel;
+  riskViewModel?: SharedRiskViewModel;
+  statusViewModel: SharedStatusViewModel;
   title: string;
 };
 
-export type AnalysisSessionDetailViewModel = {
+export type AnalysisToolDetailViewModel = {
+  runId: string;
+  statusViewModel: SharedStatusViewModel;
+  summary: string;
+  toolCallId: string;
+  toolName: string;
+};
+
+export type AnalysisSourceEvidenceViewModel = {
+  runId: string;
+  sourceEvidenceId: string;
+  sourceType: string;
+  summary: string;
+  title: string;
+};
+
+export type AnalysisReportPreviewViewModel = {
+  reportId: string;
+  runId: string;
+  summary: string;
+  title: string;
+};
+
+export type AnalysisMemoryContextViewModel = {
+  memoryItemId: string;
+  summary: string;
+  title: string;
+};
+
+export type AnalysisInspectorPanelKey =
+  | "run-trace"
+  | "tool-detail"
+  | "source-evidence"
+  | "report-preview"
+  | "memory-context";
+
+export type AnalysisComposerMode = "analysis" | "follow_up";
+
+export type AnalysisSessionViewModel = {
+  currentRun: AnalysisRun;
   contextPack: AnalysisContextPackViewModel;
   followUpComposer: AnalysisComposerViewModel;
   inputComposer: AnalysisComposerViewModel;
-  key: string;
+  memoryContext?: AnalysisMemoryContextViewModel;
+  messages: AnalysisMessage[];
+  reportPreview?: AnalysisReportPreviewViewModel;
   resultSummary: AnalysisResultSummaryViewModel;
-  runTrace: AnalysisRunTraceViewModel;
-  session: AnalysisSessionSummaryViewModel;
+  runEvents: AnalysisRunEvent[];
+  sessionId: string;
+  sessionSummary: AnalysisSessionSummaryViewModel;
+  sourceEvidence: AnalysisSourceEvidenceViewModel[];
+  toolDetails: AnalysisToolDetailViewModel[];
 };
 
-export type AnalysisViewModel = StaticPageViewModelBase & {
-  analysisState: StaticPageStateViewModel;
+export type AnalysisWorkspaceViewModel = {
   contextPanelNote: string;
-  sessions: AnalysisSessionDetailViewModel[];
+  modelOptions: readonly { key: string; label: string }[];
+  sessions: AnalysisSessionViewModel[];
 };

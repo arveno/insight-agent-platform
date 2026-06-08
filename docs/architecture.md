@@ -142,6 +142,10 @@ insight-agent-platform/
 前端页面结构冻结边界固定如下：
 
 - 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
+- `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只能消费 module 暴露的 Analysis workspace 入口或 slots，不直接拼低层 Analysis 业务结构。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedSessionId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
+- `AnalysisMessageList` 只展示 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须保留独立承载位，不得回塞 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；`SectionStack` 只负责页面内容大块纵向节奏。
 - 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
 - `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是允许例外。
@@ -342,6 +346,7 @@ UI 不得直接消费 raw API response。
 - `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
 - `app/router` 只负责 route key 到 Page 的映射和路由表装配，不承接 shared action primitive。
 - `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
+- `Analysis` 属于 `modules/analysis` 自管的会话工作区例外；`AppShell` 只承接其 workspace 入口或 slots adapter，不直接 import `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / controller`。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
 - `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。
