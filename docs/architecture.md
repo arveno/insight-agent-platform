@@ -136,7 +136,7 @@ insight-agent-platform/
 
 只有 `services/agent-runtime/src/modules` 按业务垂直切片组织。`database/mysql`、`deploy/`、`scripts/` 按工程基础设施职责组织，不承接业务切片目录。
 
-`packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
+`packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
 其中 contracts 目录可以继续使用 kebab-case，Python runtime package 目录必须使用 snake_case。
 
 ```text
@@ -247,69 +247,42 @@ Tenant / Org
 
 ## 5. 前端架构
 
-前端采用 feature-based architecture。
+前端采用最终收敛后的 `app / api / modules / shared` 结构。
 
 ```text
 apps/web/src/
-├─ app/                   # 路由、全局 Provider、布局和主题入口
-│  ├─ router/             # 路由定义
-│  ├─ providers/          # 全局 Provider
-│  ├─ layout/             # 应用级布局
-│  └─ theme/              # 应用级主题入口
-├─ pages/                 # 页面级入口，只做页面编排
-│  ├─ workspace/          # 企业空间、成员、角色、业务域页面入口
-│  ├─ data-knowledge/     # 数据源、字段字典、业务知识、知识切片页面入口
-│  ├─ metrics/            # 指标定义、公式、口径、阈值、血缘页面入口
-│  ├─ dashboard/          # 经营总览、核心指标、异常和平台质量概览
-│  ├─ analysis/           # 分析页面入口，对应 agent-analysis 业务模块
-│  ├─ reports/            # 分析报告、报告段落、决策建议页面入口
-│  ├─ memory/             # 用户、工作区、分析、决策记忆页面入口
-│  ├─ feedback/           # 用户反馈、人工纠错、采纳 / 未采纳页面入口
-│  ├─ evaluation/         # Bad Case、评估数据集、评估运行和评分页面入口
-│  ├─ model-tools/        # 模型、Prompt、Tool、RAG 策略和路由页面入口
-│  ├─ governance/         # 权限、SQL Guard、Tool Permission、审计页面入口
-│  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率页面入口
-│  ├─ settings/           # 系统设置、环境配置、默认策略
-│  └─ platform-operations/ # 当前 Workspace 的 Job、通知、数据质量、Deployment / Smoke / Migration 摘要页面入口
-├─ features/              # 按业务域组织的前端功能模块
-│  ├─ workspace/          # 企业空间、成员、角色、业务域
-│  ├─ data-knowledge/     # 数据源、字段字典、业务知识、知识切片
-│  ├─ metrics/            # 指标定义、公式、口径、阈值、血缘
-│  ├─ dashboard/          # 经营总览、核心指标、异常和平台质量概览
-│  ├─ agent-analysis/     # Agent 分析工作区、分析任务、运行结果
-│  ├─ memory/             # 用户、工作区、分析、决策记忆
-│  ├─ feedback/           # 用户反馈、人工纠错、采纳 / 未采纳
-│  ├─ evaluation/         # Bad Case、评估数据集、评估运行和评分
-│  ├─ model-tools/        # 模型、Prompt、Tool、RAG 策略和路由
-│  ├─ governance/         # 权限、SQL Guard、Tool Permission、审计
-│  ├─ observability/      # Run Trace、Tool Trace、Model Trace、成本、延迟、错误率
-│  ├─ reports/            # 分析报告、报告段落、决策建议
-│  ├─ settings/           # 系统设置、环境配置、默认策略
-│  └─ platform-operations/ # 当前 Workspace 的 Job、通知、数据质量、Deployment / Smoke / Migration 摘要
-├─ shared/                # 跨业务域复用的 API、UI、布局、图表、hooks、stores、types、utils
-│  ├─ api/                # 跨域 API 基础能力
-│  ├─ ui/                 # 跨域 UI 组件
-│  ├─ layout/             # 跨域布局能力
-│  ├─ charts/             # 跨域图表能力
-│  ├─ graph/              # 项目级关系图展示底座，封装 @antv/g6，只接收标准化 RelationshipGraphViewModel
+├─ app/                   # 前端运行时装配层
+│  ├─ providers/          # React 根 Provider、Theme/I18n/Ant Design Config
+│  ├─ router/             # 路由表、route-aware action helper、页面导航类型
+│  └─ shell/              # AppShell、页面 scaffold、导航与 Inspector 容器
+├─ api/                   # 前端 API 边界
+│  ├─ client/             # HTTP client / transport 承载位
+│  └─ adapters/           # API 响应适配承载位
+├─ modules/               # 按业务垂直切片组织的前端模块
+│  ├─ workspace/
+│  ├─ dashboard/
+│  ├─ analysis/
+│  ├─ data-knowledge/
+│  ├─ metrics/
+│  ├─ reports/
+│  ├─ platform-operations/
+│  ├─ model-tools/
+│  ├─ governance/
+│  ├─ settings/
+│  ├─ evaluation/
+│  ├─ feedback/
+│  ├─ memory/
+│  └─ observability/
+├─ shared/                # 无业务语义的跨模块 primitive
+│  ├─ ui/                 # 通用按钮、卡片、表格、状态态和反馈态
+│  ├─ layout/             # 页面容器、Section、Shell 基础布局
 │  ├─ theme/              # 设计 token 和主题能力
-│  ├─ hooks/              # 跨域 hooks
-│  ├─ stores/             # 跨域状态承载位
-│  ├─ types/              # 跨域类型
-│  ├─ utils/              # 跨域工具函数
-│  └─ constants/          # 跨域常量
+│  ├─ graph/              # 项目级关系图展示底座，只接收标准化 RelationshipGraphViewModel
+│  ├─ charts/             # 通用图表 primitive
+│  ├─ i18n/               # 国际化 provider 与翻译辅助
+│  ├─ icons/              # 图标 primitive
+│  └─ utils/              # 无业务语义的前端工具函数
 └─ main.tsx               # 前端入口
-```
-
-每个 feature 内部推荐包含：
-
-```text
-api/
-models/
-mappers/
-components/
-pages/
-hooks/
 ```
 
 ### 前端数据链路
@@ -317,7 +290,7 @@ hooks/
 ```text
 API Response
 -> Contract Type
--> Feature Mapper
+-> Module Mapper
 -> ViewModel
 -> UI Component
 ```
@@ -346,14 +319,15 @@ UI 不得直接消费 raw API response。
 
 ### 前端职责边界
 
-- `pages` 只做页面编排，不做数据清洗。
-- `features/*/api` 只做请求封装。
-- `features/*/mappers` 只做 Contract -> ViewModel 转换和展示派生；关系图场景由各 feature mapper 负责把业务对象转成 `RelationshipGraphViewModel`。
-- `features/*/models` 定义 ViewModel 和展示模型。
-- `features/*/components` 只展示 ViewModel，不解析 raw API response。
+- `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
+- `app/router` 只负责路由表、页面 props 和 route-aware action helper；`shared/ui` 不知道 route。
+- `app/shell` 只负责 AppShell、导航、Inspector、页面 scaffold 和应用级容器。
+- `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
+- `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
+- `shared` 只放真正跨模块复用且无业务语义的 primitive，不再承接 `evidence / report / trace` 这类业务组件。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
-- `pages` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
-- 业务页面和 feature 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
+- `modules/data-knowledge` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
+- 业务页面和 module 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
 - 前端页面、组件、mapper 和页面 service 不得直接执行模型、工具、SQL、RAG、向量检索或 SQL Guard。
 - 前端页面不得展示 raw provider response、raw Tool output、LangGraph raw state、raw vector、raw embedding 或 raw SQL result。
 - `shared` 只放真正跨模块复用内容。
@@ -464,8 +438,8 @@ shared 不依赖 modules
 前端依赖方向：
 
 ```text
-page -> feature -> shared
-shared 不依赖 feature
+app -> modules -> shared
+shared 不依赖 modules
 component 不直接依赖 raw API response
 ```
 

@@ -185,7 +185,7 @@ AppShell
 ### Route Action Adapter
 
 - `shared/ui` 不知道 route。
-- route-aware action helper 放在 `pages/_shared/actions`。
+- route-aware action helper 放在 `app/router`。
 - helper 负责把 route、variant、iconName、label、onNavigate 转成 `AppActionGroupItem`。
 - 后续入口跳转不得在页面中随意散写。
 - `Open in Analysis with context` 等能力必须通过统一 action helper 承接上下文，不得页面临时拼按钮。
@@ -271,7 +271,7 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 状态标签、风险等级、空态、错误态、加载态必须通过 `shared/ui` 收敛。
 - 颜色、字号、间距、圆角、阴影等必须能映射到 `shared/theme` token。
 - `@antv/g6` 是项目级只读关系图展示底座，不是业务页面直接使用的图谱库。
-- 只有 `apps/web/src/shared/graph/**` 可以直接 import `@antv/g6`；业务页面和 feature 只能传入标准化 `RelationshipGraphViewModel`。
+- 只有 `apps/web/src/shared/graph/**` 可以直接 import `@antv/g6`；业务页面和 module 只能传入标准化 `RelationshipGraphViewModel`。
 - `shared/graph` 只承接只读关系图展示、节点点击、选中态、fit view、zoom、pan 等查看能力，不承接可编辑 workflow、创建边、删除节点或写回业务数据。
 - `Data & Knowledge`、后续 `RunTrace`、`Metrics lineage` 等图谱场景必须复用 `shared/graph`，不得各自散写 G6。
 - 页面组件不得直接消费 raw API response。
@@ -352,8 +352,8 @@ Columns 规则：
 ### Shared Boundary
 
 - 只有跨业务域复用才进入 `shared`。
-- 单一 feature 内部组件不得提前抽到 `shared`。
-- `shared` 组件不得依赖 feature。
+- 单一 module 内部组件不得提前抽到 `shared`。
+- `shared` 组件不得依赖 module。
 - `shared` 组件只消费 ViewModel、UI State 或 contract 枚举。
 - `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出、LangGraph raw state、raw provider response、raw vector、raw embedding 或 raw SQL result。
 

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { AppIcon } from "../../shared/icons/AppIcon";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { useAppTheme } from "../theme/AppThemeProvider";
+import { useAppTheme } from "./AppThemeProvider";
 import { AppProviders } from "./AppProviders";
 
 afterEach(cleanup);
@@ -11,7 +11,12 @@ afterEach(cleanup);
 function ProviderProbe() {
   const { locale, t } = useI18n();
   const { resolvedThemeMode, themeMode } = useAppTheme();
-  const themeModeLabel = t(`themeMode.${themeMode}`);
+  const themeModeKeyByValue = {
+    dark: "themeMode.dark",
+    light: "themeMode.light",
+    system: "themeMode.system"
+  } as const;
+  const themeModeLabel = t(themeModeKeyByValue[themeMode]);
 
   return (
     <div>

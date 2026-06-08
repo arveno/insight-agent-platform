@@ -1,27 +1,31 @@
 import type { ComponentType } from "react";
 
-import type { AppShellNavigationGroupViewModel, AppShellNavigationItemViewModel } from "../models/appShellViewModel";
-import type { StaticRouteKey } from "../models/staticViewModelTypes";
-import { appShellStaticViewModel } from "../fixtures/appShellStaticViewModel";
-import { AnalysisPage } from "../../pages/analysis/Page";
-import { DashboardPage } from "../../pages/dashboard/Page";
-import { DataKnowledgePage } from "../../pages/data-knowledge/Page";
-import { EvaluationPage } from "../../pages/evaluation/Page";
-import { FeedbackPage } from "../../pages/feedback/Page";
-import { GovernancePage } from "../../pages/governance/Page";
-import { MemoryPage } from "../../pages/memory/Page";
-import { MetricsPage } from "../../pages/metrics/Page";
-import { ModelToolsPage } from "../../pages/model-tools/Page";
-import { ObservabilityPage } from "../../pages/observability/Page";
-import { PlatformOperationsPage } from "../../pages/platform-operations/Page";
-import { ReportsPage } from "../../pages/reports/Page";
-import { SettingsPage } from "../../pages/settings/Page";
-import { WorkspacePage } from "../../pages/workspace/Page";
-import type { WebPageProps } from "../../pages/_shared/types";
+import { AnalysisPage } from "../../modules/analysis/Page";
+import { DashboardPage } from "../../modules/dashboard/Page";
+import { DataKnowledgePage } from "../../modules/data-knowledge/Page";
+import { EvaluationPage } from "../../modules/evaluation/Page";
+import { FeedbackPage } from "../../modules/feedback/Page";
+import { GovernancePage } from "../../modules/governance/Page";
+import { MemoryPage } from "../../modules/memory/Page";
+import { MetricsPage } from "../../modules/metrics/Page";
+import { ModelToolsPage } from "../../modules/model-tools/Page";
+import { ObservabilityPage } from "../../modules/observability/Page";
+import { PlatformOperationsPage } from "../../modules/platform-operations/Page";
+import { ReportsPage } from "../../modules/reports/Page";
+import { SettingsPage } from "../../modules/settings/Page";
+import { WorkspacePage } from "../../modules/workspace/Page";
 import { AppIcon } from "../../shared/icons/AppIcon";
-import type { I18nMessageKey } from "../../shared/i18n/messages";
 import type { IconName } from "../../shared/icons/iconTypes";
+import type { I18nMessageKey } from "../../shared/i18n/messages";
 import type { NavigationGroup, NavigationItem } from "../../shared/layout/shell/LeftNav";
+import { appShellStaticViewModel } from "../shell/fixtures/appShellStaticViewModel";
+import type {
+  AppShellNavigationGroupViewModel,
+  AppShellNavigationItemViewModel
+} from "../shell/models/appShellViewModel";
+import type { StaticRouteKey } from "../shell/models/staticViewModelTypes";
+
+import type { WebPageProps } from "./pageProps";
 
 type Translate = (key: I18nMessageKey) => string;
 

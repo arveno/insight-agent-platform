@@ -12,6 +12,7 @@ export function AppSection({
   columns = 2,
   eyebrow,
   title,
+  titleSuffix,
   useGrid = true
 }: AppSectionProps) {
   return (
@@ -28,9 +29,14 @@ export function AppSection({
                 {eyebrow}
               </Typography.Text>
             ) : null}
-            <Typography.Text style={{ ...shellTypographyStyles.sectionTitle, display: "block" }}>
-              {title}
-            </Typography.Text>
+            <Space align="center" size={8} wrap>
+              <Typography.Text
+                style={{ ...shellTypographyStyles.sectionTitle, display: "block" }}
+              >
+                {title}
+              </Typography.Text>
+              {titleSuffix}
+            </Space>
           </Space>
           {action ? <AppActionGroup actions={[action]} /> : null}
         </Flex>
