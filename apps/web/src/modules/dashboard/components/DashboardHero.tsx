@@ -1,12 +1,11 @@
 import { Flex, Select, Space, Typography, theme } from "antd";
 
-import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
-import { AppCardGrid } from "../../../shared/ui/cards/AppCardGrid";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { toRiskBadge } from "../../../shared/utils/viewModelState";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
@@ -99,14 +98,18 @@ export function DashboardHero({
             style={{ minWidth: 168 }}
             value={selectedTimeRangeKey}
           />
-          <AppActionGroup actions={heroActions} />
+          <Flex gap={12} wrap>
+            {heroActions.map((action) => (
+              <NavigationActionButton action={action} key={action.key} />
+            ))}
+          </Flex>
         </Flex>
       </Flex>
       <div style={{ marginTop: token.marginLG }}>
-        <AppCardGrid columns={4}>
+        <Flex gap={16} wrap>
           <HeroFact
             label={t("dashboard.hero.fact.metricLabel")}
-            value={`${viewModel.businessMetricCards.length} ${t(
+            value={`${viewModel.businessStatCards.length} ${t(
               "dashboard.hero.fact.metricCountSuffix"
             )}`}
           />
@@ -124,7 +127,7 @@ export function DashboardHero({
             label={t("dashboard.hero.fact.rightContextLabel")}
             value={t("dashboard.hero.fact.rightContextValue")}
           />
-        </AppCardGrid>
+        </Flex>
       </div>
     </section>
   );
@@ -139,7 +142,9 @@ function HeroFact({ label, value }: { label: string; value: string }) {
         background: token.colorFillAlter,
         border: `1px solid ${token.colorBorderSecondary}`,
         borderRadius: token.borderRadius,
+        flex: "1 1 220px",
         minHeight: token.controlHeightLG * 2,
+        minWidth: 0,
         padding: shellThemeTokens.panelPadding,
         width: "100%"
       }}

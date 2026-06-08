@@ -1,16 +1,26 @@
-import { WebPageScaffold } from "../../app/shell/WebPageScaffold";
-import type { WebPageProps } from "../../app/router/pageProps";
+import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import type { WebPageProps } from "../../shared/navigation/navigationTypes";
 
-import { usePlatformOperationsOverviewState } from "./hooks/usePlatformOperationsOverviewState";
+import {
+  usePlatformOperationsOverviewState,
+  type PlatformOperationsOverviewController
+} from "./hooks/usePlatformOperationsOverviewState";
 import { PlatformOperationsSections } from "./sections/PlatformOperationsSections";
 
-export function PlatformOperationsPage({ onNavigate, platformOperationsState }: WebPageProps) {
+export type PlatformOperationsPageProps = WebPageProps & {
+  platformOperationsState?: PlatformOperationsOverviewController;
+};
+
+export function PlatformOperationsPage({
+  onNavigate,
+  platformOperationsState
+}: PlatformOperationsPageProps) {
   const fallbackPlatformOperationsState = usePlatformOperationsOverviewState();
   const controller = platformOperationsState ?? fallbackPlatformOperationsState;
 
   return (
-    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
       <PlatformOperationsSections controller={controller} onNavigate={onNavigate} />
-    </WebPageScaffold>
+    </PageScaffold>
   );
 }

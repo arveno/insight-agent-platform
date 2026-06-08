@@ -1,6 +1,6 @@
 import { Space, Typography, theme } from "antd";
 
-import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
+import { SidePanel } from "../../../shared/layout/panels/SidePanel";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
@@ -21,7 +21,7 @@ export function ReportsInspectorPanel({
   const { token } = theme.useToken();
 
   return (
-    <RightAssistPanel
+    <SidePanel
       description={t("page.reports.rightAssist.description")}
       title={t("page.reports.rightAssist.title")}
     >
@@ -76,6 +76,6 @@ export function ReportsInspectorPanel({
           ))}
         </Space>
       </Space>
-    </RightAssistPanel>
+    </SidePanel>
   );
 }

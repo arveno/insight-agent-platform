@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { MetricsPage } from "./Page";
 
 afterEach(cleanup);
@@ -27,9 +27,9 @@ describe("MetricsPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <MetricsPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getByText("指标总览")).toBeTruthy();
@@ -54,9 +54,9 @@ describe("MetricsPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <MetricsPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "带上下文进入 Analysis" }));

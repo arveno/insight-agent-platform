@@ -1,4 +1,4 @@
-import { ObjectListNav } from "../../../app/shell/ObjectListNav";
+import { SelectableList } from "../../../shared/ui/lists/SelectableList";
 import type { MetricsOverviewController } from "../hooks/useMetricsOverviewState";
 
 export type MetricsListNavProps = {
@@ -8,7 +8,7 @@ export type MetricsListNavProps = {
 
 export function MetricsListNav({ controller, onBack }: MetricsListNavProps) {
   return (
-    <ObjectListNav
+    <SelectableList
       ariaLabel="Metrics navigation"
       emptyText="暂无匹配指标"
       items={controller.filteredMetrics.map((metric) => ({

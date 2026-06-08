@@ -1,4 +1,4 @@
-import { ObjectListNav } from "../../../app/shell/ObjectListNav";
+import { SelectableList } from "../../../shared/ui/lists/SelectableList";
 import type { ReportsReaderController } from "../hooks/useReportsReaderState";
 
 export type ReportsListNavProps = {
@@ -8,7 +8,7 @@ export type ReportsListNavProps = {
 
 export function ReportsListNav({ controller, onBack }: ReportsListNavProps) {
   return (
-    <ObjectListNav
+    <SelectableList
       ariaLabel="Reports navigation"
       emptyText="暂无匹配报告"
       items={controller.filteredReports.map((report) => ({

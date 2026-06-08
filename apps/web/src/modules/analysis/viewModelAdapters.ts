@@ -1,7 +1,7 @@
 import type {
   StaticEvidenceEntranceViewModel,
   StaticTraceEntranceViewModel
-} from "../../app/shell/models/staticViewModelTypes";
+} from "../../shared/view-model/staticViewModelTypes";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
 import type { Translate } from "../../shared/i18n/translateKey";
 import { translateKey } from "../../shared/i18n/translateKey";

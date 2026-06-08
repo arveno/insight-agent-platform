@@ -24,9 +24,9 @@ import { usePlatformOperationsOverviewState } from "../../modules/platform-opera
 import { ReportsListNav } from "../../modules/reports/navigation/ReportsListNav";
 import { ReportsInspectorPanel } from "../../modules/reports/panels/ReportsInspectorPanel";
 import { useReportsReaderState } from "../../modules/reports/hooks/useReportsReaderState";
+import type { StaticRouteKey } from "../../shared/navigation/navigationTypes";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
-import type { StaticRouteKey } from "./models/staticViewModelTypes";
 
 import { AppShellInspector } from "./AppShellInspector";
 import { AppShellLayout } from "./AppShellLayout";

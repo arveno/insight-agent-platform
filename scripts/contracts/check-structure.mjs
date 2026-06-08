@@ -17,7 +17,19 @@ const frontendModules = [
   "memory",
   "observability"
 ];
-const sharedLayers = ["ui", "layout", "theme", "graph", "charts", "i18n", "icons", "utils"];
+const sharedRootLayers = [
+  "ui",
+  "layout",
+  "navigation",
+  "theme",
+  "graph",
+  "charts",
+  "i18n",
+  "icons",
+  "utils",
+  "view-model",
+  "test"
+];
 const frontendRequiredPaths = [
   "apps/web/src/main.tsx",
   "apps/web/src/api",
@@ -25,7 +37,15 @@ const frontendRequiredPaths = [
   "apps/web/src/api/adapters",
   ...appSections.map((section) => `apps/web/src/app/${section}`),
   ...frontendModules.map((moduleDir) => `apps/web/src/modules/${moduleDir}`),
-  ...sharedLayers.map((layer) => `apps/web/src/shared/${layer}`)
+  ...sharedRootLayers.map((layer) => `apps/web/src/shared/${layer}`),
+  "apps/web/src/shared/ui/actions",
+  "apps/web/src/shared/ui/cards",
+  "apps/web/src/shared/ui/lists",
+  "apps/web/src/shared/ui/states",
+  "apps/web/src/shared/ui/status",
+  "apps/web/src/shared/layout/containers",
+  "apps/web/src/shared/layout/panels",
+  "apps/web/src/shared/layout/sections"
 ];
 const forbiddenFrontendPaths = [
   "apps/web/src/pages",
@@ -38,16 +58,33 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/stores",
   "apps/web/src/shared/types",
   "apps/web/src/shared/constants",
+  "apps/web/src/shared/ui/data",
+  "apps/web/src/shared/ui/feedback",
+  "apps/web/src/shared/ui/navigation",
   "apps/web/src/shared/ui/evidence",
   "apps/web/src/shared/ui/report",
   "apps/web/src/shared/ui/reports",
   "apps/web/src/shared/ui/trace",
   "apps/web/src/shared/ui/traces",
+  "apps/web/src/shared/ui/feedback-panel",
   "apps/web/src/shared/layout/shell",
-  "apps/web/src/shared/layout/sections/WebSection.tsx",
+  "apps/web/src/shared/layout/overlays",
+  "apps/web/src/shared/ui/actions/AppActionButton.tsx",
+  "apps/web/src/shared/ui/actions/AppActionGroup.tsx",
+  "apps/web/src/shared/ui/actions/ActionGroup.tsx",
+  "apps/web/src/shared/ui/actions/RouteActionGroup.tsx",
+  "apps/web/src/shared/ui/actions/ActionBar.tsx",
+  "apps/web/src/shared/ui/cards/AppBaseCard.tsx",
+  "apps/web/src/shared/ui/cards/AppCardGrid.tsx",
+  "apps/web/src/shared/ui/cards/MetricCard.tsx",
+  "apps/web/src/shared/ui/cards/MetricCardGrid.tsx",
+  "apps/web/src/shared/ui/data/AppPropertyList.tsx",
   "apps/web/src/shared/ui/data/SummaryTable.tsx",
   "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
-  "apps/web/src/shared/ui/cards/MetricCardGrid.tsx",
+  "apps/web/src/shared/layout/sections/AppSection.tsx",
+  "apps/web/src/shared/layout/sections/AppSectionStack.tsx",
+  "apps/web/src/shared/layout/sections/WebSection.tsx",
+  "apps/web/src/shared/ui/navigation/AppTabs.tsx",
   "apps/web/src/shared/layout/overlays/StaticTabsPanel.tsx",
   "apps/web/src/shared/layout/overlays/AppTabs.tsx"
 ];
@@ -69,8 +106,11 @@ const sharedLayoutForbiddenPrefixes = [
   ...businessBoundaryPrefixes,
   "Report",
   "Evidence",
-  "Trace"
+  "Trace",
+  "Feedback"
 ];
+const forbiddenSharedNamePrefixes = ["App", "Base", "Wrapper", "Common", "Shared", "Generic", "Universal"];
+const forbiddenSharedUiDirs = ["evidence", "report", "reports", "trace", "traces", "feedback-panel"];
 const contractSchemaPaths = [
   "packages/contracts/schemas/workspace/workspace.schema.json",
   "packages/contracts/schemas/workspace/user.schema.json",
@@ -276,80 +316,99 @@ const forbiddenPaths = forbiddenFrontendPaths.filter((path) => existsSync(path))
 const flatSchemaFiles = readdirSync("packages/contracts/schemas", { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith(".schema.json"))
   .map((entry) => `packages/contracts/schemas/${entry.name}`);
-const frontendIndexFiles = collectMatchingFiles("apps/web/src", (entry, absolutePath) =>
-  entry.isFile() &&
-  (absolutePath.endsWith("/index.ts") || absolutePath.endsWith("/index.tsx"))
+const frontendIndexFiles = collectMatchingEntries("apps/web/src", (entry, absolutePath) =>
+  entry.isFile() && (absolutePath.endsWith("/index.ts") || absolutePath.endsWith("/index.tsx"))
 );
-const appShellBusinessFiles = collectMatchingFiles("apps/web/src/app/shell", (entry) =>
+const appShellBusinessFiles = collectMatchingEntries("apps/web/src/app/shell", (entry) =>
   entry.isFile() && businessBoundaryPrefixes.some((prefix) => entry.name.startsWith(prefix))
 );
-const sharedLayoutBusinessFiles = collectMatchingFiles("apps/web/src/shared/layout", (entry) =>
+const sharedLayoutBusinessFiles = collectMatchingEntries("apps/web/src/shared/layout", (entry) =>
   entry.isFile() && sharedLayoutForbiddenPrefixes.some((prefix) => entry.name.startsWith(prefix))
 );
+const sharedUiLegacyNames = collectNamedEntryViolations("apps/web/src/shared/ui", forbiddenSharedNamePrefixes);
+const sharedLayoutLegacyNames = collectNamedEntryViolations("apps/web/src/shared/layout", forbiddenSharedNamePrefixes);
+const sharedNavigationLegacyNames = collectNamedEntryViolations(
+  "apps/web/src/shared/navigation",
+  forbiddenSharedNamePrefixes
+);
+const sharedUiBusinessDirs = collectMatchingEntries("apps/web/src/shared/ui", (entry, absolutePath) =>
+  entry.isDirectory() && forbiddenSharedUiDirs.includes(entry.name) && absolutePath !== "apps/web/src/shared/ui"
+);
 const sharedDependencyViolations = collectImportViolations("apps/web/src/shared", [
-  { pattern: /from\s+["'][^"']*app\//, message: "shared 不得依赖 app" },
-  { pattern: /from\s+["'][^"']*modules\//, message: "shared 不得依赖 modules" }
+  { pattern: /\bfrom\s+["'][^"']*app\//, message: "shared 不得依赖 app" },
+  { pattern: /\bfrom\s+["'][^"']*modules\//, message: "shared 不得依赖 modules" }
+]);
+const sharedNavigationDependencyViolations = collectImportViolations("apps/web/src/shared/navigation", [
+  { pattern: /\bfrom\s+["'][^"']*app\//, message: "shared/navigation 不得依赖 app" },
+  { pattern: /\bfrom\s+["'][^"']*modules\//, message: "shared/navigation 不得依赖 modules" }
+]);
+const moduleDependencyViolations = collectImportViolations("apps/web/src/modules", [
+  { pattern: /\bfrom\s+["'][^"']*app\//, message: "modules 不得依赖 app" }
 ]);
 
 if (missingPaths.length > 0) {
-  console.error("Missing required project structure:");
-  for (const path of missingPaths) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("Missing required project structure:", missingPaths);
 }
 
 if (flatSchemaFiles.length > 0) {
-  console.error("Schema 文件必须按业务域分组，不能平铺在 packages/contracts/schemas 根目录：");
-  for (const path of flatSchemaFiles) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("Schema 文件必须按业务域分组，不能平铺在 packages/contracts/schemas 根目录：", flatSchemaFiles);
 }
 
 if (forbiddenPaths.length > 0) {
-  console.error("Detected forbidden frontend legacy paths:");
-  for (const path of forbiddenPaths) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("Detected forbidden frontend legacy paths:", forbiddenPaths);
 }
 
 if (frontendIndexFiles.length > 0) {
-  console.error("apps/web/src 不允许存在 index.ts / index.tsx：");
-  for (const path of frontendIndexFiles) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("apps/web/src 不允许存在 index.ts / index.tsx：", frontendIndexFiles);
 }
 
 if (appShellBusinessFiles.length > 0) {
-  console.error("apps/web/src/app/shell 只允许保留通用 App Shell 组件，检测到业务前缀文件：");
-  for (const path of appShellBusinessFiles) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("apps/web/src/app/shell 只允许保留通用 App Shell 组件，检测到业务前缀文件：", appShellBusinessFiles);
 }
 
 if (sharedLayoutBusinessFiles.length > 0) {
-  console.error("apps/web/src/shared/layout 只允许无业务语义布局 primitive，检测到业务命名文件：");
-  for (const path of sharedLayoutBusinessFiles) {
-    console.error(`- ${path}`);
-  }
-  process.exit(1);
+  fail("apps/web/src/shared/layout 只允许无业务语义布局 primitive，检测到业务命名文件：", sharedLayoutBusinessFiles);
+}
+
+if (sharedUiLegacyNames.length > 0) {
+  fail("apps/web/src/shared/ui 检测到禁止的旧式命名前缀：", sharedUiLegacyNames);
+}
+
+if (sharedLayoutLegacyNames.length > 0) {
+  fail("apps/web/src/shared/layout 检测到禁止的旧式命名前缀：", sharedLayoutLegacyNames);
+}
+
+if (sharedNavigationLegacyNames.length > 0) {
+  fail("apps/web/src/shared/navigation 检测到禁止的旧式命名前缀：", sharedNavigationLegacyNames);
+}
+
+if (sharedUiBusinessDirs.length > 0) {
+  fail("apps/web/src/shared/ui 不允许出现业务目录：", sharedUiBusinessDirs);
 }
 
 if (sharedDependencyViolations.length > 0) {
-  console.error("apps/web/src/shared 检测到越界依赖：");
-  for (const violation of sharedDependencyViolations) {
-    console.error(`- ${violation}`);
-  }
-  process.exit(1);
+  fail("apps/web/src/shared 检测到越界依赖：", sharedDependencyViolations);
+}
+
+if (sharedNavigationDependencyViolations.length > 0) {
+  fail("apps/web/src/shared/navigation 检测到越界依赖：", sharedNavigationDependencyViolations);
+}
+
+if (moduleDependencyViolations.length > 0) {
+  fail("apps/web/src/modules 检测到越界依赖：", moduleDependencyViolations);
 }
 
 console.log("Structure guard passed.");
 
-function collectMatchingFiles(rootDir, predicate) {
+function fail(title, items) {
+  console.error(title);
+  for (const item of items) {
+    console.error(`- ${item}`);
+  }
+  process.exit(1);
+}
+
+function collectMatchingEntries(rootDir, predicate) {
   if (!existsSync(rootDir)) {
     return [];
   }
@@ -375,8 +434,18 @@ function collectDirectoryEntries(currentDir, predicate) {
   return matches;
 }
 
+function collectNamedEntryViolations(rootDir, prefixes) {
+  return collectMatchingEntries(rootDir, (entry, absolutePath) => {
+    if (absolutePath === rootDir) {
+      return false;
+    }
+
+    return prefixes.some((prefix) => entry.name.startsWith(prefix));
+  });
+}
+
 function collectImportViolations(rootDir, rules) {
-  const files = collectMatchingFiles(rootDir, (entry) =>
+  const files = collectMatchingEntries(rootDir, (entry) =>
     entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
   );
   const violations = [];

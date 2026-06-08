@@ -1,16 +1,19 @@
-import { List, Space, Typography } from "antd";
+import { Flex, List, Space, Typography } from "antd";
 
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
+import {
+  createNavigationActionsFromViewModel
+} from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import { ActionBar } from "../../../app/router/RouteActionBar";
-import type { WebPageProps } from "../../../app/router/pageProps";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
 
-import { SourceEvidenceList } from "../../analysis/SourceEvidenceList";
 import { FeedbackPanel } from "../../feedback/FeedbackPanel";
 import { DecisionCard } from "../DecisionCard";
 import type { ReportsViewModel } from "../models/reportsViewModel";
@@ -21,10 +24,15 @@ export type ReportsSectionsProps = WebPageProps & {
 
 export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps) {
   const { t } = useI18n();
+  const followUpActions = createNavigationActionsFromViewModel(
+    [viewModel.followUpAction],
+    onNavigate,
+    t
+  );
 
   return (
     <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>
-      <AppBaseCard
+      <ContentCard
         description={viewModel.selectedReport.summary}
         eyebrow={viewModel.selectedReport.sourceContext}
         meta={
@@ -44,7 +52,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         title={viewModel.selectedReport.title}
       />
 
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[0])} useGrid={false}>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           {viewModel.reportSections.map((section) => (
             <ReportSection
@@ -56,21 +64,31 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             />
           ))}
         </Space>
-      </AppSection>
+      </ContentSection>
 
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[1])} useGrid={false}>
-        <SourceEvidenceList
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
+        <TitledList
           items={viewModel.sourceEvidence.map((evidence) => ({
-            confidenceText: evidence.confidenceText,
             key: evidence.sourceEvidenceId,
-            sourceTypeLabel: evidence.sourceTypeLabel,
+            meta: (
+              <Space wrap>
+                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                  {evidence.sourceTypeLabel}
+                </Typography.Text>
+                {evidence.confidenceText ? (
+                  <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+                    {evidence.confidenceText}
+                  </Typography.Text>
+                ) : null}
+              </Space>
+            ),
             summary: evidence.summary,
             title: evidence.title
           }))}
         />
-      </AppSection>
+      </ContentSection>
 
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[2])} useGrid={false}>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[2])}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           <Typography.Text style={shellTypographyStyles.cardTitle}>
             {t("reports.reader.decisions.title")}
@@ -86,7 +104,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             />
           ))}
 
-          <AppBaseCard
+          <ContentCard
             description={t("reports.reader.actionSuggestions.description")}
             title={t("reports.reader.actionSuggestions.title")}
           >
@@ -94,7 +112,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
               dataSource={viewModel.actionSuggestions}
               renderItem={(suggestion) => <List.Item>{suggestion.summary}</List.Item>}
             />
-          </AppBaseCard>
+          </ContentCard>
 
           <FeedbackPanel
             helperText={viewModel.feedbackEntrance.types.join(" / ")}
@@ -108,15 +126,19 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             value="useful"
           />
 
-          <AppBaseCard
+          <ContentCard
             description={t("reports.reader.followUp.description")}
             footerActions={
-              <ActionBar actions={[viewModel.followUpAction]} onNavigate={onNavigate} t={t} />
+              <Flex gap={12} wrap>
+                {followUpActions.map((action) => (
+                  <NavigationActionButton action={action} key={action.key} />
+                ))}
+              </Flex>
             }
             title={t("reports.reader.followUp.title")}
           />
         </Space>
-      </AppSection>
+      </ContentSection>
     </Space>
   );
 }

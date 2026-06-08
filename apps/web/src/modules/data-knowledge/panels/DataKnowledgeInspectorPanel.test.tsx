@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../../app/providers/AppProviders";
+import { TestProviders } from "../../../shared/test/TestProviders";
 import { DataKnowledgeInspectorPanel } from "./DataKnowledgeInspectorPanel";
 import type { DataKnowledgeOverviewController } from "../hooks/useDataKnowledgeOverviewState";
 import { createDataKnowledgeViewModel } from "../mappers/createDataKnowledgeViewModel";
@@ -48,9 +48,9 @@ function createController(): DataKnowledgeOverviewController {
 describe("DataKnowledgeInspectorPanel", () => {
   it("keeps workspace overview, readonly boundary and actions in the inspector", () => {
     render(
-      <AppProviders>
+      <TestProviders>
         <DataKnowledgeInspectorPanel controller={createController()} />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getByText("Workspace Overview")).toBeTruthy();

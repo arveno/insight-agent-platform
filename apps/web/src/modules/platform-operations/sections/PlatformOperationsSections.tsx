@@ -1,24 +1,26 @@
-import { Button, Space, Typography } from "antd";
+import { Button, Flex, Space, Typography } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
-import type { WebPageProps } from "../../../app/router/pageProps";
-import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
-import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey } from "../../../shared/i18n/translateKey";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import type { PlatformOperationsOverviewController } from "../hooks/usePlatformOperationsOverviewState";
 import type { PlatformOperationListItemViewModel } from "../models/platformOperationsViewModel";
 
 export type PlatformOperationsSectionsProps = WebPageProps & {
   controller: PlatformOperationsOverviewController;
 };
+
+const cardItemStyle = { flex: "1 1 300px", minWidth: 0 } as const;
 
 function buildTagSlot(
   t: ReturnType<typeof useI18n>["t"],
@@ -94,7 +96,7 @@ function OperationListCard({
   title: string;
 }) {
   return (
-    <AppBaseCard description={description} title={title}>
+    <ContentCard description={description} style={cardItemStyle} title={title}>
       <Space direction="vertical" size={10} style={{ width: "100%" }}>
         {items.map((item) => {
           const isSelected = selectedOperationKey === item.key;
@@ -123,7 +125,7 @@ function OperationListCard({
           );
         })}
       </Space>
-    </AppBaseCard>
+    </ContentCard>
   );
 }
 
@@ -135,8 +137,9 @@ function SelectedOperationCard({
   const selectedOperation = controller.viewModel.selectedOperation;
 
   return (
-    <AppBaseCard
+    <ContentCard
       description={selectedOperation.description}
+      style={cardItemStyle}
       title={`当前选中对象详情：${selectedOperation.title}`}
     >
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -160,7 +163,7 @@ function SelectedOperationCard({
           </Typography.Text>
         ))}
       </Space>
-    </AppBaseCard>
+    </ContentCard>
   );
 }
 
@@ -174,11 +177,16 @@ function StatusSummaryCard({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
-    <AppBaseCard description={description} tagSlot={buildTagSlot(t, item)} title={item.title}>
+    <ContentCard
+      description={description}
+      style={{ flex: "1 1 240px", minWidth: 0 }}
+      tagSlot={buildTagSlot(t, item)}
+      title={item.title}
+    >
       <Typography.Text style={{ display: "block", fontWeight: 600 }}>
         {item.category}
       </Typography.Text>
-    </AppBaseCard>
+    </ContentCard>
   );
 }
 
@@ -200,102 +208,113 @@ export function PlatformOperationsSections({
   );
 
   return (
-    <AppSectionStack>
-      <AppSection
-        columns={3}
-        title={translateKey(t, sectionByKey["platform-operations-overview"].titleKey)}
-      >
-        {viewModel.summaryCards.map((item) => (
-          <AppBaseCard
-            description={item.description}
-            key={item.key}
-            tagSlot={buildTagSlot(t, item)}
-            title={item.label}
+    <SectionStack>
+      <ContentSection title={translateKey(t, sectionByKey["platform-operations-overview"].titleKey)}>
+        <Flex gap={16} wrap>
+          {viewModel.summaryCards.map((item) => (
+            <ContentCard
+              description={item.description}
+              key={item.key}
+              style={cardItemStyle}
+              tagSlot={buildTagSlot(t, item)}
+              title={item.label}
+            >
+              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+                {item.value}
+              </Typography.Text>
+            </ContentCard>
+          ))}
+          <ContentCard description={viewModel.workspaceNotice} style={cardItemStyle} title="Workspace 绑定">
+            <Space direction="vertical" size={8} style={{ width: "100%" }}>
+              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+                当前展示的是当前 Workspace 的平台与数据链路健康状态。
+              </Typography.Text>
+              <Typography.Text>
+                当前 Workspace：{viewModel.workspaceBinding.workspaceName}
+              </Typography.Text>
+              <Typography.Text>workspaceId: {viewModel.workspaceBinding.workspaceId}</Typography.Text>
+            </Space>
+          </ContentCard>
+          <ContentCard
+            description="当前页面只提供只读健康摘要，不开放任何执行入口。"
+            style={cardItemStyle}
+            title="只读边界"
           >
             <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              {item.value}
+              {viewModel.readonlyNotice}
             </Typography.Text>
-          </AppBaseCard>
-        ))}
-        <AppBaseCard description={viewModel.workspaceNotice} title="Workspace 绑定">
-          <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              当前展示的是当前 Workspace 的平台与数据链路健康状态。
-            </Typography.Text>
-            <Typography.Text>
-              当前 Workspace：{viewModel.workspaceBinding.workspaceName}
-            </Typography.Text>
-            <Typography.Text>workspaceId: {viewModel.workspaceBinding.workspaceId}</Typography.Text>
-          </Space>
-        </AppBaseCard>
-        <AppBaseCard description="当前页面只提供只读健康摘要，不开放任何执行入口。" title="只读边界">
-          <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-            {viewModel.readonlyNotice}
-          </Typography.Text>
-        </AppBaseCard>
-      </AppSection>
+          </ContentCard>
+        </Flex>
+      </ContentSection>
 
-      <AppSection
-        columns={3}
+      <ContentSection
         title={translateKey(t, sectionByKey["platform-operations-jobs-data-quality"].titleKey)}
       >
-        <OperationListCard
-          description="当前 Workspace 的 Job 列表只展示任务状态，不执行真实 Job。"
-          items={jobItems}
-          onSelectOperation={controller.onSelectOperation}
-          selectedOperationKey={controller.selectedOperationKey}
-          t={t}
-          title="Job 列表"
-        />
-        <OperationListCard
-          description="当前 Workspace 的数据质量检查只展示摘要，不执行真实检查。"
-          items={dataQualityItems}
-          onSelectOperation={controller.onSelectOperation}
-          selectedOperationKey={controller.selectedOperationKey}
-          t={t}
-          title="DataQualityCheck 列表"
-        />
-        <SelectedOperationCard controller={controller} />
-      </AppSection>
-
-      <AppSection
-        columns={4}
-        title={translateKey(t, sectionByKey["platform-operations-status"].titleKey)}
-      >
-        {platformStatusItems.map((item) => (
-          <StatusSummaryCard
-            description="只读展示当前 Workspace 的平台状态摘要，不提供执行入口。"
-            item={item}
-            key={item.key}
+        <Flex gap={16} wrap>
+          <OperationListCard
+            description="当前 Workspace 的 Job 列表只展示任务状态，不执行真实 Job。"
+            items={jobItems}
+            onSelectOperation={controller.onSelectOperation}
+            selectedOperationKey={controller.selectedOperationKey}
             t={t}
+            title="Job 列表"
           />
-        ))}
-      </AppSection>
+          <OperationListCard
+            description="当前 Workspace 的数据质量检查只展示摘要，不执行真实检查。"
+            items={dataQualityItems}
+            onSelectOperation={controller.onSelectOperation}
+            selectedOperationKey={controller.selectedOperationKey}
+            t={t}
+            title="DataQualityCheck 列表"
+          />
+          <SelectedOperationCard controller={controller} />
+        </Flex>
+      </ContentSection>
 
-      <AppSection
-        columns={2}
+      <ContentSection title={translateKey(t, sectionByKey["platform-operations-status"].titleKey)}>
+        <Flex gap={16} wrap>
+          {platformStatusItems.map((item) => (
+            <StatusSummaryCard
+              description="只读展示当前 Workspace 的平台状态摘要，不提供执行入口。"
+              item={item}
+              key={item.key}
+              t={t}
+            />
+          ))}
+        </Flex>
+      </ContentSection>
+
+      <ContentSection
         title={translateKey(t, sectionByKey["platform-operations-risk-navigation"].titleKey)}
       >
-        <AppBaseCard
-          description="Platform Operations 只承接当前 Workspace 的平台与数据链路健康，不扩展为全租户或全局 SRE 运维后台。"
-          title="风险入口"
-        >
-          <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或 Analysis。
-            </Typography.Text>
-            <Typography.Text type="secondary">
-              当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke 或手工改库。
-            </Typography.Text>
-          </Space>
-        </AppBaseCard>
-        <AppBaseCard
-          description="这些入口只触发页面导航或 Analysis 新聊天草稿态入口，不创建真实 conversation、run 或 Agent 执行。"
-          title="跳转入口"
-        >
-          <AppActionGroup actions={buildNavigationActions(onNavigate, t)} />
-        </AppBaseCard>
-      </AppSection>
-    </AppSectionStack>
+        <Flex gap={16} wrap>
+          <ContentCard
+            description="Platform Operations 只承接当前 Workspace 的平台与数据链路健康，不扩展为全租户或全局 SRE 运维后台。"
+            style={cardItemStyle}
+            title="风险入口"
+          >
+            <Space direction="vertical" size={8} style={{ width: "100%" }}>
+              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+                先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或 Analysis。
+              </Typography.Text>
+              <Typography.Text type="secondary">
+                当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke 或手工改库。
+              </Typography.Text>
+            </Space>
+          </ContentCard>
+          <ContentCard
+            description="这些入口只触发页面导航或 Analysis 新聊天草稿态入口，不创建真实 conversation、run 或 Agent 执行。"
+            style={cardItemStyle}
+            title="跳转入口"
+          >
+            <Flex gap={12} wrap>
+              {buildNavigationActions(onNavigate, t).map((action) => (
+                <NavigationActionButton action={action} key={action.key} />
+              ))}
+            </Flex>
+          </ContentCard>
+        </Flex>
+      </ContentSection>
+    </SectionStack>
   );
 }

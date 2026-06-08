@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { DataKnowledgePage } from "./Page";
 import type { DataKnowledgeOverviewController } from "./hooks/useDataKnowledgeOverviewState";
 import { createDataKnowledgeViewModel } from "./mappers/createDataKnowledgeViewModel";
@@ -119,9 +119,9 @@ describe("DataKnowledgePage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <DataKnowledgePage dataKnowledgeState={createController()} onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.queryByText("Data & Knowledge 总览")).toBeNull();
@@ -137,9 +137,9 @@ describe("DataKnowledgePage", () => {
 
   it("updates node detail when clicking a field node in the data source relationship graph", () => {
     render(
-      <AppProviders>
+      <TestProviders>
         <InteractiveDataKnowledgePage />
-      </AppProviders>
+      </TestProviders>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "recognized_revenue" }));
@@ -151,9 +151,9 @@ describe("DataKnowledgePage", () => {
 
   it("renders the knowledge document graph with chunk groups instead of table and field structure", () => {
     render(
-      <AppProviders>
+      <TestProviders>
         <InteractiveDataKnowledgePage selectedAssetKey="knowledge_document:knowledge-document-finance-kb" />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getAllByText("Finance Knowledge Base").length).toBeGreaterThan(0);

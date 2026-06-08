@@ -1,19 +1,18 @@
-import { Badge, Space, Typography } from "antd";
+import { Badge, Flex, Space, Tabs, Typography } from "antd";
 
 import type {
-  StaticMetricCardViewModel,
+  StaticStatCardViewModel,
   StaticSummaryItemViewModel
-} from "../../../app/shell/models/staticViewModelTypes";
-import { ActionBar } from "../../../app/router/RouteActionBar";
-import type { WebPageProps } from "../../../app/router/pageProps";
+} from "../../../shared/view-model/staticViewModelTypes";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
-import { AppCardGrid } from "../../../shared/ui/cards/AppCardGrid";
-import { MetricCard } from "../../../shared/ui/cards/MetricCard";
-import { AppPropertyList } from "../../../shared/ui/data/AppPropertyList";
-import { AppTabs } from "../../../shared/ui/navigation/AppTabs";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { StatCard } from "../../../shared/ui/cards/StatCard";
+import { PropertyList } from "../../../shared/ui/lists/PropertyList";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { translateKey } from "../../../shared/i18n/translateKey";
@@ -26,18 +25,20 @@ export type ModelToolsSectionsProps = WebPageProps & {
   viewModel: ModelToolsViewModel;
 };
 
+const cardItemStyle = { flex: "1 1 280px", minWidth: 0 } as const;
+
 function renderSummaryCards(
   items: StaticSummaryItemViewModel[],
   t: ReturnType<typeof useI18n>["t"]
 ) {
   return (
-    <AppCardGrid columns={3}>
+    <Flex gap={16} wrap>
       {items.map((item) => {
         const status = toStatusTag(t, item.status);
         const risk = toRiskBadge(t, item.risk);
 
         return (
-          <AppBaseCard
+          <ContentCard
             description={item.description}
             key={item.key}
             meta={
@@ -55,24 +56,25 @@ function renderSummaryCards(
                 </Space>
               ) : undefined
             }
+            style={cardItemStyle}
             title={item.label}
           >
             <Typography.Text style={shellTypographyStyles.cardValue}>{item.value}</Typography.Text>
-          </AppBaseCard>
+          </ContentCard>
         );
       })}
-    </AppCardGrid>
+    </Flex>
   );
 }
 
-function renderMetricCards(
-  items: StaticMetricCardViewModel[],
+function renderStatCards(
+  items: StaticStatCardViewModel[],
   t: ReturnType<typeof useI18n>["t"]
 ) {
   return (
-    <AppCardGrid columns={3}>
+    <Flex gap={16} wrap>
       {items.map((metric) => (
-        <MetricCard
+        <StatCard
           evidenceSummary={
             <Space wrap>
               {metric.trendText ? (
@@ -85,37 +87,58 @@ function renderMetricCards(
           }
           key={metric.key}
           risk={toRiskBadge(t, metric.risk)}
+          style={cardItemStyle}
           status={toStatusTag(t, metric.status)}
           title={metric.label}
           value={metric.valueText}
         />
       ))}
-    </AppCardGrid>
+    </Flex>
+  );
+}
+
+function renderNavigationActions(
+  actions: ModelToolsViewModel["permissionEntrances"],
+  onNavigate: ModelToolsSectionsProps["onNavigate"],
+  t: ReturnType<typeof useI18n>["t"]
+) {
+  const navigationActions = createNavigationActionsFromViewModel(actions, onNavigate, t);
+
+  if (navigationActions.length === 0) {
+    return null;
+  }
+
+  return (
+    <Flex gap={12} wrap>
+      {navigationActions.map((action) => (
+        <NavigationActionButton action={action} key={action.key} />
+      ))}
+    </Flex>
   );
 }
 
 export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSectionsProps) {
   const { t } = useI18n();
   const tabContentByKey = {
-    modelConfigs: <AppPropertyList items={[viewModel.selectedModelConfig, ...viewModel.modelConfigs]} />,
+    modelConfigs: <PropertyList items={[viewModel.selectedModelConfig, ...viewModel.modelConfigs]} />,
     promptVersions: (
-      <AppPropertyList items={[viewModel.selectedPromptVersion, ...viewModel.promptVersions]} />
+      <PropertyList items={[viewModel.selectedPromptVersion, ...viewModel.promptVersions]} />
     ),
     ragStrategies: (
-      <AppPropertyList items={[viewModel.selectedRagStrategy, ...viewModel.ragStrategies]} />
+      <PropertyList items={[viewModel.selectedRagStrategy, ...viewModel.ragStrategies]} />
     ),
     routingPolicies: (
-      <AppPropertyList items={[viewModel.selectedRoutingPolicy, ...viewModel.routingPolicies]} />
+      <PropertyList items={[viewModel.selectedRoutingPolicy, ...viewModel.routingPolicies]} />
     ),
     toolDefinitions: (
-      <AppPropertyList items={[viewModel.selectedToolDefinition, ...viewModel.toolDefinitions]} />
+      <PropertyList items={[viewModel.selectedToolDefinition, ...viewModel.toolDefinitions]} />
     )
   } as const;
 
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[0])} useGrid={false}>
-        <AppTabs
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
+        <Tabs
           activeKey={viewModel.selectedTab}
           items={viewModel.modelToolsTabs.map((tab) => ({
             children: tabContentByKey[tab.key as keyof typeof tabContentByKey],
@@ -128,24 +151,24 @@ export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSections
             )
           }))}
         />
-      </AppSection>
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[1])} useGrid={false}>
+      </ContentSection>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
           {renderSummaryCards([viewModel.configDetail, ...viewModel.permissionSummaryEntries], t)}
-          {renderMetricCards(viewModel.metricCards, t)}
+          {renderStatCards(viewModel.metricCards, t)}
         </Space>
-      </AppSection>
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[2])} useGrid={false}>
-        <ActionBar
-          actions={[
+      </ContentSection>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[2])}>
+        {renderNavigationActions(
+          [
             ...viewModel.permissionEntrances,
             ...viewModel.relatedDataKnowledgeEntrances,
             ...viewModel.runtimeObservationEntrances
-          ]}
-          onNavigate={onNavigate}
-          t={t}
-        />
-      </AppSection>
+          ],
+          onNavigate,
+          t
+        )}
+      </ContentSection>
     </Space>
   );
 }

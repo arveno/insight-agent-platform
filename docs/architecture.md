@@ -320,13 +320,16 @@ UI 不得直接消费 raw API response。
 ### 前端职责边界
 
 - `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
-- `app/router` 只负责路由表、页面 props 和 route-aware action helper；`shared/ui` 不知道 route。
-- `app/shell` 只负责 AppShell、HeaderBar、LeftNav、RightAssistPanel、ObjectListNav、GroupedObjectListNav、WebPageScaffold 等通用应用外壳；业务模块自己的 nav / inspector / drawer / panel 必须回到 `modules/<domain>`。
+- `app/router` 只负责 route key 到 Page 的映射和路由表装配，不承接 shared action primitive。
+- `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
-- `shared/layout` 只放无业务语义的页面结构 primitive；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
-- `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
-- `shared` 不得依赖 `app` 或 `modules`，`modules` 可以依赖 `shared` 与 `api`。
+- `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。
+- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装，例如 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge`；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
+- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型和 fixture 辅助，不承接业务组件。
+- `shared/test` 只放测试期共用 provider / helper，不承接运行时代码。
+- `shared` 不得依赖 `app` 或 `modules`；`modules` 可以依赖 `shared` 与 `api`，但不得依赖 `app`。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
 - `modules/data-knowledge` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
 - 业务页面和 module 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
@@ -343,9 +346,13 @@ UI 不得直接消费 raw API response。
 - Ant Design first。能直接使用 Ant Design 的基础能力，就优先使用 Ant Design。
 - Thin wrapper second。项目公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 Ant 已经提供的 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
 - Custom component last。只有 Ant Design 无法满足且长期复用价值明确时，才允许新增自定义组件。
-- Layout 不绑定具体内容组件。不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid` 这类和内容类型强绑定的布局组件；布局优先使用 Ant `Flex / Space / Row / Col / Layout`，如需薄封装也必须保持无业务语义。
-- Card 体系单独治理。`AppBaseCard / MetricCard / 其它 card variant` 的命名和 layering 后续统一治理；当前阶段不得新增重复 card 外壳。
-- shared primitive 只保留 `AppActionButton / AppActionGroup / AppBaseCard / AppCardGrid / AppPropertyList / EmptyState / ErrorState / LoadingState / StatusTag / RiskBadge` 这类无业务语义能力。
+- 不 mirror Ant Design。禁止创建 `AppButton / AppTabs / AppTable / AppCheckbox / AppRadio / AppDrawer` 这类只是改名的 Ant Design 镜像组件。
+- Layout 不绑定具体内容组件。不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar` 这类和内容类型或按钮集合强绑定的布局组件；布局优先使用 Ant `Flex / Space / Row / Col / Layout`，如需薄封装也必须保持无业务语义。
+- 行为增强组合基础组件，不重新实现视觉。导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
+- 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI primitive 内。
+- 命名按功能职责，不按 `App / Common / Shared / Base / Wrapper / Generic / Universal` 命名；装配层 `AppShell / AppProviders / App.tsx` 例外。
+- shared primitive 只保留 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge / NavigationActionButton` 这类无业务语义能力。
+- `AppActionButton / AppActionGroup / AppBaseCard / AppCardGrid / AppPropertyList / AppSection / AppSectionStack / AppTabs / StaticTabsPanel / WebSection / SummaryTable / SummaryCardGrid / MetricCardGrid` 属于禁止回流旧名。
 - `TraceTimeline / SourceEvidenceList / ReportSection / DecisionCard / FeedbackPanel` 等业务对象展示组件必须留在 canonical module，而不是回流到 `shared/ui`。
 
 ## 7. 后端架构

@@ -1,18 +1,18 @@
-import { Badge, Space, Typography } from "antd";
+import { Badge, Flex, Space, Typography } from "antd";
 
 import type {
-  StaticMetricCardViewModel,
+  StaticStatCardViewModel,
   StaticSummaryItemViewModel
-} from "../../../app/shell/models/staticViewModelTypes";
-import { ActionBar } from "../../../app/router/RouteActionBar";
-import type { WebPageProps } from "../../../app/router/pageProps";
+} from "../../../shared/view-model/staticViewModelTypes";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
-import { AppCardGrid } from "../../../shared/ui/cards/AppCardGrid";
-import { MetricCard } from "../../../shared/ui/cards/MetricCard";
-import { AppPropertyList } from "../../../shared/ui/data/AppPropertyList";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { StatCard } from "../../../shared/ui/cards/StatCard";
+import { PropertyList } from "../../../shared/ui/lists/PropertyList";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
@@ -24,18 +24,20 @@ export type GovernanceSectionsProps = WebPageProps & {
   viewModel: GovernanceViewModel;
 };
 
+const cardItemStyle = { flex: "1 1 280px", minWidth: 0 } as const;
+
 function renderSummaryCards(
   items: StaticSummaryItemViewModel[],
   t: ReturnType<typeof useI18n>["t"]
 ) {
   return (
-    <AppCardGrid columns={3}>
+    <Flex gap={16} wrap>
       {items.map((item) => {
         const status = toStatusTag(t, item.status);
         const risk = toRiskBadge(t, item.risk);
 
         return (
-          <AppBaseCard
+          <ContentCard
             description={item.description}
             key={item.key}
             meta={
@@ -53,24 +55,25 @@ function renderSummaryCards(
                 </Space>
               ) : undefined
             }
+            style={cardItemStyle}
             title={item.label}
           >
             <Typography.Text style={shellTypographyStyles.cardValue}>{item.value}</Typography.Text>
-          </AppBaseCard>
+          </ContentCard>
         );
       })}
-    </AppCardGrid>
+    </Flex>
   );
 }
 
-function renderMetricCards(
-  items: StaticMetricCardViewModel[],
+function renderStatCards(
+  items: StaticStatCardViewModel[],
   t: ReturnType<typeof useI18n>["t"]
 ) {
   return (
-    <AppCardGrid columns={3}>
+    <Flex gap={16} wrap>
       {items.map((metric) => (
-        <MetricCard
+        <StatCard
           evidenceSummary={
             <Space wrap>
               {metric.trendText ? (
@@ -83,12 +86,33 @@ function renderMetricCards(
           }
           key={metric.key}
           risk={toRiskBadge(t, metric.risk)}
+          style={cardItemStyle}
           status={toStatusTag(t, metric.status)}
           title={metric.label}
           value={metric.valueText}
         />
       ))}
-    </AppCardGrid>
+    </Flex>
+  );
+}
+
+function renderNavigationActions(
+  actions: GovernanceViewModel["secondaryActions"],
+  onNavigate: GovernanceSectionsProps["onNavigate"],
+  t: ReturnType<typeof useI18n>["t"]
+) {
+  const navigationActions = createNavigationActionsFromViewModel(actions, onNavigate, t);
+
+  if (navigationActions.length === 0) {
+    return null;
+  }
+
+  return (
+    <Flex gap={12} wrap>
+      {navigationActions.map((action) => (
+        <NavigationActionButton action={action} key={action.key} />
+      ))}
+    </Flex>
   );
 }
 
@@ -97,13 +121,13 @@ export function GovernanceSections({ onNavigate, viewModel }: GovernanceSections
 
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[0])} useGrid={false}>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
           {renderSummaryCards(
             [...viewModel.governanceOverview, viewModel.governancePolicyDetail],
             t
           )}
-          <AppPropertyList
+          <PropertyList
             items={[
               viewModel.selectedPermissionPolicy,
               ...viewModel.permissionPolicies,
@@ -112,11 +136,11 @@ export function GovernanceSections({ onNavigate, viewModel }: GovernanceSections
             ]}
           />
         </Space>
-      </AppSection>
-      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[1])} useGrid={false}>
+      </ContentSection>
+      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderMetricCards(viewModel.metricCards, t)}
-          <AppPropertyList
+          {renderStatCards(viewModel.metricCards, t)}
+          <PropertyList
             items={[
               ...viewModel.sqlGuardSummary,
               viewModel.selectedAuditLog,
@@ -125,9 +149,9 @@ export function GovernanceSections({ onNavigate, viewModel }: GovernanceSections
               ...viewModel.riskControls
             ]}
           />
-          <ActionBar actions={viewModel.secondaryActions} onNavigate={onNavigate} t={t} />
+          {renderNavigationActions(viewModel.secondaryActions, onNavigate, t)}
         </Space>
-      </AppSection>
+      </ContentSection>
     </Space>
   );
 }

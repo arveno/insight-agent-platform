@@ -94,11 +94,11 @@ Code
 - 模块内导航覆盖 LeftNav 区域，并提供返回主导航能力。
 - 详情型页面不应默认作为主业务一级入口。
 - 切换 `Workspace` 时，导航可以保留 route，但模块内导航、Inspector 和选中对象必须回到当前 `Workspace` 作用域，不得继续复用上一 `Workspace` 的对象状态。
-- `Metrics` 的 LeftNav 二级列表承接当前 `Workspace` 的 Metric list，复用 `ObjectListNav / ShellNavListItem`；列表项只显示指标名，不展示当前值、趋势、证据数、按钮或大段描述。
+- `Metrics` 的 LeftNav 二级列表承接当前 `Workspace` 的 Metric list，复用 shared list primitive；列表项只显示指标名，不展示当前值、趋势、证据数、按钮或大段描述。
 - `Data & Knowledge` 的 LeftNav 二级列表承接当前 `Workspace` 的 grouped asset list，复用 grouped object list；分组固定为 `数据资产 Data` 和 `知识文档 Docs`。
 - `Data & Knowledge` 的分组标题不可选，不代表 route，不代表新的业务对象；列表项只负责选择当前资产，不承载字段、证据、质量摘要或动作按钮。
 - `Data & Knowledge` 一级入口需要和 `Analysis / Reports / Metrics` 等存在二级列表的入口保持一致的可进入提示。
-- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav / RightAssistPanel / ObjectListNav / GroupedObjectListNav / WebPageScaffold`。
+- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector`。
 - `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / ReportsListNav / ReportsInspectorPanel / DataKnowledgeListNav / MetricsListNav` 这类模块专属 nav / inspector / drawer / panel 必须放回对应 `modules/<domain>`。
 
 建议结构：
@@ -136,66 +136,74 @@ Code
 
 ## 4. Page Composition Rules
 
-Page Composition 是正式 Web 页面默认组合层级。
+Page Composition 是正式 Web 页面的默认编排层级。
 
-默认页面编排必须使用 `AppSectionStack / AppSection / AppCardGrid / AppBaseCard / AppActionGroup / AppActionButton` 单轨。
-
-特殊页面可以不用 `AppCardGrid` 作为主结构，但仍必须复用底层 `Card / Action / Tag / InspectorSlot` 规则。
-
-明确禁止：
-
-- 恢复 `AppContentCard`。
-- 形成 `AppContentCard / AppBaseCard` 双轨。
-- 页面私自重建 `Card / Tag / Action / Grid` 外壳。
-- 万能 JSON 页面渲染器。
-- 万能业务卡片。
-
-### 默认页面层级
+默认页面编排固定为：
 
 ```text
 AppShell
 └─ Page
-   └─ AppSectionStack
-      └─ AppSection
-         └─ AppCardGrid
-            └─ AppBaseCard / MetricCard / 基于 AppBaseCard 的页面私有业务卡片
-               └─ AppActionGroup
-                  └─ AppActionButton
+   └─ SectionStack
+      └─ ContentSection
+         └─ Ant Flex / Space / Row / Col
+            └─ CardSurface / ContentCard / StatCard / 模块内业务组件
+               └─ ActionButton / NavigationActionButton
 ```
 
-### AppSectionStack
+规则：
 
-- 统一页面内部 section 垂直排列。
-- 统一页面主内容 padding / section spacing。
-- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+- `SectionStack` 只负责页面 section 间距。
+- `ContentSection` 只负责 section 语义、title、description、extra。
+- 布局优先使用 Ant `Flex / Space / Row / Col / Layout`。
+- `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger。
+- `NavigationActionButton` 只负责 route-aware 行为组合，不负责 route 到 Page 的映射。
+- `CardSurface` 只负责统一卡片壳；`ContentCard` 负责通用内容结构；`StatCard` 只负责通用数值摘要。
+- 业务模块可以在 `modules/<domain>` 内组合业务组件，但不得把业务对象组件塞回 shared。
 
-### AppSection
+明确禁止：
 
-- 统一 Section eyebrow / title。
-- 统一 Section Header 右侧模块入口。
-- 统一 Section content 的 `AppCardGrid`。
-- 接收 `columns` 和 section action。
-- 不读取 ViewModel，不写业务文案，不绑定路由，不接 API，不做视觉风格化。
+- 恢复 `AppActionButton / AppActionGroup / ActionGroup / ActionBar`。
+- 恢复 `AppBaseCard / AppCardGrid / MetricCardGrid / SummaryCardGrid`。
+- 恢复 `AppPropertyList / SummaryTable`。
+- 恢复 `AppSection / AppSectionStack / WebSection`。
+- 恢复 `AppTabs / TabsPanel / StaticTabsPanel`。
+- 页面私自重建 `Card / Tag / Action / Grid` 外壳。
+- 万能 JSON 页面渲染器。
+- 万能业务卡片。
 
-### AppCardGrid / Card / Tag / Action
+### Section Primitive
 
-- `AppCardGrid` 只负责 section 内卡片列数、gutter、左对齐和响应式断点。
-- `AppBaseCard` 是唯一内容卡片外壳底座，`MetricCard` 必须基于 `AppBaseCard`。
-- `RiskBadge` / `StatusTag` 只负责状态与风险标签表达。
-- `AppActionGroup` / `AppActionButton` 只负责动作排序和按钮层级。
+- `SectionStack` 统一页面主内容的 section 垂直排列和间距。
+- `ContentSection` 统一 section 标题区和内容区语义，不绑定卡片、表格、图表、列表或 Graph。
+- section 内按钮排列直接使用 Ant `Flex / Space`，不要额外抽 `ActionGroup`。
+
+### Card Primitive
+
+- `CardSurface` 基于 Ant `Card` 做视觉壳薄封装。
+- `ContentCard` 组合 `CardSurface`，承接通用标题、描述、extra、body、footer 结构。
+- `StatCard` 只用于无业务语义的数值摘要；如果卡片依赖 `MetricDefinition / ToolDefinition / ReportFinding` 等业务对象，应留在对应 module。
+- `RiskBadge / StatusTag` 只负责状态表达，不承接业务逻辑。
+
+### List Primitive
+
+- `PropertyList` 承接 key-value / label-value 展示模式，优先基于 Ant `Descriptions / List / Typography`。
+- `TitledList / AnnotatedList / SelectableList / GroupedSelectableList` 承接无业务语义的重复列表模式。
+- 如果多个模块都展示相似对象列表，应先抽象为无业务 primitive，再由各模块把业务数据映射成通用 item props。
+- 不抽 `SourceEvidenceList / ReportSection / TraceTimeline` 这类直接绑定业务对象的 shared 组件。
 
 ### Route Action Adapter
 
 - `shared/ui` 不知道 route。
-- route-aware action helper 放在 `app/router`。
-- helper 负责把 route、variant、iconName、label、onNavigate 转成 `AppActionGroupItem`。
+- route-aware action helper 放在 `shared/navigation`，只知道 route key，不知道具体 Page。
+- `app/router` 只负责 route key 到 Page 的映射。
+- helper 负责把 route key、variant、iconName、label、onNavigate 转成 `NavigationActionButton` 可消费的通用 action props。
 - 后续入口跳转不得在页面中随意散写。
-- `Open in Analysis with context` 等能力必须通过统一 action helper 承接上下文，不得页面临时拼按钮。
+- `Open in Analysis with context` 等能力必须通过统一 navigation helper 承接上下文，不得页面临时拼按钮。
 - 页面入口只表达导航、Analysis 新聊天草稿态入口或只读摘要入口，不等于真实执行。
 
 ### Page Archetype
 
-默认页面必须使用 `AppSectionStack` + `AppSection` + `AppCardGrid`。
+默认页面必须使用 `SectionStack` + `ContentSection`，并在 section 内优先使用 Ant 布局 primitive。
 
 特殊页面必须落入明确 Page Archetype：
 
@@ -228,10 +236,10 @@ Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级�
 ### Metrics / Platform Operations Composition
 
 - `Metrics` 属于 `Overview Page`，但允许在 LeftNav 区域使用二级对象列表承接当前 `Workspace` 的指标目录。
-- `Metrics` 左侧列表必须复用 `ObjectListNav / ShellNavListItem`，只负责选择当前指标。
+- `Metrics` 左侧列表必须复用 shared selectable list primitive，只负责选择当前指标。
 - `Metrics` 主区固定为 `指标总览 + selectedMetric detail`，详情区承接业务定义、当前摘要、公式、阈值 / 异常规则、字段血缘摘要、证据摘要和动作区。
 - `Metrics` 第一版不强制启用 `InspectorSlot`；`Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不立即创建 conversation 或 run。
-- `Platform Operations` 属于 `Overview Page`，第一版默认使用 `AppSectionStack / AppSection / AppCardGrid / AppBaseCard / StatusTag / RiskBadge / AppActionGroup` 单轨组合。
+- `Platform Operations` 属于 `Overview Page`，第一版默认使用 `SectionStack / ContentSection / Ant Layout / ContentCard / StatCard / StatusTag / RiskBadge / NavigationActionButton` 组合。
 - `Platform Operations` 第一版固定承接当前 `Workspace` 的平台运维总览、Job 状态、数据质量检查、通知 / 告警摘要、Deployment / Smoke / Migration 状态和风险 / 详情入口。
 - `Platform Operations` 第一版不强制启用 `InspectorSlot`，也不应被设计成全局 SRE / admin 运维后台 UI。
 
@@ -244,14 +252,20 @@ shared 只保留无业务语义的公共能力，固定边界如下：
 - `shared/i18n`：I18n provider、messages、translate helper、locale types。
 - `shared/graph`：唯一允许封装 `@antv/g6` 的关系图底座。
 - `shared/charts`：无业务语义图表 primitive。
-- `shared/layout`：`AppSection / AppSectionStack / PageHeader / PageScaffold / ResponsivePageShell` 等无业务语义页面结构 primitive。
-- `shared/ui`：actions、cards、data、navigation、states、status 等无业务语义 UI primitive 或 Ant Design 薄封装。
+- `shared/navigation`：`navigationTypes / createRouteAction / NavigationActionButton` 这类 route-key 级别导航能力。
+- `shared/layout`：`ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / SidePanel / DrawerFrame` 等无业务语义页面结构 primitive。
+- `shared/ui/actions`：`ActionButton`。
+- `shared/ui/cards`：`CardSurface / ContentCard / StatCard / EntryCard / DetailCard` 等无业务语义 card primitive。
+- `shared/ui/lists`：`PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList` 等无业务语义 list primitive。
+- `shared/ui/states`：`EmptyState / ErrorState / LoadingState / WarningState`。
+- `shared/ui/status`：`StatusTag / RiskBadge`。
 
 明确不允许进入 shared 的内容：
 
-- `report / reports / evidence / trace / traces` 这类业务目录。
+- `report / reports / evidence / trace / traces / feedback-panel` 这类业务目录。
 - 任何依赖业务 ViewModel、业务 Contract 或业务对象词汇的组件。
 - 模块专属 `nav / inspector / drawer / panel / section / card`。
+- `App* / Common* / Shared* / Base* / Wrapper* / Generic* / Universal*` 这类无职责命名。
 
 统一 UI 设计语言固定如下：
 
@@ -271,10 +285,14 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - Ant Design first。能用 Ant Design 的基础能力，就优先使用 Ant Design。
 - Thin wrapper second。公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
 - Custom component last。只有 Ant Design 无法满足且复用价值明确时，才允许新增自定义组件。
+- 不 mirror Ant Design。禁止创建 `AppButton / AppTabs / AppTable / AppCheckbox / AppRadio / AppDrawer` 这类只是改名的镜像组件。
 - 不每个页面自建按钮、卡片、状态色或反馈样式。
-- 不新增和具体内容组件强绑定的布局组件，例如 `MetricCardGrid / SummaryCardGrid / ReportCardGrid`。
-- Tabs 如需保留项目封装，必须进入 `shared/ui/navigation/AppTabs`；否则直接使用 Ant Design `Tabs`。
-- BaseCard / Card / Layout primitive 的命名和 layering 后续单独治理；当前阶段只定边界，不在 shared 中扩散新的 card 壳或 layout 壳。
+- 不新增和具体内容组件强绑定的布局组件，例如 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar`。
+- Tabs 没有稳定项目级语义时，直接使用 Ant Design `Tabs`；不要保留 `AppTabs / TabsPanel / StaticTabsPanel`。
+- 重复模式可以抽象，但必须抽成无业务 primitive；不能把业务对象组件直接抽进 shared。
+- 业务组件不得跨 module 复用；多模块需要类似能力时，要么抽成 shared primitive，要么各自组合。
+- 行为增强必须组合基础组件，不重画 UI；导航按钮通过 `NavigationActionButton` 组合 `ActionButton`。
+- 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI 组件中。
 - 状态标签、风险等级、空态、错误态、加载态必须通过 `shared/ui` 收敛。
 - 颜色、字号、间距、圆角、阴影等必须能映射到 `shared/theme` token。
 - `@antv/g6` 是项目级只读关系图展示底座，不是业务页面直接使用的图谱库。
@@ -294,35 +312,12 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 
 ### Card Slot 结构
 
-所有内容卡片遵守统一 slot：
+所有内容卡片仍遵守统一 slot，但由通用 primitive 承接：
 
-```text
-Card
-├─ Header
-│  ├─ Eyebrow / 类型说明
-│  ├─ Title
-│  └─ Tag Slot，右上角
-│
-├─ Main
-│  ├─ Value / Summary / Main Content
-│  └─ Description
-│
-├─ Meta
-│  ├─ 趋势
-│  ├─ 证据数
-│  ├─ 来源
-│  └─ 可信度
-│
-└─ Footer Actions
-   └─ AppActionGroup，左下横向排列
-```
-
-公共组件承接：
-
-- `AppBaseCard` 只负责 `eyebrow`、`title`、`tagSlot`、`children`、`description`、`meta`、`footerActions` slot 布局。
-- `MetricCard` 是基于 `AppBaseCard` 的指标专用卡片，必须支持 header tag slot 和 footer actions；趋势、证据数、来源等进入 meta 区。
-- `AppActionButton` 负责单个按钮 variant 到 Ant Design Button props 的映射。
-- `AppActionGroup` 负责多个按钮的横向排列和 variant 自动排序。
+- `CardSurface` 负责视觉壳。
+- `ContentCard` 负责 `title / description / extra / body / footer` 的通用结构。
+- `StatCard` 负责通用数值摘要结构。
+- Footer 按钮直接在使用处用 Ant `Flex / Space` 排列，不保留 `ActionGroup`。
 
 ### Tag 与 Action 位置规则
 
@@ -334,27 +329,13 @@ Card
 - 卡片内部动作统一放在 Footer Actions 左下横向排列。
 - Inspector 内动作在分组内左对齐横向排列。
 
-### Section Card Grid Rules
+### Layout Rules
 
-- 页面通过 `columns` 声明布局语义，不长期手写 `Row` / `Col` 摆放卡片。
-- `AppCardGrid` 不读取 ViewModel，不绑定路由，不写业务文案，不做视觉风格化，不新增 token，不引入新依赖。
-
-Columns 规则：
-
-| columns | 桌面 | 中屏   | 小屏 | 用途                       |
-| ------- | ---- | ------ | ---- | -------------------------- |
-| `1`     | 1 列 | 1 列   | 1 列 | 平台质量、整行摘要、长内容 |
-| `2`     | 2 列 | 1-2 列 | 1 列 | 指标、风险、报告 / 证据    |
-| `3`     | 3 列 | 2 列   | 1 列 | 状态卡、能力入口           |
-| `4`     | 4 列 | 2 列   | 1 列 | Hero facts / 小摘要卡      |
-
-对齐规则：
-
+- 页面在 section 内直接使用 Ant `Flex / Space / Row / Col / Layout` 组织卡片、列表和图表。
+- 如确实存在稳定复用模式，可以新增无业务语义的 layout primitive，但不能绑定具体内容类型。
 - Section Header 右侧只放模块级入口。
-- Section 内容卡片默认左对齐，按数据顺序排列。
-- 不允许卡片因为数量不足而右对齐或居中。
-- 单对象摘要使用 `columns={1}` 占满整行。
-- 列表型 section 即使只有一个数据项，也默认从左开始排列。
+- Section 内容默认左对齐、按数据顺序排列。
+- 不允许因为项目数量不足而做右对齐或居中布局补偿。
 
 ### Shared Boundary
 

@@ -1,9 +1,9 @@
-import { Space, Typography, theme } from "antd";
+import { Flex, Space, Typography, theme } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
-import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
-import type { NavigateToRoute } from "../../../app/router/pageProps";
-import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import { SidePanel } from "../../../shared/layout/panels/SidePanel";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
@@ -11,7 +11,7 @@ import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import type { DataKnowledgeOverviewController } from "../hooks/useDataKnowledgeOverviewState";
 
 export type DataKnowledgeInspectorPanelProps = {
@@ -44,6 +44,18 @@ function buildTagSlot(
   );
 }
 
+function renderNavigationActions(
+  actions: ReturnType<typeof createRouteAction>[]
+) {
+  return (
+    <Flex gap={12} wrap>
+      {actions.map((action) => (
+        <NavigationActionButton action={action} key={action.key} />
+      ))}
+    </Flex>
+  );
+}
+
 export function DataKnowledgeInspectorPanel({
   controller,
   onNavigate
@@ -54,7 +66,7 @@ export function DataKnowledgeInspectorPanel({
     controller.viewModel;
 
   return (
-    <RightAssistPanel
+    <SidePanel
       description={t("page.dataKnowledge.rightAssist.description")}
       title={t("page.dataKnowledge.rightAssist.title")}
     >
@@ -120,69 +132,65 @@ export function DataKnowledgeInspectorPanel({
               </Typography.Text>
             </Space>
           ))}
-          <AppActionGroup
-            actions={[
-              createRouteAction({
-                iconName: "operations",
-                key: `${selectedAsset.key}-quality-platform-operations`,
-                label: t("action.dataKnowledgeOpenPlatformOperations.label"),
-                onNavigate,
-                route: "platform-operations",
-                variant: "moduleEntry"
-              })
-            ]}
-          />
+          {renderNavigationActions([
+            createRouteAction({
+              iconName: "operations",
+              key: `${selectedAsset.key}-quality-platform-operations`,
+              label: t("action.dataKnowledgeOpenPlatformOperations.label"),
+              onNavigate,
+              route: "platform-operations",
+              variant: "moduleEntry"
+            })
+          ])}
         </Space>
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
           <Typography.Text style={shellTypographyStyles.cardTitle}>
             {t("page.dataKnowledge.inspector.actions.title")}
           </Typography.Text>
-          <AppActionGroup
-            actions={[
-              createRouteAction({
-                iconName: "analysis",
-                key: `${selectedAsset.key}-analysis`,
-                label: t("action.dataKnowledgeOpenAnalysis.label"),
-                onNavigate,
-                route: "analysis",
-                title: t("action.dataKnowledgeOpenAnalysis.description"),
-                variant: "contextPrimary"
-              }),
-              createRouteAction({
-                iconName: "metrics",
-                key: `${selectedAsset.key}-metrics`,
-                label: t("action.dataKnowledgeOpenMetrics.label"),
-                onNavigate,
-                route: "metrics",
-                variant: "objectDetail"
-              }),
-              createRouteAction({
-                iconName: "reports",
-                key: `${selectedAsset.key}-reports`,
-                label: t("action.dataKnowledgeOpenReports.label"),
-                onNavigate,
-                route: "reports",
-                variant: "objectDetail"
-              }),
-              createRouteAction({
-                iconName: "models",
-                key: `${selectedAsset.key}-model-tools`,
-                label: t("action.dataKnowledgeOpenModelTools.label"),
-                onNavigate,
-                route: "model-tools",
-                variant: "moduleEntry"
-              }),
-              createRouteAction({
-                iconName: "operations",
-                key: `${selectedAsset.key}-platform-operations`,
-                label: t("action.dataKnowledgeOpenPlatformOperations.label"),
-                onNavigate,
-                route: "platform-operations",
-                variant: "moduleEntry"
-              })
-            ]}
-          />
+          {renderNavigationActions([
+            createRouteAction({
+              iconName: "analysis",
+              key: `${selectedAsset.key}-analysis`,
+              label: t("action.dataKnowledgeOpenAnalysis.label"),
+              onNavigate,
+              route: "analysis",
+              title: t("action.dataKnowledgeOpenAnalysis.description"),
+              variant: "contextPrimary"
+            }),
+            createRouteAction({
+              iconName: "metrics",
+              key: `${selectedAsset.key}-metrics`,
+              label: t("action.dataKnowledgeOpenMetrics.label"),
+              onNavigate,
+              route: "metrics",
+              variant: "objectDetail"
+            }),
+            createRouteAction({
+              iconName: "reports",
+              key: `${selectedAsset.key}-reports`,
+              label: t("action.dataKnowledgeOpenReports.label"),
+              onNavigate,
+              route: "reports",
+              variant: "objectDetail"
+            }),
+            createRouteAction({
+              iconName: "models",
+              key: `${selectedAsset.key}-model-tools`,
+              label: t("action.dataKnowledgeOpenModelTools.label"),
+              onNavigate,
+              route: "model-tools",
+              variant: "moduleEntry"
+            }),
+            createRouteAction({
+              iconName: "operations",
+              key: `${selectedAsset.key}-platform-operations`,
+              label: t("action.dataKnowledgeOpenPlatformOperations.label"),
+              onNavigate,
+              route: "platform-operations",
+              variant: "moduleEntry"
+            })
+          ])}
         </Space>
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -199,6 +207,6 @@ export function DataKnowledgeInspectorPanel({
           ))}
         </Space>
       </Space>
-    </RightAssistPanel>
+    </SidePanel>
   );
 }

@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { ReportsPage } from "./Page";
 
 afterEach(cleanup);
@@ -25,9 +25,9 @@ beforeAll(() => {
 describe("ReportsPage", () => {
   it("renders a structured report reader instead of the old summary grid", () => {
     render(
-      <AppProviders>
+      <TestProviders>
         <ReportsPage />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getByText("报告")).toBeTruthy();

@@ -17,17 +17,16 @@ import { WorkspacePage } from "../../modules/workspace/Page";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import type { IconName } from "../../shared/icons/iconTypes";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
+import type { StaticRouteKey, WebPageProps } from "../../shared/navigation/navigationTypes";
 import { appShellStaticViewModel } from "../shell/fixtures/appShellStaticViewModel";
 import type { NavigationGroup, NavigationItem } from "../shell/LeftNav";
 import type {
   AppShellNavigationGroupViewModel,
   AppShellNavigationItemViewModel
 } from "../shell/models/appShellViewModel";
-import type { StaticRouteKey } from "../shell/models/staticViewModelTypes";
-
-import type { WebPageProps } from "./pageProps";
 
 type Translate = (key: I18nMessageKey) => string;
+type RoutedPageComponent = ComponentType<WebPageProps>;
 
 const routeIconByRoute: Record<StaticRouteKey, IconName> = {
   analysis: "analysis",
@@ -50,19 +49,19 @@ const routeIconByRoute: Record<StaticRouteKey, IconName> = {
  * #68 只建立静态 WebComposition 路由表。
  * 这里不接真实路由库、不新增 MobileComposition，也不创建真实业务数据链路。
  */
-export const webCompositionRoutes: Record<StaticRouteKey, ComponentType<WebPageProps>> = {
+export const webCompositionRoutes: Record<StaticRouteKey, RoutedPageComponent> = {
   analysis: AnalysisPage,
   dashboard: DashboardPage,
-  "data-knowledge": DataKnowledgePage,
+  "data-knowledge": DataKnowledgePage as RoutedPageComponent,
   evaluation: EvaluationPage,
   feedback: FeedbackPage,
   governance: GovernancePage,
   memory: MemoryPage,
-  metrics: MetricsPage,
+  metrics: MetricsPage as RoutedPageComponent,
   "model-tools": ModelToolsPage,
   observability: ObservabilityPage,
-  "platform-operations": PlatformOperationsPage,
-  reports: ReportsPage,
+  "platform-operations": PlatformOperationsPage as RoutedPageComponent,
+  reports: ReportsPage as RoutedPageComponent,
   settings: SettingsPage,
   workspace: WorkspacePage
 };

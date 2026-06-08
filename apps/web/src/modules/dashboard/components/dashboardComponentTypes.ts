@@ -1,4 +1,4 @@
-import type { NavigateToRoute } from "../../../app/router/pageProps";
+import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
 
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
@@ -13,8 +13,8 @@ export type DashboardHeroProps = DashboardComponentProps & {
   selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
 };
 
-export type DashboardMetricCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
-  metric: DashboardViewModel["businessMetricCards"][number];
+export type DashboardStatCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
+  metric: DashboardViewModel["businessStatCards"][number];
 };
 
 export type DashboardRiskCardProps = Pick<DashboardComponentProps, "onNavigate"> & {

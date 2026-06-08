@@ -4,9 +4,9 @@ import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
 import { useI18n } from "../../shared/i18n/I18nProvider";
+import { SidePanel } from "../../shared/layout/panels/SidePanel";
 
 import type { AppShellInspectorViewModel } from "./models/appShellViewModel";
-import { RightAssistPanel } from "./RightAssistPanel";
 
 export type AppShellInspectorProps = {
   inspector: AppShellInspectorViewModel;
@@ -18,7 +18,7 @@ export function AppShellInspector({ inspector, workspaceName }: AppShellInspecto
   const { token } = theme.useToken();
 
   return (
-    <RightAssistPanel
+    <SidePanel
       description={inspector.summary}
       title={t(inspector.titleKey as I18nMessageKey)}
     >
@@ -64,6 +64,6 @@ export function AppShellInspector({ inspector, workspaceName }: AppShellInspecto
           ))}
         </Space>
       </Space>
-    </RightAssistPanel>
+    </SidePanel>
   );
 }

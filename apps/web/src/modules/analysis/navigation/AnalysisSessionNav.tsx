@@ -1,7 +1,7 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
-import { ObjectListNav } from "../../../app/shell/ObjectListNav";
+import { SelectableList } from "../../../shared/ui/lists/SelectableList";
 import type { AnalysisViewModel } from "../models/analysisViewModel";
 
 export type AnalysisSessionNavProps = {
@@ -24,7 +24,7 @@ export function AnalysisSessionNav({
   sessions
 }: AnalysisSessionNavProps) {
   return (
-    <ObjectListNav
+    <SelectableList
       action={
         <Button icon={<PlusOutlined />} onClick={onCreateNewAnalysis} type="default">
           新聊天

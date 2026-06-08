@@ -1,4 +1,4 @@
-import type { StaticActionViewModel, StaticEvidenceEntranceViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticReportEntranceViewModel, StaticSummaryItemViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import type { StaticActionViewModel, StaticEvidenceEntranceViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticReportEntranceViewModel, StaticSummaryItemViewModel } from "../../../shared/view-model/staticViewModelTypes";
 
 export type DashboardTimeRangeKey =
   | "last_12_hours"
@@ -20,7 +20,7 @@ export type DashboardTimeRangeViewModel = {
 export type DashboardViewModel = StaticPageViewModelBase & {
   analysisEntrances: StaticActionViewModel[];
   anomalyCards: StaticSummaryItemViewModel[];
-  businessMetricCards: StaticPageViewModelBase["metricCards"];
+  businessStatCards: StaticPageViewModelBase["metricCards"];
   dashboardState: StaticPageStateViewModel;
   dashboardSummary: StaticSummaryItemViewModel[];
   evidenceEntrances: StaticEvidenceEntranceViewModel[];

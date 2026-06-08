@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Button, Descriptions, Divider, Space, Typography } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppDrawer } from "../../../shared/layout/overlays/AppDrawer";
+import { DrawerFrame } from "../../../shared/layout/panels/DrawerFrame";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
@@ -68,7 +68,7 @@ export function RunTraceDetailDrawer({
   ].filter((item): item is NonNullable<typeof item> => item !== null);
 
   return (
-    <AppDrawer
+    <DrawerFrame
       destroyOnHidden={false}
       footer={
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -180,6 +180,6 @@ export function RunTraceDetailDrawer({
           ) : null}
         </Space>
       ) : null}
-    </AppDrawer>
+    </DrawerFrame>
   );
 }

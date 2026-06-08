@@ -1,4 +1,4 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, sharedEvidenceEntrances, warningRisk } from "../../../app/shell/fixtures/staticStateFixtures";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, sharedEvidenceEntrances, warningRisk } from "../../../shared/view-model/staticStateFixtures";
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
 export const dashboardStaticViewModel: DashboardViewModel = {
@@ -22,7 +22,7 @@ export const dashboardStaticViewModel: DashboardViewModel = {
       value: "-3.2%"
     }
   ],
-  businessMetricCards: [
+  businessStatCards: [
     {
       evidenceCount: 4,
       key: "quarterly-revenue",

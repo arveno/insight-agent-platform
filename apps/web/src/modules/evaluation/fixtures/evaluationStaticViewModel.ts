@@ -1,4 +1,4 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningStatus, warningRisk } from "../../../app/shell/fixtures/staticStateFixtures";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningStatus, warningRisk } from "../../../shared/view-model/staticStateFixtures";
 import type { EvaluationViewModel } from "../models/evaluationViewModel";
 
 const dataset = {
