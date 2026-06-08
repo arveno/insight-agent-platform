@@ -134,7 +134,10 @@ insight-agent-platform/
 └─ package.json           # monorepo 根 package 配置
 ```
 
-`packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致，使核心对象字段有单一事实源和清晰归属。
+只有 `services/agent-runtime/src/modules` 按业务垂直切片组织。`database/mysql`、`deploy/`、`scripts/` 按工程基础设施职责组织，不承接业务切片目录。
+
+`packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
+其中 contracts 目录可以继续使用 kebab-case，Python runtime package 目录必须使用 snake_case。
 
 ```text
 packages/contracts/schemas/
@@ -387,45 +390,34 @@ UI 不得直接消费 raw API response。
 
 ## 7. 后端架构
 
-后端采用 Python / FastAPI + domain-oriented modular architecture。
+后端采用 Python / FastAPI + vertical-slice modular architecture。
 
 ```text
-services/agent-runtime/app/
-├─ api/                   # HTTP 路由、鉴权、参数校验、响应出口
-├─ core/                  # 配置、日志、错误、安全、常量
-├─ domain/                # 业务对象和业务规则
-├─ application/           # 业务用例编排，不直接查库、不直接调模型
-├─ runtime/               # LangGraph graph、state、nodes、edges、checkpoints
-├─ agents/                # 各类 Agent 职责实现
-├─ tools/                 # Tool Registry 和工具适配
-├─ model_gateway/         # 模型调用唯一入口、provider、routing、cost、errors
-├─ memory/                # Memory 读写策略
-├─ evaluation/            # Evaluator、Dataset、Bad Case、Regression
-├─ governance/            # Policy、SQL Guard、Tool Permission、Data Access、Audit
-├─ observability/         # Trace、Metrics、Logging、Cost
-├─ infrastructure/        # DB、Repository、Vector Store、Cache、Queue、Scheduler、Secrets 等外部依赖
-├─ schemas/               # API DTO，不等同于 domain model
-└─ main.py                # FastAPI 应用入口
-```
-
-`domain` 业务域按产品模块分组：
-
-```text
-services/agent-runtime/app/domain/
-├─ workspace/             # 企业空间基础对象
-├─ iam/                   # 用户、角色、权限、成员关系
-├─ data_knowledge/        # 数据源、表、字段、知识文档
-├─ metrics/               # 指标体系、公式、阈值、血缘
-├─ analysis/              # 分析任务、运行、事件、工具调用、模型调用
-├─ memory/                # 长期记忆对象
-├─ feedback/              # 用户反馈对象
-├─ evaluation/            # 评估、Bad Case、评分对象
-├─ model_tools/           # 模型、Prompt、Tool、RAG 策略对象
-├─ governance/            # 策略、风险、权限、审计对象
-├─ observability/         # 运行轨迹、指标、成本对象
-├─ reports/               # 报告、报告段落、决策建议
-├─ dashboard/             # 经营总览聚合对象
-└─ platform_operations/   # Job、通知、数据质量等运维对象
+services/agent-runtime/src/
+├─ app/                           # 启动、配置、路由注册、中间件
+│  └─ middlewares/
+├─ modules/                       # 按业务垂直切片组织的服务代码
+│  ├─ workspace/
+│  ├─ conversations/
+│  ├─ agent_runs/
+│  ├─ data_knowledge/
+│  ├─ model_tools/
+│  ├─ governance/
+│  ├─ metrics/
+│  ├─ reports/
+│  └─ platform_operations/
+├─ infrastructure/                # 技术底座，不承接业务切片
+│  ├─ database/
+│  ├─ auth/
+│  ├─ model_gateway/
+│  ├─ tool_registry/
+│  ├─ rag/
+│  └─ observability/
+└─ shared/                        # 无业务语义的错误、校验、工具和类型
+   ├─ errors/
+   ├─ validation/
+   ├─ utils/
+   └─ types/
 ```
 
 测试目录固定放在服务根目录，避免混入 runtime package code：
@@ -441,30 +433,19 @@ services/agent-runtime/tests/
 
 ### 后端目录职责
 
-- `api`：请求、鉴权、参数校验、响应。
-- `core`：配置、日志、错误、安全、常量。
-- `domain`：业务对象和业务规则。
-- `application`：业务用例编排。
-- `runtime`：LangGraph graph、state、nodes、edges、checkpoints。
-- `agents`：不同 Agent 职责实现。
-- `tools`：Tool Registry、SQL Tool、Metric Tool、RAG Tool、Memory Tool、Report Tool、MCP Adapter。
-- `model_gateway`：模型供应商、模型路由、成本、失败重试、fallback。
-- `memory`：User / Workspace / Analysis / Decision Memory。
-- `evaluation`：Evaluators、Datasets、Bad Cases、Regression。
-- `governance`：Policy、SQL Guard、Tool Permission、Data Access、Audit。
-- `observability`：Trace、Metrics、Logging、Cost。
-- `infrastructure`：DB、Repository、Vector Store、Cache、Queue、Scheduler、Object Storage、Secrets、External Clients。
-- `schemas`：API DTO。
+- `app`：FastAPI 应用入口、配置、路由注册、中间件。
+- `modules`：按业务垂直切片承接用例编排和领域占位，不再建立全局 `application / domain / memory / evaluation` 横向大目录；运行时包目录使用 snake_case。
+- `infrastructure`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座；运行时包目录使用 snake_case。
+- `shared`：无业务语义的错误、校验、工具和类型。
 
 ### 后端职责边界
 
-- `api` 不写业务逻辑。
-- `application` 只编排业务用例。
-- `domain` 承载业务对象和业务规则。
-- `infrastructure/repositories` 是唯一数据库访问入口。
-- `model_gateway` 是唯一模型调用入口。
-- `tools` / `Tool Registry` 是唯一工具调用入口。
-- `governance` 是权限、SQL Guard、Tool Permission、Audit 的统一入口。
+- `app` 不写业务逻辑，只负责启动、配置和 HTTP 边界。
+- `modules/*` 承接业务切片，不通过全局横向目录拆散链路。
+- `infrastructure/database` 是唯一数据库访问入口承载位。
+- `infrastructure/model_gateway` 是唯一模型调用入口。
+- `infrastructure/tool_registry` 是唯一工具调用入口。
+- `modules/governance` 是权限、SQL Guard、Tool Permission、Audit 的统一业务承接位。
 - 后端 service 不允许直接访问数据库连接。
 - 后端 service 不允许直接调用模型 provider。
 - Agent 不允许直接查库、直接调模型、直接调用外部 API。
@@ -474,10 +455,10 @@ services/agent-runtime/tests/
 后端依赖方向：
 
 ```text
-api -> application -> domain
-application -> runtime / tools / infrastructure
-runtime -> agents / tools / memory / evaluation / governance / observability
-domain 不依赖 api / infrastructure
+app -> modules
+modules -> infrastructure / shared
+infrastructure -> shared
+shared 不依赖 modules
 ```
 
 前端依赖方向：
@@ -508,25 +489,19 @@ State + Node + Edge + Tool + Event
 
 ## 10. 基础设施与运维承载位
 
-以下基础设施模块必须从第一天保留在 `services/agent-runtime/app/infrastructure/`：
+以下基础设施模块必须从第一天保留在 `services/agent-runtime/src/infrastructure/`：
 
-- cache
-- queue
-- scheduler
-- migrations
-- seed
-- secrets
-- quota
-- data_lifecycle
-- backup
-- restore
-- notifications
-- data_quality
+- database
+- auth
+- model_gateway
+- tool_registry
+- rag
+- observability
 
 以下跨域能力已有明确承载位置，不放入 `infrastructure`：
 
-- audit：`services/agent-runtime/app/governance/audit.py`
-- cost：`services/agent-runtime/app/observability/cost.py`
+- audit：`services/agent-runtime/src/modules/governance/audit.py`
+- cost：`services/agent-runtime/src/infrastructure/observability/cost.py`
 
 以下运维脚本承载位必须从第一天保留在 `scripts/`：
 

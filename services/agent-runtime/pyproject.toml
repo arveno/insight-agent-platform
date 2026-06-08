@@ -22,14 +22,14 @@ dev = [
 package = false
 
 [tool.pytest.ini_options]
-# Runtime tests live at services/agent-runtime/tests, outside app package code.
+# Runtime tests live at services/agent-runtime/tests, outside src package code.
 testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["app", "tests"]
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -42,7 +42,7 @@ line-ending = "lf"
 
 [tool.mypy]
 python_version = "3.11"
-files = ["app", "tests"]
+files = ["src", "tests"]
 mypy_path = "."
 strict = true
 warn_unused_configs = true

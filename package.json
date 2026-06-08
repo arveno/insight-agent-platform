@@ -7,7 +7,7 @@
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @insight-agent/web dev -- --host 127.0.0.1 --port 5173",
     "dev:web:open": "pnpm --filter @insight-agent/web dev -- --host 127.0.0.1 --port 5173 --open",
-    "dev:backend": "cd services/agent-runtime && uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:backend": "cd services/agent-runtime && uv run uvicorn src.app.main:app --reload --host 127.0.0.1 --port 8000",
     "debug:web": "python3 -m webbrowser http://localhost:5173",
     "debug:api": "python3 -m webbrowser http://127.0.0.1:8000/docs",
     "debug:health": "curl http://127.0.0.1:8000/health",
@@ -23,7 +23,7 @@
     "e2e:web": "pnpm --filter @insight-agent/web e2e",
     "lint:backend": "cd services/agent-runtime && uv run ruff check .",
     "format:backend": "cd services/agent-runtime && uv run ruff format .",
-    "typecheck:backend": "cd services/agent-runtime && uv run mypy app",
+    "typecheck:backend": "cd services/agent-runtime && uv run mypy src tests",
     "test:backend": "cd services/agent-runtime && uv run pytest",
     "smoke": "echo \"smoke 检查占位\""
   },
