@@ -40,7 +40,13 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/constants",
   "apps/web/src/shared/ui/evidence",
   "apps/web/src/shared/ui/report",
-  "apps/web/src/shared/ui/trace"
+  "apps/web/src/shared/ui/trace",
+  "apps/web/src/shared/layout/sections/WebSection.tsx",
+  "apps/web/src/shared/ui/data/SummaryTable.tsx",
+  "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
+  "apps/web/src/shared/ui/cards/MetricCardGrid.tsx",
+  "apps/web/src/shared/layout/overlays/StaticTabsPanel.tsx",
+  "apps/web/src/shared/layout/overlays/AppTabs.tsx"
 ];
 const contractSchemaPaths = [
   "packages/contracts/schemas/workspace/workspace.schema.json",

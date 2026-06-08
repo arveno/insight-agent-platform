@@ -2,7 +2,8 @@ import { List, Space, Typography } from "antd";
 
 import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { WebSection } from "../../../shared/layout/sections/WebSection";
+import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
@@ -43,7 +44,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         title={viewModel.selectedReport.title}
       />
 
-      <WebSection section={viewModel.mainSections[0]}>
+      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[0])} useGrid={false}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           {viewModel.reportSections.map((section) => (
             <ReportSection
@@ -55,9 +56,9 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             />
           ))}
         </Space>
-      </WebSection>
+      </AppSection>
 
-      <WebSection section={viewModel.mainSections[1]}>
+      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[1])} useGrid={false}>
         <SourceEvidenceList
           items={viewModel.sourceEvidence.map((evidence) => ({
             confidenceText: evidence.confidenceText,
@@ -67,9 +68,9 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             title: evidence.title
           }))}
         />
-      </WebSection>
+      </AppSection>
 
-      <WebSection section={viewModel.mainSections[2]}>
+      <AppSection {...getStaticSectionProps(t, viewModel.mainSections[2])} useGrid={false}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
           <Typography.Text style={shellTypographyStyles.cardTitle}>
             {t("reports.reader.decisions.title")}
@@ -115,7 +116,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             title={t("reports.reader.followUp.title")}
           />
         </Space>
-      </WebSection>
+      </AppSection>
     </Space>
   );
 }

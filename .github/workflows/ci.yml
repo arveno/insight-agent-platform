@@ -200,6 +200,12 @@ jobs:
           test ! -d apps/web/src/shared/ui/evidence
           test ! -d apps/web/src/shared/ui/report
           test ! -d apps/web/src/shared/ui/trace
+          test ! -f apps/web/src/shared/layout/sections/WebSection.tsx
+          test ! -f apps/web/src/shared/ui/data/SummaryTable.tsx
+          test ! -f apps/web/src/shared/ui/data/SummaryCardGrid.tsx
+          test ! -f apps/web/src/shared/ui/cards/MetricCardGrid.tsx
+          test ! -f apps/web/src/shared/layout/overlays/StaticTabsPanel.tsx
+          test ! -f apps/web/src/shared/layout/overlays/AppTabs.tsx
 
           if find apps/web/src \( -name 'index.ts' -o -name 'index.tsx' \) | grep -q .; then
             echo "apps/web/src 不允许存在 index.ts / index.tsx。"

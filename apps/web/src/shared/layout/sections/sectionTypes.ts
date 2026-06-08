@@ -13,5 +13,6 @@ export type AppSectionProps = {
   columns?: AppCardGridColumns;
   eyebrow?: ReactNode;
   title: ReactNode;
+  titleSuffix?: ReactNode;
   useGrid?: boolean;
 };
