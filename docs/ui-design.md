@@ -181,7 +181,7 @@ AppShell
 
 - `CardSurface` 基于 Ant `Card` 做视觉壳薄封装。
 - `ContentCard` 组合 `CardSurface`，承接通用标题、描述、extra、body、footer 结构。
-- `StatCard` 只用于无业务语义的数值摘要；如果卡片依赖 `MetricDefinition / ToolDefinition / ReportFinding` 等业务对象，应留在对应 module。
+- `StatCard` 只用于无业务语义的数值摘要，允许 `supportingMeta / contextMeta` 这类通用辅助信息 slot；不允许 `evidenceSummary`、`MetricDefinition`、业务 contract 或业务对象 props。
 - `RiskBadge / StatusTag` 只负责状态表达，不承接业务逻辑。
 
 ### List Primitive
@@ -195,6 +195,7 @@ AppShell
 
 - `shared/ui` 不知道 route。
 - route-aware action helper 放在 `shared/navigation`，只知道 route key，不知道具体 Page。
+- `shared/navigation` 里的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 app composition state slot 必须留在 `app/router` 或对应 module page props。
 - `app/router` 只负责 route key 到 Page 的映射。
 - helper 负责把 route key、variant、iconName、label、onNavigate 转成 `NavigationActionButton` 可消费的通用 action props。
 - 后续入口跳转不得在页面中随意散写。
@@ -260,7 +261,7 @@ shared 只保留无业务语义的公共能力，固定边界如下：
 - `shared/ui/lists`：`PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline` 等无业务语义 list pattern。
 - `shared/ui/states`：`EmptyState / ErrorState / LoadingState / WarningState`。
 - `shared/ui/status`：`StatusTag / RiskBadge`。
-- `shared/view-model`：跨 app / modules 边界需要共享的静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助。
+- `shared/view-model`：跨 app / modules 边界需要共享的静态 ViewModel 类型、fixtures 和真正无业务的通用 helper。
 - `shared/test`：测试期 provider / helper。
 
 明确不允许进入 shared 的内容：
@@ -346,7 +347,7 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 单一 module 内部组件不得提前抽到 `shared`。
 - `shared` 组件不得依赖 `modules` 或 `app`。
 - `shared` 组件只消费 ViewModel、UI State 或 contract 枚举。
-- `shared/view-model` 只允许静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助；不得演变为业务聚合层。
+- `shared/view-model` 只允许静态 ViewModel 类型、fixtures 和真正无业务的通用 helper；不得演变为业务聚合层。
 - `shared/test` 只允许测试期 provider / helper；不得放业务测试数据。
 - `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出、LangGraph raw state、raw provider response、raw vector、raw embedding 或 raw SQL result。
 - `shared` 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件。
@@ -416,7 +417,7 @@ shared/
 | `actionTypes`             | UI Support         | `shared/ui/actions/actionTypes.ts`                 | TypeScript types                                | action primitive 类型                       | route 映射、业务对象                        | `shared/ui/actions`、`shared/navigation`、`modules`  | `app`、`modules`        |
 | `CardSurface`             | Surface / Frame    | `shared/ui/surfaces/CardSurface.tsx`               | Ant `Card`                                      | 视觉壳、边框、圆角、padding、hover          | 业务 props、route、数据映射                 | `shared/ui/cards`、`modules`                         | `app`、`modules`        |
 | `ContentCard`             | Shared Pattern     | `shared/ui/cards/ContentCard.tsx`                  | `CardSurface`                                   | title、description、meta、footer、children  | 业务对象解析、布局绑定                      | `app`、`modules`                                     | `app`、`modules`        |
-| `StatCard`                | Shared Pattern     | `shared/ui/cards/StatCard.tsx`                     | `ContentCard`                                   | title、value、status、risk、trend、meta     | `MetricDefinition`、业务 contract、数据计算 | `app`、`modules`                                     | `app`、`modules`        |
+| `StatCard`                | Shared Pattern     | `shared/ui/cards/StatCard.tsx`                     | `ContentCard`                                   | title、value、status、risk、trend、meta、supportingMeta | `MetricDefinition`、`evidenceSummary`、业务 contract、数据计算 | `app`、`modules`                                     | `app`、`modules`        |
 | `PropertyList`            | Shared Pattern     | `shared/ui/lists/PropertyList.tsx`                 | Ant `Descriptions / List / Typography`          | label-value 展示                            | 业务对象解析                                | `app`、`modules`                                     | `app`、`modules`        |
 | `TitledList`              | Shared Pattern     | `shared/ui/lists/TitledList.tsx`                   | Ant `List / Space / Typography`                 | title + summary list                        | 业务对象解析、排序                          | `app`、`modules`                                     | `app`、`modules`        |
 | `AnnotatedList`           | Shared Pattern     | `shared/ui/lists/AnnotatedList.tsx`                | Ant `List / Typography`                         | 注释型列表展示                              | 业务映射、权限判断                          | `app`、`modules`                                     | `app`、`modules`        |
@@ -442,12 +443,12 @@ shared/
 | `DrawerFrame`             | Surface / Frame    | `shared/layout/panels/DrawerFrame.tsx`             | Ant `Drawer`                                    | Drawer 壳、统一边距与 header 区域           | 业务对象解析、route 映射                    | `app`、`modules`                                     | `app`、`modules`        |
 | `NavigationActionButton`  | Behavior Wrapper   | `shared/navigation/NavigationActionButton.tsx`     | `ActionButton`                                  | route-aware button 行为包装                 | 自己实现按钮视觉、Page 映射                 | `app`、`modules`                                     | `app`、`modules`        |
 | `createRouteAction`       | Behavior Support   | `shared/navigation/createRouteAction.ts`           | route key + i18n + action types                 | 构造 route-aware action 数据                | 排序、权限判断、UI 渲染                     | `app`、`modules`                                     | `app/router`、`modules` |
-| `navigationTypes`         | Behavior Support   | `shared/navigation/navigationTypes.ts`             | TypeScript types                                | route key、导航 action 类型                 | Page 映射                                   | `app`、`modules`、`shared/navigation`                | `app/router`、`modules` |
+| `navigationTypes`         | Behavior Support   | `shared/navigation/navigationTypes.ts`             | TypeScript types                                | route key、`PageRouteProps`、导航 action 类型 | Page composition state、Page 映射           | `app`、`modules`、`shared/navigation`                | `app/router`、`modules` |
 | `RelationshipGraphCanvas` | Shared Pattern     | `shared/graph/RelationshipGraphCanvas.tsx`         | `@antv/g6`                                      | 只读关系图展示、选中、fit view、zoom、pan   | 业务图谱逻辑、raw G6 泄漏                   | `modules`                                            | `app`、`modules`        |
 | `relationshipGraphTheme`  | Graph Support      | `shared/graph/relationshipGraphTheme.ts`           | theme tokens                                    | 图谱视觉配置                                | 业务映射                                    | `shared/graph`                                       | `app`、`modules`        |
 | `graph models`            | Graph Support      | `shared/graph/models.ts`                           | TypeScript types                                | 关系图 ViewModel 类型                       | 业务模块逻辑                                | `shared/graph`、`modules`                            | `app`、`modules`        |
-| `StaticChart`             | Shared Pattern     | `shared/charts/StaticChart.tsx`                    | Ant Charts / chart wrapper                      | 静态图表展示                                | 业务对象解析                                | `modules`                                            | `app`、`modules`        |
-| `ChartCard`               | Shared Pattern     | `shared/charts/ChartCard.tsx`                      | `ContentCard` + chart wrapper                   | 图表内容卡片模式                            | 业务对象解析                                | `modules`                                            | `app`、`modules`        |
+| `StaticChart`             | Shared Pattern     | `shared/charts/StaticChart.tsx`                    | `ChartCard`                                     | 静态图表展示                                | 业务对象解析                                | `modules`                                            | `app`、`modules`        |
+| `ChartCard`               | Shared Pattern     | `shared/charts/ChartCard.tsx`                      | `CardSurface` + chart wrapper                   | 图表内容卡片模式                            | 业务对象解析、重新实现 card shell           | `modules`                                            | `app`、`modules`        |
 | `chartTypes`              | Chart Support      | `shared/charts/chartTypes.ts`                      | TypeScript types                                | 图表 primitive 类型                         | 业务映射                                    | `shared/charts`、`modules`                           | `app`、`modules`        |
 | `I18nProvider`            | Foundation Support | `shared/i18n/I18nProvider.tsx`                     | React context                                   | i18n provider、translate hook               | 业务模块逻辑                                | `app`、`modules`                                     | `app`、`modules`        |
 | `messages`                | Foundation Support | `shared/i18n/messages.ts`                          | message catalog                                 | i18n key 事实源                             | 业务数据计算                                | `shared/i18n`、`modules`                             | `app`、`modules`        |
@@ -458,7 +459,6 @@ shared/
 | `TestProviders`           | Test Support       | `shared/test/TestProviders.tsx`                    | provider composition                            | 测试期 provider 装配                        | 运行时业务逻辑                              | tests                                                | `app`、`modules`        |
 | `staticViewModelTypes`    | Shared Support     | `shared/view-model/staticViewModelTypes.ts`        | TypeScript types                                | 静态 ViewModel 类型事实源                   | 业务聚合逻辑                                | `app`、`modules`、`shared`                           | `app`、`modules`        |
 | `staticStateFixtures`     | Shared Support     | `shared/view-model/staticStateFixtures.ts`         | static view-model types                         | 静态状态 fixtures                           | 运行时业务逻辑                              | `modules`、tests                                     | `app`、`modules`        |
-| `staticViewModelAdapters` | Shared Support     | `shared/view-model/staticViewModelAdapters.ts`     | static ViewModel + i18n + shared status mapping | 静态共享 ViewModel 的轻量映射辅助           | 业务聚合、跨模块业务规则                    | `modules`                                            | `app`、`modules`        |
 | `viewModelState`          | Shared Support     | `shared/utils/viewModelState.ts`                   | static state vm + i18n                          | risk/status 映射                            | 业务权限和排序                              | `shared`、`modules`                                  | `app`、`modules`        |
 
 ### Promotion Rule
@@ -510,8 +510,12 @@ shared/
   - Forbidden: business object props
 - `StatCard`
   - Layer: `Shared Pattern`
-  - Allowed: title、value、delta / trend、status、description
-  - Forbidden: `MetricDefinition / MetricsViewModel / business contract`
+  - Allowed: title、value、delta / trend、status、description、meta、supportingMeta / contextMeta
+  - Forbidden: `MetricDefinition / MetricsViewModel / evidenceSummary / business contract`
+- `ChartCard`
+  - Layer: `Shared Pattern`
+  - Allowed: title、subtitle、actions、state、legend、children
+  - Forbidden: 直接依赖 Ant `Card`、重新实现平行 card shell、业务对象解析
 - 业务卡片必须放 `modules/<domain>/components`，可以组合 `ContentCard / StatCard / PropertyList`，但不得回流到 `shared/ui`。
 
 ### Section / Layout Contract
@@ -543,6 +547,7 @@ shared/
 - 是否新增了和具体内容组件强绑定的 layout。
 - 是否新增了 `index.ts / index.tsx`。
 - 是否让 `shared` 依赖 `app` 或 `modules`。
+- 如果本轮属于治理收口，是否仍保留 `P1 / P2 / watch items`；治理收口阶段必须修掉已识别问题，或明确证明它不是问题。
 - 是否把业务 ViewModel / Contract 泄漏到 `shared/ui`。
 
 ### Interaction States

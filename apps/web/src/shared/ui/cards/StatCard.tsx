@@ -11,12 +11,12 @@ import { ContentCard } from "./ContentCard";
 export type StatCardProps = {
   actions?: ReactNode;
   description?: ReactNode;
-  evidenceSummary?: ReactNode;
   footerActions?: ReactNode;
   meta?: ReactNode;
   risk?: RiskBadgeProps;
   style?: CSSProperties;
   status?: StatusTagProps;
+  supportingMeta?: ReactNode;
   tagSlot?: ReactNode;
   title: ReactNode;
   trend?: ReactNode;
@@ -32,12 +32,12 @@ export type StatCardProps = {
 export function StatCard({
   actions,
   description,
-  evidenceSummary,
   footerActions,
   meta,
   risk,
   style,
   status,
+  supportingMeta,
   tagSlot,
   title,
   trend,
@@ -53,11 +53,11 @@ export function StatCard({
       </Space>
     ) : null;
   const resolvedMeta =
-    meta || trend || evidenceSummary ? (
+    meta || trend || supportingMeta ? (
       <Space wrap>
         {meta}
         {trend}
-        {evidenceSummary}
+        {supportingMeta}
       </Space>
     ) : null;
 

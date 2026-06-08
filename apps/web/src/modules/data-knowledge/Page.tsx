@@ -1,5 +1,5 @@
 import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useDataKnowledgeOverviewState,
@@ -7,7 +7,7 @@ import {
 } from "./hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeSections } from "./sections/DataKnowledgeSections";
 
-export type DataKnowledgePageProps = WebPageProps & {
+export type DataKnowledgePageProps = PageRouteProps & {
   dataKnowledgeState?: DataKnowledgeOverviewController;
 };
 

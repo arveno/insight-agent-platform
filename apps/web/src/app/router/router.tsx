@@ -3,21 +3,25 @@ import type { ComponentType } from "react";
 import { AnalysisPage } from "../../modules/analysis/Page";
 import { DashboardPage } from "../../modules/dashboard/Page";
 import { DataKnowledgePage } from "../../modules/data-knowledge/Page";
+import type { DataKnowledgeOverviewController } from "../../modules/data-knowledge/hooks/useDataKnowledgeOverviewState";
 import { EvaluationPage } from "../../modules/evaluation/Page";
 import { FeedbackPage } from "../../modules/feedback/Page";
 import { GovernancePage } from "../../modules/governance/Page";
 import { MemoryPage } from "../../modules/memory/Page";
 import { MetricsPage } from "../../modules/metrics/Page";
+import type { MetricsOverviewController } from "../../modules/metrics/hooks/useMetricsOverviewState";
 import { ModelToolsPage } from "../../modules/model-tools/Page";
 import { ObservabilityPage } from "../../modules/observability/Page";
 import { PlatformOperationsPage } from "../../modules/platform-operations/Page";
+import type { PlatformOperationsOverviewController } from "../../modules/platform-operations/hooks/usePlatformOperationsOverviewState";
 import { ReportsPage } from "../../modules/reports/Page";
+import type { ReportsReaderController } from "../../modules/reports/hooks/useReportsReaderState";
 import { SettingsPage } from "../../modules/settings/Page";
 import { WorkspacePage } from "../../modules/workspace/Page";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import type { IconName } from "../../shared/icons/iconTypes";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
-import type { StaticRouteKey, WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps, StaticRouteKey } from "../../shared/navigation/navigationTypes";
 import { appShellStaticViewModel } from "../shell/fixtures/appShellStaticViewModel";
 import type { NavigationGroup, NavigationItem } from "../shell/LeftNav";
 import type {
@@ -26,7 +30,13 @@ import type {
 } from "../shell/models/appShellViewModel";
 
 type Translate = (key: I18nMessageKey) => string;
-type RoutedPageComponent = ComponentType<WebPageProps>;
+type WebCompositionPageProps = PageRouteProps & {
+  dataKnowledgeState?: DataKnowledgeOverviewController;
+  metricsState?: MetricsOverviewController;
+  platformOperationsState?: PlatformOperationsOverviewController;
+  reportsState?: ReportsReaderController;
+};
+type RoutedPageComponent = ComponentType<WebCompositionPageProps>;
 
 const routeIconByRoute: Record<StaticRouteKey, IconName> = {
   analysis: "analysis",
@@ -52,16 +62,16 @@ const routeIconByRoute: Record<StaticRouteKey, IconName> = {
 export const webCompositionRoutes: Record<StaticRouteKey, RoutedPageComponent> = {
   analysis: AnalysisPage,
   dashboard: DashboardPage,
-  "data-knowledge": DataKnowledgePage as RoutedPageComponent,
+  "data-knowledge": DataKnowledgePage,
   evaluation: EvaluationPage,
   feedback: FeedbackPage,
   governance: GovernancePage,
   memory: MemoryPage,
-  metrics: MetricsPage as RoutedPageComponent,
+  metrics: MetricsPage,
   "model-tools": ModelToolsPage,
   observability: ObservabilityPage,
-  "platform-operations": PlatformOperationsPage as RoutedPageComponent,
-  reports: ReportsPage as RoutedPageComponent,
+  "platform-operations": PlatformOperationsPage,
+  reports: ReportsPage,
   settings: SettingsPage,
   workspace: WorkspacePage
 };

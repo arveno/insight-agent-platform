@@ -164,6 +164,7 @@ External Raw Data
 - `app/shell` 只允许放通用应用外壳：`AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 及其自身 models / fixtures。
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
+- `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
@@ -179,7 +180,7 @@ External Raw Data
 - 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI primitive 内。
 - 命名按功能职责，不按 `App / Common / Shared / Base / Wrapper / Generic / Universal` 命名；`app/App.tsx`、`app/shell/AppShell.tsx`、`app/providers/AppProviders.tsx` 这类装配层例外。
 - 新组件默认放 `modules/<domain>/components`；只有名称无业务词、props 无业务对象、无 `app/modules` 依赖、不是 Ant 镜像、且存在稳定展示或行为模式时，才允许晋升到 `shared`。
-- `shared/view-model` 只放跨边界共享的静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助，不得演变为业务聚合层。
+- `shared/view-model` 只放跨边界共享的静态 ViewModel 类型、fixtures 和真正无业务的通用 helper；不得承接 `evidence / trace / report / tool / metric / data source` 级别的业务 mapping。
 - `shared/test` 只放测试期 provider / helper，不得放业务测试数据。
 - `shared` 不得依赖 `app` 或 `modules`；`modules` 不得依赖 `app`；`modules` 之间不得直接 import 其他 module 的业务组件。
 - 多模块重复模式可以抽 shared，但必须抽成无业务 primitive，不能把业务对象组件直接放进 shared。
@@ -187,6 +188,7 @@ External Raw Data
 - 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件；不保留隐式出口。
 - 禁止 `WebSection / SummaryTable / SummaryCardGrid / MetricCardGrid / ActionGroup / AppCardGrid / AppBaseCard / AppActionButton / AppActionGroup / AppTabs / StaticTabsPanel` 回流。
 - 禁止 `shared/product`、`legacy`、`temporary`、`transitional` 目录回流。
+- 治理收口类 Issue 不允许保留 `P1 / P2 / watch items`。已识别问题必须在当前治理阶段修复，或明确证明它不是问题；只有没有已知未修复架构问题时，才允许建议关闭治理 Issue。
 - 设计 token 必须走 `shared/theme`。
 
 ## 8. 后端规则

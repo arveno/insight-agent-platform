@@ -3,6 +3,7 @@ import { ArrowUpOutlined, DownOutlined, PlusOutlined, StopOutlined } from "@ant-
 import { Button, Dropdown, List, Space, Typography, theme } from "antd";
 
 import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
 
 import type { AnalysisViewModel } from "../models/analysisViewModel";
 
@@ -57,13 +58,10 @@ export function AnalysisSections({
   const committedUserMessage = selectedSession.inputComposer.initialDraft;
 
   return (
-    <section
+    <CardSurface
       aria-label="Analysis conversation"
       role="region"
       style={{
-        background: token.colorBgElevated,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        borderRadius: token.borderRadiusLG,
         display: "flex",
         flex: "1 1 auto",
         flexDirection: "column",
@@ -71,6 +69,15 @@ export function AnalysisSections({
         minHeight: 0,
         overflow: "hidden",
         width: "100%"
+      }}
+      styles={{
+        body: {
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          minHeight: 0,
+          padding: 0
+        }
       }}
     >
       <div
@@ -139,12 +146,15 @@ export function AnalysisSections({
           padding: token.paddingLG
         }}
       >
-        <div
+        <CardSurface
           style={{
-            background: token.colorBgElevated,
-            border: `1px solid ${token.colorBorderSecondary}`,
-            borderRadius: token.borderRadiusLG,
-            padding: token.paddingSM
+            height: "auto"
+          }}
+          styles={{
+            body: {
+              height: "auto",
+              padding: token.paddingSM
+            }
           }}
         >
           <textarea
@@ -212,7 +222,7 @@ export function AnalysisSections({
               />
             </Space>
           </div>
-        </div>
+        </CardSurface>
         <span
           aria-live="polite"
           style={{
@@ -230,7 +240,7 @@ export function AnalysisSections({
           {interactionMessage}
         </span>
       </footer>
-    </section>
+    </CardSurface>
   );
 }
 

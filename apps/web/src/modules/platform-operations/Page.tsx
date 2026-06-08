@@ -1,5 +1,5 @@
 import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   usePlatformOperationsOverviewState,
@@ -7,7 +7,7 @@ import {
 } from "./hooks/usePlatformOperationsOverviewState";
 import { PlatformOperationsSections } from "./sections/PlatformOperationsSections";
 
-export type PlatformOperationsPageProps = WebPageProps & {
+export type PlatformOperationsPageProps = PageRouteProps & {
   platformOperationsState?: PlatformOperationsOverviewController;
 };
 

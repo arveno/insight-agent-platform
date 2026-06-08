@@ -4,8 +4,7 @@ import type {
   StaticRiskViewModel,
   StaticStatusViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
-import { toEvidenceItem } from "../../../shared/view-model/staticViewModelAdapters";
-import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
@@ -20,8 +19,9 @@ import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import type { MetricDetailViewModel, MetricsViewModel } from "../models/metricsViewModel";
+import { mapMetricEvidenceItem } from "../mappers/mapMetricEvidenceItem";
 
-export type MetricsSectionsProps = WebPageProps & {
+export type MetricsSectionsProps = PageRouteProps & {
   viewModel: MetricsViewModel;
 };
 
@@ -108,12 +108,12 @@ function MetricSummaryCard({
   return (
     <StatCard
       description={`时间范围：${metric.timeRange}`}
-      evidenceSummary={`${metric.evidenceItems.length} 条证据`}
       key={`${metric.key}-summary`}
       meta={<Typography.Text type="secondary">业务域：{metric.businessDomain}</Typography.Text>}
       risk={toRiskBadge(t, metric.risk)}
       style={cardItemStyle}
       status={toStatusTag(t, metric.status)}
+      supportingMeta={`${metric.evidenceItems.length} 条证据`}
       title="当前摘要"
       trend={metric.trend}
       value={metric.currentValue}
@@ -201,7 +201,7 @@ function MetricEvidenceCard({
     >
       <TitledList
         items={metric.evidenceItems.map((item) => {
-          const evidence = toEvidenceItem(t, item);
+          const evidence = mapMetricEvidenceItem(t, item);
 
           return {
             key: evidence.key,

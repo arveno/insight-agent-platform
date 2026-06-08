@@ -4,7 +4,7 @@ import type {
   StaticStatCardViewModel,
   StaticSummaryItemViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
-import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
@@ -21,7 +21,7 @@ import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
 import type { ModelToolsViewModel } from "../models/modelToolsViewModel";
 
-export type ModelToolsSectionsProps = WebPageProps & {
+export type ModelToolsSectionsProps = PageRouteProps & {
   viewModel: ModelToolsViewModel;
 };
 
@@ -75,7 +75,7 @@ function renderStatCards(
     <Flex gap={16} wrap>
       {items.map((metric) => (
         <StatCard
-          evidenceSummary={
+          supportingMeta={
             <Space wrap>
               {metric.trendText ? (
                 <Typography.Text type="secondary">{metric.trendText}</Typography.Text>

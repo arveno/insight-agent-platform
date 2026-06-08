@@ -4,9 +4,9 @@ import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { toEvidenceItem } from "../../../shared/view-model/staticViewModelAdapters";
 
 import type { DashboardReportEvidencePanelProps } from "./dashboardComponentTypes";
+import { mapDashboardEvidenceItem } from "../mappers/mapDashboardEvidenceItem";
 
 export function DashboardReportEvidencePanel({
   onNavigate,
@@ -14,7 +14,7 @@ export function DashboardReportEvidencePanel({
   viewModel
 }: DashboardReportEvidencePanelProps) {
   const { t } = useI18n();
-  const evidenceItems = viewModel.evidenceEntrances.map((item) => toEvidenceItem(t, item));
+  const evidenceItems = viewModel.evidenceEntrances.map((item) => mapDashboardEvidenceItem(t, item));
 
   if (panel === "reports") {
     return (

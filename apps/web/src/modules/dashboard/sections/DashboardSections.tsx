@@ -1,6 +1,6 @@
 import { Flex } from "antd";
 
-import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
@@ -13,7 +13,7 @@ import { DashboardReportEvidencePanel } from "../components/DashboardReportEvide
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
-export type DashboardSectionsProps = WebPageProps & {
+export type DashboardSectionsProps = PageRouteProps & {
   onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
   selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
   selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];

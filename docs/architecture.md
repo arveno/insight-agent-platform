@@ -336,13 +336,13 @@ UI 不得直接消费 raw API response。
 - `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
-- `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。
+- `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。
 - `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
-- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和与这些静态类型一一对应的轻量映射辅助，不承接业务组件或业务聚合。
+- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和真正无业务的通用 helper，不承接 evidence / trace / report / tool / metric / data source 级别的业务 adapter、业务 key map 或业务聚合。
 - `shared/test` 只放测试期共用 provider / helper，不承接运行时代码。
 - `shared` 不得依赖 `app` 或 `modules`；`modules` 可以依赖 `shared` 与 `api`，但不得依赖 `app`，也不得直接 import 其他 module 的业务组件。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。

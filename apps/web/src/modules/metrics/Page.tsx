@@ -1,5 +1,5 @@
 import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useMetricsOverviewState,
@@ -7,7 +7,7 @@ import {
 } from "./hooks/useMetricsOverviewState";
 import { MetricsSections } from "./sections/MetricsSections";
 
-export type MetricsPageProps = WebPageProps & {
+export type MetricsPageProps = PageRouteProps & {
   metricsState?: MetricsOverviewController;
 };
 

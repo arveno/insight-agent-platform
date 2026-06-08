@@ -82,6 +82,7 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/ui/cards/CardSurface.tsx",
   "apps/web/src/shared/ui/cards/MetricCard.tsx",
   "apps/web/src/shared/ui/cards/MetricCardGrid.tsx",
+  "apps/web/src/shared/view-model/staticViewModelAdapters.ts",
   "apps/web/src/shared/ui/data/AppPropertyList.tsx",
   "apps/web/src/shared/ui/data/SummaryTable.tsx",
   "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
@@ -413,6 +414,51 @@ const sharedListBusinessNameViolations = collectMatchingEntries(
   (entry) =>
     entry.isFile() && sharedUiListBusinessPrefixes.some((prefix) => entry.name.startsWith(prefix))
 );
+const sharedCardContentViolations = collectContentViolations("apps/web/src/shared/ui/cards", [
+  { pattern: /\bevidenceSummary\b/, message: "shared/ui/cards 不得出现 evidenceSummary 业务命名" },
+  {
+    pattern: /\bSourceEvidence\b|\bReportFinding\b|\bMetricDefinition\b|\bMetricsViewModel\b/,
+    message: "shared/ui/cards 不得出现业务对象或业务 ViewModel 词"
+  }
+]);
+const sharedChartAntdViolations = collectImportViolations("apps/web/src/shared/charts", [
+  {
+    pattern: /\bfrom\s+["']antd["']/,
+    message: "shared/charts 不得直接依赖 antd，必须通过 CardSurface / shared primitive 组合"
+  }
+]);
+const sharedViewModelBusinessViolations = collectContentViolations(
+  "apps/web/src/shared/view-model",
+  [
+    {
+      pattern: /\btoEvidenceItem\b|\btoTraceItem\b/,
+      message: "shared/view-model 不得保留 evidence / trace 业务 adapter"
+    },
+    {
+      pattern: /\bevidenceTitleKey\b|\bevidenceSummaryKey\b|\btraceTitleKey\b|\btraceEventKey\b/,
+      message: "shared/view-model 不得保留业务 key map"
+    },
+    {
+      pattern:
+        /\bSourceEvidence\b|\bReportFinding\b|\bToolDefinition\b|\bMetricDefinition\b|\bDataSource\b|\bKnowledgeDocument\b|\bGovernancePolicy\b/,
+      message: "shared/view-model 不得包含业务对象词"
+    }
+  ]
+);
+const sharedNavigationCompositionViolations = collectContentViolations(
+  "apps/web/src/shared/navigation",
+  [
+    {
+      pattern: /\bWebPageProps\b/,
+      message: "shared/navigation 不得定义 page composition props 类型"
+    },
+    {
+      pattern:
+        /\bdataKnowledgeState\b|\bmetricsState\b|\bplatformOperationsState\b|\breportsState\b/,
+      message: "shared/navigation 不得承载 app composition state slot"
+    }
+  ]
+);
 const transientFrontendDirs = collectMatchingEntries("apps/web/src", (entry, absolutePath) => {
   if (!entry.isDirectory()) {
     return false;
@@ -504,6 +550,25 @@ if (sharedListBusinessNameViolations.length > 0) {
   fail("apps/web/src/shared/ui/lists 不允许出现业务前缀文件：", sharedListBusinessNameViolations);
 }
 
+if (sharedCardContentViolations.length > 0) {
+  fail("apps/web/src/shared/ui/cards 检测到业务化内容：", sharedCardContentViolations);
+}
+
+if (sharedChartAntdViolations.length > 0) {
+  fail("apps/web/src/shared/charts 检测到直接依赖 antd 的实现：", sharedChartAntdViolations);
+}
+
+if (sharedViewModelBusinessViolations.length > 0) {
+  fail("apps/web/src/shared/view-model 检测到业务 adapter 或业务对象词：", sharedViewModelBusinessViolations);
+}
+
+if (sharedNavigationCompositionViolations.length > 0) {
+  fail(
+    "apps/web/src/shared/navigation 检测到 page composition props 或 state slot：",
+    sharedNavigationCompositionViolations
+  );
+}
+
 if (transientFrontendDirs.length > 0) {
   fail(
     "apps/web/src 不允许出现 shared/product、legacy、temporary 或 transitional 目录：",
@@ -574,6 +639,14 @@ function collectNamedEntryViolations(rootDir, prefixes) {
 }
 
 function collectImportViolations(rootDir, rules) {
+  return collectFileContentViolations(rootDir, rules);
+}
+
+function collectContentViolations(rootDir, rules) {
+  return collectFileContentViolations(rootDir, rules);
+}
+
+function collectFileContentViolations(rootDir, rules) {
   const files = collectMatchingEntries(
     rootDir,
     (entry) => entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))

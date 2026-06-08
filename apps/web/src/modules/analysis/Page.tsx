@@ -1,5 +1,5 @@
 import { theme } from "antd";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useAnalysisConversationState,
@@ -7,7 +7,7 @@ import {
 } from "./hooks/useAnalysisConversationState";
 import { AnalysisSections } from "./sections/AnalysisSections";
 
-export type AnalysisPageContentProps = WebPageProps & {
+export type AnalysisPageContentProps = PageRouteProps & {
   conversationState: AnalysisConversationController;
 };
 
@@ -52,7 +52,7 @@ export function AnalysisPageContent({
   );
 }
 
-export function AnalysisPage({ onNavigate }: WebPageProps) {
+export function AnalysisPage({ onNavigate }: PageRouteProps) {
   const conversationState = useAnalysisConversationState();
 
   return <AnalysisPageContent conversationState={conversationState} onNavigate={onNavigate} />;

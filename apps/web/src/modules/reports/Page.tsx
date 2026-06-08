@@ -1,5 +1,5 @@
 import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useReportsReaderState,
@@ -7,7 +7,7 @@ import {
 } from "./hooks/useReportsReaderState";
 import { ReportsSections } from "./sections/ReportsSections";
 
-export type ReportsPageProps = WebPageProps & {
+export type ReportsPageProps = PageRouteProps & {
   reportsState?: ReportsReaderController;
 };
 

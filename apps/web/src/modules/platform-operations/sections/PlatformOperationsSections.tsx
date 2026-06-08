@@ -1,7 +1,7 @@
 import { Button, Flex, Space, Typography } from "antd";
 
 import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
-import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
@@ -16,7 +16,7 @@ import { createRouteAction } from "../../../shared/navigation/createRouteAction"
 import type { PlatformOperationsOverviewController } from "../hooks/usePlatformOperationsOverviewState";
 import type { PlatformOperationListItemViewModel } from "../models/platformOperationsViewModel";
 
-export type PlatformOperationsSectionsProps = WebPageProps & {
+export type PlatformOperationsSectionsProps = PageRouteProps & {
   controller: PlatformOperationsOverviewController;
 };
 

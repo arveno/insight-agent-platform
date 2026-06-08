@@ -56,6 +56,8 @@ Closes #
 
 -
 
+- [ ] 不存在已知未修复架构问题；如存在，已明确说明且不允许据此建议关闭治理 Issue
+
 ## Review Checklist / 审查清单
 
 - [ ] 已实现 Issue 要求
@@ -65,6 +67,7 @@ Closes #
 - [ ] 验收标准可检查且已满足
 - [ ] CI 已通过，或失败原因已说明
 - [ ] 用户可以基于本 PR 决定是否 merge
+- [ ] 如本 PR 属于治理收口阶段，不存在未修复 `P0 / P1 / P2 / watch items`
 
 ## UI Taxonomy Checklist / UI 组件族谱清单
 

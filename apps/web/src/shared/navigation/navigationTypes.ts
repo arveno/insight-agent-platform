@@ -25,13 +25,6 @@ export type PageRouteProps = {
   onNavigate?: NavigateToRoute;
 };
 
-export type WebPageProps = PageRouteProps & {
-  dataKnowledgeState?: unknown;
-  metricsState?: unknown;
-  platformOperationsState?: unknown;
-  reportsState?: unknown;
-};
-
 export type NavigationAction = {
   ariaLabel?: string;
   disabled?: boolean;

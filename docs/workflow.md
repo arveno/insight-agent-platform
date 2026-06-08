@@ -161,6 +161,7 @@ PR 审查必须按 Issue 反查：
 - 是否新增 `index.ts / index.tsx`、`shared/product`、`legacy / temporary / transitional` 或其它旧结构回流目录。
 - 是否绕开 Ant Design 自造基础组件，或只是为了少写 JSX 创建组件。
 - 是否把排序、过滤、分组、权限显隐塞进 UI primitive。
+- 如果当前 PR 属于治理收口阶段，是否仍保留已识别的 `P1 / P2 / watch items`；治理收口阶段不允许把已识别问题留到后续。
 
 PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓库事实源判断是否合格。
 
@@ -168,6 +169,7 @@ PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓�
 
 - Codex 只能报告执行结果、测试结果和风险，不能自行判断“审核通过”。
 - ChatGPT 审核 PR 时必须显式检查上述 UI taxonomy 边界，而不是只看页面是否可运行。
+- 只有不存在已知未修复的架构问题、taxonomy 问题或治理 watch items 时，才允许建议关闭对应治理 Issue。
 - 用户最终决定是否 merge。
 
 ## 10. 退回机制

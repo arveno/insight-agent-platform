@@ -8,7 +8,7 @@ import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 
 import { AssetRelationshipGraph } from "./AssetRelationshipGraph";
 import type { DataKnowledgeOverviewController } from "../hooks/useDataKnowledgeOverviewState";
@@ -17,7 +17,7 @@ import type {
   DataKnowledgeSelectedAssetViewModel
 } from "../models/dataKnowledgeViewModel";
 
-export type DataKnowledgeSectionsProps = WebPageProps & {
+export type DataKnowledgeSectionsProps = PageRouteProps & {
   controller: DataKnowledgeOverviewController;
 };
 

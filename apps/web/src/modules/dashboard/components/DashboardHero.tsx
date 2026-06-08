@@ -2,6 +2,7 @@ import { Flex, Select, Space, Typography, theme } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
@@ -53,13 +54,9 @@ export function DashboardHero({
   }));
 
   return (
-    <section
+    <CardSurface
       style={{
-        background: token.colorBgElevated,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        borderRadius: token.borderRadiusLG,
         boxShadow: token.boxShadowTertiary,
-        padding: shellThemeTokens.panelPadding
       }}
     >
       <Flex align="start" justify="space-between" wrap="wrap" gap={token.marginLG}>
@@ -129,7 +126,7 @@ export function DashboardHero({
           />
         </Flex>
       </div>
-    </section>
+    </CardSurface>
   );
 }
 
@@ -137,16 +134,20 @@ function HeroFact({ label, value }: { label: string; value: string }) {
   const { token } = theme.useToken();
 
   return (
-    <div
+    <CardSurface
       style={{
         background: token.colorFillAlter,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        borderRadius: token.borderRadius,
         flex: "1 1 220px",
-        minHeight: token.controlHeightLG * 2,
+        height: "auto",
         minWidth: 0,
-        padding: shellThemeTokens.panelPadding,
         width: "100%"
+      }}
+      styles={{
+        body: {
+          height: "auto",
+          minHeight: token.controlHeightLG * 2,
+          padding: shellThemeTokens.panelPadding
+        }
       }}
     >
       <Space direction="vertical" size={token.marginXXS}>
@@ -155,6 +156,6 @@ function HeroFact({ label, value }: { label: string; value: string }) {
         </Typography.Text>
         <Typography.Text style={shellTypographyStyles.cardValue}>{value}</Typography.Text>
       </Space>
-    </div>
+    </CardSurface>
   );
 }
