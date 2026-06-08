@@ -536,7 +536,7 @@ generated/
 
 ## 17. Schema 分组规则
 
-`packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/features`、后端 `services/agent-runtime/src/modules` 保持一致。
+`packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致。
 这里的 contracts domain 目录可以保留 kebab-case；后端 Python runtime package 目录必须使用 snake_case。
 
 禁止把核心 schema 长期平铺在 `packages/contracts/schemas/*.schema.json` 下。新增核心对象时，必须先确认所属业务域，再放入对应分组目录。

@@ -144,66 +144,67 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify frontend layout
         run: |
+          test -f apps/web/src/main.tsx
+          test -d apps/web/src/api
+          test -d apps/web/src/api/client
+          test -d apps/web/src/api/adapters
           test -d apps/web/src/app
-          test -d apps/web/src/app/router
           test -d apps/web/src/app/providers
-          test -d apps/web/src/app/layout
-          test -d apps/web/src/app/theme
-          test -d apps/web/src/pages
-          test -d apps/web/src/features
+          test -d apps/web/src/app/router
+          test -d apps/web/src/app/shell
+          test -d apps/web/src/modules
           test -d apps/web/src/shared
 
-          for page in \
+          for module in \
             workspace \
-            data-knowledge \
-            metrics \
             dashboard \
             analysis \
-            reports \
-            memory \
-            feedback \
-            evaluation \
-            model-tools \
-            governance \
-            observability \
-            settings \
-            platform-operations; do
-            test -d "apps/web/src/pages/${page}"
-          done
-
-          for feature in \
-            workspace \
             data-knowledge \
             metrics \
-            dashboard \
-            agent-analysis \
-            memory \
-            feedback \
-            evaluation \
+            reports \
+            platform-operations \
             model-tools \
             governance \
-            observability \
-            reports \
             settings \
-            platform-operations; do
-            for layer in api models mappers components pages hooks; do
-              test -d "apps/web/src/features/${feature}/${layer}"
-            done
+            evaluation \
+            feedback \
+            memory \
+            observability \
+          ; do
+            test -d "apps/web/src/modules/${module}"
           done
 
           for shared in \
-            api \
             ui \
             layout \
-            charts \
             theme \
-            hooks \
-            stores \
-            types \
+            graph \
+            charts \
+            i18n \
+            icons \
             utils \
-            constants; do
+          ; do
             test -d "apps/web/src/shared/${shared}"
           done
+
+          test ! -d apps/web/src/pages
+          test ! -d apps/web/src/features
+          test ! -d apps/web/src/pages/_shared
+          test ! -d apps/web/src/pages/_legacy
+          test ! -f apps/web/src/features/static-view-models.ts
+          test ! -d apps/web/src/shared/api
+          test ! -d apps/web/src/shared/hooks
+          test ! -d apps/web/src/shared/stores
+          test ! -d apps/web/src/shared/types
+          test ! -d apps/web/src/shared/constants
+          test ! -d apps/web/src/shared/ui/evidence
+          test ! -d apps/web/src/shared/ui/report
+          test ! -d apps/web/src/shared/ui/trace
+
+          if find apps/web/src \( -name 'index.ts' -o -name 'index.tsx' \) | grep -q .; then
+            echo "apps/web/src 不允许存在 index.ts / index.tsx。"
+            exit 1
+          fi
 
   backend:
     name: Backend Layout Guard

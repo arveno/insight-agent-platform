@@ -1,50 +1,46 @@
 import { existsSync, readdirSync } from "node:fs";
 
-const appSections = ["router", "providers", "layout", "theme"];
-const pages = [
+const appSections = ["providers", "router", "shell"];
+const frontendModules = [
   "workspace",
-  "data-knowledge",
-  "metrics",
   "dashboard",
   "analysis",
-  "reports",
-  "memory",
-  "feedback",
-  "evaluation",
-  "model-tools",
-  "governance",
-  "observability",
-  "settings",
-  "platform-operations"
-];
-const features = [
-  "workspace",
   "data-knowledge",
   "metrics",
-  "dashboard",
-  "agent-analysis",
-  "memory",
-  "feedback",
-  "evaluation",
+  "reports",
+  "platform-operations",
   "model-tools",
   "governance",
-  "observability",
-  "reports",
   "settings",
-  "platform-operations"
+  "evaluation",
+  "feedback",
+  "memory",
+  "observability"
 ];
-const featureLayers = ["api", "models", "mappers", "components", "pages", "hooks"];
-const sharedLayers = [
-  "api",
-  "ui",
-  "layout",
-  "charts",
-  "theme",
-  "hooks",
-  "stores",
-  "types",
-  "utils",
-  "constants"
+const sharedLayers = ["ui", "layout", "theme", "graph", "charts", "i18n", "icons", "utils"];
+const frontendRequiredPaths = [
+  "apps/web/src/main.tsx",
+  "apps/web/src/api",
+  "apps/web/src/api/client",
+  "apps/web/src/api/adapters",
+  ...appSections.map((section) => `apps/web/src/app/${section}`),
+  ...frontendModules.map((moduleDir) => `apps/web/src/modules/${moduleDir}`),
+  ...sharedLayers.map((layer) => `apps/web/src/shared/${layer}`)
+];
+const forbiddenFrontendPaths = [
+  "apps/web/src/pages",
+  "apps/web/src/features",
+  "apps/web/src/pages/_shared",
+  "apps/web/src/pages/_legacy",
+  "apps/web/src/features/static-view-models.ts",
+  "apps/web/src/shared/api",
+  "apps/web/src/shared/hooks",
+  "apps/web/src/shared/stores",
+  "apps/web/src/shared/types",
+  "apps/web/src/shared/constants",
+  "apps/web/src/shared/ui/evidence",
+  "apps/web/src/shared/ui/report",
+  "apps/web/src/shared/ui/trace"
 ];
 const contractSchemaPaths = [
   "packages/contracts/schemas/workspace/workspace.schema.json",
@@ -234,12 +230,7 @@ const requiredPaths = [
 ];
 
 requiredPaths.push(
-  ...appSections.map((section) => `apps/web/src/app/${section}`),
-  ...pages.map((page) => `apps/web/src/pages/${page}`),
-  ...features.flatMap((feature) =>
-    featureLayers.map((layer) => `apps/web/src/features/${feature}/${layer}`)
-  ),
-  ...sharedLayers.map((layer) => `apps/web/src/shared/${layer}`),
+  ...frontendRequiredPaths,
   ...contractSchemaDomains.map((domain) => `packages/contracts/schemas/${domain}`),
   ...contractSchemaPaths,
   ...backendFiles,
@@ -252,9 +243,14 @@ requiredPaths.push(
 );
 
 const missingPaths = requiredPaths.filter((path) => !existsSync(path));
+const forbiddenPaths = forbiddenFrontendPaths.filter((path) => existsSync(path));
 const flatSchemaFiles = readdirSync("packages/contracts/schemas", { withFileTypes: true })
   .filter((entry) => entry.isFile() && entry.name.endsWith(".schema.json"))
   .map((entry) => `packages/contracts/schemas/${entry.name}`);
+const frontendIndexFiles = collectMatchingFiles("apps/web/src", (entry, absolutePath) =>
+  entry.isFile() &&
+  (absolutePath.endsWith("/index.ts") || absolutePath.endsWith("/index.tsx"))
+);
 
 if (missingPaths.length > 0) {
   console.error("Missing required project structure:");
@@ -272,4 +268,46 @@ if (flatSchemaFiles.length > 0) {
   process.exit(1);
 }
 
+if (forbiddenPaths.length > 0) {
+  console.error("Detected forbidden frontend legacy paths:");
+  for (const path of forbiddenPaths) {
+    console.error(`- ${path}`);
+  }
+  process.exit(1);
+}
+
+if (frontendIndexFiles.length > 0) {
+  console.error("apps/web/src 不允许存在 index.ts / index.tsx：");
+  for (const path of frontendIndexFiles) {
+    console.error(`- ${path}`);
+  }
+  process.exit(1);
+}
+
 console.log("Structure guard passed.");
+
+function collectMatchingFiles(rootDir, predicate) {
+  if (!existsSync(rootDir)) {
+    return [];
+  }
+
+  return collectDirectoryEntries(rootDir, predicate);
+}
+
+function collectDirectoryEntries(currentDir, predicate) {
+  const matches = [];
+
+  for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+    const absolutePath = `${currentDir}/${entry.name}`;
+
+    if (predicate(entry, absolutePath)) {
+      matches.push(absolutePath);
+    }
+
+    if (entry.isDirectory()) {
+      matches.push(...collectDirectoryEntries(absolutePath, predicate));
+    }
+  }
+
+  return matches;
+}
