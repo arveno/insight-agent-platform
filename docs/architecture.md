@@ -141,8 +141,8 @@ insight-agent-platform/
 
 前端页面结构冻结边界固定如下：
 
-- 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`。
-- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏。
+- 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载；`SectionStack` 只负责页面内容大块纵向节奏。
 - 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
 - `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是允许例外。
 - 普通业务卡片必须优先组合 `ContentCard / StatCard / CardSurface`，不得直接用 Ant `Card` 重画 shared card shell；`Reports` 模块同样遵守。
@@ -345,12 +345,14 @@ UI 不得直接消费 raw API response。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
 - `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。
-- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
 - `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，页面内容结构从 `ModuleSections` 开始组织，不保留自动 header 链路。
-- `PageIntro` 是唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责标题说明、`extra` 操作区和受控 `plain / cards / stack` 内容布局；不得接业务对象、不得做 route 映射、不得依赖 `app / modules`。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载，不再承接 `filters / rightAside / header / viewModel / actions / hideHeader / hideHeaderActions`。
+- `PageIntro` 是唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责标题说明和 `extra` 操作区；children slot 的 `plain / cards / stack` 布局统一委托给 `ContentSlotLayout`；不得接业务对象、不得做 route 映射、不得依赖 `app / modules`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区；除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 优先统一到 `PageIntro`，替换后不保留旧 `PageHeader` / intro / hero-like 结构。
 - `Page.tsx` 只负责 controller / state 接入和 `ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成；标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`。
-- `ContentSection` 负责普通 section 语义、标题区和受控 `plain / cards / stack` 内容布局；卡片组优先使用 `contentLayout="cards"`，纵向大块优先使用 `contentLayout="stack"`，复杂表格 / 图表 / Tabs / timeline 保持 `plain`。
+- `ContentSection` 只负责普通 section 语义、标题区和 children slot；`plain / cards / stack` 内容布局统一由 `ContentSlotLayout` 承接；卡片组优先使用 `contentLayout="cards"`，纵向大块优先使用 `contentLayout="stack"`，复杂表格 / 图表 / Tabs / timeline 保持 `plain`。
+- `ContentSlotLayout` 只负责 `plain / cards / stack` children slot 布局；不得承接 section header、page intro、业务对象、route、权限或排序过滤分组。
 - module `sections/**` 不得再承担 section 级卡片排列实现，不允许回流 `cardItemStyle`、`flex: "1 1 xxxpx"`、`Flex wrap` 或手写 `gutter={[16, 16]}`；这些布局统一收口到 `ContentSection`，footer actions 和卡片内部布局除外。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。

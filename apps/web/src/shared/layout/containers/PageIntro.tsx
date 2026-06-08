@@ -1,6 +1,7 @@
-import { Children, isValidElement, type ReactNode } from "react";
-import { Col, type ColProps, Flex, Row, Space, Typography } from "antd";
+import type { ReactNode } from "react";
+import { type ColProps, Flex, Space, Typography } from "antd";
 
+import { ContentSlotLayout } from "../ContentSlotLayout";
 import { shellThemeTokens } from "../../theme/tokens";
 import { shellTypographyStyles } from "../../theme/typography";
 import { CardSurface } from "../../ui/surfaces/CardSurface";
@@ -8,9 +9,9 @@ import { CardSurface } from "../../ui/surfaces/CardSurface";
 /**
  * Layer: Layout / Container Pattern.
  *
- * Based on: CardSurface, Ant Flex / Space / Row / Col / Typography.
- * Responsibilities: 页面顶部介绍区、左侧标题说明、右侧 extra 操作区、可选 `cards / stack`
- * 内容布局。
+ * Based on: CardSurface, Ant Flex / Space / Typography.
+ * Responsibilities: 页面顶部介绍区、左侧标题说明、右侧 extra 操作区，并通过
+ * ContentSlotLayout 承接受控 `plain / cards / stack` children slot 布局。
  * Forbidden responsibilities: 不接业务对象、不做 route 映射、不做排序过滤分组、不做权限判断、
  * 不消费业务 ViewModel、不依赖 app / modules。
  * Caller contract: 业务模块传入通用 ReactNode；页面操作区通过 `extra` 传入；小卡片区通过
@@ -31,9 +32,9 @@ export type PageIntroProps = {
 /**
  * Layer: Layout / Container Pattern.
  *
- * Based on: CardSurface, Ant Flex / Space / Row / Col / Typography.
- * Responsibilities: 页面顶部介绍区、左侧标题说明、右侧 extra 操作区、可选 `cards / stack`
- * 内容布局。
+ * Based on: CardSurface, Ant Flex / Space / Typography.
+ * Responsibilities: 页面顶部介绍区、左侧标题说明、右侧 extra 操作区，并通过
+ * ContentSlotLayout 承接受控 `plain / cards / stack` children slot 布局。
  * Forbidden responsibilities: 不接业务对象、不做 route 映射、不做排序过滤分组、不做权限判断、
  * 不消费业务 ViewModel、不依赖 app / modules。
  * Caller contract: 业务模块传入通用 ReactNode；页面操作区通过 `extra` 传入；小卡片区通过
@@ -50,36 +51,13 @@ export function PageIntro({
   supportingText,
   title
 }: PageIntroProps) {
-  const contentNodes = Children.toArray(children);
-  const hasContent = contentNodes.length > 0;
-
-  const renderedContent =
-    contentLayout === "cards" ? (
-      <Row gutter={[shellThemeTokens.cardGridGap, shellThemeTokens.cardGridGap]}>
-        {contentNodes.map((child, index) => (
-          <Col
-            {...colProps}
-            key={isValidElement(child) && child.key != null ? child.key : index}
-          >
-            {child}
-          </Col>
-        ))}
-      </Row>
-    ) : contentLayout === "stack" ? (
+  return (
+    <CardSurface>
       <Space
         direction="vertical"
         size={shellThemeTokens.sectionContentGap}
         style={{ width: "100%" }}
       >
-        {children}
-      </Space>
-    ) : (
-      children
-    );
-
-  return (
-    <CardSurface>
-      <Space direction="vertical" size={shellThemeTokens.sectionContentGap} style={{ width: "100%" }}>
         <Flex
           align="start"
           gap={shellThemeTokens.sectionContentGap}
@@ -87,7 +65,11 @@ export function PageIntro({
           style={{ width: "100%" }}
           wrap="wrap"
         >
-          <Space direction="vertical" size={shellThemeTokens.shellSectionGap} style={{ flex: "1 1 0", minWidth: 0 }}>
+          <Space
+            direction="vertical"
+            size={shellThemeTokens.shellSectionGap}
+            style={{ flex: "1 1 0", minWidth: 0 }}
+          >
             {eyebrow ? (
               <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
                 {eyebrow}
@@ -109,7 +91,9 @@ export function PageIntro({
           </Space>
           {extra ? <Flex justify="flex-end">{extra}</Flex> : null}
         </Flex>
-        {hasContent ? renderedContent : null}
+        <ContentSlotLayout colProps={colProps} layout={contentLayout}>
+          {children}
+        </ContentSlotLayout>
       </Space>
     </CardSurface>
   );

@@ -165,20 +165,23 @@ External Raw Data
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
-- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，不保留自动 header 链路。
-- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏，不得承接 page padding。
+- 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载；不得再新增 `filters / rightAside / header / viewModel / actions / hideHeader / hideHeaderActions`。
+- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏，不得承接 page padding、header 或页面壳 slot。
 - `PageIntro` 是 `shared/layout/containers` 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
-- `PageIntro` 负责页面顶部介绍区、左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
+- `PageIntro` 只负责页面顶部介绍区、左侧标题说明和右侧 `extra` 操作区；children slot 的 `plain / cards / stack` 布局统一通过 `ContentSlotLayout` 承接；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
 - 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
-- 标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`PageIntro` 只能在 `ModuleSections` 或 module hero 内显式组织。
+- `PageIntro` 只能在 `ModuleSections` 或 `DashboardHero` 内显式组织，不得回流到 `Page.tsx`、`app`、`shared/ui`、`shared/navigation` 或其它 module components。
 - `Page.tsx` 只负责 controller / state 接入和 `ResponsivePageShell -> ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成；非 `Analysis` 页面不得在 `Page.tsx` 中直接组织 `PageIntro / SectionStack / ContentSection`。
 - `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
-- `ContentSection` 负责统一 section header、children slot，以及受控基础内容布局：`contentLayout="plain" | "cards" | "stack"`。
+- `ContentSection` 只负责统一普通内容区的 section header、`extra` 和 children slot；`contentLayout="plain" | "cards" | "stack"` 的具体布局统一通过 `ContentSlotLayout` 承接。
+- `ContentSlotLayout` 只负责 `plain / cards / stack` children slot 布局；不得承接 section header、page intro、业务对象、route、权限或排序过滤分组。
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。
-- `contentLayout="cards"` 由 `ContentSection` 内部使用 Ant `Row / Col` 排列 children，列宽通过 `colProps` 声明；禁止再扩展 `columns / grid / wrap / minItemWidth` 之类自定义布局 API。
-- `contentLayout="stack"` 由 `ContentSection` 内部使用 Ant `Flex / Space` 做受控纵向排列。
+- `contentLayout="cards"` 由 `ContentSlotLayout` 使用受控 Ant `Row / Col` 排列 children，列宽通过 `colProps` 声明；禁止再扩展 `columns / grid / wrap / minItemWidth` 之类自定义布局 API。
+- `contentLayout="stack"` 由 `ContentSlotLayout` 使用受控 Ant `Space` 做纵向排列。
 - 普通内容区如果是卡片组，优先使用 `ContentSection contentLayout="cards"`；如果只是多个纵向大块，优先使用 `ContentSection contentLayout="stack"`。
 - `SectionStack` 只负责页面区域的纵向节奏，不要求子节点必须是 `ContentSection`；Hero 或其它不需要 section header 的自定义区域可以直接放在 `SectionStack` 中。
 - 需要 section header 的卡片区应优先通过 `ContentSection contentLayout="cards"` 承接，不要在业务页面重复手写 `Row / Col / gutter`。

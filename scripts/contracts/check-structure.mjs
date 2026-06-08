@@ -46,6 +46,8 @@ const frontendRequiredPaths = [
   "apps/web/src/shared/ui/states",
   "apps/web/src/shared/ui/status",
   "apps/web/src/shared/layout/containers",
+  "apps/web/src/shared/layout/ContentSlotLayout.tsx",
+  "apps/web/src/shared/layout/ContentSlotLayout.test.tsx",
   "apps/web/src/shared/layout/containers/PageIntro.tsx",
   "apps/web/src/shared/layout/containers/PageIntro.test.tsx",
   "apps/web/src/shared/layout/panels",
@@ -508,7 +510,8 @@ const frontendStructureContentViolations = collectContentViolations("apps/web/sr
   },
   {
     pattern: /\bhideHeader\b|\bhideHeaderActions\b/,
-    message: "真实代码不得回流 hideHeader / hideHeaderActions；页面顶部结构必须在 ModuleSections 显式组织"
+    message:
+      "真实代码不得回流 hideHeader / hideHeaderActions；页面顶部结构必须在 ModuleSections 显式组织"
   },
   {
     pattern: /\btitleSuffix\b/,
@@ -572,6 +575,26 @@ const contentSectionLayoutViolations = collectFilePathContentViolations(
   "apps/web/src/shared/layout/sections/ContentSection.tsx",
   [
     {
+      pattern: /\bChildren\.toArray\b/,
+      message:
+        "ContentSection 不得自行遍历 children；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /import\s*\{[^}]*\b(Row|Col)\b[^}]*\}\s*from\s*["']antd["']/,
+      message:
+        "ContentSection 不得直接 import Ant Row / Col；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /<Row\b|<Col\b/,
+      message:
+        "ContentSection 不得直接写 Row / Col JSX；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /contentLayout\s*===\s*["']cards["']|contentLayout\s*===\s*["']stack["']/,
+      message:
+        "ContentSection 不得重复实现 contentLayout cards / stack 分支；必须通过 ContentSlotLayout 承接"
+    },
+    {
       pattern: /gutter=\{\[16,\s*16\]\}/,
       message: "ContentSection 不得硬编码 gutter={[16, 16]}；卡片间距必须使用 shared/theme token"
     },
@@ -585,6 +608,25 @@ const pageIntroLayoutViolations = collectFilePathContentViolations(
   "apps/web/src/shared/layout/containers/PageIntro.tsx",
   [
     {
+      pattern: /\bChildren\.toArray\b/,
+      message: "PageIntro 不得自行遍历 children；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /import\s*\{[^}]*\b(Row|Col)\b[^}]*\}\s*from\s*["']antd["']/,
+      message:
+        "PageIntro 不得直接 import Ant Row / Col；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /<Row\b|<Col\b/,
+      message:
+        "PageIntro 不得直接写 Row / Col JSX；plain/cards/stack 布局必须交给 ContentSlotLayout"
+    },
+    {
+      pattern: /contentLayout\s*===\s*["']cards["']|contentLayout\s*===\s*["']stack["']/,
+      message:
+        "PageIntro 不得重复实现 contentLayout cards / stack 分支；必须通过 ContentSlotLayout 承接"
+    },
+    {
       pattern: /gutter=\{\[\d+,\s*\d+\]\}/,
       message: "PageIntro 不得硬编码数字 gutter；卡片间距必须使用 shared/theme token"
     },
@@ -594,9 +636,18 @@ const pageIntroLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
-const responsivePageShellHeaderViolations = collectFilePathContentViolations(
+const responsivePageShellFreezeViolations = collectFilePathContentViolations(
   "apps/web/src/shared/layout/containers/ResponsivePageShell.tsx",
   [
+    {
+      pattern: /\bfilters\??:\s*ReactNode\b|\{filters\}/,
+      message: "ResponsivePageShell 不得保留 filters slot；标准页面结构从 ModuleSections 开始组织"
+    },
+    {
+      pattern: /\brightAside\??:\s*ReactNode\b|\{rightAside\}/,
+      message:
+        "ResponsivePageShell 不得保留 rightAside slot；标准页面结构从 ModuleSections 开始组织"
+    },
     {
       pattern: /\bheader\??:\s*ReactNode\b/,
       message:
@@ -606,6 +657,15 @@ const responsivePageShellHeaderViolations = collectFilePathContentViolations(
       pattern: /\{header\}/,
       message:
         "ResponsivePageShell 不得再渲染页面 header slot；页面顶部结构必须从 ModuleSections 显式组织"
+    },
+    {
+      pattern: /\bviewModel\b|\bactions\b|\bhideHeader\b|\bhideHeaderActions\b/,
+      message:
+        "ResponsivePageShell 只负责 page padding 和 children，不得回流业务或 header 控制 props"
+    },
+    {
+      pattern: /\bGrid\.useBreakpoint\b|\bisWide\b|\bshowRightAside\b/,
+      message: "ResponsivePageShell 不得保留响应式侧栏编排逻辑；只负责 page padding 和 children"
     }
   ]
 );
@@ -619,6 +679,14 @@ const sectionStackPaddingViolations = collectFilePathContentViolations(
     {
       pattern: /\bpadding\s*:/,
       message: "SectionStack 不得承接 page padding；页面 padding 只能由 ResponsivePageShell 承接"
+    },
+    {
+      pattern: /\bheader\b|\bfilters\b|\brightAside\b/,
+      message: "SectionStack 不得承接页面壳 slot 或 header 语义"
+    },
+    {
+      pattern: /\bPageIntro\b|\bContentSection\b/,
+      message: "SectionStack 只负责大块纵向节奏，不得直接绑定具体页面区块组件"
     }
   ]
 );
@@ -675,7 +743,7 @@ const moduleSectionLayoutViolations = collectScopedFileContentViolations(
     {
       pattern: /<Flex\s+gap=\{16\}\s+wrap>/,
       message:
-        "modules/**/sections 不得手写 section 级 Flex wrap 卡片排列；应使用 ContentSection contentLayout=\"cards\""
+        'modules/**/sections 不得手写 section 级 Flex wrap 卡片排列；应使用 ContentSection contentLayout="cards"'
     }
   ]
 );
@@ -834,11 +902,8 @@ if (pageIntroLayoutViolations.length > 0) {
   fail("PageIntro 检测到已禁止的布局实现：", pageIntroLayoutViolations);
 }
 
-if (responsivePageShellHeaderViolations.length > 0) {
-  fail(
-    "ResponsivePageShell 检测到已禁止的页面头部入口：",
-    responsivePageShellHeaderViolations
-  );
+if (responsivePageShellFreezeViolations.length > 0) {
+  fail("ResponsivePageShell 检测到已冻结的页面壳越界能力：", responsivePageShellFreezeViolations);
 }
 
 if (sectionStackPaddingViolations.length > 0) {
@@ -854,7 +919,10 @@ if (modulePageHeaderImportViolations.length > 0) {
 }
 
 if (moduleSectionLayoutViolations.length > 0) {
-  fail("modules/**/sections 检测到已禁止的 section 级卡片布局实现：", moduleSectionLayoutViolations);
+  fail(
+    "modules/**/sections 检测到已禁止的 section 级卡片布局实现：",
+    moduleSectionLayoutViolations
+  );
 }
 
 if (nonAnalysisModulePageStructureViolations.length > 0) {
@@ -869,7 +937,10 @@ if (pageIntroPlacementViolations.length > 0) {
 }
 
 if (reportsRawAntCardViolations.length > 0) {
-  fail("Reports 组件检测到绕开 shared card pattern 的 Ant Card 使用：", reportsRawAntCardViolations);
+  fail(
+    "Reports 组件检测到绕开 shared card pattern 的 Ant Card 使用：",
+    reportsRawAntCardViolations
+  );
 }
 
 console.log("Structure guard passed.");
