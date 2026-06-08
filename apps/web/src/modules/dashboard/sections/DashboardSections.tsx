@@ -1,5 +1,3 @@
-import { Col, Row } from "antd";
-
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
@@ -83,63 +81,56 @@ export function DashboardSections({
       />
 
       <ContentSection
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
         eyebrow={t("dashboard.metrics.eyebrow")}
         extra={<NavigationActionButton action={openMetricsAction} />}
         title={t("dashboard.metrics.title")}
       >
-        <Row gutter={[16, 16]}>
-          {viewModel.businessStatCards.map((metric) => (
-            <Col key={metric.key} lg={12} xs={24}>
-              <DashboardMetricOverview metric={metric} onNavigate={onNavigate} />
-            </Col>
-          ))}
-        </Row>
+        {viewModel.businessStatCards.map((metric) => (
+          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
+        ))}
       </ContentSection>
 
       <ContentSection
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
         eyebrow={t("dashboard.risk.eyebrow")}
         extra={<NavigationActionButton action={openGovernanceAction} />}
         title={t("dashboard.risk.title")}
       >
-        <Row gutter={[16, 16]}>
-          {riskItems.map(({ isRiskSummary, item }) => (
-            <Col key={item.key} lg={12} xs={24}>
-              <DashboardRiskOverview
-                isRiskSummary={isRiskSummary}
-                item={item}
-                onNavigate={onNavigate}
-              />
-            </Col>
-          ))}
-        </Row>
+        {riskItems.map(({ isRiskSummary, item }) => (
+          <DashboardRiskOverview
+            isRiskSummary={isRiskSummary}
+            item={item}
+            key={item.key}
+            onNavigate={onNavigate}
+          />
+        ))}
       </ContentSection>
 
       <ContentSection
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
         eyebrow={t("dashboard.reportEvidence.eyebrow")}
         extra={<NavigationActionButton action={openReportsAction} />}
         title={t("dashboard.reportEvidence.title")}
       >
-        <Row gutter={[16, 16]}>
-          {reportEvidenceCards.map((card) => (
-            <Col key={card.key} lg={8} xs={24}>
-              <DashboardReportEvidenceCard card={card} />
-            </Col>
-          ))}
-        </Row>
+        {reportEvidenceCards.map((card) => (
+          <DashboardReportEvidenceCard card={card} key={card.key} />
+        ))}
       </ContentSection>
 
       <ContentSection
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
         eyebrow={t("dashboard.quality.eyebrow")}
         extra={<NavigationActionButton action={openPlatformOperationsAction} />}
         title={t("dashboard.quality.title")}
       >
-        <Row gutter={[16, 16]}>
-          {viewModel.platformQualitySummary.map((item) => (
-            <Col key={item.key} lg={12} xs={24}>
-              <DashboardQualityPanel item={item} onNavigate={onNavigate} />
-            </Col>
-          ))}
-        </Row>
+        {viewModel.platformQualitySummary.map((item) => (
+          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
+        ))}
       </ContentSection>
     </SectionStack>
   );

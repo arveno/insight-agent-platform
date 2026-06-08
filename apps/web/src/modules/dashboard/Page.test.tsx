@@ -42,7 +42,7 @@ describe("DashboardPage", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("uses Ant Row and Col for responsive dashboard card sections and renders three report-evidence cards", () => {
+  it("uses the shared ContentSection cards layout for responsive dashboard card sections and renders three report-evidence cards", () => {
     render(
       <TestProviders>
         <DashboardPage />
@@ -53,13 +53,13 @@ describe("DashboardPage", () => {
     expect(screen.getByText("季度收入证据摘要")).toBeTruthy();
     expect(screen.getByText("数据质量与任务证据")).toBeTruthy();
 
-    expect(screen.getByText("季度收入").closest(".ant-col")?.className).toContain("ant-col-lg-12");
+    expect(screen.getByText("季度收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
     expect(screen.getByText("收入增速异常").closest(".ant-col")?.className).toContain(
-      "ant-col-lg-12"
+      "ant-col-md-12"
     );
     expect(screen.getByText("周经营分析报告").closest(".ant-col")?.className).toContain(
-      "ant-col-lg-8"
+      "ant-col-xl-8"
     );
-    expect(screen.getByText("平台质量").closest(".ant-col")?.className).toContain("ant-col-lg-12");
+    expect(screen.getByText("平台质量").closest(".ant-col")?.className).toContain("ant-col-md-12");
   });
 });

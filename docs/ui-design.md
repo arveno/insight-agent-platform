@@ -152,8 +152,8 @@ AppShell
 
 规则：
 
-- `SectionStack` 只负责页面 section 间距。
-- `ContentSection` 只负责 section 语义、eyebrow、title、extra 和 children slot。
+- `SectionStack` 只负责页面 section 间距，不要求子节点必须是 `ContentSection`。
+- `ContentSection` 负责 section 语义、eyebrow、title、extra、children slot，以及受控 `plain / cards / stack` 内容布局。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`。
 - `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger。
 - `NavigationActionButton` 只负责 route-aware 行为组合，不负责 route 到 Page 的映射。
@@ -173,13 +173,20 @@ AppShell
 
 ### Section Primitive
 
-- `SectionStack` 统一页面主内容的 section 垂直排列和间距。
+- `SectionStack` 统一页面主内容的 section 垂直排列和间距；Hero 或其它不需要 section header 的区域可以直接放入 `SectionStack`。
 - `ContentSection` 统一 section 标题区和内容区语义，不绑定卡片、表格、图表、列表或 Graph。
 - `ContentSection` header 右侧 slot 固定使用 `extra`，不使用 `titleSuffix`。
-- `ContentSection` 不新增 `layout / columns / wrap / grid` API；同类卡片应由调用方在 children 中直接用 Ant `Row / Col` 排列，而不是再包一层 dashboard/report/evidence 专用 panel。
-- section 内响应式卡片布局固定优先使用 Ant `Row / Col`：手机浏览器 `xs={24}` 单列，桌面根据内容使用 `lg={12}` 双列或 `lg={8}` 三列。
+- `ContentSection contentLayout="plain"` 表示保留 section header 和 section 语义，但 children 原样渲染；图表、表格和复杂自定义区域优先使用 plain。
+- `ContentSection contentLayout="cards"` 表示由 `ContentSection` 内部使用受控 Ant `Row / Col` 排列 children，间距必须来自 shared/theme token。
+- `ContentSection contentLayout="stack"` 表示由 `ContentSection` 内部使用 Ant `Flex / Space` 做受控纵向排列。
+- `ContentSection` 只暴露 `contentLayout` 和 `colProps` 两个布局入口；不新增 `columns / grid / wrap / minItemWidth` 这类自定义布局 API。
+- Dashboard 等卡片区不应再在页面内重复手写 `Row / Col / gutter`，而应通过 `ContentSection contentLayout="cards"` 声明。
+- section 内响应式卡片布局固定优先使用 Ant `Row / Col`：手机浏览器 `xs={24}` 单列，中屏常用 `md={12}` 双列，大屏三卡区使用 `xl={8}` 三列。
+- 双卡区默认 `colProps={ xs: 24, md: 12 }`，三卡区默认 `colProps={ xs: 24, md: 12, xl: 8 }`，单卡区默认 `colProps={ xs: 24 }`。
+- 卡片区间距必须来自 shared/theme token，禁止在业务页面或 shared/layout 中硬编码 `gutter={[16, 16]}`。
+- 如果某个区域不需要 section header，就不要使用 `ContentSection`，直接放到 `SectionStack` 或模块自定义区域里。
 - section 内按钮排列直接使用 Ant `Flex / Space`，不要额外抽 `ActionGroup`。
-- `Dashboard` 这类 overview page 的标准结构固定为 `SectionStack -> Hero -> ContentSection -> Row / Col -> Cards`。
+- `Dashboard` 这类 overview page 的标准结构固定为 `SectionStack -> Hero -> ContentSection(contentLayout="cards") -> Cards`。
 - 业务模块需要特殊卡片时，只在 module 内轻封单张卡片，不额外创建 `Panel / Grid / ActionGroup / HeaderActionGroup / SectionActionGroup` 分组层。
 
 ### Card Primitive
@@ -209,7 +216,7 @@ AppShell
 
 ### Page Archetype
 
-默认页面必须使用 `SectionStack` + `ContentSection`，并在 section 内优先使用 Ant 布局 primitive。
+默认页面应优先使用 `SectionStack` + `ContentSection`；如果某个区域不需要 section header，可以直接作为 `SectionStack` 子节点存在。
 
 特殊页面必须落入明确 Page Archetype：
 
@@ -448,7 +455,7 @@ shared/
 | `WarningState`            | Shared Pattern     | `shared/ui/states/WarningState.tsx`                | Ant `Alert / Result / Typography`      | 风险或告警空态展示                                      | 业务规则判断                                                   | `app`、`modules`                                     | `app`、`modules`        |
 | `StatusTag`               | Shared Pattern     | `shared/ui/status/StatusTag.tsx`                   | Ant `Tag`                              | 状态映射展示                                            | 业务状态兜底                                                   | `app`、`modules`                                     | `app`、`modules`        |
 | `RiskBadge`               | Shared Pattern     | `shared/ui/status/RiskBadge.tsx`                   | Ant `Tag / Badge`                      | 风险等级展示                                            | 风险规则计算                                                   | `app`、`modules`                                     | `app`、`modules`        |
-| `ContentSection`          | Shared Pattern     | `shared/layout/sections/ContentSection.tsx`        | Ant `Space / Typography / Flex`        | section eyebrow、title、extra、children slot            | `Row / Col` 排列、业务判断、排序分组、专用 panel 分支          | `app`、`modules`                                     | `app`、`modules`        |
+| `ContentSection`          | Shared Pattern     | `shared/layout/sections/ContentSection.tsx`        | Ant `Flex / Space / Row / Col / Typography` | section eyebrow、title、extra、children slot、受控 `plain / cards / stack` 布局 | 业务判断、排序分组、route 映射、专用 panel 分支 | `app`、`modules` | `app`、`modules` |
 | `SectionStack`            | Layout             | `shared/layout/sections/SectionStack.tsx`          | Ant `Flex / Space`                     | section 垂直节奏                                        | 复杂布局系统、业务布局                                         | `app`、`modules`                                     | `app`、`modules`        |
 | `sectionTypes`            | Layout Support     | `shared/layout/sections/sectionTypes.ts`           | TypeScript types                       | section primitive 类型                                  | 业务对象                                                       | `shared/layout`、`modules`                           | `app`、`modules`        |
 | `getStaticSectionProps`   | Layout Support     | `shared/layout/sections/getStaticSectionProps.tsx` | static section vm + i18n               | 静态 section props 映射                                 | 业务取数                                                       | `modules`                                            | `app`、`modules`        |
@@ -539,11 +546,11 @@ shared/
 
 - `ContentSection`
   - Layer: `Layout / Section Pattern`
-  - Allowed: title、description、extra、children slot
-  - Forbidden: `Row / Col` 排列、card layout、action sorting、business object
+  - Allowed: title、description、extra、children slot、`contentLayout="plain" | "cards" | "stack"`、Ant Col `colProps`
+  - Forbidden: 业务对象、route 映射、排序过滤分组、权限判断、`columns / grid / wrap / minItemWidth`
 - `SectionStack`
   - Layer: `Layout`
-  - Allowed: section vertical rhythm
+  - Allowed: section vertical rhythm、Hero 或其它无 header 自定义区域
   - Forbidden: complex layout system、business layout
 - `PageHeader / PageScaffold / ResponsivePageShell / FilterBar`
   - Layer: `Layout / Container`

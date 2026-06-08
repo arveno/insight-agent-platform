@@ -504,6 +504,36 @@ const frontendStructureContentViolations = collectContentViolations("apps/web/sr
     message: "真实代码不得回流 CardGrid / SectionGrid / HeaderActionGroup / SectionActionGroup"
   }
 ]);
+const dashboardSectionLayoutViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/dashboard/sections/DashboardSections.tsx",
+  [
+    {
+      pattern: /import\s*\{[^}]*\b(Row|Col)\b[^}]*\}\s*from\s*["']antd["']/,
+      message: "DashboardSections 不得直接 import Ant Row / Col；应通过 ContentSection cards 布局承接"
+    },
+    {
+      pattern: /<Row\b|<Col\b/,
+      message: "DashboardSections 不得直接写 Row / Col JSX；应声明 contentLayout 和 colProps"
+    },
+    {
+      pattern: /\bgutter\s*=/,
+      message: "DashboardSections 不得在页面层声明 gutter；卡片间距必须由 ContentSection 内部 token 承接"
+    }
+  ]
+);
+const contentSectionLayoutViolations = collectFilePathContentViolations(
+  "apps/web/src/shared/layout/sections/ContentSection.tsx",
+  [
+    {
+      pattern: /gutter=\{\[16,\s*16\]\}/,
+      message: "ContentSection 不得硬编码 gutter={[16, 16]}；卡片间距必须使用 shared/theme token"
+    },
+    {
+      pattern: /display:\s*["']grid["']|gridTemplateColumns|minItemWidth/,
+      message: "ContentSection 不得使用 CSS Grid 或 minItemWidth 自定义布局"
+    }
+  ]
+);
 
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
@@ -626,6 +656,14 @@ if (frontendStructureContentViolations.length > 0) {
   );
 }
 
+if (dashboardSectionLayoutViolations.length > 0) {
+  fail("DashboardSections 检测到已禁止的页面层卡片布局实现：", dashboardSectionLayoutViolations);
+}
+
+if (contentSectionLayoutViolations.length > 0) {
+  fail("ContentSection 检测到已禁止的布局实现：", contentSectionLayoutViolations);
+}
+
 console.log("Structure guard passed.");
 
 function fail(title, items) {
@@ -738,6 +776,14 @@ function collectContentViolations(rootDir, rules) {
   return collectFileContentViolations(rootDir, rules);
 }
 
+function collectFilePathContentViolations(filePath, rules) {
+  if (!existsSync(filePath)) {
+    return [];
+  }
+
+  return collectViolationsForFile(filePath, readFileSync(filePath, "utf8"), rules);
+}
+
 function collectFileContentViolations(rootDir, rules) {
   const files = collectMatchingEntries(
     rootDir,
@@ -746,25 +792,31 @@ function collectFileContentViolations(rootDir, rules) {
   const violations = [];
 
   for (const file of files) {
-    const content = readFileSync(file, "utf8");
+    violations.push(...collectViolationsForFile(file, readFileSync(file, "utf8"), rules));
+  }
 
-    for (const [lineIndex, line] of content.split("\n").entries()) {
-      const trimmedLine = line.trim();
+  return violations;
+}
 
-      if (
-        trimmedLine.startsWith("//") ||
-        trimmedLine.startsWith("/**") ||
-        trimmedLine.startsWith("/*") ||
-        trimmedLine.startsWith("*") ||
-        trimmedLine.startsWith("*/")
-      ) {
-        continue;
-      }
+function collectViolationsForFile(filePath, content, rules) {
+  const violations = [];
 
-      for (const rule of rules) {
-        if (rule.pattern.test(line)) {
-          violations.push(`${file}:${lineIndex + 1} ${rule.message}`);
-        }
+  for (const [lineIndex, line] of content.split("\n").entries()) {
+    const trimmedLine = line.trim();
+
+    if (
+      trimmedLine.startsWith("//") ||
+      trimmedLine.startsWith("/**") ||
+      trimmedLine.startsWith("/*") ||
+      trimmedLine.startsWith("*") ||
+      trimmedLine.startsWith("*/")
+    ) {
+      continue;
+    }
+
+    for (const rule of rules) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${filePath}:${lineIndex + 1} ${rule.message}`);
       }
     }
   }
