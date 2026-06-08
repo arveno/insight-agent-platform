@@ -532,6 +532,20 @@ const dashboardSectionLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
+const dashboardComponentTypeViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/dashboard/components/dashboardComponentTypes.ts",
+  [
+    {
+      pattern: /\bDashboardComponentProps\b/,
+      message: "DashboardComponentProps 不得回流；Dashboard 组件 props 应直接表达真实依赖"
+    },
+    {
+      pattern: /\bPick<DashboardComponentProps\b/,
+      message:
+        "Dashboard 组件不得再通过 Pick<DashboardComponentProps> 复用导航字段；应使用窄类型 DashboardNavigationProps"
+    }
+  ]
+);
 const contentSectionLayoutViolations = collectFilePathContentViolations(
   "apps/web/src/shared/layout/sections/ContentSection.tsx",
   [
@@ -668,6 +682,10 @@ if (frontendStructureContentViolations.length > 0) {
 
 if (dashboardSectionLayoutViolations.length > 0) {
   fail("DashboardSections 检测到已禁止的页面层卡片布局实现：", dashboardSectionLayoutViolations);
+}
+
+if (dashboardComponentTypeViolations.length > 0) {
+  fail("Dashboard 组件 props 类型检测到已禁止的父 props 复用：", dashboardComponentTypeViolations);
 }
 
 if (contentSectionLayoutViolations.length > 0) {

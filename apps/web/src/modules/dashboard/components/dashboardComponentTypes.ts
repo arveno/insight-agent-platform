@@ -2,36 +2,38 @@ import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes
 
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
-export type DashboardComponentProps = {
+type DashboardNavigationProps = {
   onNavigate?: NavigateToRoute;
-  viewModel: DashboardViewModel;
 };
 
-export type DashboardHeroProps = DashboardComponentProps & {
+export type DashboardHeroProps = DashboardNavigationProps & {
   onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
   selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
   selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
+  viewModel: DashboardViewModel;
 };
 
-export type DashboardStatCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
+export type DashboardStatCardProps = DashboardNavigationProps & {
   metric: DashboardViewModel["businessStatCards"][number];
 };
 
-export type DashboardRiskCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
+export type DashboardRiskCardProps = DashboardNavigationProps & {
   isRiskSummary?: boolean;
-  item: DashboardViewModel["anomalyCards"][number];
+  item:
+    | DashboardViewModel["anomalyCards"][number]
+    | DashboardViewModel["riskSummary"][number];
 };
 
 export type DashboardReportEvidenceCardProps =
-  | (Pick<DashboardComponentProps, "onNavigate"> & {
+  | (DashboardNavigationProps & {
       kind: "report";
       report: DashboardViewModel["recentReports"][number];
     })
-  | (Pick<DashboardComponentProps, "onNavigate"> & {
+  | (DashboardNavigationProps & {
       evidence: DashboardViewModel["evidenceEntrances"][number];
       kind: "evidence";
     });
 
-export type DashboardQualityCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
+export type DashboardQualityCardProps = DashboardNavigationProps & {
   item: DashboardViewModel["platformQualitySummary"][number];
 };
