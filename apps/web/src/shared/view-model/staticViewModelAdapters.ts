@@ -1,11 +1,11 @@
 import type {
   StaticEvidenceEntranceViewModel,
   StaticTraceEntranceViewModel
-} from "../../shared/view-model/staticViewModelTypes";
-import type { I18nMessageKey } from "../../shared/i18n/messages";
-import type { Translate } from "../../shared/i18n/translateKey";
-import { translateKey } from "../../shared/i18n/translateKey";
-import { toRiskBadge, toStatusTag } from "../../shared/utils/viewModelState";
+} from "./staticViewModelTypes";
+import type { I18nMessageKey } from "../i18n/messages";
+import type { Translate } from "../i18n/translateKey";
+import { translateKey } from "../i18n/translateKey";
+import { toRiskBadge, toStatusTag } from "../utils/viewModelState";
 
 const evidenceSourceTypeKeyByLabel: Record<string, I18nMessageKey> = {
   "DataQualityCheck / Job": "evidence.sourceType.dataQualityJob",

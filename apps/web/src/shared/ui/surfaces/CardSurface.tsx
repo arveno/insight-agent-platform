@@ -7,6 +7,12 @@ export type CardSurfaceProps = Omit<CardProps, "children"> & {
   children: ReactNode;
 };
 
+/**
+ * 统一项目卡片视觉壳。
+ *
+ * CardSurface 只负责边框、圆角、内边距和基础表面风格；
+ * 不承接业务标题、数据映射、路由或行为编排。
+ */
 export function CardSurface({ children, style, styles, ...cardProps }: CardSurfaceProps) {
   const { token } = theme.useToken();
 

@@ -275,13 +275,25 @@ apps/web/src/
 │  └─ observability/
 ├─ shared/                # 无业务语义的跨模块 primitive
 │  ├─ ui/                 # Ant Design 薄封装与通用 UI primitive
+│  │  ├─ actions/
+│  │  ├─ surfaces/
+│  │  ├─ cards/
+│  │  ├─ lists/
+│  │  ├─ states/
+│  │  └─ status/
 │  ├─ layout/             # 无业务语义页面结构 primitive
+│  │  ├─ sections/
+│  │  ├─ containers/
+│  │  └─ panels/
+│  ├─ navigation/         # route-key 级行为包装和导航类型
 │  ├─ theme/              # 设计 token 和主题能力
 │  ├─ graph/              # 项目级关系图展示底座，只接收标准化 RelationshipGraphViewModel
 │  ├─ charts/             # 通用图表 primitive
 │  ├─ i18n/               # 国际化 provider 与翻译辅助
 │  ├─ icons/              # 图标 primitive
-│  └─ utils/              # 无业务语义的前端工具函数
+│  ├─ utils/              # 无业务语义的前端工具函数
+│  ├─ view-model/         # 跨边界共享的静态 ViewModel 类型、fixtures 和轻量映射辅助
+│  └─ test/               # 测试期 provider / helper
 └─ main.tsx               # 前端入口
 ```
 
@@ -325,11 +337,14 @@ UI 不得直接消费 raw API response。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
 - `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。
-- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
-- `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装，例如 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge`；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
-- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型和 fixture 辅助，不承接业务组件。
+- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
+- `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
+- `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
+- `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
+- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和与这些静态类型一一对应的轻量映射辅助，不承接业务组件或业务聚合。
 - `shared/test` 只放测试期共用 provider / helper，不承接运行时代码。
-- `shared` 不得依赖 `app` 或 `modules`；`modules` 可以依赖 `shared` 与 `api`，但不得依赖 `app`。
+- `shared` 不得依赖 `app` 或 `modules`；`modules` 可以依赖 `shared` 与 `api`，但不得依赖 `app`，也不得直接 import 其他 module 的业务组件。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
 - `modules/data-knowledge` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
 - 业务页面和 module 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
@@ -347,12 +362,19 @@ UI 不得直接消费 raw API response。
 - Thin wrapper second。项目公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 Ant 已经提供的 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
 - Custom component last。只有 Ant Design 无法满足且长期复用价值明确时，才允许新增自定义组件。
 - 不 mirror Ant Design。禁止创建 `AppButton / AppTabs / AppTable / AppCheckbox / AppRadio / AppDrawer` 这类只是改名的 Ant Design 镜像组件。
+- 公共组件不是为了少写 JSX 而存在，只有增加稳定职责时才允许抽象。
+- 最终 UI 组件层级固定为 `Foundation -> Surface / Frame -> Shared Patterns -> Behavior Wrappers -> Module Components -> Page Composition`。
+- `Surface / Frame` 负责统一视觉壳，例如 `CardSurface / SidePanel / DrawerFrame`；`Shared Patterns` 负责无业务语义的稳定展示模式，例如 `ContentCard / StatCard / PropertyList / EventTimeline / ContentSection`；`Behavior Wrappers` 只增加行为，不重画视觉，例如 `NavigationActionButton`。
 - Layout 不绑定具体内容组件。不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar` 这类和内容类型或按钮集合强绑定的布局组件；布局优先使用 Ant `Flex / Space / Row / Col / Layout`，如需薄封装也必须保持无业务语义。
 - 行为增强组合基础组件，不重新实现视觉。导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
+- `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger；多个按钮排列直接使用 Ant `Flex / Space`，不新增 `ActionGroup / RouteActionGroup / PageActionGroup`。
+- 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI primitive 内；`createRouteAction` 只负责构造 route-aware action 数据，不排序、不做权限判断、不渲染 UI。
 - 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI primitive 内。
 - 命名按功能职责，不按 `App / Common / Shared / Base / Wrapper / Generic / Universal` 命名；装配层 `AppShell / AppProviders / App.tsx` 例外。
-- shared primitive 只保留 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge / NavigationActionButton` 这类无业务语义能力。
+- 新组件默认先放 `modules/<domain>/components`。只有名字无业务词、props 无业务对象、无 `app/modules` 依赖、不是 Ant 镜像、且存在稳定展示或行为模式时，才允许晋升到 `shared`。
+- shared primitive 只保留 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge / NavigationActionButton` 这类无业务语义能力。
 - `AppActionButton / AppActionGroup / AppBaseCard / AppCardGrid / AppPropertyList / AppSection / AppSectionStack / AppTabs / StaticTabsPanel / WebSection / SummaryTable / SummaryCardGrid / MetricCardGrid` 属于禁止回流旧名。
+- `shared/product`、`legacy`、`temporary`、`transitional` 目录属于禁止回流旧结构。
 - `TraceTimeline / SourceEvidenceList / ReportSection / DecisionCard / FeedbackPanel` 等业务对象展示组件必须留在 canonical module，而不是回流到 `shared/ui`。
 
 ## 7. 后端架构
@@ -416,6 +438,7 @@ services/agent-runtime/tests/
 - 后端 service 不允许直接访问数据库连接。
 - 后端 service 不允许直接调用模型 provider。
 - Agent 不允许直接查库、直接调模型、直接调用外部 API。
+- 后端同样遵守“框架优先、薄适配、业务垂直切片、shared 只放无业务基础能力”的思想：FastAPI router / dependency / response model 优先，Pydantic 校验优先，LangChain / LangGraph / LlamaIndex / Milvus 优先；`modules/*` 承接业务闭环，`infrastructure/*` 承接技术适配，`shared/*` 只放 errors / validation / utils / types。
 
 ## 8. 依赖方向
 

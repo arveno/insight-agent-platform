@@ -17,7 +17,7 @@ import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
-import { TracePanel } from "../TracePanel";
+import { TracePanel } from "../components/TracePanel";
 import type { ObservabilityViewModel } from "../models/observabilityViewModel";
 
 export type ObservabilitySectionsProps = WebPageProps & {
@@ -66,10 +66,7 @@ function renderSummaryCards(
   );
 }
 
-function renderStatCards(
-  items: StaticStatCardViewModel[],
-  t: ReturnType<typeof useI18n>["t"]
-) {
+function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof useI18n>["t"]) {
   return (
     <Flex gap={16} wrap>
       {items.map((metric) => (
@@ -117,10 +114,7 @@ export function ObservabilitySections({ viewModel }: ObservabilitySectionsProps)
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
           {renderStatCards(viewModel.metricCards, t)}
-          {renderSummaryCards(
-            [...viewModel.costLatencySummary, ...viewModel.errorRateSummary],
-            t
-          )}
+          {renderSummaryCards([...viewModel.costLatencySummary, ...viewModel.errorRateSummary], t)}
           <StaticChart titleKey={viewModel.mainSections[1].titleKey} />
         </Space>
       </ContentSection>

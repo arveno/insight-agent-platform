@@ -1,7 +1,7 @@
 import { Button, Card, Radio, Space, Typography } from "antd";
 
-import { shellThemeTokens } from "../../shared/theme/tokens";
-import { shellTypographyStyles } from "../../shared/theme/typography";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
 
 export type FeedbackOption = {
   disabled?: boolean;
@@ -9,7 +9,7 @@ export type FeedbackOption = {
   value: string;
 };
 
-export type FeedbackPanelProps = {
+export type ReportFeedbackPanelProps = {
   disabled?: boolean;
   helperText?: string;
   onChange?: (value: string) => void;
@@ -22,12 +22,12 @@ export type FeedbackPanelProps = {
 };
 
 /**
- * 跨页面反馈入口。
+ * 报告阅读页中的反馈入口。
  *
- * 组件只承接 Feedback UI State；
- * 不写入 Feedback、Memory 或 Evaluation，也不实现反馈主列表。
+ * 组件只承接当前报告上下文的 Feedback UI State；
+ * 不写入 Feedback、Memory 或 Evaluation，也不承接反馈主列表。
  */
-export function FeedbackPanel({
+export function ReportFeedbackPanel({
   disabled,
   helperText,
   onChange,
@@ -37,7 +37,7 @@ export function FeedbackPanel({
   targetTitle,
   title,
   value
-}: FeedbackPanelProps) {
+}: ReportFeedbackPanelProps) {
   return (
     <Card>
       <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>

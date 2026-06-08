@@ -3,7 +3,7 @@ import { Space, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../theme/tokens";
 import { shellTypographyStyles } from "../../theme/typography";
-import { CardSurface } from "./CardSurface";
+import { CardSurface } from "../surfaces/CardSurface";
 
 export type ContentCardProps = {
   children?: ReactNode;

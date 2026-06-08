@@ -4,9 +4,7 @@ import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
-import {
-  createNavigationActionsFromViewModel
-} from "../../../shared/navigation/createRouteAction";
+import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
@@ -14,10 +12,10 @@ import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
 
-import { FeedbackPanel } from "../../feedback/FeedbackPanel";
-import { DecisionCard } from "../DecisionCard";
+import { DecisionCard } from "../components/DecisionCard";
+import { ReportFeedbackPanel } from "../components/ReportFeedbackPanel";
+import { ReportSection } from "../components/ReportSection";
 import type { ReportsViewModel } from "../models/reportsViewModel";
-import { ReportSection } from "../ReportSection";
 export type ReportsSectionsProps = WebPageProps & {
   viewModel: ReportsViewModel;
 };
@@ -114,7 +112,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
             />
           </ContentCard>
 
-          <FeedbackPanel
+          <ReportFeedbackPanel
             helperText={viewModel.feedbackEntrance.types.join(" / ")}
             options={[
               { label: t("feedback.option.useful"), value: "useful" },

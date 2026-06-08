@@ -4,8 +4,8 @@ import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import { toEvidenceItem } from "../../../shared/view-model/staticViewModelAdapters";
 
-import { toEvidenceItem } from "../../analysis/viewModelAdapters";
 import type { DashboardReportEvidencePanelProps } from "./dashboardComponentTypes";
 
 export function DashboardReportEvidencePanel({
