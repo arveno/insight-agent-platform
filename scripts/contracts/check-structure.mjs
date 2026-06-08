@@ -86,6 +86,7 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/ui/data/AppPropertyList.tsx",
   "apps/web/src/shared/ui/data/SummaryTable.tsx",
   "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
+  "apps/web/src/modules/dashboard/components/DashboardReportEvidencePanel.tsx",
   "apps/web/src/shared/layout/sections/AppSection.tsx",
   "apps/web/src/shared/layout/sections/AppSectionStack.tsx",
   "apps/web/src/shared/layout/sections/WebSection.tsx",
@@ -485,6 +486,20 @@ const moduleDependencyViolations = collectImportViolations("apps/web/src/modules
   { pattern: /\bfrom\s+["'][^"']*app\//, message: "modules 不得依赖 app" }
 ]);
 const moduleCrossDependencyViolations = collectCrossModuleImportViolations("apps/web/src/modules");
+const frontendStructureContentViolations = collectContentViolations("apps/web/src", [
+  {
+    pattern: /\btitleSuffix\b/,
+    message: "真实代码不得出现 titleSuffix；ContentSection header 右侧 slot 统一使用 extra"
+  },
+  {
+    pattern: /\bDashboardReportEvidencePanelProps\b/,
+    message: "DashboardReportEvidencePanelProps 不得回流"
+  },
+  {
+    pattern: /panel:\s*"evidence"\s*\|\s*"reports"|panel:\s*"reports"\s*\|\s*"evidence"/,
+    message: "Dashboard 不得保留 reports / evidence panel 分支 props"
+  }
+]);
 
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
@@ -598,6 +613,13 @@ if (moduleDependencyViolations.length > 0) {
 
 if (moduleCrossDependencyViolations.length > 0) {
   fail("apps/web/src/modules 不允许直接 import 其他 module：", moduleCrossDependencyViolations);
+}
+
+if (frontendStructureContentViolations.length > 0) {
+  fail(
+    "apps/web/src 检测到已禁止的 Dashboard / ContentSection 旧结构：",
+    frontendStructureContentViolations
+  );
 }
 
 console.log("Structure guard passed.");

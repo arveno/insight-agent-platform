@@ -1,5 +1,3 @@
-import { Flex } from "antd";
-
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
@@ -9,8 +7,9 @@ import { NavigationActionButton } from "../../../shared/navigation/NavigationAct
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
-import { DashboardReportEvidencePanel } from "../components/DashboardReportEvidencePanel";
+import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
+import { createDashboardReportEvidenceCards } from "../mappers/createDashboardReportEvidenceCards";
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
 export type DashboardSectionsProps = PageRouteProps & {
@@ -64,6 +63,12 @@ export function DashboardSections({
     ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
     ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
   ];
+  const reportEvidenceCards = createDashboardReportEvidenceCards({
+    evidenceEntrances: viewModel.evidenceEntrances,
+    onNavigate,
+    recentReports: viewModel.recentReports,
+    t
+  });
 
   return (
     <SectionStack>
@@ -77,62 +82,51 @@ export function DashboardSections({
 
       <ContentSection
         eyebrow={t("dashboard.metrics.eyebrow")}
-        titleSuffix={<NavigationActionButton action={openMetricsAction} />}
+        extra={<NavigationActionButton action={openMetricsAction} />}
+        layout="wrap"
         title={t("dashboard.metrics.title")}
       >
-        <Flex gap={16} wrap>
-          {viewModel.businessStatCards.map((metric) => (
-            <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
-          ))}
-        </Flex>
+        {viewModel.businessStatCards.map((metric) => (
+          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
+        ))}
       </ContentSection>
 
       <ContentSection
         eyebrow={t("dashboard.risk.eyebrow")}
-        titleSuffix={<NavigationActionButton action={openGovernanceAction} />}
+        extra={<NavigationActionButton action={openGovernanceAction} />}
+        layout="wrap"
         title={t("dashboard.risk.title")}
       >
-        <Flex gap={16} wrap>
-          {riskItems.map(({ isRiskSummary, item }) => (
-            <DashboardRiskOverview
-              isRiskSummary={isRiskSummary}
-              item={item}
-              key={item.key}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </Flex>
+        {riskItems.map(({ isRiskSummary, item }) => (
+          <DashboardRiskOverview
+            isRiskSummary={isRiskSummary}
+            item={item}
+            key={item.key}
+            onNavigate={onNavigate}
+          />
+        ))}
       </ContentSection>
 
       <ContentSection
         eyebrow={t("dashboard.reportEvidence.eyebrow")}
-        titleSuffix={<NavigationActionButton action={openReportsAction} />}
+        extra={<NavigationActionButton action={openReportsAction} />}
+        layout="wrap"
         title={t("dashboard.reportEvidence.title")}
       >
-        <Flex gap={16} vertical>
-          <DashboardReportEvidencePanel
-            onNavigate={onNavigate}
-            panel="reports"
-            viewModel={viewModel}
-          />
-          <DashboardReportEvidencePanel
-            onNavigate={onNavigate}
-            panel="evidence"
-            viewModel={viewModel}
-          />
-        </Flex>
+        {reportEvidenceCards.map((card) => (
+          <DashboardReportEvidenceCard card={card} key={card.key} />
+        ))}
       </ContentSection>
 
       <ContentSection
         eyebrow={t("dashboard.quality.eyebrow")}
-        titleSuffix={<NavigationActionButton action={openPlatformOperationsAction} />}
+        extra={<NavigationActionButton action={openPlatformOperationsAction} />}
+        layout="wrap"
         title={t("dashboard.quality.title")}
       >
-        <Flex gap={16} wrap>
-          {viewModel.platformQualitySummary.map((item) => (
-            <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
-          ))}
-        </Flex>
+        {viewModel.platformQualitySummary.map((item) => (
+          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
+        ))}
       </ContentSection>
     </SectionStack>
   );

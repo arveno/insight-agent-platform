@@ -14,7 +14,7 @@ export function getStaticSectionProps(t: Translate, section: StaticSectionLike) 
 
   return {
     eyebrow: translateKey(t, section.descriptionKey),
-    title: translateKey(t, section.titleKey),
-    titleSuffix: status ? <StatusTag {...status} /> : undefined
+    extra: status ? <StatusTag {...status} /> : undefined,
+    title: translateKey(t, section.titleKey)
   };
 }

@@ -166,6 +166,8 @@ External Raw Data
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
+- `ContentSection` 只用 `layout=\"wrap\" | \"vertical\"` 控制 children 的基础排列；section 内同类卡片应直接作为 children 传入，由 `ContentSection` 统一基础布局。
 - 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
@@ -178,6 +180,8 @@ External Raw Data
 - 如果一个 `shared/ui` 组件需要大量注释才能说清楚，优先回头检查组件职责是否过重，而不是继续堆砌注释。
 - 修改 `shared/ui` 公共 API 时，必须同步维护契约注释；缺失注释应由结构守门直接拦截。
 - 不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar` 这类和具体内容或按钮集合强绑定的布局组件。
+- `Dashboard`、`Metrics`、`Platform Operations` 这类 overview page 的标准结构固定为 `SectionStack -> Hero(optional) -> ContentSection(layout) -> Cards`。
+- 业务模块如需特殊卡片，只允许在 module 内轻封 `ContentCard / StatCard`；禁止为了单个 section 额外造 `Panel / Grid / Wrapper / ActionGroup` 中间层。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`，不要为了少写 JSX 新造布局轮子。
 - 行为增强必须组合基础组件，不重新实现视觉；导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
 - `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger；不负责排序、布局、导航、权限或业务判断。

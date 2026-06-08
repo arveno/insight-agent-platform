@@ -7,9 +7,12 @@ import type { ContentSectionProps } from "./sectionTypes";
 export function ContentSection({
   children,
   eyebrow,
-  title,
-  titleSuffix
+  extra,
+  layout = "vertical",
+  title
 }: ContentSectionProps) {
+  const isVertical = layout === "vertical";
+
   return (
     <section>
       <Space
@@ -25,16 +28,24 @@ export function ContentSection({
               </Typography.Text>
             ) : null}
             <Space align="center" size={8} wrap>
-              <Typography.Text
-                style={{ ...shellTypographyStyles.sectionTitle, display: "block" }}
-              >
+              <Typography.Text style={{ ...shellTypographyStyles.sectionTitle, display: "block" }}>
                 {title}
               </Typography.Text>
-              {titleSuffix}
             </Space>
           </Space>
+          {extra ? <div>{extra}</div> : null}
         </Flex>
-        {children}
+        <Flex
+          gap={16}
+          style={{
+            flexDirection: isVertical ? "column" : undefined,
+            flexWrap: isVertical ? undefined : "wrap"
+          }}
+          vertical={isVertical}
+          wrap={!isVertical}
+        >
+          {children}
+        </Flex>
       </Space>
     </section>
   );

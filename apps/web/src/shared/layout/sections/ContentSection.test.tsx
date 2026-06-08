@@ -35,10 +35,47 @@ describe("ContentSection", () => {
     const eyebrow = screen.getByText("Overview");
     const title = screen.getByText("Operating health");
 
-    expect(eyebrow.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeMeta}px`);
+    expect(eyebrow.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeMeta}px`
+    );
     expect(title.getAttribute("style")).toContain(
       `font-size: ${shellThemeTokens.fontSizeSectionTitle}px`
     );
     expect(title.getAttribute("style")).toContain("font-weight: 600");
+  });
+
+  it("renders extra content in the header and uses wrap layout when requested", () => {
+    render(
+      <ContentSection
+        eyebrow="Overview"
+        extra={<button type="button">Open metrics</button>}
+        layout="wrap"
+        title="Operating health"
+      >
+        <div>first card</div>
+        <div>second card</div>
+      </ContentSection>
+    );
+
+    expect(screen.getByRole("button", { name: "Open metrics" })).toBeTruthy();
+
+    const layoutContainer = screen.getByText("first card").parentElement;
+
+    expect(layoutContainer?.getAttribute("style")).toContain("flex-wrap: wrap");
+    expect(layoutContainer?.getAttribute("style")).toContain("gap: 16px");
+  });
+
+  it("uses vertical layout by default for section content", () => {
+    render(
+      <ContentSection eyebrow="Overview" title="Operating health">
+        <div>first card</div>
+        <div>second card</div>
+      </ContentSection>
+    );
+
+    const layoutContainer = screen.getByText("first card").parentElement;
+
+    expect(layoutContainer?.getAttribute("style")).toContain("flex-direction: column");
+    expect(layoutContainer?.getAttribute("style")).toContain("gap: 16px");
   });
 });
