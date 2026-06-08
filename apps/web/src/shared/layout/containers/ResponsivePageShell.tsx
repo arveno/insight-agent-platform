@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Grid, Space } from "antd";
+import { Flex, Grid, Space } from "antd";
 
 import { shellThemeTokens } from "../../theme/tokens";
 
@@ -24,6 +24,7 @@ export function ResponsivePageShell({
 }: ResponsivePageShellProps) {
   const screens = Grid.useBreakpoint();
   const isWide = Boolean(screens.lg);
+  const showRightAside = Boolean(isWide && rightAside);
 
   return (
     <Space
@@ -33,16 +34,14 @@ export function ResponsivePageShell({
     >
       {header}
       {filters}
-      <div
-        style={{
-          display: "grid",
-          gap: shellThemeTokens.pageSectionGap,
-          gridTemplateColumns: isWide && rightAside ? "minmax(0, 1fr) 360px" : "minmax(0, 1fr)"
-        }}
+      <Flex
+        align="stretch"
+        gap={shellThemeTokens.pageSectionGap}
+        vertical={!showRightAside}
       >
-        <main>{children}</main>
+        <main style={{ flex: "1 1 auto", minWidth: 0 }}>{children}</main>
         {rightAside}
-      </div>
+      </Flex>
     </Space>
   );
 }

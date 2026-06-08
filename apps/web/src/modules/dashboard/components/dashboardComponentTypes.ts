@@ -29,7 +29,7 @@ export type DashboardReportEvidenceCardItem = {
   description: ReactNode;
   eyebrow: ReactNode;
   key: string;
-  metaItems: string[];
+  meta?: ReactNode;
   title: ReactNode;
 };
 

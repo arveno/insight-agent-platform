@@ -61,7 +61,6 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCar
         </Space>
       }
       risk={displayRisk}
-      style={{ flex: "1 1 320px", minWidth: 0 }}
       title={metric.label}
       value={metric.valueText}
     />

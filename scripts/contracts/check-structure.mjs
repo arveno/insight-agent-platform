@@ -498,6 +498,10 @@ const frontendStructureContentViolations = collectContentViolations("apps/web/sr
   {
     pattern: /panel:\s*"evidence"\s*\|\s*"reports"|panel:\s*"reports"\s*\|\s*"evidence"/,
     message: "Dashboard 不得保留 reports / evidence panel 分支 props"
+  },
+  {
+    pattern: /\bCardGrid\b|\bSectionGrid\b|\bHeaderActionGroup\b|\bSectionActionGroup\b/,
+    message: "真实代码不得回流 CardGrid / SectionGrid / HeaderActionGroup / SectionActionGroup"
   }
 ]);
 

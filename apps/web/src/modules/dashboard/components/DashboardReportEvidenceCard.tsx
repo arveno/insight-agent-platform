@@ -1,4 +1,4 @@
-import { Flex, Space, Typography } from "antd";
+import { Flex } from "antd";
 
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
@@ -17,16 +17,7 @@ export function DashboardReportEvidenceCard({ card }: DashboardReportEvidenceCar
           ))}
         </Flex>
       }
-      meta={
-        <Space wrap>
-          {card.metaItems.map((item) => (
-            <Typography.Text key={item} type="secondary">
-              {item}
-            </Typography.Text>
-          ))}
-        </Space>
-      }
-      style={{ flex: "1 1 420px", minWidth: 0 }}
+      meta={card.meta}
       title={card.title}
     />
   );

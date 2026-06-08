@@ -1,3 +1,5 @@
+import { Space, Typography } from "antd";
+
 import type { Translate } from "../../../shared/i18n/translateKey";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
@@ -52,10 +54,17 @@ export function createDashboardReportEvidenceCards({
     description: t("dashboard.reportEvidence.suggestionSummary"),
     eyebrow: t("dashboard.reportEvidence.recentReportEyebrow"),
     key: report.key,
-    metaItems: [
-      `${t("dashboard.common.updatedAtPrefix")}${report.updatedAt}`,
-      `${report.evidenceCount} ${t("dashboard.common.evidenceCountSuffix")}`
-    ],
+    meta: (
+      <Space wrap>
+        <Typography.Text type="secondary">
+          {t("dashboard.common.updatedAtPrefix")}
+          {report.updatedAt}
+        </Typography.Text>
+        <Typography.Text type="secondary">
+          {report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
+        </Typography.Text>
+      </Space>
+    ),
     title: report.title
   }));
   const evidenceCards = evidenceEntrances.map((item) => {
@@ -91,8 +100,13 @@ export function createDashboardReportEvidenceCards({
       description: evidence.summary,
       eyebrow: t("dashboard.reportEvidence.evidenceEyebrow"),
       key: evidence.key,
-      metaItems: [evidence.sourceTypeLabel, evidence.confidenceText].filter(
-        (value): value is string => Boolean(value)
+      meta: (
+        <Space wrap>
+          <Typography.Text type="secondary">{evidence.sourceTypeLabel}</Typography.Text>
+          {evidence.confidenceText ? (
+            <Typography.Text type="secondary">{evidence.confidenceText}</Typography.Text>
+          ) : null}
+        </Space>
       ),
       title: evidence.title
     };
