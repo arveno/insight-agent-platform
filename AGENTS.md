@@ -154,7 +154,7 @@ External Raw Data
 - 最终 UI 组件层级固定为 `Foundation -> Surface / Frame -> Shared Patterns -> Behavior Wrappers -> Module Components -> Page Composition`。
 - `Foundation = Ant Design + shared/theme`。
 - `Surface / Frame` 只放统一视觉壳，例如 `CardSurface / SidePanel / DrawerFrame`，不接业务对象。
-- `Shared Patterns` 只放无业务语义的稳定展示模式，例如 `ContentCard / StatCard / PropertyList / TitledList / EventTimeline / ContentSection / PageScaffold`。
+- `Shared Patterns` 只放无业务语义的稳定展示模式，例如 `ContentCard / StatCard / PropertyList / TitledList / EventTimeline / ContentSection / PageIntro`。
 - `Behavior Wrappers` 只增加行为，不重画视觉，例如 `NavigationActionButton` 组合 `ActionButton`。
 - `Module Components` 只属于 `modules/<domain>`，可以出现业务词、消费业务 ViewModel，但不能被其他 module 直接 import。
 - `Page Composition` 只负责页面编排，不写业务清洗，不解析 raw 数据。
@@ -165,11 +165,14 @@ External Raw Data
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
-- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，不保留自动 header 链路。
 - `PageIntro` 是 `shared/layout/containers` 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
 - `PageIntro` 负责页面顶部介绍区、左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
 - 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
+- 标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`PageIntro` 只能在 `ModuleSections` 或 module hero 内显式组织。
+- `Page.tsx` 只负责 controller / state 接入和 `Sections` 组合，不负责页面标题、header 或 `PageIntro` 生成。
 - `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
 - `ContentSection` 负责统一 section header、children slot，以及受控基础内容布局：`contentLayout="plain" | "cards" | "stack"`。
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。

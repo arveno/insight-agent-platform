@@ -1,6 +1,7 @@
 import { Badge, Flex, Space, Tabs, Typography } from "antd";
 
 import type {
+  StaticActionViewModel,
   StaticStatCardViewModel,
   StaticSummaryItemViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
@@ -8,7 +9,9 @@ import type { PageRouteProps } from "../../../shared/navigation/navigationTypes"
 import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
@@ -98,7 +101,7 @@ function renderStatCards(
 }
 
 function renderNavigationActions(
-  actions: ModelToolsViewModel["permissionEntrances"],
+  actions: StaticActionViewModel[],
   onNavigate: ModelToolsSectionsProps["onNavigate"],
   t: ReturnType<typeof useI18n>["t"]
 ) {
@@ -119,6 +122,11 @@ function renderNavigationActions(
 
 export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSectionsProps) {
   const { t } = useI18n();
+  const pageActions = renderNavigationActions(
+    [viewModel.primaryAction, ...viewModel.secondaryActions],
+    onNavigate,
+    t
+  );
   const tabContentByKey = {
     modelConfigs: <PropertyList items={[viewModel.selectedModelConfig, ...viewModel.modelConfigs]} />,
     promptVersions: (
@@ -136,7 +144,18 @@ export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSections
   } as const;
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+    <SectionStack>
+      <PageIntro
+        contentLayout="stack"
+        description={translateKey(t, viewModel.pageDescriptionKey)}
+        extra={pageActions}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+        title={translateKey(t, viewModel.pageTitleKey)}
+      >
+        {renderSummaryCards([viewModel.configDetail, ...viewModel.permissionSummaryEntries], t)}
+        {renderStatCards(viewModel.metricCards, t)}
+      </PageIntro>
+
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
         <Tabs
           activeKey={viewModel.selectedTab}
@@ -152,12 +171,6 @@ export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSections
           }))}
         />
       </ContentSection>
-      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderSummaryCards([viewModel.configDetail, ...viewModel.permissionSummaryEntries], t)}
-          {renderStatCards(viewModel.metricCards, t)}
-        </Space>
-      </ContentSection>
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[2])}>
         {renderNavigationActions(
           [
@@ -169,6 +182,6 @@ export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSections
           t
         )}
       </ContentSection>
-    </Space>
+    </SectionStack>
   );
 }

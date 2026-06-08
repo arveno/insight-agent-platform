@@ -1,14 +1,20 @@
 import { Badge, Flex, Space, Typography } from "antd";
 
 import type {
+  StaticActionViewModel,
   StaticStatCardViewModel,
   StaticSummaryItemViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { StaticChart } from "../../../shared/charts/StaticChart";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey } from "../../../shared/i18n/translateKey";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
+import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { PropertyList } from "../../../shared/ui/lists/PropertyList";
@@ -93,27 +99,59 @@ function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof 
   );
 }
 
-export function ObservabilitySections({ viewModel }: ObservabilitySectionsProps) {
-  const { t } = useI18n();
+function renderNavigationActions(
+  actions: StaticActionViewModel[],
+  onNavigate: ObservabilitySectionsProps["onNavigate"],
+  t: ReturnType<typeof useI18n>["t"]
+) {
+  const navigationActions = createNavigationActionsFromViewModel(actions, onNavigate, t);
+
+  if (navigationActions.length === 0) {
+    return null;
+  }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+    <Flex gap={12} wrap>
+      {navigationActions.map((action) => (
+        <NavigationActionButton action={action} key={action.key} />
+      ))}
+    </Flex>
+  );
+}
+
+export function ObservabilitySections({ onNavigate, viewModel }: ObservabilitySectionsProps) {
+  const { t } = useI18n();
+  const pageActions = renderNavigationActions(
+    [viewModel.primaryAction, ...viewModel.secondaryActions],
+    onNavigate,
+    t
+  );
+
+  return (
+    <SectionStack>
+      <PageIntro
+        contentLayout="stack"
+        description={translateKey(t, viewModel.pageDescriptionKey)}
+        extra={pageActions}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+        title={translateKey(t, viewModel.pageTitleKey)}
+      >
+        {renderSummaryCards(viewModel.observabilityOverview, t)}
+        {renderStatCards(viewModel.metricCards, t)}
+      </PageIntro>
+
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderSummaryCards(viewModel.observabilityOverview, t)}
-          <TracePanel
-            items={[
-              ...viewModel.runTraces,
-              ...viewModel.modelTraces,
-              ...viewModel.toolTraces,
-              ...viewModel.runtimeEvents
-            ]}
-          />
-        </Space>
+        <TracePanel
+          items={[
+            ...viewModel.runTraces,
+            ...viewModel.modelTraces,
+            ...viewModel.toolTraces,
+            ...viewModel.runtimeEvents
+          ]}
+        />
       </ContentSection>
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderStatCards(viewModel.metricCards, t)}
           {renderSummaryCards([...viewModel.costLatencySummary, ...viewModel.errorRateSummary], t)}
           <StaticChart titleKey={viewModel.mainSections[1].titleKey} />
         </Space>
@@ -131,6 +169,6 @@ export function ObservabilitySections({ viewModel }: ObservabilitySectionsProps)
           />
         </Space>
       </ContentSection>
-    </Space>
+    </SectionStack>
   );
 }

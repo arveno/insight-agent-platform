@@ -74,6 +74,8 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/ui/feedback-panel",
   "apps/web/src/shared/layout/containers/PageHeader.tsx",
   "apps/web/src/shared/layout/containers/PageHeader.test.tsx",
+  "apps/web/src/shared/layout/containers/PageScaffold.tsx",
+  "apps/web/src/shared/layout/containers/PageScaffold.test.tsx",
   "apps/web/src/shared/layout/shell",
   "apps/web/src/shared/layout/overlays",
   "apps/web/src/shared/ui/actions/AppActionButton.tsx",
@@ -501,6 +503,14 @@ const moduleDependencyViolations = collectImportViolations("apps/web/src/modules
 const moduleCrossDependencyViolations = collectCrossModuleImportViolations("apps/web/src/modules");
 const frontendStructureContentViolations = collectContentViolations("apps/web/src", [
   {
+    pattern: /\bPageScaffold\b/,
+    message: "真实代码不得回流 PageScaffold；页面外壳统一使用 ResponsivePageShell"
+  },
+  {
+    pattern: /\bhideHeader\b|\bhideHeaderActions\b/,
+    message: "真实代码不得回流 hideHeader / hideHeaderActions；页面顶部结构必须在 ModuleSections 显式组织"
+  },
+  {
     pattern: /\btitleSuffix\b/,
     message: "真实代码不得出现 titleSuffix；ContentSection header 右侧 slot 统一使用 extra"
   },
@@ -584,12 +594,18 @@ const pageIntroLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
-const pageScaffoldHeaderViolations = collectFilePathContentViolations(
-  "apps/web/src/shared/layout/containers/PageScaffold.tsx",
+const responsivePageShellHeaderViolations = collectFilePathContentViolations(
+  "apps/web/src/shared/layout/containers/ResponsivePageShell.tsx",
   [
     {
-      pattern: /\bPageHeader\b/,
-      message: "PageScaffold 顶部介绍区必须组合 PageIntro，不得继续依赖 PageHeader"
+      pattern: /\bheader\??:\s*ReactNode\b/,
+      message:
+        "ResponsivePageShell 不得再暴露页面 header slot；页面顶部结构必须从 ModuleSections 显式组织"
+    },
+    {
+      pattern: /\{header\}/,
+      message:
+        "ResponsivePageShell 不得再渲染页面 header slot；页面顶部结构必须从 ModuleSections 显式组织"
     }
   ]
 );
@@ -621,8 +637,7 @@ const dashboardHeroLayoutViolations = collectFilePathContentViolations(
 const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/modules", [
   {
     pattern: /\bfrom\s+["'][^"']*PageHeader["']/,
-    message:
-      "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro / PageScaffold"
+    message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro"
   }
 ]);
 if (missingPaths.length > 0) {
@@ -769,8 +784,11 @@ if (pageIntroLayoutViolations.length > 0) {
   fail("PageIntro 检测到已禁止的布局实现：", pageIntroLayoutViolations);
 }
 
-if (pageScaffoldHeaderViolations.length > 0) {
-  fail("PageScaffold 检测到已禁止的页面头部实现：", pageScaffoldHeaderViolations);
+if (responsivePageShellHeaderViolations.length > 0) {
+  fail(
+    "ResponsivePageShell 检测到已禁止的页面头部入口：",
+    responsivePageShellHeaderViolations
+  );
 }
 
 if (dashboardHeroLayoutViolations.length > 0) {

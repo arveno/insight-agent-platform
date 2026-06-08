@@ -1,4 +1,4 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
@@ -16,13 +16,8 @@ export function MetricsPage({ metricsState, onNavigate }: MetricsPageProps) {
   const controller = metricsState ?? fallbackMetricsState;
 
   return (
-    <PageScaffold
-      hideHeader
-      hideHeaderActions
-      onNavigate={onNavigate}
-      viewModel={controller.viewModel}
-    >
+    <ResponsivePageShell>
       <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

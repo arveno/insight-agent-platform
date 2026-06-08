@@ -1,4 +1,4 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import { useReportsReaderState, type ReportsReaderController } from "./hooks/useReportsReaderState";
@@ -13,8 +13,8 @@ export function ReportsPage({ onNavigate, reportsState }: ReportsPageProps) {
   const controller = reportsState ?? fallbackReportsState;
 
   return (
-    <PageScaffold hideHeader onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <ResponsivePageShell>
       <ReportsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

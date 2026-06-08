@@ -6,7 +6,6 @@ import { shellThemeTokens } from "../../theme/tokens";
 export type ResponsivePageShellProps = {
   children: ReactNode;
   filters?: ReactNode;
-  header?: ReactNode;
   rightAside?: ReactNode;
 };
 
@@ -19,7 +18,6 @@ export type ResponsivePageShellProps = {
 export function ResponsivePageShell({
   children,
   filters,
-  header,
   rightAside
 }: ResponsivePageShellProps) {
   const screens = Grid.useBreakpoint();
@@ -32,7 +30,6 @@ export function ResponsivePageShell({
       size={shellThemeTokens.pageSectionGap}
       style={{ padding: shellThemeTokens.pagePadding, width: "100%" }}
     >
-      {header}
       {filters}
       <Flex
         align="stretch"

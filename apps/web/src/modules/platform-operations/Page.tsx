@@ -1,4 +1,4 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
@@ -19,13 +19,8 @@ export function PlatformOperationsPage({
   const controller = platformOperationsState ?? fallbackPlatformOperationsState;
 
   return (
-    <PageScaffold
-      hideHeader
-      hideHeaderActions
-      onNavigate={onNavigate}
-      viewModel={controller.viewModel}
-    >
+    <ResponsivePageShell>
       <PlatformOperationsSections controller={controller} onNavigate={onNavigate} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

@@ -1,4 +1,4 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
@@ -16,13 +16,8 @@ export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: DataKnowle
   const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
 
   return (
-    <PageScaffold
-      hideHeader
-      hideHeaderActions
-      onNavigate={onNavigate}
-      viewModel={controller.viewModel}
-    >
+    <ResponsivePageShell>
       <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

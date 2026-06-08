@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import { dashboardStaticViewModel } from "./fixtures/dashboardStaticViewModel";
@@ -18,12 +19,14 @@ export function DashboardPage({ onNavigate }: PageRouteProps) {
   }
 
   return (
-    <DashboardSections
-      onNavigate={onNavigate}
-      onTimeRangeChange={setSelectedTimeRangeKey}
-      selectedTimeRange={selectedTimeRange}
-      selectedTimeRangeKey={selectedTimeRangeKey}
-      viewModel={dashboardStaticViewModel}
-    />
+    <ResponsivePageShell>
+      <DashboardSections
+        onNavigate={onNavigate}
+        onTimeRangeChange={setSelectedTimeRangeKey}
+        selectedTimeRange={selectedTimeRange}
+        selectedTimeRangeKey={selectedTimeRangeKey}
+        viewModel={dashboardStaticViewModel}
+      />
+    </ResponsivePageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { Badge, Flex, Space, Typography } from "antd";
 
 import type {
+  StaticActionViewModel,
   StaticStatCardViewModel,
   StaticSummaryItemViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
@@ -8,7 +9,10 @@ import type { PageRouteProps } from "../../../shared/navigation/navigationTypes"
 import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey } from "../../../shared/i18n/translateKey";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
@@ -97,7 +101,7 @@ function renderStatCards(
 }
 
 function renderNavigationActions(
-  actions: FeedbackViewModel["secondaryActions"],
+  actions: StaticActionViewModel[],
   onNavigate: FeedbackSectionsProps["onNavigate"],
   t: ReturnType<typeof useI18n>["t"]
 ) {
@@ -118,21 +122,33 @@ function renderNavigationActions(
 
 export function FeedbackSections({ onNavigate, viewModel }: FeedbackSectionsProps) {
   const { t } = useI18n();
+  const pageActions = renderNavigationActions(
+    [viewModel.primaryAction, ...viewModel.secondaryActions],
+    onNavigate,
+    t
+  );
 
   return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+    <SectionStack>
+      <PageIntro
+        contentLayout="stack"
+        description={translateKey(t, viewModel.pageDescriptionKey)}
+        extra={pageActions}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+        title={translateKey(t, viewModel.pageTitleKey)}
+      >
+        {renderSummaryCards(viewModel.feedbackOverview, t)}
+        {renderStatCards(viewModel.metricCards, t)}
+      </PageIntro>
+
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderSummaryCards(viewModel.feedbackOverview, t)}
-          {renderStatCards(viewModel.metricCards, t)}
-          <PropertyList
-            items={[
-              viewModel.selectedFeedback,
-              ...viewModel.feedbackItems,
-              ...viewModel.feedbackTypeFilters
-            ]}
-          />
-        </Space>
+        <PropertyList
+          items={[
+            viewModel.selectedFeedback,
+            ...viewModel.feedbackItems,
+            ...viewModel.feedbackTypeFilters
+          ]}
+        />
       </ContentSection>
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
         {renderSummaryCards(
@@ -146,6 +162,6 @@ export function FeedbackSections({ onNavigate, viewModel }: FeedbackSectionsProp
           {renderNavigationActions(viewModel.secondaryActions, onNavigate, t)}
         </Space>
       </ContentSection>
-    </Space>
+    </SectionStack>
   );
 }
