@@ -63,11 +63,9 @@ export function DashboardSections({
     ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
     ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
   ];
-  const reportEvidenceCards = createDashboardReportEvidenceCards({
+  const reportEvidenceItems = createDashboardReportEvidenceCards({
     evidenceEntrances: viewModel.evidenceEntrances,
-    onNavigate,
-    recentReports: viewModel.recentReports,
-    t
+    recentReports: viewModel.recentReports
   });
 
   return (
@@ -116,8 +114,8 @@ export function DashboardSections({
         extra={<NavigationActionButton action={openReportsAction} />}
         title={t("dashboard.reportEvidence.title")}
       >
-        {reportEvidenceCards.map((card) => (
-          <DashboardReportEvidenceCard card={card} key={card.key} />
+        {reportEvidenceItems.map((item) => (
+          <DashboardReportEvidenceCard item={item} key={item.key} onNavigate={onNavigate} />
         ))}
       </ContentSection>
 

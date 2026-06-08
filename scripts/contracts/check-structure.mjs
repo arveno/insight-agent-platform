@@ -534,6 +534,31 @@ const contentSectionLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
+const dashboardReportEvidenceMapperViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/dashboard/mappers/createDashboardReportEvidenceCards.tsx",
+  [
+    {
+      pattern: /\bfrom\s+["']antd["']/,
+      message: "createDashboardReportEvidenceCards 不得依赖 antd"
+    },
+    {
+      pattern: /\bcreateRouteAction\b/,
+      message: "createDashboardReportEvidenceCards 不得创建 route actions；只允许展平 report/evidence item"
+    },
+    {
+      pattern: /\bNavigationAction\b/,
+      message: "createDashboardReportEvidenceCards 不得承载 NavigationAction 类型"
+    },
+    {
+      pattern: /\bReactNode\b/,
+      message: "createDashboardReportEvidenceCards 不得承载 ReactNode 或预组 JSX slot"
+    },
+    {
+      pattern: /<[A-Za-z]/,
+      message: "createDashboardReportEvidenceCards 不得返回 JSX；业务卡片应在组件内部组合 shared card pattern"
+    }
+  ]
+);
 
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
@@ -662,6 +687,13 @@ if (dashboardSectionLayoutViolations.length > 0) {
 
 if (contentSectionLayoutViolations.length > 0) {
   fail("ContentSection 检测到已禁止的布局实现：", contentSectionLayoutViolations);
+}
+
+if (dashboardReportEvidenceMapperViolations.length > 0) {
+  fail(
+    "createDashboardReportEvidenceCards 检测到越界职责实现：",
+    dashboardReportEvidenceMapperViolations
+  );
 }
 
 console.log("Structure guard passed.");

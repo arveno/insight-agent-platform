@@ -1,6 +1,4 @@
-import type { ReactNode } from "react";
-
-import type { NavigationAction, NavigateToRoute } from "../../../shared/navigation/navigationTypes";
+import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
 
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
@@ -24,17 +22,20 @@ export type DashboardRiskCardProps = Pick<DashboardComponentProps, "onNavigate">
   item: DashboardViewModel["anomalyCards"][number];
 };
 
-export type DashboardReportEvidenceCardItem = {
-  actions: NavigationAction[];
-  description: ReactNode;
-  eyebrow: ReactNode;
-  key: string;
-  meta?: ReactNode;
-  title: ReactNode;
-};
+export type DashboardReportEvidenceCardItem =
+  | {
+      key: string;
+      kind: "report";
+      report: DashboardViewModel["recentReports"][number];
+    }
+  | {
+      evidence: DashboardViewModel["evidenceEntrances"][number];
+      key: string;
+      kind: "evidence";
+    };
 
-export type DashboardReportEvidenceCardProps = {
-  card: DashboardReportEvidenceCardItem;
+export type DashboardReportEvidenceCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
+  item: DashboardReportEvidenceCardItem;
 };
 
 export type DashboardQualityCardProps = Pick<DashboardComponentProps, "onNavigate"> & {

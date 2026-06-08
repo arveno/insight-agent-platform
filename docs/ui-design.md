@@ -188,6 +188,8 @@ AppShell
 - section 内按钮排列直接使用 Ant `Flex / Space`，不要额外抽 `ActionGroup`。
 - `Dashboard` 这类 overview page 的标准结构固定为 `SectionStack -> Hero -> ContentSection(contentLayout="cards") -> Cards`。
 - 业务模块需要特殊卡片时，只在 module 内轻封单张卡片，不额外创建 `Panel / Grid / ActionGroup / HeaderActionGroup / SectionActionGroup` 分组层。
+- module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
+- 业务 mapper 默认只负责整理业务 item，不应预先生成 JSX、`NavigationAction` 或 `ContentCard` slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。
 
 ### Card Primitive
 
@@ -541,6 +543,7 @@ shared/
   - Allowed: title、subtitle、actions、state、legend、children
   - Forbidden: 直接依赖 Ant `Card`、重新实现平行 card shell、业务对象解析
 - 业务卡片必须放 `modules/<domain>/components`，可以组合 `ContentCard / StatCard / PropertyList`，但不得回流到 `shared/ui`。
+- Dashboard 普通卡片的 canonical 模式是：`ContentSection` 负责 section 和卡片排列，module business card 负责 `createRouteAction`、`meta` 与 `ContentCard / StatCard` 组合。
 
 ### Section / Layout Contract
 

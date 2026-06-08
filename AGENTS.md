@@ -190,6 +190,8 @@ External Raw Data
 - 不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / CardGrid / SectionGrid / ActionGroup / ActionBar` 这类和具体内容或按钮集合强绑定的布局组件。
 - `Dashboard`、`Metrics`、`Platform Operations` 这类 overview page 的标准结构固定为 `SectionStack -> Hero(optional) -> ContentSection(contentLayout=\"cards\") -> Cards`。
 - 业务模块如需特殊卡片，只允许在 module 内轻封 `ContentCard / StatCard`；禁止为了单个 section 额外造 `Panel / Grid / Wrapper / ActionGroup / HeaderActionGroup / SectionActionGroup` 中间层。
+- module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
+- 业务 mapper 默认只负责 ViewModel 整理，不应预先生成 JSX、`NavigationAction` 或共享卡片 slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`，不要为了少写 JSX 新造布局轮子。
 - 行为增强必须组合基础组件，不重新实现视觉；导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
 - `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger；不负责排序、布局、导航、权限或业务判断。
