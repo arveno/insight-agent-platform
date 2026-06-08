@@ -414,6 +414,7 @@ const sharedListBusinessNameViolations = collectMatchingEntries(
   (entry) =>
     entry.isFile() && sharedUiListBusinessPrefixes.some((prefix) => entry.name.startsWith(prefix))
 );
+const sharedUiJsDocViolations = collectSharedUiJsDocViolations("apps/web/src/shared/ui");
 const sharedCardContentViolations = collectContentViolations("apps/web/src/shared/ui/cards", [
   { pattern: /\bevidenceSummary\b/, message: "shared/ui/cards 不得出现 evidenceSummary 业务命名" },
   {
@@ -550,6 +551,10 @@ if (sharedListBusinessNameViolations.length > 0) {
   fail("apps/web/src/shared/ui/lists 不允许出现业务前缀文件：", sharedListBusinessNameViolations);
 }
 
+if (sharedUiJsDocViolations.length > 0) {
+  fail("apps/web/src/shared/ui 导出的公共 API 缺少契约 JSDoc：", sharedUiJsDocViolations);
+}
+
 if (sharedCardContentViolations.length > 0) {
   fail("apps/web/src/shared/ui/cards 检测到业务化内容：", sharedCardContentViolations);
 }
@@ -559,7 +564,10 @@ if (sharedChartAntdViolations.length > 0) {
 }
 
 if (sharedViewModelBusinessViolations.length > 0) {
-  fail("apps/web/src/shared/view-model 检测到业务 adapter 或业务对象词：", sharedViewModelBusinessViolations);
+  fail(
+    "apps/web/src/shared/view-model 检测到业务 adapter 或业务对象词：",
+    sharedViewModelBusinessViolations
+  );
 }
 
 if (sharedNavigationCompositionViolations.length > 0) {
@@ -642,6 +650,64 @@ function collectImportViolations(rootDir, rules) {
   return collectFileContentViolations(rootDir, rules);
 }
 
+function collectSharedUiJsDocViolations(rootDir) {
+  const files = collectMatchingEntries(
+    rootDir,
+    (entry) =>
+      entry.isFile() &&
+      !entry.name.endsWith(".test.tsx") &&
+      (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
+  );
+  const violations = [];
+
+  for (const file of files) {
+    const lines = readFileSync(file, "utf8").split("\n");
+
+    for (const [lineIndex, line] of lines.entries()) {
+      if (!/^\s*export\s+(function|type|interface|const)\b/.test(line)) {
+        continue;
+      }
+
+      if (hasNearbyJsDoc(lines, lineIndex)) {
+        continue;
+      }
+
+      const declaration = line.trim().replace(/\s+/g, " ");
+      violations.push(`${file}:${lineIndex + 1} ${declaration} 缺少公共契约 JSDoc。`);
+    }
+  }
+
+  return violations;
+}
+
+function hasNearbyJsDoc(lines, lineIndex) {
+  let nonEmptyLines = 0;
+
+  for (
+    let currentIndex = lineIndex - 1;
+    currentIndex >= 0 && nonEmptyLines < 3;
+    currentIndex -= 1
+  ) {
+    const line = lines[currentIndex].trim();
+
+    if (line.length === 0) {
+      continue;
+    }
+
+    nonEmptyLines += 1;
+
+    if (line.includes("*/")) {
+      return true;
+    }
+
+    if (!line.startsWith("*") && !line.startsWith("/**")) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 function collectContentViolations(rootDir, rules) {
   return collectFileContentViolations(rootDir, rules);
 }
@@ -657,6 +723,18 @@ function collectFileContentViolations(rootDir, rules) {
     const content = readFileSync(file, "utf8");
 
     for (const [lineIndex, line] of content.split("\n").entries()) {
+      const trimmedLine = line.trim();
+
+      if (
+        trimmedLine.startsWith("//") ||
+        trimmedLine.startsWith("/**") ||
+        trimmedLine.startsWith("/*") ||
+        trimmedLine.startsWith("*") ||
+        trimmedLine.startsWith("*/")
+      ) {
+        continue;
+      }
+
       for (const rule of rules) {
         if (rule.pattern.test(line)) {
           violations.push(`${file}:${lineIndex + 1} ${rule.message}`);

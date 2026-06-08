@@ -74,6 +74,7 @@ Closes #
 - [ ] 已按 `Ant Design-first Vertical Slice UI Architecture` 实现
 - [ ] 未新增错误的 shared 抽象
 - [ ] 未把业务组件放进 `shared/ui`、`shared/layout` 或 `shared/navigation`
+- [ ] 如修改 `shared/ui` 公共 API，已同步维护 export 组件、export 函数、props contract 和 item contract 的契约 JSDoc
 - [ ] `modules` 未直接 import 其他 module 的业务组件
 - [ ] `modules` 未依赖 `app`
 - [ ] `shared` 未依赖 `modules` 或 `app`

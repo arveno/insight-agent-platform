@@ -171,6 +171,12 @@ External Raw Data
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只允许无业务语义 UI primitive 或 Ant Design 薄封装；不允许放 `report / evidence / trace / feedback panel` 等业务组件。
+- `shared/ui` 的 export 组件、export 函数、export type / interface、props contract 和 item contract 必须有 JSDoc。
+- `shared/ui` 公共 API 注释必须说明 `layer / based on / responsibilities / forbidden responsibilities / caller contract`。
+- `shared/ui` 注释只解释组件契约和易误用边界，不逐行解释显而易见实现；`title / description / children / className / style` 这类直观字段禁止写废话注释。
+- callback、slot、status、risk、variant、action 这类容易误用的字段必须在 props contract 或 item contract 中说明用途边界。
+- 如果一个 `shared/ui` 组件需要大量注释才能说清楚，优先回头检查组件职责是否过重，而不是继续堆砌注释。
+- 修改 `shared/ui` 公共 API 时，必须同步维护契约注释；缺失注释应由结构守门直接拦截。
 - 不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar` 这类和具体内容或按钮集合强绑定的布局组件。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`，不要为了少写 JSX 新造布局轮子。
 - 行为增强必须组合基础组件，不重新实现视觉；导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
