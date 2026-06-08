@@ -1,10 +1,10 @@
 import { Space, Typography, theme } from "antd";
 
 import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
 import type { NavigateToRoute } from "../../../app/router/pageProps";
 import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { RightAssistPanel } from "../../../shared/layout/shell/RightAssistPanel";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellThemeTokens } from "../../../shared/theme/tokens";

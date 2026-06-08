@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../../app/providers/AppProviders";
+import { AppProviders } from "../providers/AppProviders";
 import { GroupedObjectListNav } from "./GroupedObjectListNav";
 
 afterEach(cleanup);

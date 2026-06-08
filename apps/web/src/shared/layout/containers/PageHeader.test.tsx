@@ -1,7 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { AppProviders } from "../../../app/providers/AppProviders";
 import { shellThemeTokens } from "../../theme/tokens";
 import { PageHeader } from "./PageHeader";
 
@@ -10,9 +9,11 @@ afterEach(cleanup);
 describe("PageHeader", () => {
   it("renders a compact page title without the default level-2 heading style", () => {
     render(
-      <AppProviders>
-        <PageHeader meta="Updated a moment ago" subtitle="Compact subtitle" title="Business health overview" />
-      </AppProviders>
+      <PageHeader
+        meta="Updated a moment ago"
+        subtitle="Compact subtitle"
+        title="Business health overview"
+      />
     );
 
     expect(

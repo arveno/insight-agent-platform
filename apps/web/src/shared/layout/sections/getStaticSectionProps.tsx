@@ -1,9 +1,15 @@
-import type { StaticSectionViewModel } from "../../../app/shell/models/staticViewModelTypes";
 import { translateKey, type Translate } from "../../i18n/translateKey";
+import type { SharedStatusViewModel } from "../../utils/viewModelState";
 import { toStatusTag } from "../../utils/viewModelState";
 import { StatusTag } from "../../ui/status/StatusTag";
 
-export function getStaticSectionProps(t: Translate, section: StaticSectionViewModel) {
+type StaticSectionLike = {
+  descriptionKey: string;
+  status: SharedStatusViewModel;
+  titleKey: string;
+};
+
+export function getStaticSectionProps(t: Translate, section: StaticSectionLike) {
   const status = toStatusTag(t, section.status);
 
   return {

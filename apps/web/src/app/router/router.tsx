@@ -17,8 +17,8 @@ import { WorkspacePage } from "../../modules/workspace/Page";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import type { IconName } from "../../shared/icons/iconTypes";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
-import type { NavigationGroup, NavigationItem } from "../../shared/layout/shell/LeftNav";
 import { appShellStaticViewModel } from "../shell/fixtures/appShellStaticViewModel";
+import type { NavigationGroup, NavigationItem } from "../shell/LeftNav";
 import type {
   AppShellNavigationGroupViewModel,
   AppShellNavigationItemViewModel

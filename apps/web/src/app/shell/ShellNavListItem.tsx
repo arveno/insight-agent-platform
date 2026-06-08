@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { Flex, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme/tokens";
-import { shellTypographyStyles } from "../../theme/typography";
+import { shellThemeTokens } from "../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../shared/theme/typography";
 
 export type ShellNavListItemProps = {
   ariaCurrent?: "page";

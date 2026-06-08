@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../providers/AppProviders";
-import { analysisStaticViewModel } from "../../modules/analysis/fixtures/analysisStaticViewModel";
+import { AppProviders } from "../../../app/providers/AppProviders";
+import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
 
 import { RunTraceDetailDrawer } from "./RunTraceDetailDrawer";
 

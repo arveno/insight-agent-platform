@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 
 const appSections = ["providers", "router", "shell"];
 const frontendModules = [
@@ -40,13 +40,36 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/constants",
   "apps/web/src/shared/ui/evidence",
   "apps/web/src/shared/ui/report",
+  "apps/web/src/shared/ui/reports",
   "apps/web/src/shared/ui/trace",
+  "apps/web/src/shared/ui/traces",
+  "apps/web/src/shared/layout/shell",
   "apps/web/src/shared/layout/sections/WebSection.tsx",
   "apps/web/src/shared/ui/data/SummaryTable.tsx",
   "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
   "apps/web/src/shared/ui/cards/MetricCardGrid.tsx",
   "apps/web/src/shared/layout/overlays/StaticTabsPanel.tsx",
   "apps/web/src/shared/layout/overlays/AppTabs.tsx"
+];
+const businessBoundaryPrefixes = [
+  "Analysis",
+  "DataKnowledge",
+  "Metrics",
+  "Reports",
+  "ModelTools",
+  "Governance",
+  "Settings",
+  "Evaluation",
+  "Feedback",
+  "Memory",
+  "Observability",
+  "PlatformOperations"
+];
+const sharedLayoutForbiddenPrefixes = [
+  ...businessBoundaryPrefixes,
+  "Report",
+  "Evidence",
+  "Trace"
 ];
 const contractSchemaPaths = [
   "packages/contracts/schemas/workspace/workspace.schema.json",
@@ -257,6 +280,16 @@ const frontendIndexFiles = collectMatchingFiles("apps/web/src", (entry, absolute
   entry.isFile() &&
   (absolutePath.endsWith("/index.ts") || absolutePath.endsWith("/index.tsx"))
 );
+const appShellBusinessFiles = collectMatchingFiles("apps/web/src/app/shell", (entry) =>
+  entry.isFile() && businessBoundaryPrefixes.some((prefix) => entry.name.startsWith(prefix))
+);
+const sharedLayoutBusinessFiles = collectMatchingFiles("apps/web/src/shared/layout", (entry) =>
+  entry.isFile() && sharedLayoutForbiddenPrefixes.some((prefix) => entry.name.startsWith(prefix))
+);
+const sharedDependencyViolations = collectImportViolations("apps/web/src/shared", [
+  { pattern: /from\s+["'][^"']*app\//, message: "shared 不得依赖 app" },
+  { pattern: /from\s+["'][^"']*modules\//, message: "shared 不得依赖 modules" }
+]);
 
 if (missingPaths.length > 0) {
   console.error("Missing required project structure:");
@@ -290,6 +323,30 @@ if (frontendIndexFiles.length > 0) {
   process.exit(1);
 }
 
+if (appShellBusinessFiles.length > 0) {
+  console.error("apps/web/src/app/shell 只允许保留通用 App Shell 组件，检测到业务前缀文件：");
+  for (const path of appShellBusinessFiles) {
+    console.error(`- ${path}`);
+  }
+  process.exit(1);
+}
+
+if (sharedLayoutBusinessFiles.length > 0) {
+  console.error("apps/web/src/shared/layout 只允许无业务语义布局 primitive，检测到业务命名文件：");
+  for (const path of sharedLayoutBusinessFiles) {
+    console.error(`- ${path}`);
+  }
+  process.exit(1);
+}
+
+if (sharedDependencyViolations.length > 0) {
+  console.error("apps/web/src/shared 检测到越界依赖：");
+  for (const violation of sharedDependencyViolations) {
+    console.error(`- ${violation}`);
+  }
+  process.exit(1);
+}
+
 console.log("Structure guard passed.");
 
 function collectMatchingFiles(rootDir, predicate) {
@@ -316,4 +373,25 @@ function collectDirectoryEntries(currentDir, predicate) {
   }
 
   return matches;
+}
+
+function collectImportViolations(rootDir, rules) {
+  const files = collectMatchingFiles(rootDir, (entry) =>
+    entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
+  );
+  const violations = [];
+
+  for (const file of files) {
+    const content = readFileSync(file, "utf8");
+
+    for (const [lineIndex, line] of content.split("\n").entries()) {
+      for (const rule of rules) {
+        if (rule.pattern.test(line)) {
+          violations.push(`${file}:${lineIndex + 1} ${rule.message}`);
+        }
+      }
+    }
+  }
+
+  return violations;
 }

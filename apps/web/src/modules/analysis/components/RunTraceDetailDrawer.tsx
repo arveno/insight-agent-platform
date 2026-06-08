@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { Button, Descriptions, Divider, Space, Typography } from "antd";
 
-import type { AnalysisRunTraceEventViewModel } from "../../modules/analysis/models/analysisViewModel";
-import { useI18n } from "../../shared/i18n/I18nProvider";
-import { AppDrawer } from "../../shared/layout/overlays/AppDrawer";
-import { RiskBadge } from "../../shared/ui/status/RiskBadge";
-import { StatusTag } from "../../shared/ui/status/StatusTag";
-import { shellTypographyStyles } from "../../shared/theme/typography";
-import { toRiskBadge, toStatusTag } from "../../shared/utils/viewModelState";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { AppDrawer } from "../../../shared/layout/overlays/AppDrawer";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
+import type { AnalysisRunTraceEventViewModel } from "../models/analysisViewModel";
 
 export type RunTraceDetailDrawerProps = {
   event?: AnalysisRunTraceEventViewModel;

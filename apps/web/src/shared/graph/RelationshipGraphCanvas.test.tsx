@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
 import { RelationshipGraphCanvas } from "./RelationshipGraphCanvas";
 import type { RelationshipGraphViewModel } from "./models";
 
@@ -121,17 +120,15 @@ function createGraphViewModel(): RelationshipGraphViewModel {
 describe("RelationshipGraphCanvas", () => {
   it("renders an empty state without creating a G6 graph when there are no nodes", () => {
     render(
-      <AppProviders>
-        <RelationshipGraphCanvas
-          emptyText="No relationship nodes"
-          graph={{
-            description: "empty graph",
-            edges: [],
-            nodes: [],
-            title: "Asset relationship graph"
-          }}
-        />
-      </AppProviders>
+      <RelationshipGraphCanvas
+        emptyText="No relationship nodes"
+        graph={{
+          description: "empty graph",
+          edges: [],
+          nodes: [],
+          title: "Asset relationship graph"
+        }}
+      />
     );
 
     expect(screen.getByText("No relationship nodes")).toBeTruthy();
@@ -142,13 +139,11 @@ describe("RelationshipGraphCanvas", () => {
     const onSelectNode = vi.fn();
 
     const { unmount } = render(
-      <AppProviders>
-        <RelationshipGraphCanvas
-          graph={createGraphViewModel()}
-          onSelectNode={onSelectNode}
-          selectedNodeId="field-1"
-        />
-      </AppProviders>
+      <RelationshipGraphCanvas
+        graph={createGraphViewModel()}
+        onSelectNode={onSelectNode}
+        selectedNodeId="field-1"
+      />
     );
 
     expect(GraphMock).toHaveBeenCalledTimes(1);

@@ -7,31 +7,31 @@ import { AppIcon } from "../../shared/icons/AppIcon";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localeOptions } from "../../shared/i18n/localeTypes";
 import type { AppLocale } from "../../shared/i18n/localeTypes";
-import { AppShellLayout } from "../../shared/layout/shell/AppShellLayout";
-import { HeaderBar } from "../../shared/layout/shell/HeaderBar";
-import { LeftNav } from "../../shared/layout/shell/LeftNav";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
+import { AnalysisSessionNav } from "../../modules/analysis/navigation/AnalysisSessionNav";
+import { AnalysisInspectorPanel } from "../../modules/analysis/panels/AnalysisInspectorPanel";
 import { useAnalysisConversationState } from "../../modules/analysis/hooks/useAnalysisConversationState";
 import { analysisStaticViewModel } from "../../modules/analysis/fixtures/analysisStaticViewModel";
 import { AnalysisPageContent } from "../../modules/analysis/Page";
+import { DataKnowledgeListNav } from "../../modules/data-knowledge/navigation/DataKnowledgeListNav";
 import { useDataKnowledgeOverviewState } from "../../modules/data-knowledge/hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeInspectorPanel } from "../../modules/data-knowledge/panels/DataKnowledgeInspectorPanel";
+import { MetricsListNav } from "../../modules/metrics/navigation/MetricsListNav";
 import { useMetricsOverviewState } from "../../modules/metrics/hooks/useMetricsOverviewState";
 import { usePlatformOperationsOverviewState } from "../../modules/platform-operations/hooks/usePlatformOperationsOverviewState";
+import { ReportsListNav } from "../../modules/reports/navigation/ReportsListNav";
+import { ReportsInspectorPanel } from "../../modules/reports/panels/ReportsInspectorPanel";
 import { useReportsReaderState } from "../../modules/reports/hooks/useReportsReaderState";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
 import type { StaticRouteKey } from "./models/staticViewModelTypes";
 
-import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
-import { AnalysisSessionNav } from "./AnalysisSessionNav";
 import { AppShellInspector } from "./AppShellInspector";
-import { DataKnowledgeListNav } from "./DataKnowledgeListNav";
-import { MetricsListNav } from "./MetricsListNav";
-import { ReportsInspectorPanel } from "./ReportsInspectorPanel";
-import { ReportsListNav } from "./ReportsListNav";
+import { AppShellLayout } from "./AppShellLayout";
+import { HeaderBar } from "./HeaderBar";
+import { LeftNav } from "./LeftNav";
 
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();

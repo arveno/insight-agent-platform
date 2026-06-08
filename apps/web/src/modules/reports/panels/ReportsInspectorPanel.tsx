@@ -1,10 +1,10 @@
 import { Space, Typography, theme } from "antd";
 
-import type { ReportsViewModel } from "../../modules/reports/models/reportsViewModel";
-import { useI18n } from "../../shared/i18n/I18nProvider";
-import { RightAssistPanel } from "../../shared/layout/shell/RightAssistPanel";
-import { shellThemeTokens } from "../../shared/theme/tokens";
-import { shellTypographyStyles } from "../../shared/theme/typography";
+import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import type { ReportsViewModel } from "../models/reportsViewModel";
 
 export type ReportsInspectorPanelProps = {
   reportSections: ReportsViewModel["reportSections"];

@@ -98,6 +98,8 @@ Code
 - `Data & Knowledge` 的 LeftNav 二级列表承接当前 `Workspace` 的 grouped asset list，复用 grouped object list；分组固定为 `数据资产 Data` 和 `知识文档 Docs`。
 - `Data & Knowledge` 的分组标题不可选，不代表 route，不代表新的业务对象；列表项只负责选择当前资产，不承载字段、证据、质量摘要或动作按钮。
 - `Data & Knowledge` 一级入口需要和 `Analysis / Reports / Metrics` 等存在二级列表的入口保持一致的可进入提示。
+- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav / RightAssistPanel / ObjectListNav / GroupedObjectListNav / WebPageScaffold`。
+- `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / ReportsListNav / ReportsInspectorPanel / DataKnowledgeListNav / MetricsListNav` 这类模块专属 nav / inspector / drawer / panel 必须放回对应 `modules/<domain>`。
 
 建议结构：
 
@@ -235,22 +237,21 @@ Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级�
 
 ## 5. Shared Primitive Rules
 
-shared primitive 固定包括：
+shared 只保留无业务语义的公共能力，固定边界如下：
 
-- `AppSectionStack`
-- `AppSection`
-- `AppCardGrid`
-- `AppBaseCard`
-- `MetricCard`
-- `AppActionGroup`
-- `AppActionButton`
-- `RiskBadge`
-- `StatusTag`
-- `EmptyState`
-- `ErrorState`
-- `LoadingState`
-- `InspectorSlot`
-- `RelationshipGraphCanvas`
+- `shared/theme`：tokens、typography、Ant Design theme config、theme types。
+- `shared/icons`：通用图标和图标类型。
+- `shared/i18n`：I18n provider、messages、translate helper、locale types。
+- `shared/graph`：唯一允许封装 `@antv/g6` 的关系图底座。
+- `shared/charts`：无业务语义图表 primitive。
+- `shared/layout`：`AppSection / AppSectionStack / PageHeader / PageScaffold / ResponsivePageShell` 等无业务语义页面结构 primitive。
+- `shared/ui`：actions、cards、data、navigation、states、status 等无业务语义 UI primitive 或 Ant Design 薄封装。
+
+明确不允许进入 shared 的内容：
+
+- `report / reports / evidence / trace / traces` 这类业务目录。
+- 任何依赖业务 ViewModel、业务 Contract 或业务对象词汇的组件。
+- 模块专属 `nav / inspector / drawer / panel / section / card`。
 
 统一 UI 设计语言固定如下：
 
@@ -267,7 +268,13 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 规则：
 
 - 不引入第二套 UI 组件库。
+- Ant Design first。能用 Ant Design 的基础能力，就优先使用 Ant Design。
+- Thin wrapper second。公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
+- Custom component last。只有 Ant Design 无法满足且复用价值明确时，才允许新增自定义组件。
 - 不每个页面自建按钮、卡片、状态色或反馈样式。
+- 不新增和具体内容组件强绑定的布局组件，例如 `MetricCardGrid / SummaryCardGrid / ReportCardGrid`。
+- Tabs 如需保留项目封装，必须进入 `shared/ui/navigation/AppTabs`；否则直接使用 Ant Design `Tabs`。
+- BaseCard / Card / Layout primitive 的命名和 layering 后续单独治理；当前阶段只定边界，不在 shared 中扩散新的 card 壳或 layout 壳。
 - 状态标签、风险等级、空态、错误态、加载态必须通过 `shared/ui` 收敛。
 - 颜色、字号、间距、圆角、阴影等必须能映射到 `shared/theme` token。
 - `@antv/g6` 是项目级只读关系图展示底座，不是业务页面直接使用的图谱库。
@@ -353,9 +360,24 @@ Columns 规则：
 
 - 只有跨业务域复用才进入 `shared`。
 - 单一 module 内部组件不得提前抽到 `shared`。
-- `shared` 组件不得依赖 module。
+- `shared` 组件不得依赖 `modules` 或 `app`。
 - `shared` 组件只消费 ViewModel、UI State 或 contract 枚举。
 - `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出、LangGraph raw state、raw provider response、raw vector、raw embedding 或 raw SQL result。
+- `shared` 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件。
+- 如果组件 props 中出现 `DataSource / Report / Evidence / Trace / Run / ToolDefinition / MetricDefinition` 等业务词，默认不应进入 `shared/ui`。
+
+### Review Checklist
+
+后续 PR 审核必须至少检查：
+
+- 是否新增了 `app/shell` 业务组件。
+- 是否新增了 `shared/ui` 业务组件或业务目录。
+- 是否新增了 `shared/layout` 业务命名文件。
+- 是否绕开 Ant Design 自造基础组件。
+- 是否新增了和具体内容组件强绑定的 layout。
+- 是否新增了 `index.ts / index.tsx`。
+- 是否让 `shared` 依赖 `app` 或 `modules`。
+- 是否把业务 ViewModel / Contract 泄漏到 `shared/ui`。
 
 ### Interaction States
 

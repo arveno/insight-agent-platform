@@ -1,14 +1,35 @@
-import type {
-  StaticRiskLevel,
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../app/shell/models/staticViewModelTypes";
 import type { Translate } from "../i18n/translateKey";
 import { translateKey } from "../i18n/translateKey";
 import type { RiskBadgeProps, RiskLevel } from "../ui/status/RiskBadge";
 import type { StatusTagProps } from "../ui/status/StatusTag";
 
-const statusToneByKind: Record<StaticStatusViewModel["status"], StatusTagProps["tone"]> = {
+export type SharedStatusKind =
+  | "ready"
+  | "empty"
+  | "error"
+  | "loading"
+  | "success"
+  | "risk"
+  | "warning"
+  | "disabled"
+  | "readonly";
+
+export type SharedStatusViewModel = {
+  labelKey: string;
+  reason?: string;
+  status: SharedStatusKind;
+};
+
+export type SharedRiskLevel = "none" | "low" | "medium" | "high" | "critical";
+
+export type SharedRiskViewModel = {
+  level: SharedRiskLevel;
+  reason?: string;
+  title?: string;
+  titleKey?: string;
+};
+
+const statusToneByKind: Record<SharedStatusViewModel["status"], StatusTagProps["tone"]> = {
   disabled: "default",
   empty: "default",
   error: "error",
@@ -20,7 +41,7 @@ const statusToneByKind: Record<StaticStatusViewModel["status"], StatusTagProps["
   warning: "warning"
 };
 
-const riskLevelMap: Record<StaticRiskLevel, RiskLevel> = {
+const riskLevelMap: Record<SharedRiskLevel, RiskLevel> = {
   critical: "critical",
   high: "high",
   low: "low",
@@ -38,7 +59,7 @@ function productRiskReason(reason?: string): string | undefined {
 
 export function toStatusTag(
   t: Translate,
-  status?: StaticStatusViewModel
+  status?: SharedStatusViewModel
 ): StatusTagProps | undefined {
   if (!status) {
     return undefined;
@@ -50,7 +71,7 @@ export function toStatusTag(
   };
 }
 
-export function toRiskBadge(t: Translate, risk?: StaticRiskViewModel): RiskBadgeProps | undefined {
+export function toRiskBadge(t: Translate, risk?: SharedRiskViewModel): RiskBadgeProps | undefined {
   if (!risk) {
     return undefined;
   }
