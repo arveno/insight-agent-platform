@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Space, Typography } from "antd";
 
-import type { AnalysisConversationController } from "../../modules/analysis/hooks/useAnalysisConversationState";
-import { TraceTimeline } from "../../modules/observability/TraceTimeline";
-import { useI18n } from "../../shared/i18n/I18nProvider";
-import { AppBaseCard } from "../../shared/ui/cards/AppBaseCard";
-import { RiskBadge } from "../../shared/ui/status/RiskBadge";
-import { StatusTag } from "../../shared/ui/status/StatusTag";
-import { RightAssistPanel } from "../../shared/layout/shell/RightAssistPanel";
-import { shellTypographyStyles } from "../../shared/theme/typography";
-import { toRiskBadge, toStatusTag } from "../../shared/utils/viewModelState";
-
-import { RunTraceDetailDrawer } from "./RunTraceDetailDrawer";
+import { TraceTimeline } from "../../observability/TraceTimeline";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
+import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
+import type { AnalysisConversationController } from "../hooks/useAnalysisConversationState";
+import { RunTraceDetailDrawer } from "../components/RunTraceDetailDrawer";
 
 export type AnalysisInspectorPanelProps = {
   conversationState: Pick<AnalysisConversationController, "selectedSession">;

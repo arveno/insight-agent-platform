@@ -1,17 +1,27 @@
 import { Flex, List, Space, Typography } from "antd";
 
-import type { StaticSummaryItemViewModel } from "../../../app/shell/models/staticViewModelTypes";
 import { useI18n } from "../../i18n/I18nProvider";
 import { translateKey } from "../../i18n/translateKey";
 import { shellThemeTokens } from "../../theme/tokens";
 import { shellTypographyStyles } from "../../theme/typography";
+import type { SharedRiskViewModel, SharedStatusViewModel } from "../../utils/viewModelState";
 import { toRiskBadge, toStatusTag } from "../../utils/viewModelState";
 import { EmptyState } from "../feedback/EmptyState";
 import { RiskBadge } from "../status/RiskBadge";
 import { StatusTag } from "../status/StatusTag";
 
+export type AppPropertyListItem = {
+  description?: string;
+  key: string;
+  label: string;
+  meta?: string;
+  risk?: SharedRiskViewModel;
+  status?: SharedStatusViewModel;
+  value: string;
+};
+
 export type AppPropertyListProps = {
-  items: StaticSummaryItemViewModel[];
+  items: AppPropertyListItem[];
 };
 
 export function AppPropertyList({ items }: AppPropertyListProps) {

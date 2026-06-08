@@ -3,7 +3,7 @@ import { CheckOutlined, DownOutlined } from "@ant-design/icons";
 import { Button, Dropdown, Flex, Space, Typography, theme } from "antd";
 import type { ItemType } from "antd/es/menu/interface";
 
-import { shellThemeTokens } from "../../theme/tokens";
+import { shellThemeTokens } from "../../shared/theme/tokens";
 
 export type HeaderBarWorkspaceOption = {
   name: string;

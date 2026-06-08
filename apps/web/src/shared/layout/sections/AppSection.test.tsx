@@ -1,7 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { AppProviders } from "../../../app/providers/AppProviders";
 import { shellThemeTokens } from "../../theme/tokens";
 import { AppSection } from "./AppSection";
 
@@ -26,11 +25,9 @@ beforeAll(() => {
 describe("AppSection", () => {
   it("renders compact eyebrow and section title styles instead of the default heading block", () => {
     render(
-      <AppProviders>
-        <AppSection eyebrow="Overview" title="Operating health">
-          <div>content</div>
-        </AppSection>
-      </AppProviders>
+      <AppSection eyebrow="Overview" title="Operating health">
+        <div>content</div>
+      </AppSection>
     );
 
     expect(screen.queryByRole("heading", { level: 4, name: "Operating health" })).toBeNull();

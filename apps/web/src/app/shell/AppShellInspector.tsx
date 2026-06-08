@@ -1,12 +1,12 @@
 import { Space, Typography, theme } from "antd";
 
-import { RightAssistPanel } from "../../shared/layout/shell/RightAssistPanel";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 
 import type { AppShellInspectorViewModel } from "./models/appShellViewModel";
+import { RightAssistPanel } from "./RightAssistPanel";
 
 export type AppShellInspectorProps = {
   inspector: AppShellInspectorViewModel;

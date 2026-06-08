@@ -1,5 +1,5 @@
-import type { MetricsOverviewController } from "../../modules/metrics/hooks/useMetricsOverviewState";
-import { ObjectListNav } from "../../shared/layout/shell/ObjectListNav";
+import { ObjectListNav } from "../../../app/shell/ObjectListNav";
+import type { MetricsOverviewController } from "../hooks/useMetricsOverviewState";
 
 export type MetricsListNavProps = {
   controller: MetricsOverviewController;

@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { RightOutlined } from "@ant-design/icons";
 import { Space, Typography, theme } from "antd";
 
-import { shellThemeTokens } from "../../theme/tokens";
-import { shellTypographyStyles } from "../../theme/typography";
+import { shellThemeTokens } from "../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../shared/theme/typography";
 import { ShellNavListItem } from "./ShellNavListItem";
 
 export type NavigationItem = {

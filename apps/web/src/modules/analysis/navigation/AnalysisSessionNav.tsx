@@ -1,8 +1,8 @@
 import { PlusOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 
-import type { AnalysisViewModel } from "../../modules/analysis/models/analysisViewModel";
-import { ObjectListNav } from "../../shared/layout/shell/ObjectListNav";
+import { ObjectListNav } from "../../../app/shell/ObjectListNav";
+import type { AnalysisViewModel } from "../models/analysisViewModel";
 
 export type AnalysisSessionNavProps = {
   onBack: () => void;

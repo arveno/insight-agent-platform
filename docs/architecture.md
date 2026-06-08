@@ -254,7 +254,7 @@ apps/web/src/
 ├─ app/                   # 前端运行时装配层
 │  ├─ providers/          # React 根 Provider、Theme/I18n/Ant Design Config
 │  ├─ router/             # 路由表、route-aware action helper、页面导航类型
-│  └─ shell/              # AppShell、页面 scaffold、导航与 Inspector 容器
+│  └─ shell/              # AppShell、页面 scaffold、通用应用外壳容器
 ├─ api/                   # 前端 API 边界
 │  ├─ client/             # HTTP client / transport 承载位
 │  └─ adapters/           # API 响应适配承载位
@@ -274,8 +274,8 @@ apps/web/src/
 │  ├─ memory/
 │  └─ observability/
 ├─ shared/                # 无业务语义的跨模块 primitive
-│  ├─ ui/                 # 通用按钮、卡片、表格、状态态和反馈态
-│  ├─ layout/             # 页面容器、Section、Shell 基础布局
+│  ├─ ui/                 # Ant Design 薄封装与通用 UI primitive
+│  ├─ layout/             # 无业务语义页面结构 primitive
 │  ├─ theme/              # 设计 token 和主题能力
 │  ├─ graph/              # 项目级关系图展示底座，只接收标准化 RelationshipGraphViewModel
 │  ├─ charts/             # 通用图表 primitive
@@ -321,46 +321,32 @@ UI 不得直接消费 raw API response。
 
 - `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
 - `app/router` 只负责路由表、页面 props 和 route-aware action helper；`shared/ui` 不知道 route。
-- `app/shell` 只负责 AppShell、导航、Inspector、页面 scaffold 和应用级容器。
+- `app/shell` 只负责 AppShell、HeaderBar、LeftNav、RightAssistPanel、ObjectListNav、GroupedObjectListNav、WebPageScaffold 等通用应用外壳；业务模块自己的 nav / inspector / drawer / panel 必须回到 `modules/<domain>`。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
-- `shared` 只放真正跨模块复用且无业务语义的 primitive，不再承接 `evidence / report / trace` 这类业务组件。
+- `shared/layout` 只放无业务语义的页面结构 primitive；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
+- `shared` 不得依赖 `app` 或 `modules`，`modules` 可以依赖 `shared` 与 `api`。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
 - `modules/data-knowledge` 只组合 `RelationshipGraphCanvas`，不直接创建 G6 graph。
 - 业务页面和 module 不得直接 import `@antv/g6`，也不得把 G6 instance 暴露到业务链路。
 - 前端页面、组件、mapper 和页面 service 不得直接执行模型、工具、SQL、RAG、向量检索或 SQL Guard。
 - 前端页面不得展示 raw provider response、raw Tool output、LangGraph raw state、raw vector、raw embedding 或 raw SQL result。
-- `shared` 只放真正跨模块复用内容。
+- 不新增 `pages / features / pages/_shared` 回流目录，不新增 `index.ts / index.tsx` barrel export。
 - 状态标签、风险等级、空态、错误态必须使用 shared UI。
 - UI 必须使用 Ant Design 体系，不引入第二套 UI 组件库。
 
 ## 6. UI 语言
 
-统一使用 Ant Design 体系。
+统一使用 Ant Design 体系，并遵守以下长期规则：
 
-- 基础组件：Ant Design v5
-- AI 交互：Ant Design X
-- 中后台增强：ProComponents 按需
-- 图表：ECharts / Ant Design Charts
-
-必须建立统一：
-
-- Design Tokens
-- StatusTag
-- RiskBadge
-- MetricCard
-- TraceTimeline
-- ToolCallCard
-- ModelCallCard
-- SourceEvidenceList
-- MemoryUsagePanel
-- EvaluationScoreCard
-- FeedbackPanel
-- ReportSection
-- DecisionCard
-- EmptyState
-- ErrorState
-- LoadingState
+- Ant Design first。能直接使用 Ant Design 的基础能力，就优先使用 Ant Design。
+- Thin wrapper second。项目公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 Ant 已经提供的 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
+- Custom component last。只有 Ant Design 无法满足且长期复用价值明确时，才允许新增自定义组件。
+- Layout 不绑定具体内容组件。不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid` 这类和内容类型强绑定的布局组件；布局优先使用 Ant `Flex / Space / Row / Col / Layout`，如需薄封装也必须保持无业务语义。
+- Card 体系单独治理。`AppBaseCard / MetricCard / 其它 card variant` 的命名和 layering 后续统一治理；当前阶段不得新增重复 card 外壳。
+- shared primitive 只保留 `AppActionButton / AppActionGroup / AppBaseCard / AppCardGrid / AppPropertyList / EmptyState / ErrorState / LoadingState / StatusTag / RiskBadge` 这类无业务语义能力。
+- `TraceTimeline / SourceEvidenceList / ReportSection / DecisionCard / FeedbackPanel` 等业务对象展示组件必须留在 canonical module，而不是回流到 `shared/ui`。
 
 ## 7. 后端架构
 
