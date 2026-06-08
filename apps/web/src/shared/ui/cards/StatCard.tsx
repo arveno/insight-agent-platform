@@ -24,10 +24,10 @@ export type StatCardProps = {
 };
 
 /**
- * 指标摘要卡片。
+ * 通用数值摘要卡片。
  *
- * 只展示 Metric / MetricThreshold / SourceEvidence 派生 ViewModel；
- * 不计算指标、不读取 raw metric rows，也不定义业务钻取动作。
+ * 组件只负责展示 title / value / status / risk / meta；
+ * 不承接业务对象解析、数据映射或导航决策。
  */
 export function StatCard({
   actions,

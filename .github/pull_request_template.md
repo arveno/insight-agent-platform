@@ -12,13 +12,13 @@ Closes #
 
 ## 摘要 / Summary
 
-- 
+-
 
 ## 修改范围 / Scope
 
 变更范围：
 
-- 
+-
 
 ## 规则遵守 / Rule Compliance
 
@@ -54,7 +54,7 @@ Closes #
 
 ## 风险与后续 / Risks and Follow-ups
 
-- 
+-
 
 ## Review Checklist / 审查清单
 
@@ -65,3 +65,16 @@ Closes #
 - [ ] 验收标准可检查且已满足
 - [ ] CI 已通过，或失败原因已说明
 - [ ] 用户可以基于本 PR 决定是否 merge
+
+## UI Taxonomy Checklist / UI 组件族谱清单
+
+- [ ] 已按 `Ant Design-first Vertical Slice UI Architecture` 实现
+- [ ] 未新增错误的 shared 抽象
+- [ ] 未把业务组件放进 `shared/ui`、`shared/layout` 或 `shared/navigation`
+- [ ] `modules` 未直接 import 其他 module 的业务组件
+- [ ] `modules` 未依赖 `app`
+- [ ] `shared` 未依赖 `modules` 或 `app`
+- [ ] 未新增 `index.ts / index.tsx`
+- [ ] 未新增 `shared/product`、`legacy`、`temporary`、`transitional` 或其它旧结构回流目录
+- [ ] 未绕开 Ant Design 自造基础组件
+- [ ] 未把排序、过滤、分组或权限显隐塞进 UI primitive

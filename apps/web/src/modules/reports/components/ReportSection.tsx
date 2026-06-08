@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import { shellThemeTokens } from "../../shared/theme/tokens";
-import { shellTypographyStyles } from "../../shared/theme/typography";
-import { RiskBadge } from "../../shared/ui/status/RiskBadge";
-import type { RiskBadgeProps } from "../../shared/ui/status/RiskBadge";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import type { RiskBadgeProps } from "../../../shared/ui/status/RiskBadge";
 
 export type ReportSectionProps = {
   actions?: ReactNode;

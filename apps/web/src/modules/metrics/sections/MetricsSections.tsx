@@ -1,6 +1,10 @@
 import { Flex, Space, Typography } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
+import { toEvidenceItem } from "../../../shared/view-model/staticViewModelAdapters";
 import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
@@ -15,7 +19,6 @@ import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
-import { toEvidenceItem } from "../../analysis/viewModelAdapters";
 import type { MetricDetailViewModel, MetricsViewModel } from "../models/metricsViewModel";
 
 export type MetricsSectionsProps = WebPageProps & {
@@ -235,11 +238,10 @@ function MetricActionsCard({
       title="动作"
     >
       <Flex gap={12} wrap>
-        {[buildAnalysisAction(metric.analysisContext.metricId, onNavigate, t), buildLineageAction(
-          metric.metricId,
-          onNavigate,
-          t
-        )].map((action) => (
+        {[
+          buildAnalysisAction(metric.analysisContext.metricId, onNavigate, t),
+          buildLineageAction(metric.metricId, onNavigate, t)
+        ].map((action) => (
           <NavigationActionButton action={action} key={action.key} />
         ))}
       </Flex>

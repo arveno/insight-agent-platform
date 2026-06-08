@@ -154,8 +154,21 @@ PR 审查必须按 Issue 反查：
 - 是否引入 Mock / Real 双链路。
 - 是否有测试和证据。
 - 是否需要退回 Issue 重新审查。
+- 是否符合 `Ant Design-first Vertical Slice UI Architecture`。
+- 是否新增错误的 shared 抽象，或把业务组件放进 `shared/ui`、`shared/layout`、`shared/navigation`。
+- 是否让 `modules` 互相引用业务组件。
+- 是否让 `modules` import `app`，或让 `shared` import `modules / app`。
+- 是否新增 `index.ts / index.tsx`、`shared/product`、`legacy / temporary / transitional` 或其它旧结构回流目录。
+- 是否绕开 Ant Design 自造基础组件，或只是为了少写 JSX 创建组件。
+- 是否把排序、过滤、分组、权限显隐塞进 UI primitive。
 
 PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓库事实源判断是否合格。
+
+补充规则：
+
+- Codex 只能报告执行结果、测试结果和风险，不能自行判断“审核通过”。
+- ChatGPT 审核 PR 时必须显式检查上述 UI taxonomy 边界，而不是只看页面是否可运行。
+- 用户最终决定是否 merge。
 
 ## 10. 退回机制
 

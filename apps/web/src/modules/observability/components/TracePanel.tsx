@@ -1,9 +1,8 @@
-import type { StaticRightAssistSummaryViewModel } from "../../shared/view-model/staticViewModelTypes";
-import { useI18n } from "../../shared/i18n/I18nProvider";
-import { translateKey } from "../../shared/i18n/translateKey";
-import { EventTimeline } from "../../shared/ui/lists/EventTimeline";
-
-import { toTraceItem } from "../analysis/viewModelAdapters";
+import type { StaticRightAssistSummaryViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import { toTraceItem } from "../../../shared/view-model/staticViewModelAdapters";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey } from "../../../shared/i18n/translateKey";
+import { EventTimeline } from "../../../shared/ui/lists/EventTimeline";
 
 export type TracePanelProps = {
   items: NonNullable<StaticRightAssistSummaryViewModel["traces"]>;

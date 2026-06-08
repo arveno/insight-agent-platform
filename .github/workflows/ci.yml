@@ -138,11 +138,11 @@ jobs:
           done
 
   frontend:
-    name: Frontend Layout Guard
+    name: Frontend UI Taxonomy Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify frontend boundary guard
+      - name: Verify frontend taxonomy and boundary guard
         run: node scripts/contracts/check-structure.mjs
 
   backend:

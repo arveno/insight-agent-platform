@@ -150,25 +150,43 @@ External Raw Data
 - Thin wrapper second。公共组件只做 Ant Design 薄封装和项目级语义封装，不重写 `Button / Card / Tabs / Table / Descriptions / List / Flex / Space / Row / Col / Layout`。
 - Custom component last。只有 Ant Design 无法满足且长期复用价值明确时，才允许新增自定义组件。
 - 不 mirror Ant Design。禁止创建 `AppButton / AppTabs / AppTable / AppCheckbox / AppRadio / AppDrawer` 这类只是改名的 Ant Design 镜像组件。
+- 公共组件不是为了少写 JSX 而存在，只有增加稳定职责时才允许抽象。
+- 最终 UI 组件层级固定为 `Foundation -> Surface / Frame -> Shared Patterns -> Behavior Wrappers -> Module Components -> Page Composition`。
+- `Foundation = Ant Design + shared/theme`。
+- `Surface / Frame` 只放统一视觉壳，例如 `CardSurface / SidePanel / DrawerFrame`，不接业务对象。
+- `Shared Patterns` 只放无业务语义的稳定展示模式，例如 `ContentCard / StatCard / PropertyList / TitledList / EventTimeline / ContentSection / PageScaffold`。
+- `Behavior Wrappers` 只增加行为，不重画视觉，例如 `NavigationActionButton` 组合 `ActionButton`。
+- `Module Components` 只属于 `modules/<domain>`，可以出现业务词、消费业务 ViewModel，但不能被其他 module 直接 import。
+- `Page Composition` 只负责页面编排，不写业务清洗，不解析 raw 数据。
 - 页面只做编排，不写业务清洗。
 - 组件只消费 ViewModel 和 UI State。
 - API response 必须先通过 mapper 转成 ViewModel。
 - `app/shell` 只允许放通用应用外壳：`AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 及其自身 models / fixtures。
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
-- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / SidePanel / DrawerFrame`。
+- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
-- `shared/ui` 只允许无业务语义 UI primitive 或 Ant Design 薄封装，例如 `ActionButton / CardSurface / ContentCard / StatCard / PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EmptyState / ErrorState / LoadingState / WarningState / StatusTag / RiskBadge`；不允许放 `report / evidence / trace / feedback panel` 等业务组件。
+- `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
+- `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
+- `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
+- `shared/ui` 只允许无业务语义 UI primitive 或 Ant Design 薄封装；不允许放 `report / evidence / trace / feedback panel` 等业务组件。
 - 不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / ActionGroup / ActionBar` 这类和具体内容或按钮集合强绑定的布局组件。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`，不要为了少写 JSX 新造布局轮子。
 - 行为增强必须组合基础组件，不重新实现视觉；导航按钮通过 `NavigationActionButton` 组合 `ActionButton` 承接。
+- `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger；不负责排序、布局、导航、权限或业务判断。
+- 多个按钮横向排列直接使用 Ant `Flex / Space`，不新增 `ActionGroup / RouteActionGroup / PageActionGroup`。
+- `createRouteAction` 只负责构造 route-aware action 数据，不排序、不做权限判断、不渲染 UI。
 - 排序、过滤、分组、权限显隐放在 `mapper / hook / controller`，不放在 UI primitive 内。
 - 命名按功能职责，不按 `App / Common / Shared / Base / Wrapper / Generic / Universal` 命名；`app/App.tsx`、`app/shell/AppShell.tsx`、`app/providers/AppProviders.tsx` 这类装配层例外。
-- `shared` 不得依赖 `app` 或 `modules`；`modules` 不得依赖 `app`；`modules` 之间不得直接复用业务组件。
+- 新组件默认放 `modules/<domain>/components`；只有名称无业务词、props 无业务对象、无 `app/modules` 依赖、不是 Ant 镜像、且存在稳定展示或行为模式时，才允许晋升到 `shared`。
+- `shared/view-model` 只放跨边界共享的静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助，不得演变为业务聚合层。
+- `shared/test` 只放测试期 provider / helper，不得放业务测试数据。
+- `shared` 不得依赖 `app` 或 `modules`；`modules` 不得依赖 `app`；`modules` 之间不得直接 import 其他 module 的业务组件。
 - 多模块重复模式可以抽 shared，但必须抽成无业务 primitive，不能把业务对象组件直接放进 shared。
 - 不新增 `pages / features / pages/_shared` 回流目录。
-- 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件。
+- 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件；不保留隐式出口。
 - 禁止 `WebSection / SummaryTable / SummaryCardGrid / MetricCardGrid / ActionGroup / AppCardGrid / AppBaseCard / AppActionButton / AppActionGroup / AppTabs / StaticTabsPanel` 回流。
+- 禁止 `shared/product`、`legacy`、`temporary`、`transitional` 目录回流。
 - 设计 token 必须走 `shared/theme`。
 
 ## 8. 后端规则
@@ -198,6 +216,11 @@ External Raw Data
 - 模型调用绕过 Model Gateway。
 - 业务代码直接访问数据库连接。
 - 模型直接执行 SQL。
+- 后端同样遵守“框架优先、薄适配、业务垂直切片、shared 只放无业务基础能力”的思想：
+  - FastAPI router / dependency / response model 优先，不自造 route 框架。
+  - Pydantic 校验优先，不自造 validation 框架。
+  - LangChain / LangGraph / LlamaIndex / Milvus 优先，不自造并行运行时框架。
+  - `modules/*` 承接业务闭环，`infrastructure/*` 承接技术适配，`shared/*` 只放 errors / validation / utils / types。
 
 ## 9. Tool Registry 规则
 
