@@ -1,13 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { EvaluationViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { EvaluationViewModel } from "../models/evaluationViewModel";
 
 const dataset = {
   description: "EvaluationDataset 摘要，不执行真实评估。",

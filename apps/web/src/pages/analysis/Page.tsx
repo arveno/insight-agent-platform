@@ -1,7 +1,7 @@
 import { useAnalysisConversationState, type AnalysisConversationController } from "../../features/agent-analysis/hooks/useAnalysisConversationState";
 import { theme } from "antd";
-import { type WebPageProps } from "../_shared";
-import { AnalysisSections } from "./sections";
+import type { WebPageProps } from "../_shared/types";
+import { AnalysisSections } from "./sections/AnalysisSections";
 
 export type AnalysisPageContentProps = WebPageProps & {
   conversationState: AnalysisConversationController;

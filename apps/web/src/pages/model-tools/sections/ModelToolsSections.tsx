@@ -1,16 +1,14 @@
 import { Space } from "antd";
 
 import type { ModelToolsViewModel } from "../../../features/static-view-models";
-import { useI18n } from "../../../shared";
-import {
-  ActionBar,
-  MetricCardGrid,
-  SummaryCardGrid,
-  SummaryTable,
-  TabsPanel,
-  WebSection,
-  type WebPageProps
-} from "../../_shared";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ActionBar } from "../../_shared/actions/ActionBar";
+import { MetricCardGrid } from "../../_shared/metrics/MetricCardGrid";
+import { SummaryCardGrid } from "../../_shared/lists/SummaryCardGrid";
+import { SummaryTable } from "../../_shared/lists/SummaryTable";
+import { TabsPanel } from "../../_shared/tabs/TabsPanel";
+import { WebSection } from "../../_shared/sections/WebSection";
+import type { WebPageProps } from "../../_shared/types";
 
 export type ModelToolsSectionsProps = WebPageProps & {
   viewModel: ModelToolsViewModel;

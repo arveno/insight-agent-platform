@@ -1,1 +1,0 @@
-export { evaluationStaticViewModel } from "./evaluationStaticViewModel";

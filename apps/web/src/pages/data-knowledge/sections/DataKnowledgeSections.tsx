@@ -1,23 +1,16 @@
 import { Space, Typography } from "antd";
 
-import type {
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
-import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks";
-import type {
-  DataKnowledgeRelationshipNodeViewModel,
-  DataKnowledgeSelectedAssetViewModel
-} from "../../../features/data-knowledge/models";
-import {
-  AppBaseCard,
-  AppSection,
-  AppSectionStack,
-  RiskBadge,
-  StatusTag,
-  useI18n
-} from "../../../shared";
-import { toRiskBadge, toStatusTag, type WebPageProps } from "../../_shared";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
+import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
+import type { DataKnowledgeRelationshipNodeViewModel, DataKnowledgeSelectedAssetViewModel } from "../../../features/data-knowledge/models/dataKnowledgeViewModel";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { AppSection } from "../../../shared/layout/sections/AppSection";
+import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge, toStatusTag } from "../../_shared/adapters/viewModelAdapters";
+import type { WebPageProps } from "../../_shared/types";
 
 import { AssetRelationshipGraph } from "./AssetRelationshipGraph";
 

@@ -1,11 +1,4 @@
-import type {
-  StaticActionViewModel,
-  StaticDecisionViewModel,
-  StaticFeedbackEntranceViewModel,
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticRiskViewModel
-} from "../../../app/models";
+import type { StaticActionViewModel, StaticDecisionViewModel, StaticFeedbackEntranceViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel } from "../../../app/models/staticViewModelTypes";
 
 export type ReportListItemViewModel = {
   createdAt: string;

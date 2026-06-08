@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AppProviders } from "../../../app/providers/AppProviders";
-import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks";
+import type { DataKnowledgeOverviewController } from "../../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
 import { createDataKnowledgeViewModel } from "../../../features/data-knowledge/mappers/createDataKnowledgeViewModel";
 import { DataKnowledgeInspectorPanel } from "./DataKnowledgeInspectorPanel";
 

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 
 export type PageHeaderProps = {
   actions?: ReactNode;

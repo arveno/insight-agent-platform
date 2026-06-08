@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
-import { RiskBadge, type RiskBadgeProps, StatusTag, type StatusTagProps } from "../status";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
+import { RiskBadge } from "../status/RiskBadge";
+import type { RiskBadgeProps } from "../status/RiskBadge";
+import { StatusTag } from "../status/StatusTag";
+import type { StatusTagProps } from "../status/StatusTag";
 
 export type DecisionCardProps = {
   actions?: ReactNode;

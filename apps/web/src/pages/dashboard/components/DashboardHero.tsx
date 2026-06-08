@@ -1,15 +1,13 @@
 import { Flex, Select, Space, Typography, theme } from "antd";
 
-import {
-  AppActionGroup,
-  AppCardGrid,
-  RiskBadge,
-  shellThemeTokens,
-  shellTypographyStyles,
-  useI18n
-} from "../../../shared";
-import { toRiskBadge } from "../../_shared";
-import { createRouteAction } from "../../_shared/actions";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { AppCardGrid } from "../../../shared/ui/cards/AppCardGrid";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge } from "../../_shared/adapters/viewModelAdapters";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
 export function DashboardHero({

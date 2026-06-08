@@ -1,6 +1,7 @@
-import { useMetricsOverviewState } from "../../features/metrics/hooks";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { MetricsSections } from "./sections";
+import { useMetricsOverviewState } from "../../features/metrics/hooks/useMetricsOverviewState";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { MetricsSections } from "./sections/MetricsSections";
 
 export function MetricsPage({ metricsState, onNavigate }: WebPageProps) {
   const fallbackMetricsState = useMetricsOverviewState();

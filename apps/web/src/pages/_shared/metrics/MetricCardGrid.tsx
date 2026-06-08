@@ -1,8 +1,9 @@
 import { Badge, Col, Row, Space, Typography, theme } from "antd";
 
-import type { StaticMetricCardViewModel } from "../../../app/models";
-import { MetricCard, useI18n } from "../../../shared";
-import { toRiskBadge, toStatusTag } from "../adapters";
+import type { StaticMetricCardViewModel } from "../../../app/models/staticViewModelTypes";
+import { MetricCard } from "../../../shared/ui/cards/MetricCard";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge, toStatusTag } from "../adapters/viewModelAdapters";
 
 export type MetricCardGridProps = {
   items: StaticMetricCardViewModel[];

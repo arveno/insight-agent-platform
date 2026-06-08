@@ -3,7 +3,7 @@ import { ArrowUpOutlined, DownOutlined, PlusOutlined, StopOutlined } from "@ant-
 import { Button, Dropdown, List, Space, Typography, theme } from "antd";
 
 import type { AnalysisViewModel } from "../../../features/static-view-models";
-import { shellTypographyStyles } from "../../../shared";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
 
 export type AnalysisSectionsProps = {
   analysisDraft: string;

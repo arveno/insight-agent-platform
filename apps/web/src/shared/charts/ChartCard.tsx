@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../theme";
-import { EmptyState, ErrorState, LoadingState } from "../ui";
+import { shellThemeTokens } from "../theme/tokens";
+import { shellTypographyStyles } from "../theme/typography";
+import { EmptyState } from "../ui/feedback/EmptyState";
+import { ErrorState } from "../ui/feedback/ErrorState";
+import { LoadingState } from "../ui/feedback/LoadingState";
 import type { ChartCardViewModel } from "./chartTypes";
 
 export type ChartCardProps = ChartCardViewModel & {

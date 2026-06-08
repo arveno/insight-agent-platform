@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import { List, Space, Typography } from "antd";
 
-import { shellTypographyStyles } from "../../theme";
-import { EmptyState, type EmptyStateProps } from "../feedback";
-import { RiskBadge, type RiskBadgeProps } from "../status";
+import { shellTypographyStyles } from "../../theme/typography";
+import { EmptyState } from "../feedback/EmptyState";
+import type { EmptyStateProps } from "../feedback/EmptyState";
+import { RiskBadge } from "../status/RiskBadge";
+import type { RiskBadgeProps } from "../status/RiskBadge";
 
 export type SourceEvidenceItem = {
   actions?: ReactNode;

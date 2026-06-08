@@ -1,15 +1,5 @@
-import {
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type {
-  ReportDetailViewModel,
-  ReportListItemViewModel,
-  ReportsViewModel
-} from "../models";
+import { defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { ReportDetailViewModel, ReportListItemViewModel, ReportsViewModel } from "../models/reportsViewModel";
 
 function toReportListItem(report: ReportDetailViewModel): ReportListItemViewModel {
   return {

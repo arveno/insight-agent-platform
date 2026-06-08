@@ -1,4 +1,4 @@
-import type { AppShellNavigationGroupViewModel, AppShellStaticViewModel } from "../models";
+import type { AppShellNavigationGroupViewModel, AppShellStaticViewModel } from "../models/appShellViewModel";
 import {
   createRightAssistSummary,
   defaultPermissionSummary,

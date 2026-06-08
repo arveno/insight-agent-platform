@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { Card, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
-import { EmptyState, type EmptyStateProps } from "../../ui";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
+import { EmptyState } from "../../ui/feedback/EmptyState";
+import type { EmptyStateProps } from "../../ui/feedback/EmptyState";
 
 export type RightAssistPanelProps = {
   actions?: ReactNode;

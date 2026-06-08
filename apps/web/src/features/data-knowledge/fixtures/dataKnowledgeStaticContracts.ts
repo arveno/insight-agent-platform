@@ -1,7 +1,5 @@
-import type {
-  DataKnowledgeStaticContracts,
-  DataKnowledgeWorkspaceBindingViewModel
-} from "../models";
+import type { DataKnowledgeStaticContracts } from "../models/dataKnowledgeContracts";
+import type { DataKnowledgeWorkspaceBindingViewModel } from "../models/dataKnowledgeViewModel";
 
 export const defaultDataKnowledgeWorkspaceBinding: DataKnowledgeWorkspaceBindingViewModel = {
   workspaceId: "workspace-northstar-retail-china",

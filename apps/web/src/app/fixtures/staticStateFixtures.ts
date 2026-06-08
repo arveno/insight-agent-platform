@@ -1,13 +1,4 @@
-import type {
-  StaticEvidenceEntranceViewModel,
-  StaticPageStateCoverageViewModel,
-  StaticPermissionSummaryViewModel,
-  StaticReadonlyStateViewModel,
-  StaticRightAssistSummaryViewModel,
-  StaticRiskViewModel,
-  StaticStatusViewModel,
-  StaticTraceEntranceViewModel
-} from "../models";
+import type { StaticEvidenceEntranceViewModel, StaticPageStateCoverageViewModel, StaticPermissionSummaryViewModel, StaticReadonlyStateViewModel, StaticRightAssistSummaryViewModel, StaticRiskViewModel, StaticStatusViewModel, StaticTraceEntranceViewModel } from "../models/staticViewModelTypes";
 
 export const readyStatus: StaticStatusViewModel = {
   labelKey: "state.ready.default.label",

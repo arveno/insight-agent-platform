@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { ArrowLeftOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Input, Space, Typography, theme } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 import type { ObjectListNavItem } from "./ObjectListNav";
 import { ShellNavListItem } from "./ShellNavListItem";
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Alert } from "antd";
 
-import type { RiskLevel } from "../status";
+import type { RiskLevel } from "../status/RiskBadge";
 
 export type WarningRiskBannerProps = {
   action?: ReactNode;

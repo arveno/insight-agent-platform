@@ -1,20 +1,6 @@
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models";
-import type {
-  RelationshipGraphEdgeViewModel,
-  RelationshipGraphNodeKind,
-  RelationshipGraphNodeViewModel,
-  RelationshipGraphViewModel
-} from "../../../shared/graph";
-import type {
-  DataKnowledgeChunkViewModel,
-  DataKnowledgeEvidenceViewModel,
-  DataKnowledgeFieldViewModel,
-  DataKnowledgeRelationshipNodeFactViewModel,
-  DataKnowledgeRelationshipNodeKind,
-  DataKnowledgeRelationshipNodeViewModel,
-  DataKnowledgeSelectedAssetViewModel,
-  DataKnowledgeTableViewModel
-} from "../models";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
+import type { RelationshipGraphEdgeViewModel, RelationshipGraphNodeKind, RelationshipGraphNodeViewModel, RelationshipGraphViewModel } from "../../../shared/graph/models";
+import type { DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeRelationshipNodeFactViewModel, DataKnowledgeRelationshipNodeKind, DataKnowledgeRelationshipNodeViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel } from "../models/dataKnowledgeViewModel";
 
 type CreateDataKnowledgeRelationshipGraphArgs = {
   chunks: DataKnowledgeChunkViewModel[];

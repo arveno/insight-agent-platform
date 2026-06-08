@@ -1,23 +1,18 @@
 import { List, Space, Typography } from "antd";
 
 import type { ReportsViewModel } from "../../../features/static-view-models";
-import {
-  AppBaseCard,
-  DecisionCard,
-  FeedbackPanel,
-  ReportSection,
-  SourceEvidenceList,
-  shellThemeTokens,
-  shellTypographyStyles,
-  useI18n
-} from "../../../shared";
-import {
-  ActionBar,
-  WebSection,
-  toRiskBadge,
-  toStatusTag,
-  type WebPageProps
-} from "../../_shared";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { DecisionCard } from "../../../shared/ui/report/DecisionCard";
+import { FeedbackPanel } from "../../../shared/ui/feedback/FeedbackPanel";
+import { ReportSection } from "../../../shared/ui/report/ReportSection";
+import { SourceEvidenceList } from "../../../shared/ui/evidence/SourceEvidenceList";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ActionBar } from "../../_shared/actions/ActionBar";
+import { WebSection } from "../../_shared/sections/WebSection";
+import { toRiskBadge, toStatusTag } from "../../_shared/adapters/viewModelAdapters";
+import type { WebPageProps } from "../../_shared/types";
 
 export type ReportsSectionsProps = WebPageProps & {
   viewModel: ReportsViewModel;

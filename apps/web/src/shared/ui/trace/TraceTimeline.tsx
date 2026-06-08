@@ -1,9 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Space, Timeline, Typography, theme } from "antd";
 
-import { shellTypographyStyles } from "../../theme";
-import { EmptyState, type EmptyStateProps } from "../feedback";
-import { RiskBadge, type RiskBadgeProps, type StatusTagProps } from "../status";
+import { shellTypographyStyles } from "../../theme/typography";
+import { EmptyState } from "../feedback/EmptyState";
+import type { EmptyStateProps } from "../feedback/EmptyState";
+import { RiskBadge } from "../status/RiskBadge";
+import type { RiskBadgeProps } from "../status/RiskBadge";
+import type { StatusTagProps } from "../status/StatusTag";
 
 export type TraceTimelineItem = {
   ariaLabel?: string;

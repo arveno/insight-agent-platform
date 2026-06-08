@@ -1,8 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { AppIcon, useI18n } from "../../shared";
-import { useAppTheme } from "../theme";
+import { AppIcon } from "../../shared/icons/AppIcon";
+import { useI18n } from "../../shared/i18n/I18nProvider";
+import { useAppTheme } from "../theme/AppThemeProvider";
 import { AppProviders } from "./AppProviders";
 
 afterEach(cleanup);

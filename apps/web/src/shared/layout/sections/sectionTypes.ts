@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { AppActionGroupItem, AppCardGridColumns } from "../../ui";
+import type { AppActionGroupItem } from "../../ui/actions/actionTypes";
+import type { AppCardGridColumns } from "../../ui/cards/cardTypes";
 
 export type AppSectionStackProps = {
   children: ReactNode;

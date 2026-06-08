@@ -1,6 +1,7 @@
 import { evaluationStaticViewModel } from "../../features/static-view-models";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { EvaluationSections } from "./sections";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { EvaluationSections } from "./sections/EvaluationSections";
 
 export function EvaluationPage({ onNavigate }: WebPageProps) {
   return (

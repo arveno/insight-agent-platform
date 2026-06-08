@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  createDataKnowledgeViewModel,
-  defaultDataKnowledgeWorkspaceBinding
-} from "../fixtures";
-import type {
-  DataKnowledgeRelationshipNodeViewModel,
-  DataKnowledgeViewModel,
-  DataKnowledgeWorkspaceBindingViewModel
-} from "../models";
+import { createDataKnowledgeViewModel } from "../mappers/createDataKnowledgeViewModel";
+import { defaultDataKnowledgeWorkspaceBinding } from "../fixtures/dataKnowledgeStaticViewModel";
+import type { DataKnowledgeRelationshipNodeViewModel, DataKnowledgeViewModel, DataKnowledgeWorkspaceBindingViewModel } from "../models/dataKnowledgeViewModel";
 
 const defaultViewModel = createDataKnowledgeViewModel();
 const defaultSelectedAssetKey = defaultViewModel.selectedAsset.key;

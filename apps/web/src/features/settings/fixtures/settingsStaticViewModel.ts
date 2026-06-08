@@ -1,12 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { SettingsViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { SettingsViewModel } from "../models/settingsViewModel";
 
 export const settingsStaticViewModel: SettingsViewModel = {
   defaultPolicySummary: [

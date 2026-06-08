@@ -1,6 +1,7 @@
-import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { DataKnowledgeSections } from "./sections";
+import { useDataKnowledgeOverviewState } from "../../features/data-knowledge/hooks/useDataKnowledgeOverviewState";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { DataKnowledgeSections } from "./sections/DataKnowledgeSections";
 
 export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: WebPageProps) {
   const fallbackDataKnowledgeState = useDataKnowledgeOverviewState();

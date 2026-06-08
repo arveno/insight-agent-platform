@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  createMetricsViewModel,
-  defaultMetricsWorkspaceBinding
-} from "../fixtures";
-import type { MetricsViewModel, MetricsWorkspaceBinding } from "../models";
+import { createMetricsViewModel, defaultMetricsWorkspaceBinding } from "../fixtures/metricsStaticViewModel";
+import type { MetricsViewModel, MetricsWorkspaceBinding } from "../models/metricsViewModel";
 
 const defaultSelectedMetricKey = createMetricsViewModel().selectedMetric.key;
 

@@ -1,7 +1,9 @@
 import { Flex, Space, Typography } from "antd";
 
-import { AppActionGroup, AppCardGrid } from "../../ui";
-import { shellThemeTokens, shellTypographyStyles } from "../../theme";
+import { AppActionGroup } from "../../ui/actions/AppActionGroup";
+import { AppCardGrid } from "../../ui/cards/AppCardGrid";
+import { shellThemeTokens } from "../../theme/tokens";
+import { shellTypographyStyles } from "../../theme/typography";
 import type { AppSectionProps } from "./sectionTypes";
 
 export function AppSection({

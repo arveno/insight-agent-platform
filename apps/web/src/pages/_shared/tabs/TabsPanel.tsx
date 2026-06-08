@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { Badge, Space } from "antd";
 
-import type { StaticTabViewModel } from "../../../app/models";
-import { AppTabs, useI18n } from "../../../shared";
+import type { StaticTabViewModel } from "../../../app/models/staticViewModelTypes";
+import { AppTabs } from "../../../shared/layout/overlays/AppTabs";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey } from "../text";
 
 export type TabsPanelProps = {

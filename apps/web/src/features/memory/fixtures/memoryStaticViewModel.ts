@@ -1,13 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { MemoryViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { MemoryViewModel } from "../models/memoryViewModel";
 
 const memoryItem = {
   description: "工作区长期记忆摘要，不等于 Feedback 或 Evaluation。",

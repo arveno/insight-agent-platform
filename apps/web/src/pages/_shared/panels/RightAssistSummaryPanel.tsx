@@ -1,15 +1,13 @@
 import { Space, Typography } from "antd";
 
-import type { StaticRightAssistSummaryViewModel } from "../../../app/models";
-import {
-  RightAssistPanel,
-  RiskBadge,
-  shellTypographyStyles,
-  StatusTag,
-  useI18n
-} from "../../../shared";
-import { ActionBar } from "../actions";
-import { toRiskBadge, toStatusTag } from "../adapters";
+import type { StaticRightAssistSummaryViewModel } from "../../../app/models/staticViewModelTypes";
+import { RightAssistPanel } from "../../../shared/layout/shell/RightAssistPanel";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ActionBar } from "../actions/ActionBar";
+import { toRiskBadge, toStatusTag } from "../adapters/viewModelAdapters";
 import { translateKey } from "../text";
 import type { NavigateToRoute } from "../types";
 import { EvidencePanel } from "./EvidencePanel";

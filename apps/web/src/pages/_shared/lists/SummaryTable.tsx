@@ -1,8 +1,10 @@
 import { Typography } from "antd";
 
-import type { StaticSummaryItemViewModel } from "../../../app/models";
-import { DataTable, StatusTag, useI18n } from "../../../shared";
-import { toRiskBadge, toStatusTag } from "../adapters";
+import type { StaticSummaryItemViewModel } from "../../../app/models/staticViewModelTypes";
+import { DataTable } from "../../../shared/ui/data/DataTable";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge, toStatusTag } from "../adapters/viewModelAdapters";
 import { translateKey } from "../text";
 
 export type SummaryTableProps = {

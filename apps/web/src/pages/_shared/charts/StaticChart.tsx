@@ -1,6 +1,8 @@
 import { Space, Typography, theme } from "antd";
 
-import { ChartCard, type ChartPointViewModel, useI18n } from "../../../shared";
+import { ChartCard } from "../../../shared/charts/ChartCard";
+import type { ChartPointViewModel } from "../../../shared/charts/chartTypes";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey } from "../text";
 
 export type StaticChartProps = {

@@ -1,8 +1,11 @@
 import { Typography } from "antd";
 
-import { AppActionGroup, AppBaseCard, RiskBadge, useI18n } from "../../../shared";
-import { toRiskBadge } from "../../_shared";
-import { createRouteAction } from "../../_shared/actions";
+import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
+import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { toRiskBadge } from "../../_shared/adapters/viewModelAdapters";
+import { createRouteAction } from "../../_shared/actions/createRouteAction";
 import type { DashboardRiskCardProps } from "./dashboardComponentTypes";
 
 export function DashboardRiskOverview({

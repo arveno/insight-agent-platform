@@ -1,6 +1,7 @@
 import { observabilityStaticViewModel } from "../../features/static-view-models";
-import { WebPageScaffold, type WebPageProps } from "../_shared";
-import { ObservabilitySections } from "./sections";
+import { WebPageScaffold } from "../_shared/scaffold/WebPageScaffold";
+import type { WebPageProps } from "../_shared/types";
+import { ObservabilitySections } from "./sections/ObservabilitySections";
 
 export function ObservabilityPage({ onNavigate }: WebPageProps) {
   return (

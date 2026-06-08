@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  DataKnowledgeChunkViewModel,
-  DataKnowledgeEvidenceViewModel,
-  DataKnowledgeFieldViewModel,
-  DataKnowledgeSelectedAssetViewModel,
-  DataKnowledgeTableViewModel
-} from "../models";
+import type { DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel } from "../models/dataKnowledgeViewModel";
 import { createDataKnowledgeRelationshipGraph } from "./createDataKnowledgeRelationshipGraph";
 
 function createDataSourceAsset(): DataKnowledgeSelectedAssetViewModel {

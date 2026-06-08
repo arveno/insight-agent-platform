@@ -7,7 +7,8 @@ import {
 } from "@ant-design/icons";
 import { Button, Space, Tooltip, Typography, theme } from "antd";
 
-import { shellThemeTokens, shellTypographyStyles } from "../theme";
+import { shellThemeTokens } from "../theme/tokens";
+import { shellTypographyStyles } from "../theme/typography";
 import type {
   RelationshipGraphEdgeViewModel,
   RelationshipGraphNodeKind,

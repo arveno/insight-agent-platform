@@ -1,17 +1,6 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type {
-  StaticRiskViewModel,
-  StaticSectionViewModel,
-  StaticStatusViewModel
-} from "../../../app/models";
-import type { AnalysisRunTraceViewModel, AnalysisViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { StaticRiskViewModel, StaticSectionViewModel, StaticStatusViewModel } from "../../../app/models/staticViewModelTypes";
+import type { AnalysisRunTraceViewModel, AnalysisViewModel } from "../models/analysisViewModel";
 
 const successStatus: StaticStatusViewModel = {
   labelKey: "state.success.default.title",

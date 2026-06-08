@@ -1,13 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  sharedEvidenceEntrances,
-  warningRisk
-} from "../../../app/fixtures";
-import type { DashboardViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, sharedEvidenceEntrances, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { DashboardViewModel } from "../models/dashboardViewModel";
 
 export const dashboardStaticViewModel: DashboardViewModel = {
   analysisEntrances: [

@@ -1,12 +1,5 @@
-import {
-  createRightAssistSummary,
-  defaultPermissionSummary,
-  defaultReadonlyState,
-  defaultStateCoverage,
-  readyStatus,
-  warningRisk
-} from "../../../app/fixtures";
-import type { FeedbackViewModel } from "../models";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/fixtures/staticStateFixtures";
+import type { FeedbackViewModel } from "../models/feedbackViewModel";
 
 const feedbackItem = {
   description: "用户对报告结论的反馈摘要。",

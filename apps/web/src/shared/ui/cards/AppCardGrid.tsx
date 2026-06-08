@@ -1,7 +1,7 @@
 import { Children } from "react";
 import { Col, Row, type ColProps } from "antd";
 
-import { shellThemeTokens } from "../../theme";
+import { shellThemeTokens } from "../../theme/tokens";
 import type { AppCardGridColumns, AppCardGridProps } from "./cardTypes";
 
 const columnPropsByColumns: Record<
