@@ -189,8 +189,10 @@ AppShell
 - `ContentSection contentLayout="plain"` 表示保留 section header 和 section 语义，但 children 原样渲染；图表、表格和复杂自定义区域优先使用 plain。
 - `ContentSection contentLayout="cards"` 表示由 `ContentSection` 内部使用受控 Ant `Row / Col` 排列 children，间距必须来自 shared/theme token。
 - `ContentSection contentLayout="stack"` 表示由 `ContentSection` 内部使用 Ant `Flex / Space` 做受控纵向排列。
+- 普通内容区如果是卡片组，优先使用 `ContentSection contentLayout="cards"`；如果只是纵向大块，优先使用 `ContentSection contentLayout="stack"`。
 - `ContentSection` 只暴露 `contentLayout` 和 `colProps` 两个布局入口；不新增 `columns / grid / wrap / minItemWidth` 这类自定义布局 API。
 - Dashboard 等卡片区不应再在页面内重复手写 `Row / Col / gutter`，而应通过 `ContentSection contentLayout="cards"` 声明。
+- module `sections/**` 不得再手写 section 级 `Flex wrap / cardItemStyle / flex: "1 1 xxxpx"` 卡片排列；footer actions、卡片内部布局和复杂表格 / 图表 / Tabs / timeline 保留在组件内部解决。
 - section 内响应式卡片布局固定优先使用 Ant `Row / Col`：手机浏览器 `xs={24}` 单列，中屏常用 `md={12}` 双列，大屏三卡区使用 `xl={8}` 三列。
 - 双卡区默认 `colProps={ xs: 24, md: 12 }`，三卡区默认 `colProps={ xs: 24, md: 12, xl: 8 }`，单卡区默认 `colProps={ xs: 24 }`。
 - 卡片区间距必须来自 shared/theme token，禁止在业务页面或 shared/layout 中硬编码 `gutter={[16, 16]}`。

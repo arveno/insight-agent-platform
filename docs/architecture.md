@@ -342,6 +342,8 @@ UI 不得直接消费 raw API response。
 - `PageIntro` 是唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责标题说明、`extra` 操作区和受控 `plain / cards / stack` 内容布局；不得接业务对象、不得做 route 映射、不得依赖 `app / modules`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区；除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 优先统一到 `PageIntro`，替换后不保留旧 `PageHeader` / intro / hero-like 结构。
 - `Page.tsx` 只负责 controller / state 接入和 `ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成；标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`。
+- `ContentSection` 负责普通 section 语义、标题区和受控 `plain / cards / stack` 内容布局；卡片组优先使用 `contentLayout="cards"`，纵向大块优先使用 `contentLayout="stack"`，复杂表格 / 图表 / Tabs / timeline 保持 `plain`。
+- module `sections/**` 不得再承担 section 级卡片排列实现，不允许回流 `cardItemStyle`、`flex: "1 1 xxxpx"`、`Flex wrap` 或手写 `gutter={[16, 16]}`；这些布局统一收口到 `ContentSection`，footer actions 和卡片内部布局除外。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
 - Hero facts / summary 小卡片优先使用 `StatCard`，普通内容入口卡优先使用 `ContentCard`，不要用 `CardSurface` 手写小卡片壳；页面顶部操作区由 module 本地组件组合后传给 `PageIntro extra`，不提前抽 shared `PageHeroActions`。

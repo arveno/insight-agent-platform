@@ -28,73 +28,61 @@ export type MemorySectionsProps = PageRouteProps & {
   viewModel: MemoryViewModel;
 };
 
-const cardItemStyle = { flex: "1 1 280px", minWidth: 0 } as const;
-
 function renderSummaryCards(
   items: StaticSummaryItemViewModel[],
   t: ReturnType<typeof useI18n>["t"]
 ) {
-  return (
-    <Flex gap={16} wrap>
-      {items.map((item) => {
-        const status = toStatusTag(t, item.status);
-        const risk = toRiskBadge(t, item.risk);
+  return items.map((item) => {
+    const status = toStatusTag(t, item.status);
+    const risk = toRiskBadge(t, item.risk);
 
-        return (
-          <ContentCard
-            description={item.description}
-            key={item.key}
-            meta={
-              item.meta ? (
-                <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-                  {item.meta}
-                </Typography.Text>
-              ) : null
-            }
-            tagSlot={
-              status || risk ? (
-                <Space wrap>
-                  {status ? <StatusTag {...status} /> : null}
-                  {risk ? <RiskBadge {...risk} /> : null}
-                </Space>
-              ) : undefined
-            }
-            style={cardItemStyle}
-            title={item.label}
-          >
-            <Typography.Text style={shellTypographyStyles.cardValue}>{item.value}</Typography.Text>
-          </ContentCard>
-        );
-      })}
-    </Flex>
-  );
+    return (
+      <ContentCard
+        description={item.description}
+        key={item.key}
+        meta={
+          item.meta ? (
+            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+              {item.meta}
+            </Typography.Text>
+          ) : null
+        }
+        tagSlot={
+          status || risk ? (
+            <Space wrap>
+              {status ? <StatusTag {...status} /> : null}
+              {risk ? <RiskBadge {...risk} /> : null}
+            </Space>
+          ) : undefined
+        }
+        title={item.label}
+      >
+        <Typography.Text style={shellTypographyStyles.cardValue}>{item.value}</Typography.Text>
+      </ContentCard>
+    );
+  });
 }
 
 function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof useI18n>["t"]) {
-  return (
-    <Flex gap={16} wrap>
-      {items.map((metric) => (
-        <StatCard
-          supportingMeta={
-            <Space wrap>
-              {metric.trendText ? (
-                <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
-              ) : null}
-              {typeof metric.evidenceCount === "number" ? (
-                <Badge count={metric.evidenceCount} overflowCount={99} />
-              ) : null}
-            </Space>
-          }
-          key={metric.key}
-          risk={toRiskBadge(t, metric.risk)}
-          style={cardItemStyle}
-          status={toStatusTag(t, metric.status)}
-          title={metric.label}
-          value={metric.valueText}
-        />
-      ))}
-    </Flex>
-  );
+  return items.map((metric) => (
+    <StatCard
+      supportingMeta={
+        <Space wrap>
+          {metric.trendText ? (
+            <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
+          ) : null}
+          {typeof metric.evidenceCount === "number" ? (
+            <Badge count={metric.evidenceCount} overflowCount={99} />
+          ) : null}
+        </Space>
+      }
+      key={metric.key}
+      risk={toRiskBadge(t, metric.risk)}
+      status={toStatusTag(t, metric.status)}
+      title={metric.label}
+      value={metric.valueText}
+    />
+  ));
 }
 
 function renderNavigationActions(
@@ -128,7 +116,8 @@ export function MemorySections({ onNavigate, viewModel }: MemorySectionsProps) {
   return (
     <SectionStack>
       <PageIntro
-        contentLayout="stack"
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
         description={translateKey(t, viewModel.pageDescriptionKey)}
         eyebrow={translateKey(t, viewModel.mainSections[0].titleKey)}
         extra={pageActions}
@@ -148,18 +137,20 @@ export function MemorySections({ onNavigate, viewModel }: MemorySectionsProps) {
           ]}
         />
       </ContentSection>
-      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[2])}>
-        <Space direction="vertical" size={16} style={{ width: "100%" }}>
-          {renderSummaryCards(
-            [
-              viewModel.relatedObjectDetail,
-              ...viewModel.memoryUsageTrace,
-              ...viewModel.analysisRunDecisionLinks
-            ],
-            t
-          )}
-          {renderNavigationActions(viewModel.secondaryActions, onNavigate, t)}
-        </Space>
+      <ContentSection
+        {...getStaticSectionProps(t, viewModel.mainSections[2])}
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
+        extra={renderNavigationActions(viewModel.secondaryActions, onNavigate, t)}
+      >
+        {renderSummaryCards(
+          [
+            viewModel.relatedObjectDetail,
+            ...viewModel.memoryUsageTrace,
+            ...viewModel.analysisRunDecisionLinks
+          ],
+          t
+        )}
       </ContentSection>
     </SectionStack>
   );

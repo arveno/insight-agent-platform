@@ -640,6 +640,32 @@ const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/m
     message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro"
   }
 ]);
+const moduleSectionLayoutViolations = collectScopedFileContentViolations(
+  "apps/web/src/modules",
+  (filePath) => filePath.includes("/sections/") && !filePath.includes("/modules/analysis/"),
+  [
+    {
+      pattern: /\bconst\s+cardItemStyle\b/,
+      message:
+        "modules/**/sections 不得声明 cardItemStyle；section 级卡片布局应通过 ContentSection contentLayout 承接"
+    },
+    {
+      pattern: /flex:\s*["']1 1/,
+      message:
+        "modules/**/sections 不得保留 section 级卡片 flex 宽度；应使用 ContentSection cards + colProps"
+    },
+    {
+      pattern: /gutter=\{\[16,\s*16\]\}/,
+      message:
+        "modules/**/sections 不得硬编码 gutter={[16, 16]}；section 级卡片间距必须由 ContentSection token 承接"
+    },
+    {
+      pattern: /<Flex\s+gap=\{16\}\s+wrap>/,
+      message:
+        "modules/**/sections 不得手写 section 级 Flex wrap 卡片排列；应使用 ContentSection contentLayout=\"cards\""
+    }
+  ]
+);
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
 }
@@ -799,6 +825,10 @@ if (modulePageHeaderImportViolations.length > 0) {
   fail("modules 检测到已禁止的 PageHeader 依赖：", modulePageHeaderImportViolations);
 }
 
+if (moduleSectionLayoutViolations.length > 0) {
+  fail("modules/**/sections 检测到已禁止的 section 级卡片布局实现：", moduleSectionLayoutViolations);
+}
+
 console.log("Structure guard passed.");
 
 function fail(title, items) {
@@ -923,6 +953,23 @@ function collectFileContentViolations(rootDir, rules) {
   const files = collectMatchingEntries(
     rootDir,
     (entry) => entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx"))
+  );
+  const violations = [];
+
+  for (const file of files) {
+    violations.push(...collectViolationsForFile(file, readFileSync(file, "utf8"), rules));
+  }
+
+  return violations;
+}
+
+function collectScopedFileContentViolations(rootDir, predicate, rules) {
+  const files = collectMatchingEntries(
+    rootDir,
+    (entry, absolutePath) =>
+      entry.isFile() &&
+      (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) &&
+      predicate(absolutePath)
   );
   const violations = [];
 

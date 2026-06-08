@@ -67,18 +67,19 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         </Space>
       </PageIntro>
 
-      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
-          {viewModel.reportSections.map((section) => (
-            <ReportSection
-              content={section.content}
-              evidenceSummary={section.evidenceSummary}
-              key={section.reportSectionId}
-              risk={toRiskBadge(t, section.risk)}
-              title={section.title}
-            />
-          ))}
-        </Space>
+      <ContentSection
+        {...getStaticSectionProps(t, viewModel.mainSections[0])}
+        contentLayout="stack"
+      >
+        {viewModel.reportSections.map((section) => (
+          <ReportSection
+            content={section.content}
+            evidenceSummary={section.evidenceSummary}
+            key={section.reportSectionId}
+            risk={toRiskBadge(t, section.risk)}
+            title={section.title}
+          />
+        ))}
       </ContentSection>
 
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[1])}>
@@ -103,56 +104,57 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         />
       </ContentSection>
 
-      <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[2])}>
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
-          <Typography.Text style={shellTypographyStyles.cardTitle}>
-            {t("reports.reader.decisions.title")}
-          </Typography.Text>
-          {viewModel.decisions.map((decision) => (
-            <DecisionCard
-              description={decision.actionSuggestions.join(" / ")}
-              evidenceSummary={decision.evidenceSummary}
-              key={decision.decisionId}
-              risk={toRiskBadge(t, decision.risk)}
-              status={toStatusTag(t, decision.status)}
-              title={decision.title}
-            />
-          ))}
-
-          <ContentCard
-            description={t("reports.reader.actionSuggestions.description")}
-            title={t("reports.reader.actionSuggestions.title")}
-          >
-            <List
-              dataSource={viewModel.actionSuggestions}
-              renderItem={(suggestion) => <List.Item>{suggestion.summary}</List.Item>}
-            />
-          </ContentCard>
-
-          <ReportFeedbackPanel
-            helperText={viewModel.feedbackEntrance.types.join(" / ")}
-            options={[
-              { label: t("feedback.option.useful"), value: "useful" },
-              { label: t("feedback.option.issue"), value: "issue" }
-            ]}
-            submitLabel={viewModel.feedbackEntrance.title}
-            targetTitle={viewModel.selectedReport.title}
-            title={t("reports.reader.feedback.title")}
-            value="useful"
+      <ContentSection
+        {...getStaticSectionProps(t, viewModel.mainSections[2])}
+        contentLayout="stack"
+      >
+        <Typography.Text style={shellTypographyStyles.cardTitle}>
+          {t("reports.reader.decisions.title")}
+        </Typography.Text>
+        {viewModel.decisions.map((decision) => (
+          <DecisionCard
+            description={decision.actionSuggestions.join(" / ")}
+            evidenceSummary={decision.evidenceSummary}
+            key={decision.decisionId}
+            risk={toRiskBadge(t, decision.risk)}
+            status={toStatusTag(t, decision.status)}
+            title={decision.title}
           />
+        ))}
 
-          <ContentCard
-            description={t("reports.reader.followUp.description")}
-            footerActions={
-              <Flex gap={12} wrap>
-                {followUpActions.map((action) => (
-                  <NavigationActionButton action={action} key={action.key} />
-                ))}
-              </Flex>
-            }
-            title={t("reports.reader.followUp.title")}
+        <ContentCard
+          description={t("reports.reader.actionSuggestions.description")}
+          title={t("reports.reader.actionSuggestions.title")}
+        >
+          <List
+            dataSource={viewModel.actionSuggestions}
+            renderItem={(suggestion) => <List.Item>{suggestion.summary}</List.Item>}
           />
-        </Space>
+        </ContentCard>
+
+        <ReportFeedbackPanel
+          helperText={viewModel.feedbackEntrance.types.join(" / ")}
+          options={[
+            { label: t("feedback.option.useful"), value: "useful" },
+            { label: t("feedback.option.issue"), value: "issue" }
+          ]}
+          submitLabel={viewModel.feedbackEntrance.title}
+          targetTitle={viewModel.selectedReport.title}
+          title={t("reports.reader.feedback.title")}
+          value="useful"
+        />
+
+        <ContentCard
+          description={t("reports.reader.followUp.description")}
+          footerActions={
+            <Flex gap={12} wrap>
+              {followUpActions.map((action) => (
+                <NavigationActionButton action={action} key={action.key} />
+              ))}
+            </Flex>
+          }
+          title={t("reports.reader.followUp.title")}
+        />
       </ContentSection>
     </SectionStack>
   );

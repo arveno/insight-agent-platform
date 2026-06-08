@@ -178,8 +178,10 @@ External Raw Data
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。
 - `contentLayout="cards"` 由 `ContentSection` 内部使用 Ant `Row / Col` 排列 children，列宽通过 `colProps` 声明；禁止再扩展 `columns / grid / wrap / minItemWidth` 之类自定义布局 API。
 - `contentLayout="stack"` 由 `ContentSection` 内部使用 Ant `Flex / Space` 做受控纵向排列。
+- 普通内容区如果是卡片组，优先使用 `ContentSection contentLayout="cards"`；如果只是多个纵向大块，优先使用 `ContentSection contentLayout="stack"`。
 - `SectionStack` 只负责页面区域的纵向节奏，不要求子节点必须是 `ContentSection`；Hero 或其它不需要 section header 的自定义区域可以直接放在 `SectionStack` 中。
 - 需要 section header 的卡片区应优先通过 `ContentSection contentLayout="cards"` 承接，不要在业务页面重复手写 `Row / Col / gutter`。
+- module `sections/**` 不得再手写 section 级 `Flex wrap / cardItemStyle / flex: "1 1 xxxpx"` 卡片排列；footer actions、卡片内部布局和复杂表格 / 图表 / Tabs / timeline 区域除外。
 - `colProps` 必须使用 Ant Col 响应式语义：手机浏览器默认 `xs={24}` 单列，中屏常用 `md={12}` 双列，大屏三卡区使用 `xl={8}`。
 - `ContentSection` 卡片区间距必须来自 `shared/theme` token，禁止在页面或 shared/layout 中硬编码 `gutter={[16, 16]}`。
 - 如果某个区域不需要 section header，就不要使用 `ContentSection`，直接放到 `SectionStack` 或模块自定义区域里。

@@ -24,8 +24,6 @@ export type PlatformOperationsSectionsProps = PageRouteProps & {
   controller: PlatformOperationsOverviewController;
 };
 
-const cardItemStyle = { flex: "1 1 300px", minWidth: 0 } as const;
-
 function buildTagSlot(
   t: ReturnType<typeof useI18n>["t"],
   {
@@ -100,7 +98,7 @@ function OperationListCard({
   title: string;
 }) {
   return (
-    <ContentCard description={description} style={cardItemStyle} title={title}>
+    <ContentCard description={description} title={title}>
       <Space direction="vertical" size={10} style={{ width: "100%" }}>
         {items.map((item) => {
           const isSelected = selectedOperationKey === item.key;
@@ -143,7 +141,6 @@ function SelectedOperationCard({
   return (
     <ContentCard
       description={selectedOperation.description}
-      style={cardItemStyle}
       title={`当前选中对象详情：${selectedOperation.title}`}
     >
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -183,7 +180,6 @@ function StatusSummaryCard({
   return (
     <ContentCard
       description={description}
-      style={{ flex: "1 1 240px", minWidth: 0 }}
       tagSlot={buildTagSlot(t, item)}
       title={item.title}
     >
@@ -255,74 +251,74 @@ export function PlatformOperationsSections({
       </PageIntro>
 
       <ContentSection
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
         title={translateKey(t, sectionByKey["platform-operations-jobs-data-quality"].titleKey)}
       >
-        <Flex gap={16} wrap>
-          <OperationListCard
-            description="当前 Workspace 的 Job 列表只展示任务状态，不执行真实 Job。"
-            items={jobItems}
-            onSelectOperation={controller.onSelectOperation}
-            selectedOperationKey={controller.selectedOperationKey}
-            t={t}
-            title="Job 列表"
-          />
-          <OperationListCard
-            description="当前 Workspace 的数据质量检查只展示摘要，不执行真实检查。"
-            items={dataQualityItems}
-            onSelectOperation={controller.onSelectOperation}
-            selectedOperationKey={controller.selectedOperationKey}
-            t={t}
-            title="DataQualityCheck 列表"
-          />
-          <SelectedOperationCard controller={controller} />
-        </Flex>
-      </ContentSection>
-
-      <ContentSection title={translateKey(t, sectionByKey["platform-operations-status"].titleKey)}>
-        <Flex gap={16} wrap>
-          {platformStatusItems.map((item) => (
-            <StatusSummaryCard
-              description="只读展示当前 Workspace 的平台状态摘要，不提供执行入口。"
-              item={item}
-              key={item.key}
-              t={t}
-            />
-          ))}
-        </Flex>
+        <OperationListCard
+          description="当前 Workspace 的 Job 列表只展示任务状态，不执行真实 Job。"
+          items={jobItems}
+          onSelectOperation={controller.onSelectOperation}
+          selectedOperationKey={controller.selectedOperationKey}
+          t={t}
+          title="Job 列表"
+        />
+        <OperationListCard
+          description="当前 Workspace 的数据质量检查只展示摘要，不执行真实检查。"
+          items={dataQualityItems}
+          onSelectOperation={controller.onSelectOperation}
+          selectedOperationKey={controller.selectedOperationKey}
+          t={t}
+          title="DataQualityCheck 列表"
+        />
+        <SelectedOperationCard controller={controller} />
       </ContentSection>
 
       <ContentSection
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
+        title={translateKey(t, sectionByKey["platform-operations-status"].titleKey)}
+      >
+        {platformStatusItems.map((item) => (
+          <StatusSummaryCard
+            description="只读展示当前 Workspace 的平台状态摘要，不提供执行入口。"
+            item={item}
+            key={item.key}
+            t={t}
+          />
+        ))}
+      </ContentSection>
+
+      <ContentSection
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
         title={translateKey(t, sectionByKey["platform-operations-risk-navigation"].titleKey)}
       >
-        <Flex gap={16} wrap>
-          <ContentCard
-            description="Platform Operations 只承接当前 Workspace 的平台与数据链路健康，不扩展为全租户或全局 SRE 运维后台。"
-            style={cardItemStyle}
-            title="风险入口"
-          >
-            <Space direction="vertical" size={8} style={{ width: "100%" }}>
-              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-                先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或
-                Analysis。
-              </Typography.Text>
-              <Typography.Text type="secondary">
-                当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke
-                或手工改库。
-              </Typography.Text>
-            </Space>
-          </ContentCard>
-          <ContentCard
-            description="这些入口只触发页面导航或 Analysis 新聊天草稿态入口，不创建真实 conversation、run 或 Agent 执行。"
-            style={cardItemStyle}
-            title="跳转入口"
-          >
-            <Flex gap={12} wrap>
-              {buildNavigationActions(onNavigate, t).map((action) => (
-                <NavigationActionButton action={action} key={action.key} />
-              ))}
-            </Flex>
-          </ContentCard>
-        </Flex>
+        <ContentCard
+          description="Platform Operations 只承接当前 Workspace 的平台与数据链路健康，不扩展为全租户或全局 SRE 运维后台。"
+          title="风险入口"
+        >
+          <Space direction="vertical" size={8} style={{ width: "100%" }}>
+            <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+              先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或
+              Analysis。
+            </Typography.Text>
+            <Typography.Text type="secondary">
+              当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke
+              或手工改库。
+            </Typography.Text>
+          </Space>
+        </ContentCard>
+        <ContentCard
+          description="这些入口只触发页面导航或 Analysis 新聊天草稿态入口，不创建真实 conversation、run 或 Agent 执行。"
+          title="跳转入口"
+        >
+          <Flex gap={12} wrap>
+            {buildNavigationActions(onNavigate, t).map((action) => (
+              <NavigationActionButton action={action} key={action.key} />
+            ))}
+          </Flex>
+        </ContentCard>
       </ContentSection>
     </SectionStack>
   );

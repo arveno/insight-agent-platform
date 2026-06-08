@@ -26,8 +26,6 @@ export type MetricsSectionsProps = PageRouteProps & {
   viewModel: MetricsViewModel;
 };
 
-const cardItemStyle = { flex: "1 1 320px", minWidth: 0 } as const;
-
 function buildTagSlot(
   t: ReturnType<typeof useI18n>["t"],
   {
@@ -89,7 +87,6 @@ function MetricDefinitionCard({ metric }: { metric: MetricDetailViewModel }) {
     <ContentCard
       description="当前阶段只展示指标业务定义，不提供配置写入或规则编辑。"
       eyebrow={metric.businessDomain}
-      style={cardItemStyle}
       title="业务定义"
     >
       <Typography.Text style={{ display: "block", fontWeight: 600 }}>
@@ -112,7 +109,6 @@ function MetricSummaryCard({
       key={`${metric.key}-summary`}
       meta={<Typography.Text type="secondary">业务域：{metric.businessDomain}</Typography.Text>}
       risk={toRiskBadge(t, metric.risk)}
-      style={cardItemStyle}
       status={toStatusTag(t, metric.status)}
       supportingMeta={`${metric.evidenceItems.length} 条证据`}
       title="当前摘要"
@@ -126,7 +122,6 @@ function MetricFormulaCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <ContentCard
       description="业务公式和技术字段映射只读展示，不触发真实计算或更新。"
-      style={cardItemStyle}
       title="公式"
     >
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -149,7 +144,6 @@ function MetricThresholdCard({
   return (
     <ContentCard
       description="阈值和异常规则只解释什么时候需要追问，不运行真实规则引擎。"
-      style={cardItemStyle}
       title="阈值 / 异常规则"
     >
       <Space direction="vertical" size={10} style={{ width: "100%" }}>
@@ -171,7 +165,6 @@ function MetricLineageCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <ContentCard
       description="字段来源只做语义解释，不执行真实 SQL、真实查询或跨 Workspace 下钻。"
-      style={cardItemStyle}
       title="字段血缘摘要"
     >
       <Space direction="vertical" size={10} style={{ width: "100%" }}>
@@ -197,7 +190,6 @@ function MetricEvidenceCard({
   return (
     <ContentCard
       description="证据入口只展示当前指标的静态摘要，不展示 raw API、DB row、Tool 输出或模型原文。"
-      style={cardItemStyle}
       title="证据摘要"
     >
       <TitledList
@@ -235,7 +227,6 @@ function MetricActionsCard({
   return (
     <ContentCard
       description="动作只表示导航到 Analysis 草稿态或数据血缘页面，不创建真实 conversation、run 或 Agent 执行。"
-      style={cardItemStyle}
       title="动作"
     >
       <Flex gap={12} wrap>
@@ -300,17 +291,17 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
       </PageIntro>
 
       <ContentSection
+        colProps={{ md: 12, xs: 24 }}
+        contentLayout="cards"
         title={`${translateKey(t, sectionByKey["selected-metric-detail"].titleKey)}：${selectedMetric.metricName}`}
       >
-        <Flex gap={16} wrap>
-          <MetricDefinitionCard metric={selectedMetric} />
-          <MetricSummaryCard metric={selectedMetric} t={t} />
-          <MetricFormulaCard metric={selectedMetric} />
-          <MetricThresholdCard metric={selectedMetric} t={t} />
-          <MetricLineageCard metric={selectedMetric} />
-          <MetricEvidenceCard metric={selectedMetric} t={t} />
-          <MetricActionsCard metric={selectedMetric} onNavigate={onNavigate} t={t} />
-        </Flex>
+        <MetricDefinitionCard metric={selectedMetric} />
+        <MetricSummaryCard metric={selectedMetric} t={t} />
+        <MetricFormulaCard metric={selectedMetric} />
+        <MetricThresholdCard metric={selectedMetric} t={t} />
+        <MetricLineageCard metric={selectedMetric} />
+        <MetricEvidenceCard metric={selectedMetric} t={t} />
+        <MetricActionsCard metric={selectedMetric} onNavigate={onNavigate} t={t} />
       </ContentSection>
     </SectionStack>
   );
