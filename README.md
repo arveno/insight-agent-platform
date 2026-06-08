@@ -90,12 +90,14 @@ docs/                              项目事实源文档
 .github/                           Issue / PR / CI 模板
 ```
 
-后端服务根目录固定为 `services/agent-runtime/src`，内部采用：
+后端服务根目录固定为 `services/agent-runtime/src`，内部采用最终结构：
 
 - `app/`：启动、配置、路由注册、中间件。
-- `modules/`：按业务垂直切片组织 `workspace`、`conversations`、`agent-runs`、`data-knowledge`、`model-tools`、`governance`、`metrics`、`reports`、`platform-operations`。
-- `infrastructure/`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座。
+- `modules/`：按业务垂直切片组织 `workspace`、`conversations`、`agent_runs`、`data_knowledge`、`model_tools`、`governance`、`metrics`、`reports`、`platform_operations`。
+- `infrastructure/`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座；Python runtime package 目录使用 `snake_case`，例如 `model_gateway`、`tool_registry`。
 - `shared/`：无业务语义的错误、校验、工具和类型。
+
+本轮不修改 `apps/web/src`。`packages/contracts/schemas` 继续保留 kebab-case 业务域目录，因为它们是契约事实源路径，不是 Python runtime package。
 
 ## 文档事实源
 

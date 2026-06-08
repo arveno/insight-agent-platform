@@ -212,117 +212,90 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify backend layout
         run: |
-          test -d services/agent-runtime/app/api
-          test -d services/agent-runtime/app/domain
-          test -d services/agent-runtime/app/runtime
-          test -d services/agent-runtime/app/agents
-          test -d services/agent-runtime/app/tools
-          test -d services/agent-runtime/app/model_gateway
-          test -d services/agent-runtime/app/application
-          test -d services/agent-runtime/app/domain
-          test -d services/agent-runtime/app/governance
-          test -d services/agent-runtime/app/observability
-          test -d services/agent-runtime/app/api/routes
-          test -d services/agent-runtime/app/runtime/nodes
-          test -d services/agent-runtime/app/runtime/edges
-          test -d services/agent-runtime/app/runtime/checkpoints
-          test -d services/agent-runtime/app/model_gateway/providers
-          test -d services/agent-runtime/app/schemas/requests
-          test -d services/agent-runtime/app/schemas/responses
-          test -d services/agent-runtime/app/schemas/dto
+          test -d services/agent-runtime/src
+          test -d services/agent-runtime/src/app
+          test -d services/agent-runtime/src/app/middlewares
+          test -d services/agent-runtime/src/app/routes
+          test -d services/agent-runtime/src/modules
+          test -d services/agent-runtime/src/infrastructure
+          test -d services/agent-runtime/src/shared
+          test -d services/agent-runtime/tests/smoke
 
-          for agent in \
-            orchestrator \
-            data_analyst \
-            knowledge \
-            memory \
-            report \
-            evaluation \
-            governance; do
-            test -d "services/agent-runtime/app/agents/${agent}"
-          done
-
-          for domain in \
+          for module_dir in \
             workspace \
-            iam \
+            conversations \
+            agent_runs \
             data_knowledge \
-            metrics \
-            analysis \
-            memory \
-            feedback \
-            evaluation \
             model_tools \
             governance \
-            observability \
+            metrics \
             reports \
-            dashboard \
             platform_operations; do
-            test -d "services/agent-runtime/app/domain/${domain}"
+            test -d "services/agent-runtime/src/modules/${module_dir}"
+          done
+
+          for infra_dir in \
+            database \
+            auth \
+            model_gateway \
+            tool_registry \
+            rag \
+            observability; do
+            test -d "services/agent-runtime/src/infrastructure/${infra_dir}"
+          done
+
+          for shared_dir in \
+            errors \
+            validation \
+            utils \
+            types; do
+            test -d "services/agent-runtime/src/shared/${shared_dir}"
           done
 
           for file in \
-            services/agent-runtime/app/application/workspace_service.py \
-            services/agent-runtime/app/application/iam_service.py \
-            services/agent-runtime/app/application/data_source_service.py \
-            services/agent-runtime/app/application/knowledge_service.py \
-            services/agent-runtime/app/application/metric_service.py \
-            services/agent-runtime/app/application/analysis_service.py \
-            services/agent-runtime/app/application/memory_service.py \
-            services/agent-runtime/app/application/feedback_service.py \
-            services/agent-runtime/app/application/evaluation_service.py \
-            services/agent-runtime/app/application/model_tool_service.py \
-            services/agent-runtime/app/application/governance_service.py \
-            services/agent-runtime/app/application/observability_service.py \
-            services/agent-runtime/app/application/report_service.py \
-            services/agent-runtime/app/application/dashboard_service.py \
-            services/agent-runtime/app/application/platform_operation_service.py \
-            services/agent-runtime/app/tools/registry.py \
-            services/agent-runtime/app/tools/sql_tool.py \
-            services/agent-runtime/app/tools/metric_tool.py \
-            services/agent-runtime/app/tools/rag_tool.py \
-            services/agent-runtime/app/tools/memory_tool.py \
-            services/agent-runtime/app/tools/report_tool.py \
-            services/agent-runtime/app/tools/mcp_adapter.py \
-            services/agent-runtime/app/model_gateway/gateway.py \
-            services/agent-runtime/app/model_gateway/routing.py \
-            services/agent-runtime/app/model_gateway/cost.py \
-            services/agent-runtime/app/model_gateway/errors.py \
-            services/agent-runtime/app/memory/user_memory.py \
-            services/agent-runtime/app/memory/workspace_memory.py \
-            services/agent-runtime/app/memory/analysis_memory.py \
-            services/agent-runtime/app/memory/decision_memory.py \
-            services/agent-runtime/app/evaluation/regression.py \
-            services/agent-runtime/app/governance/policy_engine.py \
-            services/agent-runtime/app/governance/sql_guard.py \
-            services/agent-runtime/app/governance/tool_permission.py \
-            services/agent-runtime/app/governance/data_access.py \
-            services/agent-runtime/app/governance/audit.py \
-            services/agent-runtime/app/observability/trace.py \
-            services/agent-runtime/app/observability/metrics.py \
-            services/agent-runtime/app/observability/logging.py \
-            services/agent-runtime/app/observability/cost.py; do
+            services/agent-runtime/src/app/main.py \
+            services/agent-runtime/src/app/config.py \
+            services/agent-runtime/src/app/routes/health.py \
+            services/agent-runtime/src/shared/types/health.py \
+            services/agent-runtime/src/modules/workspace/workspace_service.py \
+            services/agent-runtime/src/modules/workspace/iam_service.py \
+            services/agent-runtime/src/modules/conversations/analysis_service.py \
+            services/agent-runtime/src/modules/conversations/memory_service.py \
+            services/agent-runtime/src/modules/conversations/analysis_memory.py \
+            services/agent-runtime/src/modules/agent_runs/evaluation_service.py \
+            services/agent-runtime/src/modules/agent_runs/observability_service.py \
+            services/agent-runtime/src/modules/agent_runs/regression.py \
+            services/agent-runtime/src/modules/data_knowledge/data_source_service.py \
+            services/agent-runtime/src/modules/data_knowledge/knowledge_service.py \
+            services/agent-runtime/src/modules/model_tools/model_tool_service.py \
+            services/agent-runtime/src/modules/governance/governance_service.py \
+            services/agent-runtime/src/modules/governance/audit.py \
+            services/agent-runtime/src/modules/governance/data_access.py \
+            services/agent-runtime/src/modules/governance/policy_engine.py \
+            services/agent-runtime/src/modules/governance/sql_guard.py \
+            services/agent-runtime/src/modules/governance/tool_permission.py \
+            services/agent-runtime/src/modules/metrics/metric_service.py \
+            services/agent-runtime/src/modules/metrics/dashboard_service.py \
+            services/agent-runtime/src/modules/reports/report_service.py \
+            services/agent-runtime/src/modules/reports/feedback_service.py \
+            services/agent-runtime/src/modules/reports/decision_memory.py \
+            services/agent-runtime/src/modules/platform_operations/platform_operation_service.py \
+            services/agent-runtime/src/infrastructure/model_gateway/gateway.py \
+            services/agent-runtime/src/infrastructure/model_gateway/routing.py \
+            services/agent-runtime/src/infrastructure/model_gateway/cost.py \
+            services/agent-runtime/src/infrastructure/model_gateway/errors.py \
+            services/agent-runtime/src/infrastructure/tool_registry/registry.py \
+            services/agent-runtime/src/infrastructure/tool_registry/sql_tool.py \
+            services/agent-runtime/src/infrastructure/tool_registry/metric_tool.py \
+            services/agent-runtime/src/infrastructure/tool_registry/memory_tool.py \
+            services/agent-runtime/src/infrastructure/tool_registry/report_tool.py \
+            services/agent-runtime/src/infrastructure/tool_registry/mcp_adapter.py \
+            services/agent-runtime/src/infrastructure/rag/rag_tool.py \
+            services/agent-runtime/src/infrastructure/observability/trace.py \
+            services/agent-runtime/src/infrastructure/observability/metrics.py \
+            services/agent-runtime/src/infrastructure/observability/logging.py \
+            services/agent-runtime/src/infrastructure/observability/cost.py; do
             test -f "$file"
-          done
-
-          for infra in \
-            db \
-            repositories \
-            vector_store \
-            cache \
-            queue \
-            scheduler \
-            object_storage \
-            secrets \
-            external_clients \
-            migrations \
-            seed \
-            backup \
-            restore \
-            notifications \
-            data_quality \
-            quota \
-            data_lifecycle; do
-            test -d "services/agent-runtime/app/infrastructure/${infra}"
           done
 
   smoke:

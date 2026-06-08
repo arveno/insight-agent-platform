@@ -137,6 +137,7 @@ insight-agent-platform/
 只有 `services/agent-runtime/src/modules` 按业务垂直切片组织。`database/mysql`、`deploy/`、`scripts/` 按工程基础设施职责组织，不承接业务切片目录。
 
 `packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/features`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
+其中 contracts 目录可以继续使用 kebab-case，Python runtime package 目录必须使用 snake_case。
 
 ```text
 packages/contracts/schemas/
@@ -398,18 +399,18 @@ services/agent-runtime/src/
 ├─ modules/                       # 按业务垂直切片组织的服务代码
 │  ├─ workspace/
 │  ├─ conversations/
-│  ├─ agent-runs/
-│  ├─ data-knowledge/
-│  ├─ model-tools/
+│  ├─ agent_runs/
+│  ├─ data_knowledge/
+│  ├─ model_tools/
 │  ├─ governance/
 │  ├─ metrics/
 │  ├─ reports/
-│  └─ platform-operations/
+│  └─ platform_operations/
 ├─ infrastructure/                # 技术底座，不承接业务切片
 │  ├─ database/
 │  ├─ auth/
-│  ├─ model-gateway/
-│  ├─ tool-registry/
+│  ├─ model_gateway/
+│  ├─ tool_registry/
 │  ├─ rag/
 │  └─ observability/
 └─ shared/                        # 无业务语义的错误、校验、工具和类型
@@ -433,8 +434,8 @@ services/agent-runtime/tests/
 ### 后端目录职责
 
 - `app`：FastAPI 应用入口、配置、路由注册、中间件。
-- `modules`：按业务垂直切片承接用例编排和领域占位，不再建立全局 `application / domain / memory / evaluation` 横向大目录。
-- `infrastructure`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座。
+- `modules`：按业务垂直切片承接用例编排和领域占位，不再建立全局 `application / domain / memory / evaluation` 横向大目录；运行时包目录使用 snake_case。
+- `infrastructure`：数据库、认证、模型网关、工具注册、RAG、观测等技术底座；运行时包目录使用 snake_case。
 - `shared`：无业务语义的错误、校验、工具和类型。
 
 ### 后端职责边界
@@ -442,8 +443,8 @@ services/agent-runtime/tests/
 - `app` 不写业务逻辑，只负责启动、配置和 HTTP 边界。
 - `modules/*` 承接业务切片，不通过全局横向目录拆散链路。
 - `infrastructure/database` 是唯一数据库访问入口承载位。
-- `infrastructure/model-gateway` 是唯一模型调用入口。
-- `infrastructure/tool-registry` 是唯一工具调用入口。
+- `infrastructure/model_gateway` 是唯一模型调用入口。
+- `infrastructure/tool_registry` 是唯一工具调用入口。
 - `modules/governance` 是权限、SQL Guard、Tool Permission、Audit 的统一业务承接位。
 - 后端 service 不允许直接访问数据库连接。
 - 后端 service 不允许直接调用模型 provider。
@@ -492,8 +493,8 @@ State + Node + Edge + Tool + Event
 
 - database
 - auth
-- model-gateway
-- tool-registry
+- model_gateway
+- tool_registry
 - rag
 - observability
 
