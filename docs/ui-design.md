@@ -156,9 +156,11 @@ AppShell
 规则：
 
 - `ResponsivePageShell` 只负责响应式页面壳；页面内容结构从 `ModuleSections` 开始组织，不再承接自动 header。
+- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面主内容的大块纵向节奏和宽度，不承接 padding。
 - `PageScaffold` 已删除；不允许再通过页面壳自动生成 `PageIntro` 或自动注入页面操作区。
 - `PageIntro` 是 shared/layout/containers 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局。
-- `Page.tsx` 只负责状态接入和 `ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成。
+- `Page.tsx` 只负责状态接入和 `ResponsivePageShell -> ModuleSections` 组合；非 `Analysis` 页面不得在 `Page.tsx` 中直接组织 `PageIntro / SectionStack / ContentSection`。
+- `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是允许保留的组件层例外。
 - `SectionStack` 只负责页面 section 间距，不要求子节点必须是 `ContentSection`。
 - `ContentSection` 负责 section 语义、eyebrow、title、extra、children slot，以及受控 `plain / cards / stack` 内容布局。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区；`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
@@ -167,6 +169,7 @@ AppShell
 - `NavigationActionButton` 只负责 route-aware 行为组合，不负责 route 到 Page 的映射。
 - `CardSurface` 只负责统一卡片壳；`ContentCard` 负责通用内容结构；`StatCard` 只负责通用数值摘要。
 - Hero facts / summary 小卡片优先使用 `StatCard`；普通内容入口卡优先使用 `ContentCard`；不要用 `CardSurface` 手写小卡片壳。
+- 普通业务卡片不得绕开 `ContentCard / StatCard / CardSurface` 直接使用 Ant `Card` 重画外壳；`Reports` 模块同样必须遵守这条规则。
 - 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；页面顶部操作区由 module 本地组件组合后通过 `PageIntro extra` 传入，不提前抽 shared `PageHeroActions`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
 - 业务模块可以在 `modules/<domain>` 内组合业务组件，但不得把业务对象组件塞回 shared。
 
@@ -183,7 +186,7 @@ AppShell
 
 ### Section Primitive
 
-- `SectionStack` 统一页面主内容的 section 垂直排列和间距；Hero 或其它不需要 section header 的区域可以直接放入 `SectionStack`。
+- `SectionStack` 统一页面主内容的 section 垂直排列和间距；Hero 或其它不需要 section header 的区域可以直接放入 `SectionStack`，但 page padding 始终由 `ResponsivePageShell` 单独承接。
 - `ContentSection` 统一 section 标题区和内容区语义，不绑定卡片、表格、图表、列表或 Graph。
 - `ContentSection` header 右侧 slot 固定使用 `extra`，不使用 `titleSuffix`。
 - `ContentSection contentLayout="plain"` 表示保留 section header 和 section 语义，但 children 原样渲染；图表、表格和复杂自定义区域优先使用 plain。

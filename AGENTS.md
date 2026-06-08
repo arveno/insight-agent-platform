@@ -167,12 +167,13 @@ External Raw Data
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，不保留自动 header 链路。
+- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏，不得承接 page padding。
 - `PageIntro` 是 `shared/layout/containers` 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
 - `PageIntro` 负责页面顶部介绍区、左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
 - 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
 - 标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`PageIntro` 只能在 `ModuleSections` 或 module hero 内显式组织。
-- `Page.tsx` 只负责 controller / state 接入和 `Sections` 组合，不负责页面标题、header 或 `PageIntro` 生成。
+- `Page.tsx` 只负责 controller / state 接入和 `ResponsivePageShell -> ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成；非 `Analysis` 页面不得在 `Page.tsx` 中直接组织 `PageIntro / SectionStack / ContentSection`。
 - `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
 - `ContentSection` 负责统一 section header、children slot，以及受控基础内容布局：`contentLayout="plain" | "cards" | "stack"`。
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。
@@ -189,6 +190,7 @@ External Raw Data
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
 - Hero facts / summary 小卡片优先使用 `StatCard`；普通内容入口卡优先使用 `ContentCard`；不要用 `CardSurface` 手写小卡片壳。
+- 普通业务卡片不得绕开 `ContentCard / StatCard / CardSurface` 直接从 Ant `Card` 重画外壳；`Reports` 模块同样必须遵守 shared card pattern。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只允许无业务语义 UI primitive 或 Ant Design 薄封装；不允许放 `report / evidence / trace / feedback panel` 等业务组件。
 - `shared/ui` 的 export 组件、export 函数、export type / interface、props contract 和 item contract 必须有 JSDoc。

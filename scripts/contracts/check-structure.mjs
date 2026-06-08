@@ -609,6 +609,19 @@ const responsivePageShellHeaderViolations = collectFilePathContentViolations(
     }
   ]
 );
+const sectionStackPaddingViolations = collectFilePathContentViolations(
+  "apps/web/src/shared/layout/sections/SectionStack.tsx",
+  [
+    {
+      pattern: /\bpagePadding\b/,
+      message: "SectionStack 不得承接 page padding；页面 padding 只能由 ResponsivePageShell 承接"
+    },
+    {
+      pattern: /\bpadding\s*:/,
+      message: "SectionStack 不得承接 page padding；页面 padding 只能由 ResponsivePageShell 承接"
+    }
+  ]
+);
 const dashboardHeroLayoutViolations = collectFilePathContentViolations(
   "apps/web/src/modules/dashboard/components/DashboardHero.tsx",
   [
@@ -663,6 +676,17 @@ const moduleSectionLayoutViolations = collectScopedFileContentViolations(
       pattern: /<Flex\s+gap=\{16\}\s+wrap>/,
       message:
         "modules/**/sections 不得手写 section 级 Flex wrap 卡片排列；应使用 ContentSection contentLayout=\"cards\""
+    }
+  ]
+);
+const nonAnalysisModulePageStructureViolations = collectNonAnalysisModulePageStructureViolations();
+const pageIntroPlacementViolations = collectPageIntroPlacementViolations();
+const reportsRawAntCardViolations = collectFileContentViolations(
+  "apps/web/src/modules/reports/components",
+  [
+    {
+      pattern: /import\s*\{[^}]*\bCard\b[^}]*\}\s*from\s*["']antd["']/,
+      message: "Reports 模块业务卡片不得直接从 antd import Card；必须组合 shared card pattern"
     }
   ]
 );
@@ -817,6 +841,10 @@ if (responsivePageShellHeaderViolations.length > 0) {
   );
 }
 
+if (sectionStackPaddingViolations.length > 0) {
+  fail("SectionStack 检测到已禁止的 page padding 职责：", sectionStackPaddingViolations);
+}
+
 if (dashboardHeroLayoutViolations.length > 0) {
   fail("DashboardHero 检测到已禁止的 Hero 布局实现：", dashboardHeroLayoutViolations);
 }
@@ -827,6 +855,21 @@ if (modulePageHeaderImportViolations.length > 0) {
 
 if (moduleSectionLayoutViolations.length > 0) {
   fail("modules/**/sections 检测到已禁止的 section 级卡片布局实现：", moduleSectionLayoutViolations);
+}
+
+if (nonAnalysisModulePageStructureViolations.length > 0) {
+  fail(
+    "非 Analysis Page.tsx 检测到已禁止的主链路结构或缺失 ResponsivePageShell -> ModuleSections：",
+    nonAnalysisModulePageStructureViolations
+  );
+}
+
+if (pageIntroPlacementViolations.length > 0) {
+  fail("PageIntro 检测到越界放置：", pageIntroPlacementViolations);
+}
+
+if (reportsRawAntCardViolations.length > 0) {
+  fail("Reports 组件检测到绕开 shared card pattern 的 Ant Card 使用：", reportsRawAntCardViolations);
 }
 
 console.log("Structure guard passed.");
@@ -1050,6 +1093,105 @@ function collectCrossModuleImportViolations(rootDir) {
         );
       }
     }
+  }
+
+  return violations;
+}
+
+function collectNonAnalysisModulePageStructureViolations() {
+  const files = collectMatchingEntries(
+    "apps/web/src/modules",
+    (entry, absolutePath) =>
+      entry.isFile() &&
+      absolutePath.endsWith("/Page.tsx") &&
+      absolutePath !== "apps/web/src/modules/analysis/Page.tsx"
+  );
+  const violations = [];
+  const forbiddenRules = [
+    {
+      pattern: /\bPageIntro\b/,
+      message: "非 Analysis Page.tsx 不得直接 import 或使用 PageIntro"
+    },
+    {
+      pattern: /\bContentSection\b/,
+      message: "非 Analysis Page.tsx 不得直接 import 或使用 ContentSection"
+    },
+    {
+      pattern: /\bSectionStack\b/,
+      message: "非 Analysis Page.tsx 不得直接 import 或使用 SectionStack"
+    },
+    {
+      pattern: /\bPageHeader\b/,
+      message: "非 Analysis Page.tsx 不得直接 import 或使用 PageHeader"
+    },
+    {
+      pattern: /\bPageScaffold\b/,
+      message: "非 Analysis Page.tsx 不得直接 import 或使用 PageScaffold"
+    },
+    {
+      pattern: /\bhideHeader\b|\bhideHeaderActions\b/,
+      message: "非 Analysis Page.tsx 不得回流 hideHeader / hideHeaderActions"
+    }
+  ];
+
+  for (const file of files) {
+    const content = readFileSync(file, "utf8");
+
+    if (!/<ResponsivePageShell(?:\s|>)/.test(content)) {
+      violations.push(`${file} 非 Analysis Page.tsx 必须渲染 ResponsivePageShell。`);
+    }
+
+    if (!/<[A-Z][A-Za-z0-9]*Sections(?:\s|>)/.test(content)) {
+      violations.push(`${file} 非 Analysis Page.tsx 必须渲染对应的 ModuleSections 组件。`);
+    }
+
+    violations.push(...collectViolationsForFile(file, content, forbiddenRules));
+  }
+
+  return violations;
+}
+
+function collectPageIntroPlacementViolations() {
+  const restrictedFiles = collectMatchingEntries("apps/web/src", (entry, absolutePath) => {
+    if (!entry.isFile() || (!entry.name.endsWith(".ts") && !entry.name.endsWith(".tsx"))) {
+      return false;
+    }
+
+    if (/\.test\.tsx?$/.test(absolutePath)) {
+      return false;
+    }
+
+    if (
+      absolutePath === "apps/web/src/shared/layout/containers/PageIntro.tsx" ||
+      absolutePath === "apps/web/src/modules/dashboard/components/DashboardHero.tsx"
+    ) {
+      return false;
+    }
+
+    if (absolutePath.includes("/modules/") && absolutePath.includes("/sections/")) {
+      return false;
+    }
+
+    return (
+      absolutePath.endsWith("/Page.tsx") ||
+      absolutePath.includes("/app/") ||
+      absolutePath.includes("/shared/ui/") ||
+      absolutePath.includes("/shared/navigation/") ||
+      (absolutePath.includes("/modules/") && absolutePath.includes("/components/"))
+    );
+  });
+  const violations = [];
+
+  for (const file of restrictedFiles) {
+    violations.push(
+      ...collectViolationsForFile(file, readFileSync(file, "utf8"), [
+        {
+          pattern: /\bPageIntro\b/,
+          message:
+            "PageIntro 只能出现在 ModuleSections 或明确的 module hero 内；DashboardHero 是当前唯一 components 例外"
+        }
+      ])
+    );
   }
 
   return violations;

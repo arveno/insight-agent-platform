@@ -139,6 +139,14 @@ insight-agent-platform/
 `packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
 其中 contracts 目录可以继续使用 kebab-case，Python runtime package 目录必须使用 snake_case。
 
+前端页面结构冻结边界固定如下：
+
+- 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`。
+- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面内容大块纵向节奏。
+- 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
+- `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是允许例外。
+- 普通业务卡片必须优先组合 `ContentCard / StatCard / CardSurface`，不得直接用 Ant `Card` 重画 shared card shell；`Reports` 模块同样遵守。
+
 ```text
 packages/contracts/schemas/
 ├─ workspace/             # Workspace、User、Role、BusinessDomain

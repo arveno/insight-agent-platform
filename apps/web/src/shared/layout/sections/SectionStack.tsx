@@ -5,11 +5,7 @@ import type { SectionStackProps } from "./sectionTypes";
 
 export function SectionStack({ children }: SectionStackProps) {
   return (
-    <Space
-      direction="vertical"
-      size={shellThemeTokens.pageSectionGap}
-      style={{ padding: shellThemeTokens.pagePadding, width: "100%" }}
-    >
+    <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>
       {children}
     </Space>
   );
