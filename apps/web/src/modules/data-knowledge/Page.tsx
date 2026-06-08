@@ -16,7 +16,12 @@ export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: DataKnowle
   const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
 
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold
+      hideHeader
+      hideHeaderActions
+      onNavigate={onNavigate}
+      viewModel={controller.viewModel}
+    >
       <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />
     </PageScaffold>
   );

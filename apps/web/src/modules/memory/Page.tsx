@@ -6,7 +6,7 @@ import { MemorySections } from "./sections/MemorySections";
 
 export function MemoryPage({ onNavigate }: PageRouteProps) {
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={memoryStaticViewModel}>
+    <PageScaffold hideHeader onNavigate={onNavigate} viewModel={memoryStaticViewModel}>
       <MemorySections onNavigate={onNavigate} viewModel={memoryStaticViewModel} />
     </PageScaffold>
   );

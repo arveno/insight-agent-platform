@@ -16,7 +16,12 @@ export function MetricsPage({ metricsState, onNavigate }: MetricsPageProps) {
   const controller = metricsState ?? fallbackMetricsState;
 
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold
+      hideHeader
+      hideHeaderActions
+      onNavigate={onNavigate}
+      viewModel={controller.viewModel}
+    >
       <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
     </PageScaffold>
   );

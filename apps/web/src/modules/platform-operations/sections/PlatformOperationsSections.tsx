@@ -1,8 +1,12 @@
 import { Button, Flex, Space, Typography } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
@@ -209,43 +213,46 @@ export function PlatformOperationsSections({
 
   return (
     <SectionStack>
-      <ContentSection title={translateKey(t, sectionByKey["platform-operations-overview"].titleKey)}>
-        <Flex gap={16} wrap>
-          {viewModel.summaryCards.map((item) => (
-            <ContentCard
-              description={item.description}
-              key={item.key}
-              style={cardItemStyle}
-              tagSlot={buildTagSlot(t, item)}
-              title={item.label}
-            >
-              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-                {item.value}
-              </Typography.Text>
-            </ContentCard>
-          ))}
-          <ContentCard description={viewModel.workspaceNotice} style={cardItemStyle} title="Workspace 绑定">
-            <Space direction="vertical" size={8} style={{ width: "100%" }}>
-              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-                当前展示的是当前 Workspace 的平台与数据链路健康状态。
-              </Typography.Text>
-              <Typography.Text>
-                当前 Workspace：{viewModel.workspaceBinding.workspaceName}
-              </Typography.Text>
-              <Typography.Text>workspaceId: {viewModel.workspaceBinding.workspaceId}</Typography.Text>
-            </Space>
-          </ContentCard>
+      <PageIntro
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
+        description={translateKey(t, viewModel.pageDescriptionKey)}
+        eyebrow={translateKey(t, sectionByKey["platform-operations-overview"].titleKey)}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+        title={translateKey(t, viewModel.pageTitleKey)}
+      >
+        {viewModel.summaryCards.map((item) => (
           <ContentCard
-            description="当前页面只提供只读健康摘要，不开放任何执行入口。"
-            style={cardItemStyle}
-            title="只读边界"
+            description={item.description}
+            key={item.key}
+            tagSlot={buildTagSlot(t, item)}
+            title={item.label}
           >
             <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              {viewModel.readonlyNotice}
+              {item.value}
             </Typography.Text>
           </ContentCard>
-        </Flex>
-      </ContentSection>
+        ))}
+        <ContentCard description={viewModel.workspaceNotice} title="Workspace 绑定">
+          <Space direction="vertical" size={8} style={{ width: "100%" }}>
+            <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+              当前展示的是当前 Workspace 的平台与数据链路健康状态。
+            </Typography.Text>
+            <Typography.Text>
+              当前 Workspace：{viewModel.workspaceBinding.workspaceName}
+            </Typography.Text>
+            <Typography.Text>workspaceId: {viewModel.workspaceBinding.workspaceId}</Typography.Text>
+          </Space>
+        </ContentCard>
+        <ContentCard
+          description="当前页面只提供只读健康摘要，不开放任何执行入口。"
+          title="只读边界"
+        >
+          <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+            {viewModel.readonlyNotice}
+          </Typography.Text>
+        </ContentCard>
+      </PageIntro>
 
       <ContentSection
         title={translateKey(t, sectionByKey["platform-operations-jobs-data-quality"].titleKey)}
@@ -295,10 +302,12 @@ export function PlatformOperationsSections({
           >
             <Space direction="vertical" size={8} style={{ width: "100%" }}>
               <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-                先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或 Analysis。
+                先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或
+                Analysis。
               </Typography.Text>
               <Typography.Text type="secondary">
-                当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke 或手工改库。
+                当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke
+                或手工改库。
               </Typography.Text>
             </Space>
           </ContentCard>

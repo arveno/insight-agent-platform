@@ -6,7 +6,7 @@ import { WorkspaceSections } from "./sections/WorkspaceSections";
 
 export function WorkspacePage({ onNavigate }: PageRouteProps) {
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={workspaceStaticViewModel}>
+    <PageScaffold hideHeader onNavigate={onNavigate} viewModel={workspaceStaticViewModel}>
       <WorkspaceSections onNavigate={onNavigate} viewModel={workspaceStaticViewModel} />
     </PageScaffold>
   );

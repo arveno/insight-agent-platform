@@ -72,6 +72,8 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/ui/trace",
   "apps/web/src/shared/ui/traces",
   "apps/web/src/shared/ui/feedback-panel",
+  "apps/web/src/shared/layout/containers/PageHeader.tsx",
+  "apps/web/src/shared/layout/containers/PageHeader.test.tsx",
   "apps/web/src/shared/layout/shell",
   "apps/web/src/shared/layout/overlays",
   "apps/web/src/shared/ui/actions/AppActionButton.tsx",
@@ -387,6 +389,12 @@ const sharedLayoutLegacyNames = collectNamedEntryViolations(
   "apps/web/src/shared/layout",
   forbiddenSharedNamePrefixes
 );
+const sharedLayoutContainerIntroNamingViolations = collectMatchingEntries(
+  "apps/web/src/shared/layout/containers",
+  (entry) =>
+    entry.isFile() &&
+    /^(PageHero|AppIntro|CommonIntro|BaseIntro|WrapperIntro)(\.test)?\.tsx$/.test(entry.name)
+);
 const sharedNavigationLegacyNames = collectNamedEntryViolations(
   "apps/web/src/shared/navigation",
   forbiddenSharedNamePrefixes
@@ -522,7 +530,8 @@ const dashboardSectionLayoutViolations = collectFilePathContentViolations(
   [
     {
       pattern: /import\s*\{[^}]*\b(Row|Col)\b[^}]*\}\s*from\s*["']antd["']/,
-      message: "DashboardSections 不得直接 import Ant Row / Col；应通过 ContentSection cards 布局承接"
+      message:
+        "DashboardSections 不得直接 import Ant Row / Col；应通过 ContentSection cards 布局承接"
     },
     {
       pattern: /<Row\b|<Col\b/,
@@ -530,7 +539,8 @@ const dashboardSectionLayoutViolations = collectFilePathContentViolations(
     },
     {
       pattern: /\bgutter\s*=/,
-      message: "DashboardSections 不得在页面层声明 gutter；卡片间距必须由 ContentSection 内部 token 承接"
+      message:
+        "DashboardSections 不得在页面层声明 gutter；卡片间距必须由 ContentSection 内部 token 承接"
     }
   ]
 );
@@ -611,7 +621,8 @@ const dashboardHeroLayoutViolations = collectFilePathContentViolations(
 const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/modules", [
   {
     pattern: /\bfrom\s+["'][^"']*PageHeader["']/,
-    message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro / PageScaffold"
+    message:
+      "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro / PageScaffold"
   }
 ]);
 if (missingPaths.length > 0) {
@@ -653,6 +664,13 @@ if (sharedUiLegacyNames.length > 0) {
 
 if (sharedLayoutLegacyNames.length > 0) {
   fail("apps/web/src/shared/layout 检测到禁止的旧式命名前缀：", sharedLayoutLegacyNames);
+}
+
+if (sharedLayoutContainerIntroNamingViolations.length > 0) {
+  fail(
+    "apps/web/src/shared/layout/containers 检测到禁止的页面顶部容器命名：",
+    sharedLayoutContainerIntroNamingViolations
+  );
 }
 
 if (sharedNavigationLegacyNames.length > 0) {

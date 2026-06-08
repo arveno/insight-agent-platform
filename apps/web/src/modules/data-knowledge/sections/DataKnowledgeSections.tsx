@@ -1,9 +1,14 @@
 import { Space, Typography } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey } from "../../../shared/i18n/translateKey";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
@@ -116,7 +121,8 @@ function SelectedNodeDetailCard({
 
 export function DataKnowledgeSections({ controller }: DataKnowledgeSectionsProps) {
   const { t } = useI18n();
-  const { relationshipGraph, selectedAsset } = controller.viewModel;
+  const { relationshipGraph, selectedAsset, lastUpdatedAt, pageDescriptionKey, pageTitleKey } =
+    controller.viewModel;
   const relationshipTitle =
     selectedAsset.kind === "data_source"
       ? t("page.dataKnowledge.relationship.dataSourceTitle")
@@ -124,12 +130,14 @@ export function DataKnowledgeSections({ controller }: DataKnowledgeSectionsProps
 
   return (
     <SectionStack>
-      <ContentSection
-        eyebrow={t("page.dataKnowledge.section.selectedAsset.eyebrow")}
-        title={t("page.dataKnowledge.section.selectedAsset.title")}
+      <PageIntro
+        description={translateKey(t, pageDescriptionKey)}
+        eyebrow={t("page.dataKnowledge.section.selectedAsset.title")}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${lastUpdatedAt}`}
+        title={translateKey(t, pageTitleKey)}
       >
         <SelectedAssetHeader selectedAsset={selectedAsset} t={t} />
-      </ContentSection>
+      </PageIntro>
 
       <ContentSection
         eyebrow={t("page.dataKnowledge.section.relationship.eyebrow")}

@@ -6,7 +6,7 @@ import { SettingsSections } from "./sections/SettingsSections";
 
 export function SettingsPage({ onNavigate }: PageRouteProps) {
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={settingsStaticViewModel}>
+    <PageScaffold hideHeader onNavigate={onNavigate} viewModel={settingsStaticViewModel}>
       <SettingsSections onNavigate={onNavigate} viewModel={settingsStaticViewModel} />
     </PageScaffold>
   );

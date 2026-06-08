@@ -19,7 +19,12 @@ export function PlatformOperationsPage({
   const controller = platformOperationsState ?? fallbackPlatformOperationsState;
 
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold
+      hideHeader
+      hideHeaderActions
+      onNavigate={onNavigate}
+      viewModel={controller.viewModel}
+    >
       <PlatformOperationsSections controller={controller} onNavigate={onNavigate} />
     </PageScaffold>
   );

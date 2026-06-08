@@ -2,7 +2,10 @@ import { Flex, List, Space, Typography } from "antd";
 
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey } from "../../../shared/i18n/translateKey";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
 import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
@@ -27,28 +30,42 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
     onNavigate,
     t
   );
+  const pageActions = createNavigationActionsFromViewModel(
+    [viewModel.primaryAction, ...viewModel.secondaryActions],
+    onNavigate,
+    t
+  );
 
   return (
-    <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>
-      <ContentCard
+    <SectionStack>
+      <PageIntro
         description={viewModel.selectedReport.summary}
-        eyebrow={viewModel.selectedReport.sourceContext}
-        meta={
-          <Space wrap size={[12, 8]}>
-            {[
-              `reportId: ${viewModel.selectedReport.reportId}`,
-              `runId: ${viewModel.selectedReport.runId}`,
-              `workspaceId: ${viewModel.selectedReport.workspaceId}`,
-              `createdAt: ${viewModel.selectedReport.createdAt}`
-            ].map((item) => (
-              <Typography.Text key={item} type="secondary" style={shellTypographyStyles.meta}>
-                {item}
-              </Typography.Text>
-            ))}
-          </Space>
+        eyebrow={translateKey(t, viewModel.pageTitleKey)}
+        extra={
+          pageActions.length > 0 ? (
+            <Flex gap={shellThemeTokens.cardGridGap} wrap>
+              {pageActions.map((action) => (
+                <NavigationActionButton action={action} key={action.key} />
+              ))}
+            </Flex>
+          ) : undefined
         }
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
         title={viewModel.selectedReport.title}
-      />
+      >
+        <Space wrap size={[12, 8]}>
+          {[
+            `reportId: ${viewModel.selectedReport.reportId}`,
+            `runId: ${viewModel.selectedReport.runId}`,
+            `workspaceId: ${viewModel.selectedReport.workspaceId}`,
+            `createdAt: ${viewModel.selectedReport.createdAt}`
+          ].map((item) => (
+            <Typography.Text key={item} type="secondary" style={shellTypographyStyles.meta}>
+              {item}
+            </Typography.Text>
+          ))}
+        </Space>
+      </PageIntro>
 
       <ContentSection {...getStaticSectionProps(t, viewModel.mainSections[0])}>
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
@@ -137,6 +154,6 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
           />
         </Space>
       </ContentSection>
-    </Space>
+    </SectionStack>
   );
 }

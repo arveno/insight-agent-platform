@@ -13,6 +13,7 @@ import { ResponsivePageShell } from "./ResponsivePageShell";
 
 export type PageScaffoldProps = {
   children: ReactNode;
+  hideHeader?: boolean;
   hideHeaderActions?: boolean;
   onNavigate?: NavigateToRoute;
   viewModel: StaticPageViewModelBase;
@@ -20,6 +21,7 @@ export type PageScaffoldProps = {
 
 export function PageScaffold({
   children,
+  hideHeader = false,
   hideHeaderActions = false,
   onNavigate,
   viewModel
@@ -34,20 +36,22 @@ export function PageScaffold({
   return (
     <ResponsivePageShell
       header={
-        <PageIntro
-          description={translateKey(t, viewModel.pageDescriptionKey)}
-          extra={
-            hideHeaderActions ? undefined : (
-              <Flex gap={12} wrap>
-                {actions.map((action) => (
-                  <NavigationActionButton action={action} key={action.key} />
-                ))}
-              </Flex>
-            )
-          }
-          supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
-          title={translateKey(t, viewModel.pageTitleKey)}
-        />
+        hideHeader ? undefined : (
+          <PageIntro
+            description={translateKey(t, viewModel.pageDescriptionKey)}
+            extra={
+              hideHeaderActions ? undefined : (
+                <Flex gap={shellThemeTokens.cardGridGap} wrap>
+                  {actions.map((action) => (
+                    <NavigationActionButton action={action} key={action.key} />
+                  ))}
+                </Flex>
+              )
+            }
+            supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+            title={translateKey(t, viewModel.pageTitleKey)}
+          />
+        )
       }
     >
       <Space direction="vertical" size={shellThemeTokens.pageSectionGap} style={{ width: "100%" }}>

@@ -1,10 +1,7 @@
 import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
 import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
-import {
-  useReportsReaderState,
-  type ReportsReaderController
-} from "./hooks/useReportsReaderState";
+import { useReportsReaderState, type ReportsReaderController } from "./hooks/useReportsReaderState";
 import { ReportsSections } from "./sections/ReportsSections";
 
 export type ReportsPageProps = PageRouteProps & {
@@ -16,7 +13,7 @@ export function ReportsPage({ onNavigate, reportsState }: ReportsPageProps) {
   const controller = reportsState ?? fallbackReportsState;
 
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold hideHeader onNavigate={onNavigate} viewModel={controller.viewModel}>
       <ReportsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
     </PageScaffold>
   );

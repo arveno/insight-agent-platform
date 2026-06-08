@@ -11,6 +11,7 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey } from "../../../shared/i18n/translateKey";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
@@ -258,43 +259,45 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
 
   return (
     <SectionStack>
-      <ContentSection title={translateKey(t, sectionByKey["metrics-overview"].titleKey)}>
-        <Flex gap={16} wrap>
-          {viewModel.summaryCards.map((item) => (
-            <ContentCard
-              description={item.description}
-              key={item.key}
-              style={cardItemStyle}
-              tagSlot={buildTagSlot(t, item)}
-              title={item.label}
-            >
-              <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-                {item.value}
-              </Typography.Text>
-            </ContentCard>
-          ))}
+      <PageIntro
+        colProps={{ md: 12, xl: 8, xs: 24 }}
+        contentLayout="cards"
+        description={translateKey(t, viewModel.pageDescriptionKey)}
+        eyebrow={translateKey(t, sectionByKey["metrics-overview"].titleKey)}
+        supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
+        title={translateKey(t, viewModel.pageTitleKey)}
+      >
+        {viewModel.summaryCards.map((item) => (
           <ContentCard
-            description={viewModel.workspaceNotice}
-            key="metrics-workspace-notice"
-            style={cardItemStyle}
-            title="Workspace 绑定"
+            description={item.description}
+            key={item.key}
+            tagSlot={buildTagSlot(t, item)}
+            title={item.label}
           >
             <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              当前指标目录属于当前 Workspace。
+              {item.value}
             </Typography.Text>
           </ContentCard>
-          <ContentCard
-            description={viewModel.readonlyNotice}
-            key="metrics-readonly-boundary"
-            style={cardItemStyle}
-            title="只读边界"
-          >
-            <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              不新增指标，不编辑公式，不编辑阈值。
-            </Typography.Text>
-          </ContentCard>
-        </Flex>
-      </ContentSection>
+        ))}
+        <ContentCard
+          description={viewModel.workspaceNotice}
+          key="metrics-workspace-notice"
+          title="Workspace 绑定"
+        >
+          <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+            当前指标目录属于当前 Workspace。
+          </Typography.Text>
+        </ContentCard>
+        <ContentCard
+          description={viewModel.readonlyNotice}
+          key="metrics-readonly-boundary"
+          title="只读边界"
+        >
+          <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+            不新增指标，不编辑公式，不编辑阈值。
+          </Typography.Text>
+        </ContentCard>
+      </PageIntro>
 
       <ContentSection
         title={`${translateKey(t, sectionByKey["selected-metric-detail"].titleKey)}：${selectedMetric.metricName}`}

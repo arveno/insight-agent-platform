@@ -166,10 +166,10 @@ External Raw Data
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
-- `PageIntro` 是 `shared/layout/containers` 的页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
+- `PageIntro` 是 `shared/layout/containers` 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
 - `PageIntro` 负责页面顶部介绍区、左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
 - `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
-- 除 `Analysis` 这类特殊页面外，标准模块页面顶部介绍区应优先使用 `PageIntro`。
+- 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
 - `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
 - `ContentSection` 负责统一 section header、children slot，以及受控基础内容布局：`contentLayout="plain" | "cards" | "stack"`。
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。
