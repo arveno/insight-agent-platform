@@ -46,6 +46,8 @@ const frontendRequiredPaths = [
   "apps/web/src/shared/ui/states",
   "apps/web/src/shared/ui/status",
   "apps/web/src/shared/layout/containers",
+  "apps/web/src/shared/layout/containers/PageIntro.tsx",
+  "apps/web/src/shared/layout/containers/PageIntro.test.tsx",
   "apps/web/src/shared/layout/panels",
   "apps/web/src/shared/layout/sections"
 ];
@@ -559,6 +561,59 @@ const contentSectionLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
+const pageIntroLayoutViolations = collectFilePathContentViolations(
+  "apps/web/src/shared/layout/containers/PageIntro.tsx",
+  [
+    {
+      pattern: /gutter=\{\[\d+,\s*\d+\]\}/,
+      message: "PageIntro 不得硬编码数字 gutter；卡片间距必须使用 shared/theme token"
+    },
+    {
+      pattern: /display:\s*["']grid["']|gridTemplateColumns|minItemWidth/,
+      message: "PageIntro 不得使用 CSS Grid 或 minItemWidth 自定义布局"
+    }
+  ]
+);
+const pageScaffoldHeaderViolations = collectFilePathContentViolations(
+  "apps/web/src/shared/layout/containers/PageScaffold.tsx",
+  [
+    {
+      pattern: /\bPageHeader\b/,
+      message: "PageScaffold 顶部介绍区必须组合 PageIntro，不得继续依赖 PageHeader"
+    }
+  ]
+);
+const dashboardHeroLayoutViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/dashboard/components/DashboardHero.tsx",
+  [
+    {
+      pattern: /\bfunction\s+HeroFact\b|\bHeroFact\b/,
+      message: "DashboardHero 不得保留 HeroFact 本地组件"
+    },
+    {
+      pattern: /\bfrom\s+["'][^"']*CardSurface["']/,
+      message: "DashboardHero 不得直接 import CardSurface；应通过 PageIntro + StatCard 组合"
+    },
+    {
+      pattern: /\bflex:\s*["']1 1 220px["']/,
+      message: "DashboardHero 不得保留手写 fact 卡片 flex 宽度"
+    },
+    {
+      pattern: /\bgutter\s*=/,
+      message: "DashboardHero 不得在页面层直接声明 gutter；卡片布局由 PageIntro 承接"
+    },
+    {
+      pattern: /display:\s*["']grid["']|gridTemplateColumns|minItemWidth/,
+      message: "DashboardHero 不得使用 CSS Grid 或 minItemWidth 自定义布局"
+    }
+  ]
+);
+const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/modules", [
+  {
+    pattern: /\bfrom\s+["'][^"']*PageHeader["']/,
+    message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro / PageScaffold"
+  }
+]);
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
 }
@@ -690,6 +745,22 @@ if (dashboardComponentTypeViolations.length > 0) {
 
 if (contentSectionLayoutViolations.length > 0) {
   fail("ContentSection 检测到已禁止的布局实现：", contentSectionLayoutViolations);
+}
+
+if (pageIntroLayoutViolations.length > 0) {
+  fail("PageIntro 检测到已禁止的布局实现：", pageIntroLayoutViolations);
+}
+
+if (pageScaffoldHeaderViolations.length > 0) {
+  fail("PageScaffold 检测到已禁止的页面头部实现：", pageScaffoldHeaderViolations);
+}
+
+if (dashboardHeroLayoutViolations.length > 0) {
+  fail("DashboardHero 检测到已禁止的 Hero 布局实现：", dashboardHeroLayoutViolations);
+}
+
+if (modulePageHeaderImportViolations.length > 0) {
+  fail("modules 检测到已禁止的 PageHeader 依赖：", modulePageHeaderImportViolations);
 }
 
 console.log("Structure guard passed.");

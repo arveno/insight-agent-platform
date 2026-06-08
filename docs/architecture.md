@@ -337,9 +337,12 @@ UI 不得直接消费 raw API response。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
 - `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。
-- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `PageIntro` 是页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责标题说明、`extra` 操作区和受控 `plain / cards / stack` 内容布局；不得接业务对象、不得做 route 映射、不得依赖 `app / modules`。
+- `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区；除 `Analysis` 这类特殊页面外，标准模块页面顶部介绍区优先使用 `PageIntro`。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
+- Hero facts / summary 小卡片优先使用 `StatCard`，普通内容入口卡优先使用 `ContentCard`，不要用 `CardSurface` 手写小卡片壳；页面顶部操作区由 module 本地组件组合后传给 `PageIntro extra`，不提前抽 shared `PageHeroActions`。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
 - `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和真正无业务的通用 helper，不承接 evidence / trace / report / tool / metric / data source 级别的业务 adapter、业务 key map 或业务聚合。

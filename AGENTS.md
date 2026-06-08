@@ -165,7 +165,11 @@ External Raw Data
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
-- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSection / SectionStack / PageIntro / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
+- `PageIntro` 是 `shared/layout/containers` 的页面顶部介绍区容器，只接通用 ReactNode 和 layout props，不接业务对象，不做 route 映射，不依赖 `app / modules`。
+- `PageIntro` 负责页面顶部介绍区、左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局；如果页面没有顶部标题介绍区，就不要硬造 `PageIntro`。
+- `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
+- 除 `Analysis` 这类特殊页面外，标准模块页面顶部介绍区应优先使用 `PageIntro`。
 - `ContentSection` 的 header 右侧 slot 固定使用 `extra`，不得再引入 `titleSuffix` 或其它标题后缀别名。
 - `ContentSection` 负责统一 section header、children slot，以及受控基础内容布局：`contentLayout="plain" | "cards" | "stack"`。
 - `contentLayout="plain"` 只保留 section header 和 section 语义，children 原样渲染；图表、表格或已自带明确布局的区域优先使用 plain。
@@ -179,6 +183,7 @@ External Raw Data
 - 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
+- Hero facts / summary 小卡片优先使用 `StatCard`；普通内容入口卡优先使用 `ContentCard`；不要用 `CardSurface` 手写小卡片壳。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只允许无业务语义 UI primitive 或 Ant Design 薄封装；不允许放 `report / evidence / trace / feedback panel` 等业务组件。
 - `shared/ui` 的 export 组件、export 函数、export type / interface、props contract 和 item contract 必须有 JSDoc。
@@ -189,6 +194,7 @@ External Raw Data
 - 修改 `shared/ui` 公共 API 时，必须同步维护契约注释；缺失注释应由结构守门直接拦截。
 - 不新增 `MetricCardGrid / SummaryCardGrid / ReportCardGrid / CardGrid / SectionGrid / ActionGroup / ActionBar` 这类和具体内容或按钮集合强绑定的布局组件。
 - `Dashboard`、`Metrics`、`Platform Operations` 这类 overview page 的标准结构固定为 `SectionStack -> Hero(optional) -> ContentSection(contentLayout=\"cards\") -> Cards`。
+- `DashboardHero` 这类模块 Hero 必须基于 `PageIntro` 组合；facts 使用 `StatCard`，页面操作区由 module 本地组件组合后通过 `PageIntro extra` 传入，不要提前抽 shared `PageHeroActions`。
 - 业务模块如需特殊卡片，只允许在 module 内轻封 `ContentCard / StatCard`；禁止为了单个 section 额外造 `Panel / Grid / Wrapper / ActionGroup / HeaderActionGroup / SectionActionGroup` 中间层。
 - module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
 - 业务 mapper 默认只负责 ViewModel 整理，不应预先生成 JSX、`NavigationAction` 或共享卡片 slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。

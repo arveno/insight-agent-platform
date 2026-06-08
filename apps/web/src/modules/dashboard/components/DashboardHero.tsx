@@ -1,13 +1,10 @@
-import { Flex, Select, Space, Typography, theme } from "antd";
+import { Flex, Select, Space } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
-import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
-import { shellThemeTokens } from "../../../shared/theme/tokens";
-import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
-import { toRiskBadge } from "../../../shared/utils/viewModelState";
+import { StatCard } from "../../../shared/ui/cards/StatCard";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
 export function DashboardHero({
@@ -18,9 +15,6 @@ export function DashboardHero({
   viewModel
 }: DashboardHeroProps) {
   const { t } = useI18n();
-  const { token } = theme.useToken();
-  const summary = viewModel.dashboardSummary[0];
-  const riskBadge = toRiskBadge(t, summary?.risk);
   const anomalyCount = viewModel.anomalyCards.length + viewModel.riskSummary.length;
   const heroActions = [
     createRouteAction({
@@ -49,113 +43,85 @@ export function DashboardHero({
     })
   ];
   const timeRangeOptions = viewModel.timeRange.options.map((option) => ({
-    label: option.label,
-    value: option.key
-  }));
+      label: option.label,
+      value: option.key
+    }));
+  const heroFacts = [
+    {
+      key: "metrics",
+      title: t("dashboard.hero.fact.metricLabel"),
+      value: `${viewModel.businessStatCards.length} ${t("dashboard.hero.fact.metricCountSuffix")}`
+    },
+    {
+      key: "risk-anomaly",
+      title: t("dashboard.hero.fact.riskAnomalyLabel"),
+      value: `${anomalyCount} ${t("dashboard.hero.fact.riskAnomalyCountSuffix")}`
+    },
+    {
+      key: "evidence",
+      title: t("dashboard.hero.fact.evidenceLabel"),
+      value: `${viewModel.evidenceEntrances.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
+    },
+    {
+      key: "right-context",
+      title: t("dashboard.hero.fact.rightContextLabel"),
+      value: t("dashboard.hero.fact.rightContextValue")
+    }
+  ];
 
   return (
-    <CardSurface
-      style={{
-        boxShadow: token.boxShadowTertiary,
-      }}
+    <PageIntro
+      colProps={{ md: 12, xl: 6, xs: 24 }}
+      contentLayout="cards"
+      description={t("dashboard.hero.description")}
+      eyebrow={t("dashboard.hero.eyebrow")}
+      extra={
+        <DashboardHeroActions
+          heroActions={heroActions}
+          onTimeRangeChange={onTimeRangeChange}
+          selectedTimeRangeKey={selectedTimeRangeKey}
+          timeRangeOptions={timeRangeOptions}
+        />
+      }
+      supportingText={selectedTimeRange.description}
+      title={t("dashboard.hero.title")}
     >
-      <Flex align="start" justify="space-between" wrap="wrap" gap={token.marginLG}>
-        <Space direction="vertical" size={token.marginSM} style={{ maxWidth: 660 }}>
-          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-            {t("dashboard.hero.eyebrow")}
-          </Typography.Text>
-          <Space direction="vertical" size={token.marginXXS}>
-            <Typography.Text style={{ ...shellTypographyStyles.heroTitle, display: "block" }}>
-              {t("dashboard.hero.title")}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.body}>
-              {t("dashboard.hero.description")}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-              {selectedTimeRange.description}
-            </Typography.Text>
-          </Space>
-          <Space wrap size={token.marginXS}>
-            {riskBadge ? <RiskBadge {...riskBadge} /> : null}
-            <Typography.Text style={shellTypographyStyles.cardValue}>
-              {summary?.value}
-            </Typography.Text>
-            <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-              {t("dashboard.common.updatedAtPrefix")}
-              {viewModel.lastUpdatedAt}
-            </Typography.Text>
-          </Space>
-        </Space>
-        <Flex align="center" gap={token.marginSM} justify="flex-end" wrap="wrap">
-          <Select
-            aria-label="Dashboard time range"
-            onChange={(value) => onTimeRangeChange(value)}
-            options={timeRangeOptions}
-            popupMatchSelectWidth={false}
-            style={{ minWidth: 168 }}
-            value={selectedTimeRangeKey}
-          />
-          <Flex gap={12} wrap>
-            {heroActions.map((action) => (
-              <NavigationActionButton action={action} key={action.key} />
-            ))}
-          </Flex>
-        </Flex>
-      </Flex>
-      <div style={{ marginTop: token.marginLG }}>
-        <Flex gap={16} wrap>
-          <HeroFact
-            label={t("dashboard.hero.fact.metricLabel")}
-            value={`${viewModel.businessStatCards.length} ${t(
-              "dashboard.hero.fact.metricCountSuffix"
-            )}`}
-          />
-          <HeroFact
-            label={t("dashboard.hero.fact.riskAnomalyLabel")}
-            value={`${anomalyCount} ${t("dashboard.hero.fact.riskAnomalyCountSuffix")}`}
-          />
-          <HeroFact
-            label={t("dashboard.hero.fact.evidenceLabel")}
-            value={`${viewModel.evidenceEntrances.length} ${t(
-              "dashboard.hero.fact.evidenceCountSuffix"
-            )}`}
-          />
-          <HeroFact
-            label={t("dashboard.hero.fact.rightContextLabel")}
-            value={t("dashboard.hero.fact.rightContextValue")}
-          />
-        </Flex>
-      </div>
-    </CardSurface>
+      {heroFacts.map((fact) => (
+        <StatCard key={fact.key} title={fact.title} value={fact.value} />
+      ))}
+    </PageIntro>
   );
 }
 
-function HeroFact({ label, value }: { label: string; value: string }) {
-  const { token } = theme.useToken();
-
+function DashboardHeroActions({
+  heroActions,
+  onTimeRangeChange,
+  selectedTimeRangeKey,
+  timeRangeOptions
+}: {
+  heroActions: ReturnType<typeof createRouteAction>[];
+  onTimeRangeChange: DashboardHeroProps["onTimeRangeChange"];
+  selectedTimeRangeKey: DashboardHeroProps["selectedTimeRangeKey"];
+  timeRangeOptions: Array<{
+    label: string;
+    value: DashboardHeroProps["selectedTimeRangeKey"];
+  }>;
+}) {
   return (
-    <CardSurface
-      style={{
-        background: token.colorFillAlter,
-        flex: "1 1 220px",
-        height: "auto",
-        minWidth: 0,
-        width: "100%"
-      }}
-      styles={{
-        body: {
-          height: "auto",
-          minHeight: token.controlHeightLG * 2,
-          padding: shellThemeTokens.panelPadding
-        }
-      }}
-    >
-      <Space direction="vertical" size={token.marginXXS}>
-        <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-          {label}
-        </Typography.Text>
-        <Typography.Text style={shellTypographyStyles.cardValue}>{value}</Typography.Text>
+    <Flex align="center" gap={12} justify="flex-end" wrap="wrap">
+      <Select
+        aria-label="Dashboard time range"
+        onChange={(value) => onTimeRangeChange(value)}
+        options={timeRangeOptions}
+        popupMatchSelectWidth={false}
+        style={{ minWidth: 168 }}
+        value={selectedTimeRangeKey}
+      />
+      <Space size={12} wrap>
+        {heroActions.map((action) => (
+          <NavigationActionButton action={action} key={action.key} />
+        ))}
       </Space>
-    </CardSurface>
+    </Flex>
   );
 }

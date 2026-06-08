@@ -143,21 +143,27 @@ Page Composition 是正式 Web 页面的默认编排层级。
 ```text
 AppShell
 └─ Page
-   └─ SectionStack
-      └─ ContentSection
-         └─ Ant Flex / Space / Row / Col
-            └─ CardSurface / ContentCard / StatCard / 模块内业务组件
-               └─ ActionButton / NavigationActionButton
+   └─ ResponsivePageShell
+      ├─ PageIntro (optional, page first block)
+      └─ SectionStack
+         └─ ContentSection
+            └─ Ant Flex / Space / Row / Col
+               └─ CardSurface / ContentCard / StatCard / 模块内业务组件
+                  └─ ActionButton / NavigationActionButton
 ```
 
 规则：
 
+- `PageIntro` 是 shared/layout/containers 的页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责左侧标题说明、右侧 `extra` 操作区，以及受控 `plain / cards / stack` 内容布局。
 - `SectionStack` 只负责页面 section 间距，不要求子节点必须是 `ContentSection`。
 - `ContentSection` 负责 section 语义、eyebrow、title、extra、children slot，以及受控 `plain / cards / stack` 内容布局。
+- `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区；`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`。
 - `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger。
 - `NavigationActionButton` 只负责 route-aware 行为组合，不负责 route 到 Page 的映射。
 - `CardSurface` 只负责统一卡片壳；`ContentCard` 负责通用内容结构；`StatCard` 只负责通用数值摘要。
+- Hero facts / summary 小卡片优先使用 `StatCard`；普通内容入口卡优先使用 `ContentCard`；不要用 `CardSurface` 手写小卡片壳。
+- 除 `Analysis` 这类特殊页面外，标准模块页面顶部介绍区应优先使用 `PageIntro`；页面顶部操作区由 module 本地组件组合后通过 `PageIntro extra` 传入，不提前抽 shared `PageHeroActions`。
 - 业务模块可以在 `modules/<domain>` 内组合业务组件，但不得把业务对象组件塞回 shared。
 
 明确禁止：
@@ -187,6 +193,7 @@ AppShell
 - 如果某个区域不需要 section header，就不要使用 `ContentSection`，直接放到 `SectionStack` 或模块自定义区域里。
 - section 内按钮排列直接使用 Ant `Flex / Space`，不要额外抽 `ActionGroup`。
 - `Dashboard` 这类 overview page 的标准结构固定为 `SectionStack -> Hero -> ContentSection(contentLayout="cards") -> Cards`。
+- `DashboardHero` 的 canonical 模式是 `PageIntro + DashboardHeroActions(local) + StatCard facts`；facts 使用 `PageIntro contentLayout="cards"` 和 Ant `Col` 响应式语义，不新增 `HeroGrid / HeroCard / ActionGroup / CardGrid`。
 - 业务模块需要特殊卡片时，只在 module 内轻封单张卡片，不额外创建 `Panel / Grid / ActionGroup / HeaderActionGroup / SectionActionGroup` 分组层。
 - module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
 - 业务 mapper 默认只负责整理业务 item，不应预先生成 JSX、`NavigationAction` 或 `ContentCard` slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。
@@ -272,7 +279,7 @@ shared 只保留无业务语义的公共能力，固定边界如下：
 - `shared/graph`：唯一允许封装 `@antv/g6` 的关系图底座。
 - `shared/charts`：无业务语义图表 primitive。
 - `shared/navigation`：`navigationTypes / createRouteAction / NavigationActionButton` 这类 route-key 级别导航能力。
-- `shared/layout`：`ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame` 等无业务语义页面结构 primitive。
+- `shared/layout`：`ContentSection / SectionStack / PageIntro / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame` 等无业务语义页面结构 primitive。
 - `shared/ui/actions`：`ActionButton`。
 - `shared/ui/surfaces`：`CardSurface` 这类视觉壳。
 - `shared/ui/cards`：`ContentCard / StatCard / EntryCard / DetailCard` 等无业务语义 card pattern。
@@ -358,7 +365,7 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - Risk Tag / 风险标签固定在卡片 Header 右上角，表示当前卡片对象风险等级，最多 1 个。
 - Status Tag / 状态标签仅在非 ready 状态展示，位置同 Header 右上角。
 - ready 状态默认不展示。
-- 页面级主操作放在 Hero / 页面头部右侧。
+- 页面级主操作放在 `PageIntro` / module Hero 的右侧 `extra`。
 - Section 级模块入口放在 Section Header 右侧。
 - 卡片内部动作统一放在 Footer Actions 左下横向排列。
 - Inspector 内动作在分组内左对齐横向排列。
@@ -465,8 +472,8 @@ shared/
 | `SectionStack`            | Layout             | `shared/layout/sections/SectionStack.tsx`          | Ant `Flex / Space`                     | section 垂直节奏                                        | 复杂布局系统、业务布局                                         | `app`、`modules`                                     | `app`、`modules`        |
 | `sectionTypes`            | Layout Support     | `shared/layout/sections/sectionTypes.ts`           | TypeScript types                       | section primitive 类型                                  | 业务对象                                                       | `shared/layout`、`modules`                           | `app`、`modules`        |
 | `getStaticSectionProps`   | Layout Support     | `shared/layout/sections/getStaticSectionProps.tsx` | static section vm + i18n               | 静态 section props 映射                                 | 业务取数                                                       | `modules`                                            | `app`、`modules`        |
-| `PageHeader`              | Layout / Container | `shared/layout/containers/PageHeader.tsx`          | Ant `Typography / Space / Flex`        | 页面头部结构                                            | 业务数据获取                                                   | `app`、`modules`                                     | `app`、`modules`        |
-| `PageScaffold`            | Layout / Container | `shared/layout/containers/PageScaffold.tsx`        | Ant `Layout / Space`                   | 页面主骨架                                              | route 映射、业务对象                                           | `app`、`modules`                                     | `app`、`modules`        |
+| `PageIntro`               | Layout / Container | `shared/layout/containers/PageIntro.tsx`           | `CardSurface` + Ant `Flex / Space / Row / Col / Typography` | 页面顶部介绍区、`extra`、受控 `plain / cards / stack` 布局 | 业务对象、route 映射、排序过滤分组、权限判断 | `app`、`modules` | `app`、`modules` |
+| `PageScaffold`            | Layout / Container | `shared/layout/containers/PageScaffold.tsx`        | `ResponsivePageShell` + `PageIntro`    | 页面主骨架、统一顶部介绍区承接                          | route 映射、业务对象                                           | `app`、`modules`                                     | `app`、`modules`        |
 | `ResponsivePageShell`     | Layout / Container | `shared/layout/containers/ResponsivePageShell.tsx` | Ant `Layout / Grid / Flex`             | 响应式页面壳                                            | 业务组件拼装                                                   | `app`、`modules`                                     | `app`、`modules`        |
 | `FilterBar`               | Layout / Container | `shared/layout/containers/FilterBar.tsx`           | Ant `Card / Space / Flex`              | 过滤区容器与统一壳                                      | 排序、筛选业务规则                                             | `modules`                                            | `app`、`modules`        |
 | `SidePanel`               | Surface / Frame    | `shared/layout/panels/SidePanel.tsx`               | Ant `Card / Layout / Space`            | 侧栏面板壳                                              | 业务对象解析                                                   | `app`、`modules`                                     | `app`、`modules`        |
@@ -559,7 +566,7 @@ shared/
   - Layer: `Layout`
   - Allowed: section vertical rhythm、Hero 或其它无 header 自定义区域
   - Forbidden: complex layout system、business layout
-- `PageHeader / PageScaffold / ResponsivePageShell / FilterBar`
+- `PageIntro / PageScaffold / ResponsivePageShell / FilterBar`
   - Layer: `Layout / Container`
   - Allowed: page-level structure
   - Forbidden: business data、route-to-page mapping
