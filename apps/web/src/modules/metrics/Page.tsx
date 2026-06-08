@@ -1,16 +1,23 @@
-import { WebPageScaffold } from "../../app/shell/WebPageScaffold";
-import type { WebPageProps } from "../../app/router/pageProps";
+import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import type { WebPageProps } from "../../shared/navigation/navigationTypes";
 
-import { useMetricsOverviewState } from "./hooks/useMetricsOverviewState";
+import {
+  useMetricsOverviewState,
+  type MetricsOverviewController
+} from "./hooks/useMetricsOverviewState";
 import { MetricsSections } from "./sections/MetricsSections";
 
-export function MetricsPage({ metricsState, onNavigate }: WebPageProps) {
+export type MetricsPageProps = WebPageProps & {
+  metricsState?: MetricsOverviewController;
+};
+
+export function MetricsPage({ metricsState, onNavigate }: MetricsPageProps) {
   const fallbackMetricsState = useMetricsOverviewState();
   const controller = metricsState ?? fallbackMetricsState;
 
   return (
-    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
       <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
-    </WebPageScaffold>
+    </PageScaffold>
   );
 }

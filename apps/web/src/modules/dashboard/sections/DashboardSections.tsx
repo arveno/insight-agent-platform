@@ -1,9 +1,11 @@
-import type { WebPageProps } from "../../../app/router/pageProps";
-import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
-import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import { Flex } from "antd";
 
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
+import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
@@ -64,7 +66,7 @@ export function DashboardSections({
   ];
 
   return (
-    <AppSectionStack>
+    <SectionStack>
       <DashboardHero
         onNavigate={onNavigate}
         onTimeRangeChange={onTimeRangeChange}
@@ -73,61 +75,65 @@ export function DashboardSections({
         viewModel={viewModel}
       />
 
-      <AppSection
-        action={openMetricsAction}
-        columns={2}
+      <ContentSection
         eyebrow={t("dashboard.metrics.eyebrow")}
+        titleSuffix={<NavigationActionButton action={openMetricsAction} />}
         title={t("dashboard.metrics.title")}
       >
-        {viewModel.businessMetricCards.map((metric) => (
-          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
-        ))}
-      </AppSection>
+        <Flex gap={16} wrap>
+          {viewModel.businessStatCards.map((metric) => (
+            <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
+          ))}
+        </Flex>
+      </ContentSection>
 
-      <AppSection
-        action={openGovernanceAction}
-        columns={2}
+      <ContentSection
         eyebrow={t("dashboard.risk.eyebrow")}
+        titleSuffix={<NavigationActionButton action={openGovernanceAction} />}
         title={t("dashboard.risk.title")}
       >
-        {riskItems.map(({ isRiskSummary, item }) => (
-          <DashboardRiskOverview
-            isRiskSummary={isRiskSummary}
-            item={item}
-            key={item.key}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </AppSection>
+        <Flex gap={16} wrap>
+          {riskItems.map(({ isRiskSummary, item }) => (
+            <DashboardRiskOverview
+              isRiskSummary={isRiskSummary}
+              item={item}
+              key={item.key}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </Flex>
+      </ContentSection>
 
-      <AppSection
-        action={openReportsAction}
-        columns={2}
+      <ContentSection
         eyebrow={t("dashboard.reportEvidence.eyebrow")}
+        titleSuffix={<NavigationActionButton action={openReportsAction} />}
         title={t("dashboard.reportEvidence.title")}
       >
-        <DashboardReportEvidencePanel
-          onNavigate={onNavigate}
-          panel="reports"
-          viewModel={viewModel}
-        />
-        <DashboardReportEvidencePanel
-          onNavigate={onNavigate}
-          panel="evidence"
-          viewModel={viewModel}
-        />
-      </AppSection>
+        <Flex gap={16} vertical>
+          <DashboardReportEvidencePanel
+            onNavigate={onNavigate}
+            panel="reports"
+            viewModel={viewModel}
+          />
+          <DashboardReportEvidencePanel
+            onNavigate={onNavigate}
+            panel="evidence"
+            viewModel={viewModel}
+          />
+        </Flex>
+      </ContentSection>
 
-      <AppSection
-        action={openPlatformOperationsAction}
-        columns={1}
+      <ContentSection
         eyebrow={t("dashboard.quality.eyebrow")}
+        titleSuffix={<NavigationActionButton action={openPlatformOperationsAction} />}
         title={t("dashboard.quality.title")}
       >
-        {viewModel.platformQualitySummary.map((item) => (
-          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
-        ))}
-      </AppSection>
-    </AppSectionStack>
+        <Flex gap={16} wrap>
+          {viewModel.platformQualitySummary.map((item) => (
+            <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
+          ))}
+        </Flex>
+      </ContentSection>
+    </SectionStack>
   );
 }

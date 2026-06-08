@@ -1,4 +1,4 @@
-import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel, StaticTabViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel, StaticTabViewModel } from "../../../shared/view-model/staticViewModelTypes";
 import type { RelationshipGraphViewModel } from "../../../shared/graph/models";
 
 export type DataKnowledgeAssetKind = "data_source" | "knowledge_document";

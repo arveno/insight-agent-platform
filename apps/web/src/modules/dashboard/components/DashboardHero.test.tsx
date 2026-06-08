@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../../app/providers/AppProviders";
+import { TestProviders } from "../../../shared/test/TestProviders";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 
 import { dashboardStaticViewModel } from "../fixtures/dashboardStaticViewModel";
@@ -32,7 +32,7 @@ describe("DashboardHero", () => {
     )!;
 
     render(
-      <AppProviders>
+      <TestProviders>
         <DashboardHero
           onNavigate={vi.fn()}
           onTimeRangeChange={vi.fn()}
@@ -40,7 +40,7 @@ describe("DashboardHero", () => {
           selectedTimeRangeKey={dashboardStaticViewModel.timeRange.selectedKey}
           viewModel={dashboardStaticViewModel}
         />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(

@@ -1,9 +1,9 @@
-import type { StaticRightAssistSummaryViewModel } from "../../app/shell/models/staticViewModelTypes";
+import type { StaticRightAssistSummaryViewModel } from "../../shared/view-model/staticViewModelTypes";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { translateKey } from "../../shared/i18n/translateKey";
+import { EventTimeline } from "../../shared/ui/lists/EventTimeline";
 
 import { toTraceItem } from "../analysis/viewModelAdapters";
-import { TraceTimeline } from "./TraceTimeline";
 
 export type TracePanelProps = {
   items: NonNullable<StaticRightAssistSummaryViewModel["traces"]>;
@@ -13,7 +13,7 @@ export function TracePanel({ items }: TracePanelProps) {
   const { t } = useI18n();
 
   return (
-    <TraceTimeline
+    <EventTimeline
       empty={{ title: translateKey(t, "state.empty.default.title") }}
       items={items.map((item) => {
         const traceItem = toTraceItem(t, item);

@@ -3,9 +3,9 @@ import { Card, Space, Typography } from "antd";
 
 import { shellThemeTokens } from "../theme/tokens";
 import { shellTypographyStyles } from "../theme/typography";
-import { EmptyState } from "../ui/feedback/EmptyState";
-import { ErrorState } from "../ui/feedback/ErrorState";
-import { LoadingState } from "../ui/feedback/LoadingState";
+import { EmptyState } from "../ui/states/EmptyState";
+import { ErrorState } from "../ui/states/ErrorState";
+import { LoadingState } from "../ui/states/LoadingState";
 import type { ChartCardViewModel } from "./chartTypes";
 
 export type ChartCardProps = ChartCardViewModel & {

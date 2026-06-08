@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { WebPageProps } from "../../app/router/pageProps";
+import type { WebPageProps } from "../../shared/navigation/navigationTypes";
 
 import { dashboardStaticViewModel } from "./fixtures/dashboardStaticViewModel";
 import { DashboardSections } from "./sections/DashboardSections";

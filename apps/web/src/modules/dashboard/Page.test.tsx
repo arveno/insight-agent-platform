@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { DashboardPage } from "./Page";
 
 afterEach(cleanup);
@@ -27,9 +27,9 @@ describe("DashboardPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <DashboardPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getByText("Last 30 days")).toBeTruthy();

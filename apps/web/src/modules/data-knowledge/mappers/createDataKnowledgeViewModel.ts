@@ -1,5 +1,5 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../app/shell/fixtures/staticStateFixtures";
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../shared/view-model/staticStateFixtures";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
 import {
   dataKnowledgeStaticContracts,
   defaultDataKnowledgeWorkspaceBinding

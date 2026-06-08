@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { AnalysisPage } from "./Page";
 
 afterEach(cleanup);
@@ -25,9 +25,9 @@ beforeAll(() => {
 describe("AnalysisPage", () => {
   it("renders a pure conversation shell without page header actions", () => {
     render(
-      <AppProviders>
+      <TestProviders>
         <AnalysisPage />
-      </AppProviders>
+      </TestProviders>
     );
 
     const main = screen.getByRole("region", { name: "Analysis conversation" });
@@ -64,9 +64,9 @@ describe("AnalysisPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <AnalysisPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "选择模型" }));

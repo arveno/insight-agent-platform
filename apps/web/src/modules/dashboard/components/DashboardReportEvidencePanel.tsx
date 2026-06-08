@@ -1,9 +1,9 @@
-import { Space, Typography } from "antd";
+import { Flex, Space, Typography } from "antd";
 
-import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 
 import { toEvidenceItem } from "../../analysis/viewModelAdapters";
 import type { DashboardReportEvidencePanelProps } from "./dashboardComponentTypes";
@@ -48,10 +48,16 @@ export function DashboardReportEvidencePanel({
           ];
 
           return (
-            <AppBaseCard
+            <ContentCard
               description={t("dashboard.reportEvidence.suggestionSummary")}
               eyebrow={t("dashboard.reportEvidence.recentReportEyebrow")}
-              footerActions={<AppActionGroup actions={reportActions} />}
+              footerActions={
+                <Flex gap={12} wrap>
+                  {reportActions.map((action) => (
+                    <NavigationActionButton action={action} key={action.key} />
+                  ))}
+                </Flex>
+              }
               key={report.key}
               meta={
                 <Space wrap>
@@ -103,10 +109,16 @@ export function DashboardReportEvidencePanel({
         ];
 
         return (
-          <AppBaseCard
+          <ContentCard
             description={evidence.summary}
             eyebrow={t("dashboard.reportEvidence.evidenceEyebrow")}
-            footerActions={<AppActionGroup actions={evidenceActions} />}
+            footerActions={
+              <Flex gap={12} wrap>
+                {evidenceActions.map((action) => (
+                  <NavigationActionButton action={action} key={action.key} />
+                ))}
+              </Flex>
+            }
             key={evidence.key}
             meta={
               <Space wrap>

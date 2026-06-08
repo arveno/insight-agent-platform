@@ -6,7 +6,7 @@ import type {
   StaticRightAssistSummaryViewModel,
   StaticRouteKey,
   StaticStatusViewModel
-} from "./staticViewModelTypes";
+} from "../../../shared/view-model/staticViewModelTypes";
 
 export type AppShellNavigationItemViewModel = {
   badgeTextKey?: string;

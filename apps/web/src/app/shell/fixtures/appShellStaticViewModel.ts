@@ -4,7 +4,7 @@ import {
   defaultPermissionSummary,
   defaultReadonlyState,
   defaultStateCoverage
-} from "./staticStateFixtures";
+} from "../../../shared/view-model/staticStateFixtures";
 
 const webNavigationGroups: AppShellNavigationGroupViewModel[] = [
   {
@@ -260,7 +260,7 @@ const workspaces = [
 
 /**
  * #67 只提供全局壳层静态 ViewModel 输入。
- * AppShell / Header / LeftNav / RightAssistPanel 组件本体和真实路由均不在这里实现。
+ * AppShell / Header / LeftNav / SidePanel 组件本体和真实路由均不在这里实现。
  */
 export const appShellStaticViewModel: AppShellStaticViewModel = {
   currentRoute: "dashboard",

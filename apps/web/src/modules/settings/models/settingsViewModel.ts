@@ -1,4 +1,4 @@
-import type { StaticActionViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import type { StaticActionViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../shared/view-model/staticViewModelTypes";
 
 export type SettingsViewModel = StaticPageViewModelBase & {
   defaultPolicySummary: StaticSummaryItemViewModel[];

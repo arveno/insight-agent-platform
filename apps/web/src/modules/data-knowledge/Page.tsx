@@ -1,16 +1,23 @@
-import { WebPageScaffold } from "../../app/shell/WebPageScaffold";
-import type { WebPageProps } from "../../app/router/pageProps";
+import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
+import type { WebPageProps } from "../../shared/navigation/navigationTypes";
 
-import { useDataKnowledgeOverviewState } from "./hooks/useDataKnowledgeOverviewState";
+import {
+  useDataKnowledgeOverviewState,
+  type DataKnowledgeOverviewController
+} from "./hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeSections } from "./sections/DataKnowledgeSections";
 
-export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: WebPageProps) {
+export type DataKnowledgePageProps = WebPageProps & {
+  dataKnowledgeState?: DataKnowledgeOverviewController;
+};
+
+export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: DataKnowledgePageProps) {
   const fallbackDataKnowledgeState = useDataKnowledgeOverviewState();
   const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
 
   return (
-    <WebPageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
       <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />
-    </WebPageScaffold>
+    </PageScaffold>
   );
 }

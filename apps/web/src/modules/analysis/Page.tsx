@@ -1,5 +1,5 @@
 import { theme } from "antd";
-import type { WebPageProps } from "../../app/router/pageProps";
+import type { WebPageProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useAnalysisConversationState,

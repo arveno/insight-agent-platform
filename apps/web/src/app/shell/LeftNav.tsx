@@ -4,7 +4,7 @@ import { Space, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
-import { ShellNavListItem } from "./ShellNavListItem";
+import { SelectableListItem } from "../../shared/ui/lists/SelectableListItem";
 
 export type NavigationItem = {
   badge?: ReactNode;
@@ -110,7 +110,7 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                 ) : undefined;
 
               return (
-                <ShellNavListItem
+                <SelectableListItem
                   ariaCurrent={isSelected ? "page" : undefined}
                   disabled={item.disabled}
                   icon={item.icon}

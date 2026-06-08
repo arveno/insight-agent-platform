@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { AppProviders } from "../../app/providers/AppProviders";
+import { TestProviders } from "../../shared/test/TestProviders";
 import { PlatformOperationsPage } from "./Page";
 
 afterEach(cleanup);
@@ -27,9 +27,9 @@ describe("PlatformOperationsPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <PlatformOperationsPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     expect(screen.getByText("平台运维总览")).toBeTruthy();
@@ -62,9 +62,9 @@ describe("PlatformOperationsPage", () => {
     const onNavigate = vi.fn();
 
     render(
-      <AppProviders>
+      <TestProviders>
         <PlatformOperationsPage onNavigate={onNavigate} />
-      </AppProviders>
+      </TestProviders>
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Revenue completeness" }));

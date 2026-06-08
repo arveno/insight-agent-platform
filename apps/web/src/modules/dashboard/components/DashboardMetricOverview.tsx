@@ -1,13 +1,13 @@
-import { Space, Typography } from "antd";
+import { Flex, Space, Typography } from "antd";
 
-import { AppActionGroup } from "../../../shared/ui/actions/AppActionGroup";
-import { MetricCard } from "../../../shared/ui/cards/MetricCard";
+import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { createRouteAction } from "../../../app/router/createRouteAction";
+import { createRouteAction } from "../../../shared/navigation/createRouteAction";
+import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { toRiskBadge } from "../../../shared/utils/viewModelState";
-import type { DashboardMetricCardProps } from "./dashboardComponentTypes";
+import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 
-export function DashboardMetricOverview({ metric, onNavigate }: DashboardMetricCardProps) {
+export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCardProps) {
   const { t } = useI18n();
   const risk = toRiskBadge(t, metric.risk);
   const displayRisk = risk?.reason
@@ -41,9 +41,15 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardMetricC
   ];
 
   return (
-    <MetricCard
+    <StatCard
       description={<Typography.Text type="secondary">{description}</Typography.Text>}
-      footerActions={<AppActionGroup actions={metricActions} />}
+      footerActions={
+        <Flex gap={12} wrap>
+          {metricActions.map((action) => (
+            <NavigationActionButton action={action} key={action.key} />
+          ))}
+        </Flex>
+      }
       meta={
         <Space wrap>
           <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
@@ -55,6 +61,7 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardMetricC
         </Space>
       }
       risk={displayRisk}
+      style={{ flex: "1 1 320px", minWidth: 0 }}
       title={metric.label}
       value={metric.valueText}
     />

@@ -1,4 +1,4 @@
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
 import type { RelationshipGraphEdgeViewModel, RelationshipGraphNodeKind, RelationshipGraphNodeViewModel, RelationshipGraphViewModel } from "../../../shared/graph/models";
 import type { DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeRelationshipNodeFactViewModel, DataKnowledgeRelationshipNodeKind, DataKnowledgeRelationshipNodeViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel } from "../models/dataKnowledgeViewModel";
 

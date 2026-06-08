@@ -1,4 +1,4 @@
-import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../shared/view-model/staticViewModelTypes";
 
 export type WorkspaceViewModel = StaticPageViewModelBase & {
   businessDomains: StaticSummaryItemViewModel[];

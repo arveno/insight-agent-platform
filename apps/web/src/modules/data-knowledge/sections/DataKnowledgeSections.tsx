@@ -1,14 +1,14 @@
 import { Space, Typography } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
-import { AppSection } from "../../../shared/layout/sections/AppSection";
-import { AppSectionStack } from "../../../shared/layout/sections/AppSectionStack";
+import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { WebPageProps } from "../../../app/router/pageProps";
+import type { WebPageProps } from "../../../shared/navigation/navigationTypes";
 
 import { AssetRelationshipGraph } from "./AssetRelationshipGraph";
 import type { DataKnowledgeOverviewController } from "../hooks/useDataKnowledgeOverviewState";
@@ -76,7 +76,7 @@ function SelectedAssetHeader({
       : t("page.dataKnowledge.selectedAsset.knowledgeDocumentLineage");
 
   return (
-    <AppBaseCard
+    <ContentCard
       description={selectedAsset.summary}
       tagSlot={buildTagSlot(t, selectedAsset)}
       title={selectedAsset.title}
@@ -87,7 +87,7 @@ function SelectedAssetHeader({
         </Typography.Text>
         <Typography.Text type="secondary">{lineageDescription}</Typography.Text>
       </Space>
-    </AppBaseCard>
+    </ContentCard>
   );
 }
 
@@ -99,7 +99,7 @@ function SelectedNodeDetailCard({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
-    <AppBaseCard
+    <ContentCard
       description={selectedNode.summary}
       tagSlot={buildTagSlot(t, selectedNode)}
       title={selectedNode.title}
@@ -110,7 +110,7 @@ function SelectedNodeDetailCard({
         </Typography.Text>
         {renderFactRows(selectedNode.facts)}
       </Space>
-    </AppBaseCard>
+    </ContentCard>
   );
 }
 
@@ -123,34 +123,33 @@ export function DataKnowledgeSections({ controller }: DataKnowledgeSectionsProps
       : t("page.dataKnowledge.relationship.knowledgeDocumentTitle");
 
   return (
-    <AppSectionStack>
-      <AppSection
+    <SectionStack>
+      <ContentSection
         eyebrow={t("page.dataKnowledge.section.selectedAsset.eyebrow")}
         title={t("page.dataKnowledge.section.selectedAsset.title")}
       >
         <SelectedAssetHeader selectedAsset={selectedAsset} t={t} />
-      </AppSection>
+      </ContentSection>
 
-      <AppSection
+      <ContentSection
         eyebrow={t("page.dataKnowledge.section.relationship.eyebrow")}
         title={t("page.dataKnowledge.section.relationship.title")}
-        useGrid={false}
       >
-        <AppBaseCard description={relationshipGraph.description} title={relationshipTitle}>
+        <ContentCard description={relationshipGraph.description} title={relationshipTitle}>
           <AssetRelationshipGraph
             graph={relationshipGraph}
             onSelectNode={controller.onSelectNode}
             selectedNodeId={controller.selectedNodeId}
           />
-        </AppBaseCard>
-      </AppSection>
+        </ContentCard>
+      </ContentSection>
 
-      <AppSection
+      <ContentSection
         eyebrow={t("page.dataKnowledge.section.nodeDetail.eyebrow")}
         title={t("page.dataKnowledge.section.nodeDetail.title")}
       >
         <SelectedNodeDetailCard selectedNode={controller.selectedNode} t={t} />
-      </AppSection>
-    </AppSectionStack>
+      </ContentSection>
+    </SectionStack>
   );
 }

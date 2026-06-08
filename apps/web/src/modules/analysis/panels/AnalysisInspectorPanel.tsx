@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Space, Typography } from "antd";
 
-import { TraceTimeline } from "../../observability/TraceTimeline";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { AppBaseCard } from "../../../shared/ui/cards/AppBaseCard";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { EventTimeline } from "../../../shared/ui/lists/EventTimeline";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import { RightAssistPanel } from "../../../app/shell/RightAssistPanel";
+import { SidePanel } from "../../../shared/layout/panels/SidePanel";
 import type { AnalysisConversationController } from "../hooks/useAnalysisConversationState";
 import { RunTraceDetailDrawer } from "../components/RunTraceDetailDrawer";
 
@@ -46,14 +46,14 @@ export function AnalysisInspectorPanel({
   ];
 
   return (
-    <RightAssistPanel title="Run Trace">
+    <SidePanel title="Run Trace">
       <Space
         aria-label="Analysis inspector"
         direction="vertical"
         size={16}
         style={{ width: "100%" }}
       >
-        <AppBaseCard
+        <ContentCard
           description={runTrace.stageSummary}
           eyebrow={`runId: ${runTrace.runId}`}
           meta={
@@ -87,9 +87,9 @@ export function AnalysisInspectorPanel({
               </Space>
             ))}
           </div>
-        </AppBaseCard>
+        </ContentCard>
 
-        <TraceTimeline
+        <EventTimeline
           items={runTrace.events.map((event) => ({
             ariaLabel: `查看 Trace 事件详情：${event.title}`,
             description: event.summary,
@@ -112,6 +112,6 @@ export function AnalysisInspectorPanel({
           open={drawerOpen}
         />
       </Space>
-    </RightAssistPanel>
+    </SidePanel>
   );
 }

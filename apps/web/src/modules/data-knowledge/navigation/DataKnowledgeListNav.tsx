@@ -1,5 +1,5 @@
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { GroupedObjectListNav } from "../../../app/shell/GroupedObjectListNav";
+import { GroupedSelectableList } from "../../../shared/ui/lists/GroupedSelectableList";
 import type { DataKnowledgeOverviewController } from "../hooks/useDataKnowledgeOverviewState";
 
 export type DataKnowledgeListNavProps = {
@@ -36,7 +36,7 @@ export function DataKnowledgeListNav({
   ];
 
   return (
-    <GroupedObjectListNav
+    <GroupedSelectableList
       ariaLabel="Data & Knowledge navigation"
       emptyText={t("page.dataKnowledge.nav.empty")}
       groups={groupedItems}

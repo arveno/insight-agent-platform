@@ -1,5 +1,5 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../app/shell/fixtures/staticStateFixtures";
-import type { StaticRiskViewModel, StaticSectionViewModel, StaticStatusViewModel } from "../../../app/shell/models/staticViewModelTypes";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../shared/view-model/staticStateFixtures";
+import type { StaticRiskViewModel, StaticSectionViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
 import type { AnalysisRunTraceViewModel, AnalysisViewModel } from "../models/analysisViewModel";
 
 const successStatus: StaticStatusViewModel = {

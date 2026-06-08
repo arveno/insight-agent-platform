@@ -1,4 +1,4 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../app/shell/fixtures/staticStateFixtures";
+import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../shared/view-model/staticStateFixtures";
 import type { PlatformOperationDetailViewModel, PlatformOperationListItemViewModel, PlatformOperationsViewModel, PlatformOperationsWorkspaceBinding } from "../models/platformOperationsViewModel";
 
 const lowRisk = {
