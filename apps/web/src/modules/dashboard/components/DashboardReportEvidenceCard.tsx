@@ -1,24 +1,57 @@
 import { Flex, Space, Typography } from "antd";
 
+import type { I18nMessageKey } from "../../../shared/i18n/messages";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { translateKey, type Translate } from "../../../shared/i18n/translateKey";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 
-import { mapDashboardEvidenceItem } from "../mappers/mapDashboardEvidenceItem";
 import type { DashboardReportEvidenceCardProps } from "./dashboardComponentTypes";
 
-export function DashboardReportEvidenceCard({
-  item,
-  onNavigate
-}: DashboardReportEvidenceCardProps) {
+const sourceTypeKeyByLabel: Record<string, I18nMessageKey> = {
+  "DataQualityCheck / Job": "evidence.sourceType.dataQualityJob",
+  "Metric / Report": "evidence.sourceType.metricReport"
+};
+
+const confidenceKeyByText: Record<string, I18nMessageKey> = {
+  High: "evidence.confidence.high",
+  Medium: "evidence.confidence.medium"
+};
+
+const summaryKeyByEvidenceKey: Record<string, I18nMessageKey> = {
+  "metric-revenue-evidence": "evidence.summary.metricRevenue",
+  "quality-job-evidence": "evidence.summary.qualityJob"
+};
+
+const titleKeyByEvidenceKey: Record<string, I18nMessageKey> = {
+  "metric-revenue-evidence": "evidence.title.metricRevenue",
+  "quality-job-evidence": "evidence.title.qualityJob"
+};
+
+function translateMappedText(
+  t: Translate,
+  value: string | undefined,
+  keyMap: Record<string, I18nMessageKey>
+) {
+  if (!value) {
+    return undefined;
+  }
+
+  const key = keyMap[value];
+
+  return key ? translateKey(t, key) : value;
+}
+
+export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardProps) {
+  const { onNavigate } = props;
   const { t } = useI18n();
 
-  if (item.kind === "report") {
+  if (props.kind === "report") {
     const reportActions = [
       createRouteAction({
         iconName: "reports",
-        key: `${item.report.key}-view-report`,
+        key: `${props.report.key}-view-report`,
         label: t("dashboard.action.viewReports"),
         onNavigate,
         route: "reports",
@@ -26,7 +59,7 @@ export function DashboardReportEvidenceCard({
       }),
       createRouteAction({
         iconName: "analysis",
-        key: `${item.report.key}-suggestions`,
+        key: `${props.report.key}-suggestions`,
         label: t("dashboard.action.viewSuggestions"),
         onNavigate,
         route: "analysis",
@@ -34,7 +67,7 @@ export function DashboardReportEvidenceCard({
       }),
       createRouteAction({
         iconName: "analysis",
-        key: `${item.report.key}-context-analysis`,
+        key: `${props.report.key}-context-analysis`,
         label: t("dashboard.action.analyzeWithContext"),
         onNavigate,
         route: "analysis",
@@ -57,23 +90,36 @@ export function DashboardReportEvidenceCard({
           <Space wrap>
             <Typography.Text type="secondary">
               {t("dashboard.common.updatedAtPrefix")}
-              {item.report.updatedAt}
+              {props.report.updatedAt}
             </Typography.Text>
             <Typography.Text type="secondary">
-              {item.report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
+              {props.report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
             </Typography.Text>
           </Space>
         }
-        title={item.report.title}
+        title={props.report.title}
       />
     );
   }
 
-  const evidence = mapDashboardEvidenceItem(t, item.evidence);
+  const evidenceTitleKey = titleKeyByEvidenceKey[props.evidence.key];
+  const evidenceSummaryKey = summaryKeyByEvidenceKey[props.evidence.key];
+  const evidenceTitle = evidenceTitleKey ? translateKey(t, evidenceTitleKey) : props.evidence.title;
+  const evidenceSummary = evidenceSummaryKey
+    ? translateKey(t, evidenceSummaryKey)
+    : props.evidence.summary;
+  const evidenceSourceTypeLabel =
+    translateMappedText(t, props.evidence.sourceType, sourceTypeKeyByLabel) ??
+    props.evidence.sourceType;
+  const evidenceConfidenceText = translateMappedText(
+    t,
+    props.evidence.confidenceText,
+    confidenceKeyByText
+  );
   const evidenceActions = [
     createRouteAction({
       iconName: "evidence",
-      key: `${evidence.key}-view-evidence`,
+      key: `${props.evidence.key}-view-evidence`,
       label: t("dashboard.action.viewEvidence"),
       onNavigate,
       route: "reports",
@@ -81,7 +127,7 @@ export function DashboardReportEvidenceCard({
     }),
     createRouteAction({
       iconName: "data",
-      key: `${evidence.key}-source`,
+      key: `${props.evidence.key}-source`,
       label: t("dashboard.action.viewDataKnowledge"),
       onNavigate,
       route: "data-knowledge",
@@ -89,7 +135,7 @@ export function DashboardReportEvidenceCard({
     }),
     createRouteAction({
       iconName: "trace",
-      key: `${evidence.key}-trace`,
+      key: `${props.evidence.key}-trace`,
       label: t("dashboard.action.viewTrace"),
       onNavigate,
       route: "observability",
@@ -99,7 +145,7 @@ export function DashboardReportEvidenceCard({
 
   return (
     <ContentCard
-      description={evidence.summary}
+      description={evidenceSummary}
       eyebrow={t("dashboard.reportEvidence.evidenceEyebrow")}
       footerActions={
         <Flex gap={12} wrap>
@@ -110,13 +156,13 @@ export function DashboardReportEvidenceCard({
       }
       meta={
         <Space wrap>
-          <Typography.Text type="secondary">{evidence.sourceTypeLabel}</Typography.Text>
-          {evidence.confidenceText ? (
-            <Typography.Text type="secondary">{evidence.confidenceText}</Typography.Text>
+          <Typography.Text type="secondary">{evidenceSourceTypeLabel}</Typography.Text>
+          {evidenceConfidenceText ? (
+            <Typography.Text type="secondary">{evidenceConfidenceText}</Typography.Text>
           ) : null}
         </Space>
       }
-      title={evidence.title}
+      title={evidenceTitle}
     />
   );
 }

@@ -87,6 +87,9 @@ const forbiddenFrontendPaths = [
   "apps/web/src/shared/ui/data/SummaryTable.tsx",
   "apps/web/src/shared/ui/data/SummaryCardGrid.tsx",
   "apps/web/src/modules/dashboard/components/DashboardReportEvidencePanel.tsx",
+  "apps/web/src/modules/dashboard/mappers/mapDashboardEvidenceItem.ts",
+  "apps/web/src/modules/dashboard/mappers/createDashboardReportEvidenceCards.tsx",
+  "apps/web/src/modules/dashboard/mappers/createDashboardReportEvidenceCards.test.ts",
   "apps/web/src/shared/layout/sections/AppSection.tsx",
   "apps/web/src/shared/layout/sections/AppSectionStack.tsx",
   "apps/web/src/shared/layout/sections/WebSection.tsx",
@@ -496,6 +499,14 @@ const frontendStructureContentViolations = collectContentViolations("apps/web/sr
     message: "DashboardReportEvidencePanelProps 不得回流"
   },
   {
+    pattern: /\bDashboardReportEvidenceCardItem\b/,
+    message: "DashboardReportEvidenceCardItem 中间 DTO 不得回流"
+  },
+  {
+    pattern: /item:\s*DashboardReportEvidenceCardItem/,
+    message: "DashboardReportEvidenceCardProps 不得再接收 item: DashboardReportEvidenceCardItem"
+  },
+  {
     pattern: /panel:\s*"evidence"\s*\|\s*"reports"|panel:\s*"reports"\s*\|\s*"evidence"/,
     message: "Dashboard 不得保留 reports / evidence panel 分支 props"
   },
@@ -534,32 +545,6 @@ const contentSectionLayoutViolations = collectFilePathContentViolations(
     }
   ]
 );
-const dashboardReportEvidenceMapperViolations = collectFilePathContentViolations(
-  "apps/web/src/modules/dashboard/mappers/createDashboardReportEvidenceCards.tsx",
-  [
-    {
-      pattern: /\bfrom\s+["']antd["']/,
-      message: "createDashboardReportEvidenceCards 不得依赖 antd"
-    },
-    {
-      pattern: /\bcreateRouteAction\b/,
-      message: "createDashboardReportEvidenceCards 不得创建 route actions；只允许展平 report/evidence item"
-    },
-    {
-      pattern: /\bNavigationAction\b/,
-      message: "createDashboardReportEvidenceCards 不得承载 NavigationAction 类型"
-    },
-    {
-      pattern: /\bReactNode\b/,
-      message: "createDashboardReportEvidenceCards 不得承载 ReactNode 或预组 JSX slot"
-    },
-    {
-      pattern: /<[A-Za-z]/,
-      message: "createDashboardReportEvidenceCards 不得返回 JSX；业务卡片应在组件内部组合 shared card pattern"
-    }
-  ]
-);
-
 if (missingPaths.length > 0) {
   fail("Missing required project structure:", missingPaths);
 }
@@ -687,13 +672,6 @@ if (dashboardSectionLayoutViolations.length > 0) {
 
 if (contentSectionLayoutViolations.length > 0) {
   fail("ContentSection 检测到已禁止的布局实现：", contentSectionLayoutViolations);
-}
-
-if (dashboardReportEvidenceMapperViolations.length > 0) {
-  fail(
-    "createDashboardReportEvidenceCards 检测到越界职责实现：",
-    dashboardReportEvidenceMapperViolations
-  );
 }
 
 console.log("Structure guard passed.");

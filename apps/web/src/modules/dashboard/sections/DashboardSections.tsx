@@ -9,7 +9,6 @@ import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
-import { createDashboardReportEvidenceCards } from "../mappers/createDashboardReportEvidenceCards";
 import type { DashboardViewModel } from "../models/dashboardViewModel";
 
 export type DashboardSectionsProps = PageRouteProps & {
@@ -63,10 +62,6 @@ export function DashboardSections({
     ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
     ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
   ];
-  const reportEvidenceItems = createDashboardReportEvidenceCards({
-    evidenceEntrances: viewModel.evidenceEntrances,
-    recentReports: viewModel.recentReports
-  });
 
   return (
     <SectionStack>
@@ -114,8 +109,21 @@ export function DashboardSections({
         extra={<NavigationActionButton action={openReportsAction} />}
         title={t("dashboard.reportEvidence.title")}
       >
-        {reportEvidenceItems.map((item) => (
-          <DashboardReportEvidenceCard item={item} key={item.key} onNavigate={onNavigate} />
+        {viewModel.recentReports.map((report) => (
+          <DashboardReportEvidenceCard
+            key={report.key}
+            kind="report"
+            onNavigate={onNavigate}
+            report={report}
+          />
+        ))}
+        {viewModel.evidenceEntrances.map((evidence) => (
+          <DashboardReportEvidenceCard
+            evidence={evidence}
+            key={evidence.key}
+            kind="evidence"
+            onNavigate={onNavigate}
+          />
         ))}
       </ContentSection>
 

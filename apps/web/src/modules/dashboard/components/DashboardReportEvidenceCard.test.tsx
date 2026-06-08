@@ -14,12 +14,9 @@ describe("DashboardReportEvidenceCard", () => {
     render(
       <TestProviders>
         <DashboardReportEvidenceCard
-          item={{
-            key: "weekly-business-report",
-            kind: "report",
-            report: dashboardStaticViewModel.recentReports[0]
-          }}
+          kind="report"
           onNavigate={onNavigate}
+          report={dashboardStaticViewModel.recentReports[0]}
         />
       </TestProviders>
     );
@@ -40,11 +37,8 @@ describe("DashboardReportEvidenceCard", () => {
     render(
       <TestProviders>
         <DashboardReportEvidenceCard
-          item={{
-            evidence: dashboardStaticViewModel.evidenceEntrances[0],
-            key: "metric-revenue-evidence",
-            kind: "evidence"
-          }}
+          evidence={dashboardStaticViewModel.evidenceEntrances[0]}
+          kind="evidence"
           onNavigate={onNavigate}
         />
       </TestProviders>

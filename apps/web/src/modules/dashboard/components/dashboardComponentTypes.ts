@@ -22,21 +22,15 @@ export type DashboardRiskCardProps = Pick<DashboardComponentProps, "onNavigate">
   item: DashboardViewModel["anomalyCards"][number];
 };
 
-export type DashboardReportEvidenceCardItem =
-  | {
-      key: string;
+export type DashboardReportEvidenceCardProps =
+  | (Pick<DashboardComponentProps, "onNavigate"> & {
       kind: "report";
       report: DashboardViewModel["recentReports"][number];
-    }
-  | {
+    })
+  | (Pick<DashboardComponentProps, "onNavigate"> & {
       evidence: DashboardViewModel["evidenceEntrances"][number];
-      key: string;
       kind: "evidence";
-    };
-
-export type DashboardReportEvidenceCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
-  item: DashboardReportEvidenceCardItem;
-};
+    });
 
 export type DashboardQualityCardProps = Pick<DashboardComponentProps, "onNavigate"> & {
   item: DashboardViewModel["platformQualitySummary"][number];

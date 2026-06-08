@@ -190,6 +190,8 @@ AppShell
 - 业务模块需要特殊卡片时，只在 module 内轻封单张卡片，不额外创建 `Panel / Grid / ActionGroup / HeaderActionGroup / SectionActionGroup` 分组层。
 - module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
 - 业务 mapper 默认只负责整理业务 item，不应预先生成 JSX、`NavigationAction` 或 `ContentCard` slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。
+- 同一 module 内的简单卡片列表，不要为了统一渲染再创建中间 `CardItem / DTO`；业务卡片应直接接收业务 item，并在组件内部完成展示字段、meta 和 actions 组合。
+- 同一业务卡片私有使用的文案映射或显示 helper，应内聚在该组件文件内部；没有跨组件复用或明确 ViewModel 边界时，不额外创建独立 mapper。
 
 ### Card Primitive
 
