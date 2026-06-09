@@ -729,6 +729,23 @@ const appShellModuleSlotViolations = collectFilePathContentViolations(
         /\bfrom\s+["'][^"']*(AnalysisSections|AnalysisInspectorPanel|AnalysisSessionNav|AnalysisWorkspace|RunTraceDetailDrawer|useAnalysisConversationState|useAnalysisWorkspaceSlots|ReportsListNav|ReportsInspectorPanel|DataKnowledgeListNav|DataKnowledgeInspectorPanel|MetricsListNav|useReportsReaderState|useDataKnowledgeOverviewState|useMetricsOverviewState|usePlatformOperationsOverviewState|AppShellInspector)["']/,
       message:
         "AppShell 不得直接依赖模块低层 ListNav / InspectorPanel / controller；只能消费 module 暴露的 shell slots"
+    },
+    {
+      pattern:
+        /\b(useAnalysisShellSlots|useReportsShellSlots|useDataKnowledgeShellSlots|useMetricsShellSlots|useReportsReaderState|useDataKnowledgeOverviewState|useMetricsOverviewState|usePlatformOperationsOverviewState)\s*\(/,
+      message:
+        "AppShell 不得直接调用 module shell hooks 或 module state hooks；active route shell hook 必须在 RouteShellOutlet 子组件中按需挂载"
+    }
+  ]
+);
+const routeShellOutletImportViolations = collectFilePathContentViolations(
+  "apps/web/src/app/shell/RouteShellOutlet.tsx",
+  [
+    {
+      pattern:
+        /\bfrom\s+["'][^"']*(ReportsListNav|DataKnowledgeListNav|MetricsListNav|AnalysisSessionNav|ReportsInspectorPanel|DataKnowledgeInspectorPanel|AnalysisInspectorPanel|AnalysisWorkspace)["']/,
+      message:
+        "RouteShellOutlet 只能消费 module shell hooks；不得直接依赖模块低层 nav / inspector / workspace 组件"
     }
   ]
 );
@@ -787,6 +804,36 @@ const analysisShellSlotNamingViolations = collectScopedFileContentViolations(
     {
       pattern: /\buseAnalysisWorkspaceSlots\b/,
       message: "Analysis shell slots 命名已统一为 useAnalysisShellSlots；不得保留旧名"
+    }
+  ]
+);
+const reportsPageControllerSlotViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/reports/Page.tsx",
+  [
+    {
+      pattern: /\breportsState\b|\bfallbackReportsState\b|\?\?\s*fallback/,
+      message:
+        "ReportsPage 不得保留 optional controller prop + fallback controller 双轨；shell hook 只能渲染 ReportsPageContent"
+    }
+  ]
+);
+const dataKnowledgePageControllerSlotViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/data-knowledge/Page.tsx",
+  [
+    {
+      pattern: /\bdataKnowledgeState\b|\bfallbackDataKnowledgeState\b|\?\?\s*fallback/,
+      message:
+        "DataKnowledgePage 不得保留 optional controller prop + fallback controller 双轨；shell hook 只能渲染 DataKnowledgePageContent"
+    }
+  ]
+);
+const metricsPageControllerSlotViolations = collectFilePathContentViolations(
+  "apps/web/src/modules/metrics/Page.tsx",
+  [
+    {
+      pattern: /\bmetricsState\b|\bfallbackMetricsState\b|\?\?\s*fallback/,
+      message:
+        "MetricsPage 不得保留 optional controller prop + fallback controller 双轨；shell hook 只能渲染 MetricsPageContent"
     }
   ]
 );
@@ -1039,6 +1086,10 @@ if (appShellModuleSlotViolations.length > 0) {
   fail("AppShell 检测到越界依赖模块低层组件：", appShellModuleSlotViolations);
 }
 
+if (routeShellOutletImportViolations.length > 0) {
+  fail("RouteShellOutlet 检测到越界依赖模块低层组件：", routeShellOutletImportViolations);
+}
+
 if (appShellFallbackInspectorPathViolations.length > 0) {
   fail("AppShell fallback inspector 已删除，不允许文件回流：", appShellFallbackInspectorPathViolations);
 }
@@ -1067,6 +1118,21 @@ if (sharedNavigationModuleStateSlotViolations.length > 0) {
 
 if (analysisShellSlotNamingViolations.length > 0) {
   fail("Analysis 检测到已禁止的旧 shell slots 命名：", analysisShellSlotNamingViolations);
+}
+
+if (reportsPageControllerSlotViolations.length > 0) {
+  fail("ReportsPage 检测到已禁止的 controller 双轨：", reportsPageControllerSlotViolations);
+}
+
+if (dataKnowledgePageControllerSlotViolations.length > 0) {
+  fail(
+    "DataKnowledgePage 检测到已禁止的 controller 双轨：",
+    dataKnowledgePageControllerSlotViolations
+  );
+}
+
+if (metricsPageControllerSlotViolations.length > 0) {
+  fail("MetricsPage 检测到已禁止的 controller 双轨：", metricsPageControllerSlotViolations);
 }
 
 if (analysisSectionHardcodedMessageViolations.length > 0) {

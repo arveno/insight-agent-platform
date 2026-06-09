@@ -7,14 +7,20 @@ import {
 } from "./hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeSections } from "./sections/DataKnowledgeSections";
 
-export type DataKnowledgePageProps = PageRouteProps & {
-  dataKnowledgeState?: DataKnowledgeOverviewController;
+export type DataKnowledgePageContentProps = PageRouteProps & {
+  controller: DataKnowledgeOverviewController;
 };
 
-export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: DataKnowledgePageProps) {
-  const fallbackDataKnowledgeState = useDataKnowledgeOverviewState();
-  const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
+export function DataKnowledgePage({ onNavigate }: PageRouteProps) {
+  const controller = useDataKnowledgeOverviewState();
 
+  return <DataKnowledgePageContent controller={controller} onNavigate={onNavigate} />;
+}
+
+export function DataKnowledgePageContent({
+  controller,
+  onNavigate
+}: DataKnowledgePageContentProps) {
   return (
     <ResponsivePageShell>
       <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />

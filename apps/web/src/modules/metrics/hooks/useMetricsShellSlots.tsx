@@ -1,6 +1,6 @@
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
-import { MetricsPage } from "../Page";
+import { MetricsPageContent } from "../Page";
 import { defaultMetricsWorkspaceBinding } from "../fixtures/metricsStaticViewModel";
 import { MetricsListNav } from "../navigation/MetricsListNav";
 
@@ -26,6 +26,6 @@ export function useMetricsShellSlots({
 
   return {
     leftNav: <MetricsListNav controller={controller} onBack={onBackToRoot} />,
-    mainContent: <MetricsPage metricsState={controller} onNavigate={onNavigate} />
+    mainContent: <MetricsPageContent controller={controller} onNavigate={onNavigate} />
   };
 }

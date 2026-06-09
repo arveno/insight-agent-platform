@@ -165,10 +165,13 @@ External Raw Data
 - 业务模块自己的 `nav / inspector / drawer / panel / section / components` 必须放在 `modules/<domain>`，不得继续混入 `app/shell`。
 - `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 是全局 workspace header，模块不得接管。
 - 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots，不直接 import 模块低层 `ListNav / InspectorPanel / controller`。
+- `AppShell` 不直接调用 module shell hooks；active route shell hook 必须通过 `RouteShellOutlet` 这类子组件按需挂载。
+- `AppShell` 不持有 module controller 生命周期。
 - `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不允许默认 `AppShellInspector` fallback 回流。
 - `LeftNav` 只展示 root navigation，不硬编码哪些 route 有二级模块导航。
 - `shared/navigation` 只允许 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`，不得 import `app/router` 或 `modules/*`。
 - `shared/navigation` 中的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 page composition state slot 都必须留在 `app/router` 或对应 module page props。
+- 有 shell slots 的页面需要拆分为自管理 `Page` 和受控 `PageContent`；shell hook 只能渲染 `PageContent`，不得再保留 optional controller prop + fallback controller 双轨。
 - `shared/layout` 只允许无业务语义布局 / 页面结构 primitive，例如 `ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`。
 - `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，不保留自动 header 链路。
 - 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。

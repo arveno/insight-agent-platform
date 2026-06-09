@@ -7,14 +7,17 @@ import {
 } from "./hooks/useMetricsOverviewState";
 import { MetricsSections } from "./sections/MetricsSections";
 
-export type MetricsPageProps = PageRouteProps & {
-  metricsState?: MetricsOverviewController;
+export type MetricsPageContentProps = PageRouteProps & {
+  controller: MetricsOverviewController;
 };
 
-export function MetricsPage({ metricsState, onNavigate }: MetricsPageProps) {
-  const fallbackMetricsState = useMetricsOverviewState();
-  const controller = metricsState ?? fallbackMetricsState;
+export function MetricsPage({ onNavigate }: PageRouteProps) {
+  const controller = useMetricsOverviewState();
 
+  return <MetricsPageContent controller={controller} onNavigate={onNavigate} />;
+}
+
+export function MetricsPageContent({ controller, onNavigate }: MetricsPageContentProps) {
   return (
     <ResponsivePageShell>
       <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />

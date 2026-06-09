@@ -156,8 +156,11 @@ AppShell
 
 - `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 保持全局 workspace header。
 - 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots。
+- `AppShell` 不直接调用 module shell hooks；active route shell hook 必须通过 `RouteShellOutlet` 这类子组件按需挂载。
+- `AppShell` 不持有 module controller 生命周期。
 - `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不保留默认 fallback inspector。
 - `LeftNav` 只展示 root navigation；是否存在二级模块导航由 `AppShell` 消费 slots 决定，不在 `LeftNav` 内硬编码。
+- 有 shell slots 的页面需要拆分为自管理 `Page` 和受控 `PageContent`；shell hook 只能渲染 `PageContent`，不得再保留 optional controller prop + fallback controller 双轨。
 
 规则：
 

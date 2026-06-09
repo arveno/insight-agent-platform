@@ -1,6 +1,6 @@
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
-import { DataKnowledgePage } from "../Page";
+import { DataKnowledgePageContent } from "../Page";
 import { defaultDataKnowledgeWorkspaceBinding } from "../fixtures/dataKnowledgeStaticViewModel";
 import { DataKnowledgeListNav } from "../navigation/DataKnowledgeListNav";
 import { DataKnowledgeInspectorPanel } from "../panels/DataKnowledgeInspectorPanel";
@@ -27,7 +27,7 @@ export function useDataKnowledgeShellSlots({
 
   return {
     leftNav: <DataKnowledgeListNav controller={controller} onBack={onBackToRoot} />,
-    mainContent: <DataKnowledgePage dataKnowledgeState={controller} onNavigate={onNavigate} />,
+    mainContent: <DataKnowledgePageContent controller={controller} onNavigate={onNavigate} />,
     rightAssistPanel: (
       <DataKnowledgeInspectorPanel controller={controller} onNavigate={onNavigate} />
     )

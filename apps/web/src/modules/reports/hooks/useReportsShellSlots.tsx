@@ -1,6 +1,6 @@
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
-import { ReportsPage } from "../Page";
+import { ReportsPageContent } from "../Page";
 import { ReportsListNav } from "../navigation/ReportsListNav";
 
 import { useReportsReaderState } from "./useReportsReaderState";
@@ -18,6 +18,6 @@ export function useReportsShellSlots({
 
   return {
     leftNav: <ReportsListNav controller={controller} onBack={onBackToRoot} />,
-    mainContent: <ReportsPage onNavigate={onNavigate} reportsState={controller} />
+    mainContent: <ReportsPageContent controller={controller} onNavigate={onNavigate} />
   };
 }
