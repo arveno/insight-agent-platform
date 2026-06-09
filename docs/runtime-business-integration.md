@@ -140,7 +140,7 @@ GET /analysis-runs/{runId}/conversation
 按需要写入本轮 user Message
 ```
 
-### 4.3 Run-bound reads
+### 4.3 Run-bound endpoints
 
 以下查询都应从 `modules/analysis_runs` 落地：
 
@@ -153,8 +153,8 @@ GET /analysis-runs/{runId}/source-evidence
 GET /analysis-runs/{runId}/reports
 GET /analysis-runs/{runId}/execution-attempts
 GET /analysis-runs/{runId}/approvals
-GET /analysis-runs/{runId}/cancel
-GET /analysis-runs/{runId}/retry
+POST /analysis-runs/{runId}/cancel
+POST /analysis-runs/{runId}/retry
 POST /analysis-runs/{runId}/approvals/{approvalId}/decision
 ```
 
