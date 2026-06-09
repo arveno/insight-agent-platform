@@ -345,8 +345,12 @@ UI 不得直接消费 raw API response。
 
 - `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
 - `app/router` 只负责 route key 到 Page 的映射和路由表装配，不承接 shared action primitive。
-- `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
+- `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
 - `Analysis` 属于 `modules/analysis` 自管的会话工作区例外；`AppShell` 只承接其 workspace 入口或 slots adapter，不直接 import `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / controller`。
+- `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 是全局 workspace header，模块不得接管。
+- 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots，不直接 import 模块低层 `ListNav / InspectorPanel / controller`。
+- `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不允许默认 fallback inspector 回流。
+- `LeftNav` 只展示 root navigation，不硬编码哪些 route 有二级模块导航。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
 - `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。

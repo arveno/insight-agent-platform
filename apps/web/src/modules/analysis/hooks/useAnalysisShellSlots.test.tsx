@@ -3,7 +3,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../../shared/test/TestProviders";
 
-import { useAnalysisWorkspaceSlots } from "./useAnalysisWorkspaceSlots";
+import { useAnalysisShellSlots } from "./useAnalysisShellSlots";
 
 afterEach(cleanup);
 
@@ -30,8 +30,8 @@ beforeAll(() => {
   });
 });
 
-function AnalysisWorkspaceSlotHarness() {
-  const slots = useAnalysisWorkspaceSlots({
+function AnalysisShellSlotHarness() {
+  const slots = useAnalysisShellSlots({
     onBackToRoot: vi.fn(),
     onNavigate: vi.fn(),
     workspaceName: "Northstar Retail China"
@@ -46,11 +46,11 @@ function AnalysisWorkspaceSlotHarness() {
   );
 }
 
-describe("useAnalysisWorkspaceSlots", () => {
+describe("useAnalysisShellSlots", () => {
   it("exposes the module-owned Analysis session nav, workspace content, and inspector slots", () => {
     render(
       <TestProviders>
-        <AnalysisWorkspaceSlotHarness />
+        <AnalysisShellSlotHarness />
       </TestProviders>
     );
 

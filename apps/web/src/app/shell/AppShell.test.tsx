@@ -87,6 +87,8 @@ describe("AppShell", () => {
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /观测/ })).toBeTruthy();
     expect(within(navigation).queryByRole("button", { name: /工作区/ })).toBeNull();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
   });
 
   it("switches the static workspace selector and shows simulated refresh feedback", async () => {
@@ -104,7 +106,6 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: /East Retail Demo/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /当前工作区/ })).toBeNull();
     expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
-    expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
   });
 
   it("enters analysis session navigation mode and filters the static session list locally", () => {
@@ -258,8 +259,8 @@ describe("AppShell", () => {
     expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
     expect(screen.getAllByText("reportId: report-inventory-exception-tracking").length).toBeGreaterThan(0);
     expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(0);
-    expect(screen.getByText("evidence: 2")).toBeTruthy();
-    expect(screen.getByText("sections: 2")).toBeTruthy();
+    expect(screen.getByText("证据引用")).toBeTruthy();
+    expect(screen.getByText("决策建议")).toBeTruthy();
     expect(screen.queryByText("能力说明")).toBeNull();
     expect(screen.queryByText("技术对接")).toBeNull();
     expect(screen.queryByText("Run Trace")).toBeNull();

@@ -3,7 +3,6 @@ import type {
   StaticPageStateCoverageViewModel,
   StaticPermissionSummaryViewModel,
   StaticReadonlyStateViewModel,
-  StaticRightAssistSummaryViewModel,
   StaticRouteKey,
   StaticStatusViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
@@ -23,13 +22,6 @@ export type AppShellNavigationGroupViewModel = {
   kind: AppShellNavigationGroupKind;
   key: string;
   labelKey: string;
-};
-
-export type AppShellInspectorViewModel = {
-  capabilityNotes: string[];
-  integrationNotes: string[];
-  summary: string;
-  titleKey: string;
 };
 
 export type AppShellPreferenceViewModel = {
@@ -59,13 +51,11 @@ export type AppShellStaticViewModel = {
     status: "idle" | "success" | "warning" | "error";
   };
   headerActions: StaticActionViewModel[];
-  inspectorByRoute: Record<StaticRouteKey, AppShellInspectorViewModel>;
   localePreference: AppShellPreferenceViewModel;
   mobileNavigation: AppShellNavigationGroupViewModel[];
   navigationGroups: AppShellNavigationGroupViewModel[];
   permissionSummary: StaticPermissionSummaryViewModel;
   readonlyState: StaticReadonlyStateViewModel;
-  rightAssistPanel: StaticRightAssistSummaryViewModel;
   shellState: StaticPageStateCoverageViewModel;
   themePreference: AppShellPreferenceViewModel;
   workspace: {

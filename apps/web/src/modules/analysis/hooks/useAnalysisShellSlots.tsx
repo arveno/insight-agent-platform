@@ -1,28 +1,21 @@
-import type { ReactNode } from "react";
-
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
+import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import { AnalysisWorkspace } from "../components/AnalysisWorkspace";
 import { AnalysisSessionNav } from "../navigation/AnalysisSessionNav";
 import { AnalysisInspectorPanel } from "../panels/AnalysisInspectorPanel";
 
 import { useAnalysisWorkspaceController } from "./useAnalysisWorkspaceController";
 
-export type AnalysisWorkspaceSlots = {
-  leftNav: ReactNode;
-  mainContent: ReactNode;
-  rightAssistPanel: ReactNode;
-};
-
-export type UseAnalysisWorkspaceSlotsParams = {
+export type UseAnalysisShellSlotsParams = {
   onBackToRoot: () => void;
   onNavigate?: NavigateToRoute;
   workspaceName: string;
 };
 
-export function useAnalysisWorkspaceSlots({
+export function useAnalysisShellSlots({
   onBackToRoot,
   workspaceName
-}: UseAnalysisWorkspaceSlotsParams): AnalysisWorkspaceSlots {
+}: UseAnalysisShellSlotsParams): ShellRegionSlots {
   const controller = useAnalysisWorkspaceController();
 
   return {

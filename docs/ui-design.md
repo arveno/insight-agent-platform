@@ -98,7 +98,7 @@ Code
 - `Data & Knowledge` 的 LeftNav 二级列表承接当前 `Workspace` 的 grouped asset list，复用 grouped object list；分组固定为 `数据资产 Data` 和 `知识文档 Docs`。
 - `Data & Knowledge` 的分组标题不可选，不代表 route，不代表新的业务对象；列表项只负责选择当前资产，不承载字段、证据、质量摘要或动作按钮。
 - `Data & Knowledge` 一级入口需要和 `Analysis / Reports / Metrics` 等存在二级列表的入口保持一致的可进入提示。
-- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector`。
+- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav`。
 - `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / ReportsListNav / ReportsInspectorPanel / DataKnowledgeListNav / MetricsListNav` 这类模块专属 nav / inspector / drawer / panel 必须放回对应 `modules/<domain>`。
 
 建议结构：
@@ -147,12 +147,17 @@ AppShell
       └─ ModuleSections
          └─ SectionStack
             ├─ PageIntro (optional, page first block)
-            └─ ContentSection
-               └─ ContentSlotLayout
-                  └─ Ant Flex / Space / Row / Col
-                     └─ CardSurface / ContentCard / StatCard / 模块内业务组件
-                        └─ ActionButton / NavigationActionButton
+└─ ContentSection
+   └─ ContentSlotLayout
+      └─ Ant Flex / Space / Row / Col
+         └─ CardSurface / ContentCard / StatCard / 模块内业务组件
+            └─ ActionButton / NavigationActionButton
 ```
+
+- `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 保持全局 workspace header。
+- 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots。
+- `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不保留默认 fallback inspector。
+- `LeftNav` 只展示 root navigation；是否存在二级模块导航由 `AppShell` 消费 slots 决定，不在 `LeftNav` 内硬编码。
 
 规则：
 

@@ -721,14 +721,72 @@ const modulePageHeaderImportViolations = collectImportViolations("apps/web/src/m
     message: "modules 不得直接 import PageHeader；除 Analysis 外页面顶部介绍区应统一使用 PageIntro"
   }
 ]);
-const appShellAnalysisImportViolations = collectFilePathContentViolations(
+const appShellModuleSlotViolations = collectFilePathContentViolations(
   "apps/web/src/app/shell/AppShell.tsx",
   [
     {
       pattern:
-        /\bfrom\s+["'][^"']*(AnalysisSections|AnalysisInspectorPanel|AnalysisSessionNav|RunTraceDetailDrawer|useAnalysisConversationState)["']/,
+        /\bfrom\s+["'][^"']*(AnalysisSections|AnalysisInspectorPanel|AnalysisSessionNav|AnalysisWorkspace|RunTraceDetailDrawer|useAnalysisConversationState|useAnalysisWorkspaceSlots|ReportsListNav|ReportsInspectorPanel|DataKnowledgeListNav|DataKnowledgeInspectorPanel|MetricsListNav|useReportsReaderState|useDataKnowledgeOverviewState|useMetricsOverviewState|usePlatformOperationsOverviewState|AppShellInspector)["']/,
       message:
-        "AppShell 不得直接依赖低层 Analysis 组件或旧 controller；只能消费 module 暴露的 workspace 入口或 slots adapter"
+        "AppShell 不得直接依赖模块低层 ListNav / InspectorPanel / controller；只能消费 module 暴露的 shell slots"
+    }
+  ]
+);
+const appShellFallbackInspectorPathViolations = existsSync(
+  "apps/web/src/app/shell/AppShellInspector.tsx"
+)
+  ? ["apps/web/src/app/shell/AppShellInspector.tsx"]
+  : [];
+const appShellFallbackInspectorContentViolations = collectScopedFileContentViolations(
+  "apps/web/src/app",
+  (filePath) => !/\.test\.tsx?$/.test(filePath),
+  [
+    {
+      pattern: /\binspectorByRoute\b/,
+      message: "默认 fallback inspector 已删除；不得保留 inspectorByRoute 静态映射"
+    }
+  ]
+);
+const leftNavSecondaryRouteViolations = collectFilePathContentViolations(
+  "apps/web/src/app/shell/LeftNav.tsx",
+  [
+    {
+      pattern: /\bsecondaryListRoutes\b/,
+      message: "LeftNav 不得硬编码二级模块列表；是否存在 module leftNav 应由 AppShell 根据 slots 决定"
+    },
+    {
+      pattern: /["']analysis["']|["']reports["']|["']data-knowledge["']|["']metrics["']/,
+      message: "LeftNav 不得硬编码哪些 route 有二级模块导航"
+    }
+  ]
+);
+const routerModuleStateSlotViolations = collectScopedFileContentViolations(
+  "apps/web/src/app/router",
+  (filePath) => !/\.test\.tsx?$/.test(filePath),
+  [
+    {
+      pattern: /\b(dataKnowledgeState|metricsState|platformOperationsState|reportsState)\b/,
+      message: "router 不得承载 module composition state slots"
+    }
+  ]
+);
+const sharedNavigationModuleStateSlotViolations = collectScopedFileContentViolations(
+  "apps/web/src/shared/navigation",
+  (filePath) => !/\.test\.tsx?$/.test(filePath),
+  [
+    {
+      pattern: /\b(dataKnowledgeState|metricsState|platformOperationsState|reportsState)\b/,
+      message: "shared/navigation 不得承载 module composition state slots"
+    }
+  ]
+);
+const analysisShellSlotNamingViolations = collectScopedFileContentViolations(
+  "apps/web/src",
+  () => true,
+  [
+    {
+      pattern: /\buseAnalysisWorkspaceSlots\b/,
+      message: "Analysis shell slots 命名已统一为 useAnalysisShellSlots；不得保留旧名"
     }
   ]
 );
@@ -977,8 +1035,38 @@ if (modulePageHeaderImportViolations.length > 0) {
   fail("modules 检测到已禁止的 PageHeader 依赖：", modulePageHeaderImportViolations);
 }
 
-if (appShellAnalysisImportViolations.length > 0) {
-  fail("AppShell 检测到越界依赖 Analysis 低层组件：", appShellAnalysisImportViolations);
+if (appShellModuleSlotViolations.length > 0) {
+  fail("AppShell 检测到越界依赖模块低层组件：", appShellModuleSlotViolations);
+}
+
+if (appShellFallbackInspectorPathViolations.length > 0) {
+  fail("AppShell fallback inspector 已删除，不允许文件回流：", appShellFallbackInspectorPathViolations);
+}
+
+if (appShellFallbackInspectorContentViolations.length > 0) {
+  fail(
+    "AppShell 检测到已删除的 fallback inspector 静态映射：",
+    appShellFallbackInspectorContentViolations
+  );
+}
+
+if (leftNavSecondaryRouteViolations.length > 0) {
+  fail("LeftNav 检测到硬编码的二级模块导航路由：", leftNavSecondaryRouteViolations);
+}
+
+if (routerModuleStateSlotViolations.length > 0) {
+  fail("router 检测到已禁止的 module composition state slots：", routerModuleStateSlotViolations);
+}
+
+if (sharedNavigationModuleStateSlotViolations.length > 0) {
+  fail(
+    "shared/navigation 检测到已禁止的 module composition state slots：",
+    sharedNavigationModuleStateSlotViolations
+  );
+}
+
+if (analysisShellSlotNamingViolations.length > 0) {
+  fail("Analysis 检测到已禁止的旧 shell slots 命名：", analysisShellSlotNamingViolations);
 }
 
 if (analysisSectionHardcodedMessageViolations.length > 0) {

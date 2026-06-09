@@ -7,27 +7,35 @@ import { AppIcon } from "../../shared/icons/AppIcon";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localeOptions } from "../../shared/i18n/localeTypes";
 import type { AppLocale } from "../../shared/i18n/localeTypes";
+import type { ShellRegionSlots } from "../../shared/layout/ShellRegionSlots";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
-import { useAnalysisWorkspaceSlots } from "../../modules/analysis/hooks/useAnalysisWorkspaceSlots";
-import { DataKnowledgeListNav } from "../../modules/data-knowledge/navigation/DataKnowledgeListNav";
-import { useDataKnowledgeOverviewState } from "../../modules/data-knowledge/hooks/useDataKnowledgeOverviewState";
-import { DataKnowledgeInspectorPanel } from "../../modules/data-knowledge/panels/DataKnowledgeInspectorPanel";
-import { MetricsListNav } from "../../modules/metrics/navigation/MetricsListNav";
-import { useMetricsOverviewState } from "../../modules/metrics/hooks/useMetricsOverviewState";
-import { usePlatformOperationsOverviewState } from "../../modules/platform-operations/hooks/usePlatformOperationsOverviewState";
-import { ReportsListNav } from "../../modules/reports/navigation/ReportsListNav";
-import { ReportsInspectorPanel } from "../../modules/reports/panels/ReportsInspectorPanel";
-import { useReportsReaderState } from "../../modules/reports/hooks/useReportsReaderState";
 import type { StaticRouteKey } from "../../shared/navigation/navigationTypes";
+import { useAnalysisShellSlots } from "../../modules/analysis/hooks/useAnalysisShellSlots";
+import { useDataKnowledgeShellSlots } from "../../modules/data-knowledge/hooks/useDataKnowledgeShellSlots";
+import { useMetricsShellSlots } from "../../modules/metrics/hooks/useMetricsShellSlots";
+import { useReportsShellSlots } from "../../modules/reports/hooks/useReportsShellSlots";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
 
-import { AppShellInspector } from "./AppShellInspector";
 import { AppShellLayout } from "./AppShellLayout";
 import { HeaderBar } from "./HeaderBar";
 import { LeftNav } from "./LeftNav";
+
+const moduleShellRoutes = [
+  "analysis",
+  "reports",
+  "data-knowledge",
+  "metrics"
+] as const satisfies StaticRouteKey[];
+
+type LeftNavMode = "root" | StaticRouteKey;
+type ModuleShellRouteKey = (typeof moduleShellRoutes)[number];
+
+function hasModuleShellLeftNav(route: StaticRouteKey): route is ModuleShellRouteKey {
+  return moduleShellRoutes.includes(route as ModuleShellRouteKey);
+}
 
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();
@@ -36,10 +44,10 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
-  const [leftNavMode, setLeftNavMode] = useState<
-    "analysis" | "data-knowledge" | "metrics" | "reports" | "root"
-  >(
-    appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
+  const [leftNavMode, setLeftNavMode] = useState<LeftNavMode>(
+    hasModuleShellLeftNav(appShellStaticViewModel.currentRoute)
+      ? appShellStaticViewModel.currentRoute
+      : "root"
   );
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
     appShellStaticViewModel.workspace.workspaceId
@@ -49,28 +57,51 @@ export function AppShell() {
     appShellStaticViewModel.workspaces.find(
       (workspace) => workspace.workspaceId === selectedWorkspaceId
     ) ?? appShellStaticViewModel.workspace;
-  const dataKnowledgeOverviewState = useDataKnowledgeOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const metricsOverviewState = useMetricsOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const platformOperationsOverviewState = usePlatformOperationsOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const reportsReaderState = useReportsReaderState();
   const ActivePage = webCompositionRoutes[activeRoute];
-  const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
-  const analysisWorkspaceSlots = useAnalysisWorkspaceSlots({
+  const handleNavigate = (route: StaticRouteKey) => {
+    setActiveRoute(route);
+    setLeftNavMode(hasModuleShellLeftNav(route) ? route : "root");
+  };
+  const analysisShellSlots = useAnalysisShellSlots({
     onBackToRoot: () => setLeftNavMode("root"),
+    onNavigate: handleNavigate,
     workspaceName: selectedWorkspace.name
   });
+  const reportsShellSlots = useReportsShellSlots({
+    onBackToRoot: () => setLeftNavMode("root"),
+    onNavigate: handleNavigate
+  });
+  const dataKnowledgeShellSlots = useDataKnowledgeShellSlots({
+    onBackToRoot: () => setLeftNavMode("root"),
+    onNavigate: handleNavigate,
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
+  const metricsShellSlots = useMetricsShellSlots({
+    onBackToRoot: () => setLeftNavMode("root"),
+    onNavigate: handleNavigate,
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
+  const shellSlotsByRoute: Partial<Record<StaticRouteKey, ShellRegionSlots>> = {
+    analysis: analysisShellSlots,
+    reports: reportsShellSlots,
+    "data-knowledge": dataKnowledgeShellSlots,
+    metrics: metricsShellSlots
+  };
+  const activeShellSlots = shellSlotsByRoute[activeRoute];
   const navigationGroups = useMemo(
-    () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
-    [t]
+    () =>
+      createNavigationGroups(t, appShellStaticViewModel.navigationGroups).map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({
+          ...item,
+          showEntryArrow:
+            hasModuleShellLeftNav(item.key as StaticRouteKey) &&
+            Boolean(shellSlotsByRoute[item.key as StaticRouteKey]?.leftNav)
+        }))
+      })),
+    [shellSlotsByRoute, t]
   );
   const selectedNavigationKey = navigationGroups.some((group) =>
     group.items.some((item) => item.key === activeRoute)
@@ -79,32 +110,6 @@ export function AppShell() {
       ? activeRoute
       : undefined
     : undefined;
-  const handleNavigate = (route: StaticRouteKey) => {
-    setActiveRoute(route);
-    setLeftNavMode(
-      route === "analysis"
-        ? "analysis"
-        : route === "data-knowledge"
-          ? "data-knowledge"
-          : route === "metrics"
-            ? "metrics"
-            : route === "reports"
-              ? "reports"
-              : "root"
-    );
-
-    if (route !== "data-knowledge") {
-      dataKnowledgeOverviewState.onSearchChange("");
-    }
-
-    if (route !== "metrics") {
-      metricsOverviewState.onSearchChange("");
-    }
-
-    if (route !== "reports") {
-      reportsReaderState.onSearchChange("");
-    }
-  };
   const userPreferenceContent = (
     <Space
       direction="vertical"
@@ -198,23 +203,8 @@ export function AppShell() {
             </Typography.Text>
           </div>
           <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
-            {activeRoute === "analysis" && leftNavMode === "analysis" ? (
-              analysisWorkspaceSlots.leftNav
-            ) : activeRoute === "reports" && leftNavMode === "reports" ? (
-              <ReportsListNav
-                controller={reportsReaderState}
-                onBack={() => setLeftNavMode("root")}
-              />
-            ) : activeRoute === "data-knowledge" && leftNavMode === "data-knowledge" ? (
-              <DataKnowledgeListNav
-                controller={dataKnowledgeOverviewState}
-                onBack={() => setLeftNavMode("root")}
-              />
-            ) : activeRoute === "metrics" && leftNavMode === "metrics" ? (
-              <MetricsListNav
-                controller={metricsOverviewState}
-                onBack={() => setLeftNavMode("root")}
-              />
+            {activeShellSlots?.leftNav && leftNavMode === activeRoute ? (
+              activeShellSlots.leftNav
             ) : (
               <LeftNav
                 groups={navigationGroups}
@@ -260,41 +250,10 @@ export function AppShell() {
           </div>
         </div>
       }
-      rightAssistPanel={
-        activeRoute === "analysis" ? (
-          analysisWorkspaceSlots.rightAssistPanel
-        ) : activeRoute === "reports" ? (
-          <ReportsInspectorPanel
-            reportSections={reportsReaderState.viewModel.reportSections}
-            selectedReport={reportsReaderState.viewModel.selectedReport}
-            workspaceName={selectedWorkspace.name}
-          />
-        ) : activeRoute === "data-knowledge" ? (
-          <DataKnowledgeInspectorPanel
-            controller={dataKnowledgeOverviewState}
-            onNavigate={handleNavigate}
-          />
-        ) : activeRoute === "metrics" ||
-          activeRoute === "platform-operations" ? null : (
-          <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
-        )
-      }
+      rightAssistPanel={activeShellSlots?.rightAssistPanel ?? null}
     >
-      {activeRoute === "analysis" ? (
-        analysisWorkspaceSlots.mainContent
-      ) : (
-        <ActivePage
-          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
-          dataKnowledgeState={
-            activeRoute === "data-knowledge" ? dataKnowledgeOverviewState : undefined
-          }
-          metricsState={activeRoute === "metrics" ? metricsOverviewState : undefined}
-          onNavigate={handleNavigate}
-          platformOperationsState={
-            activeRoute === "platform-operations" ? platformOperationsOverviewState : undefined
-          }
-          reportsState={activeRoute === "reports" ? reportsReaderState : undefined}
-        />
+      {activeShellSlots?.mainContent ?? (
+        <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={handleNavigate} />
       )}
     </AppShellLayout>
   );
