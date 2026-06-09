@@ -21,11 +21,15 @@ describe("SelectableListItem", () => {
     const dashboard = screen.getByText("Dashboard");
     const analysis = screen.getByText("Analysis");
 
-    expect(dashboard.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeNavItem}px`);
+    expect(dashboard.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeNavItem}px`
+    );
     expect(dashboard.getAttribute("style")).toContain(
       `font-weight: ${shellThemeTokens.fontWeightMedium}`
     );
-    expect(analysis.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeNavItem}px`);
+    expect(analysis.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeNavItem}px`
+    );
     expect(analysis.getAttribute("style")).toContain(
       `font-weight: ${shellThemeTokens.fontWeightMedium}`
     );

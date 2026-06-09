@@ -1,4 +1,7 @@
-import type { AppShellNavigationGroupViewModel, AppShellStaticViewModel } from "../models/appShellViewModel";
+import type {
+  AppShellNavigationGroupViewModel,
+  AppShellStaticViewModel
+} from "../models/appShellViewModel";
 import {
   defaultPermissionSummary,
   defaultReadonlyState,

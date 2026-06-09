@@ -1,10 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { Graph, NodeEvent, type GraphOptions } from "@antv/g6";
-import {
-  AimOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined
-} from "@ant-design/icons";
+import { AimOutlined, ZoomInOutlined, ZoomOutOutlined } from "@ant-design/icons";
 import { Button, Space, Tooltip, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../theme/tokens";
@@ -143,10 +139,8 @@ function createGraphOptions(
       },
       style: {
         fill: (datum) =>
-          getRelationshipGraphNodeColors(
-            datum.data?.kind as RelationshipGraphNodeKind,
-            isDarkMode
-          ).fill,
+          getRelationshipGraphNodeColors(datum.data?.kind as RelationshipGraphNodeKind, isDarkMode)
+            .fill,
         labelFill: token.colorText,
         labelFontSize: 13,
         labelFontWeight: 600,
@@ -174,10 +168,8 @@ function createGraphOptions(
           return [220, 88];
         },
         stroke: (datum) =>
-          getRelationshipGraphNodeColors(
-            datum.data?.kind as RelationshipGraphNodeKind,
-            isDarkMode
-          ).stroke
+          getRelationshipGraphNodeColors(datum.data?.kind as RelationshipGraphNodeKind, isDarkMode)
+            .stroke
       },
       type: "rect"
     },
@@ -218,10 +210,7 @@ export function RelationshipGraphCanvas({
 
   const applySelectionState = useEffectEvent((graphInstance: Graph) => {
     void graphInstance
-      .setElementState(
-        createSelectionStateMap(graph.edges, nodeIds, currentSelectedNodeId),
-        false
-      )
+      .setElementState(createSelectionStateMap(graph.edges, nodeIds, currentSelectedNodeId), false)
       .catch(() => undefined);
   });
 
@@ -267,9 +256,7 @@ export function RelationshipGraphCanvas({
     const graphInstance = graphRef.current;
     const { height, width } = resolveGraphSize(container);
 
-    graphInstance.setOptions(
-      createGraphOptions(graph, isDarkMode, height, width, token)
-    );
+    graphInstance.setOptions(createGraphOptions(graph, isDarkMode, height, width, token));
 
     let cancelled = false;
 

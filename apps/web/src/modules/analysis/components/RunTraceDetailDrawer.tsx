@@ -15,13 +15,7 @@ export type RunTraceDetailDrawerProps = {
   open: boolean;
 };
 
-function DetailSection({
-  children,
-  title
-}: {
-  children: ReactNode;
-  title: string;
-}) {
+function DetailSection({ children, title }: { children: ReactNode; title: string }) {
   return (
     <Space direction="vertical" size={8} style={{ width: "100%" }}>
       <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
@@ -30,11 +24,7 @@ function DetailSection({
   );
 }
 
-export function RunTraceDetailDrawer({
-  event,
-  onClose,
-  open
-}: RunTraceDetailDrawerProps) {
+export function RunTraceDetailDrawer({ event, onClose, open }: RunTraceDetailDrawerProps) {
   const { t } = useI18n();
   const resourceItems = [
     event?.toolName
@@ -132,9 +122,7 @@ export function RunTraceDetailDrawer({
           <Divider style={{ marginBlock: 0 }} />
 
           <DetailSection title="Detail">
-            <Typography.Paragraph style={{ marginBottom: 0 }}>
-              {event.detail}
-            </Typography.Paragraph>
+            <Typography.Paragraph style={{ marginBottom: 0 }}>{event.detail}</Typography.Paragraph>
           </DetailSection>
 
           {event.inputSummary ? (

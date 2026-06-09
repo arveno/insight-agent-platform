@@ -49,6 +49,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
+  /analysis-runs/{runId}/conversation:
+    get:
+      summary: 获取运行关联会话
+      description: 返回当前 AnalysisRun 关联的 Conversation 契约对象，不代表后端已实现真实持久化或 join 查询。
+      operationId: getAnalysisRunConversation
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: AnalysisRun 当前绑定的 Conversation。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+  /conversations/{conversationId}:
+    get:
+      summary: 获取会话详情
+      operationId: getConversation
+      parameters:
+        - $ref: "#/components/parameters/ConversationId"
+      responses:
+        "200":
+          description: Conversation 详情。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+  /conversations/{conversationId}/messages:
+    get:
+      summary: 获取会话消息列表
+      operationId: listConversationMessages
+      parameters:
+        - $ref: "#/components/parameters/ConversationId"
+      responses:
+        "200":
+          description: Message 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageList"
+  /conversations/{conversationId}/messages/{messageId}:
+    get:
+      summary: 获取单条消息
+      operationId: getConversationMessage
+      parameters:
+        - $ref: "#/components/parameters/ConversationId"
+        - $ref: "#/components/parameters/MessageId"
+      responses:
+        "200":
+          description: Message 详情。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /conversations/{conversationId}/messages/{messageId}/stream:
+    get:
+      summary: 获取消息流式输出事件
+      description: 返回当前消息的 MessageStream 事件列表，用于 formal contract surface；不代表真实 SSE transport 已实现。
+      operationId: listMessageStreamEvents
+      parameters:
+        - $ref: "#/components/parameters/ConversationId"
+        - $ref: "#/components/parameters/MessageId"
+      responses:
+        "200":
+          description: MessageStream 事件列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageStreamList"
   /analysis-runs/{runId}/events:
     get:
       summary: 获取运行事件列表
@@ -202,6 +271,20 @@ components:
       schema:
         type: string
       description: ApprovalRequest 的 canonical approvalId。
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Conversation 的 canonical conversationId。
+    MessageId:
+      name: messageId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Message 的 canonical messageId。
   schemas:
     HealthResponse:
       type: object
@@ -255,6 +338,12 @@ components:
             - "null"
     AnalysisRun:
       $ref: "../schemas/analysis/analysis-run.schema.json"
+    Conversation:
+      $ref: "../schemas/analysis/conversation.schema.json"
+    Message:
+      $ref: "../schemas/analysis/message.schema.json"
+    MessageStream:
+      $ref: "../schemas/analysis/message-stream.schema.json"
     RunEvent:
       $ref: "../schemas/analysis/run-event.schema.json"
     ToolCall:
@@ -279,6 +368,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RunEvent"
+    MessageList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+    MessageStreamList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageStream"
     ToolCallList:
       type: object
       additionalProperties: false

@@ -205,9 +205,7 @@ describe("AppShell", () => {
     });
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" })
-    );
+    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" }));
 
     const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
     expect(within(dialog).getByText("1. 接收用户问题")).toBeTruthy();
@@ -257,8 +255,12 @@ describe("AppShell", () => {
     fireEvent.click(within(reportsNavigation).getByText("库存异常跟踪报告"));
 
     expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("reportId: report-inventory-exception-tracking").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("reportId: report-inventory-exception-tracking").length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(
+      0
+    );
     expect(screen.getByText("证据引用")).toBeTruthy();
     expect(screen.getByText("决策建议")).toBeTruthy();
     expect(screen.queryByText("能力说明")).toBeNull();
@@ -286,7 +288,9 @@ describe("AppShell", () => {
     expect(within(metricsNavigation).getByText("获客成本")).toBeTruthy();
     expect(within(metricsNavigation).queryByText("¥12.8M")).toBeNull();
     expect(within(metricsNavigation).queryByText("最近 30 天环比 -3.2%")).toBeNull();
-    expect(within(metricsNavigation).queryByRole("button", { name: "带上下文进入 Analysis" })).toBeNull();
+    expect(
+      within(metricsNavigation).queryByRole("button", { name: "带上下文进入 Analysis" })
+    ).toBeNull();
 
     expect(screen.getByText("指标总览")).toBeTruthy();
     expect(screen.getByText("当前指标详情：确认收入")).toBeTruthy();
@@ -341,7 +345,9 @@ describe("AppShell", () => {
     expect(within(dataKnowledgeNavigation).queryByText("low")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByText("medium")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
-    expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
+    expect(
+      within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })
+    ).toBeNull();
 
     expect(screen.queryByText("Data & Knowledge 总览")).toBeNull();
     expect(screen.getByText("当前资产")).toBeTruthy();

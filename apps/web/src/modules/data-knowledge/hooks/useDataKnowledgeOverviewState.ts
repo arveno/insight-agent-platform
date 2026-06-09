@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { createDataKnowledgeViewModel } from "../mappers/createDataKnowledgeViewModel";
 import { defaultDataKnowledgeWorkspaceBinding } from "../fixtures/dataKnowledgeStaticViewModel";
-import type { DataKnowledgeRelationshipNodeViewModel, DataKnowledgeViewModel, DataKnowledgeWorkspaceBindingViewModel } from "../models/dataKnowledgeViewModel";
+import type {
+  DataKnowledgeRelationshipNodeViewModel,
+  DataKnowledgeViewModel,
+  DataKnowledgeWorkspaceBindingViewModel
+} from "../models/dataKnowledgeViewModel";
 
 const defaultViewModel = createDataKnowledgeViewModel();
 const defaultSelectedAssetKey = defaultViewModel.selectedAsset.key;
@@ -51,7 +55,9 @@ export function useDataKnowledgeOverviewState(
       return viewModel.assetItems;
     }
 
-    return viewModel.assetItems.filter((item) => item.title.toLowerCase().includes(normalizedQuery));
+    return viewModel.assetItems.filter((item) =>
+      item.title.toLowerCase().includes(normalizedQuery)
+    );
   }, [searchValue, viewModel.assetItems]);
   const selectedNode =
     findRelationshipNode(viewModel, selectedNodeId) ??

@@ -59,6 +59,18 @@ class ApprovalRequest(TypedDict):
     decidedBy: NotRequired[str | None]
     decisionReason: NotRequired[str | None]
 
+# Generated from packages/contracts/schemas/analysis/conversation.schema.json
+class Conversation(TypedDict):
+    conversationId: str
+    workspaceId: str
+    userId: str
+    analysisTaskId: str
+    currentRunId: str | None
+    title: str
+    status: Literal["active", "archived", "closed"]
+    createdAt: str
+    updatedAt: str
+
 # Generated from packages/contracts/schemas/analysis/execution-attempt.schema.json
 class ExecutionAttempt(TypedDict):
     attemptId: str
@@ -73,6 +85,35 @@ class ExecutionAttempt(TypedDict):
     releasedAt: NotRequired[str | None]
     failureCode: NotRequired[str | None]
     failureMessage: NotRequired[str | None]
+
+# Generated from packages/contracts/schemas/analysis/message-stream.schema.json
+class MessageStream(TypedDict):
+    messageStreamId: str
+    conversationId: str
+    messageId: str
+    runId: str
+    sequence: int
+    eventType: Literal["stream.started", "stream.delta", "stream.completed", "stream.failed", "stream.cancelled"]
+    delta: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    occurredAt: str
+    errorCode: str | None
+    errorMessage: str | None
+
+# Generated from packages/contracts/schemas/analysis/message.schema.json
+class Message(TypedDict):
+    messageId: str
+    conversationId: str
+    turnId: str
+    runId: str | None
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    sourceEvidenceIds: list[str]
+    toolCallIds: list[str]
+    reportId: str | None
+    createdAt: str
+    completedAt: str | None
 
 # Generated from packages/contracts/schemas/analysis/model-call.schema.json
 class ModelCall(TypedDict):
@@ -410,4 +451,4 @@ class Workspace(TypedDict):
     name: NotRequired[str]
     createdAt: NotRequired[str]
 
-__all__ = ["AnalysisRun", "AnalysisTask", "ApprovalRequest", "ExecutionAttempt", "ModelCall", "RunEvent", "SourceEvidence", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]

@@ -109,15 +109,13 @@ export const dataKnowledgeStaticContracts: DataKnowledgeStaticContracts = {
   ],
   knowledgeChunks: [
     {
-      content:
-        "渠道经营周报第 18 段：促销档期重叠导致不同渠道的获客成本和退货率同时抬升。",
+      content: "渠道经营周报第 18 段：促销档期重叠导致不同渠道的获客成本和退货率同时抬升。",
       createdAt: "2026-05-29T14:10:00+08:00",
       knowledgeChunkId: "knowledge-chunk-channel-weekly-18",
       knowledgeDocumentId: "knowledge-document-channel-weekly"
     },
     {
-      content:
-        "渠道经营周报第 19 段：建议优先对齐渠道投放日历、收入确认窗口和退款波动解释。",
+      content: "渠道经营周报第 19 段：建议优先对齐渠道投放日历、收入确认窗口和退款波动解释。",
       createdAt: "2026-05-29T14:11:00+08:00",
       knowledgeChunkId: "knowledge-chunk-channel-weekly-19",
       knowledgeDocumentId: "knowledge-document-channel-weekly"

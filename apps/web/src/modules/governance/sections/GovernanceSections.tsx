@@ -63,10 +63,7 @@ function renderSummaryCards(
   });
 }
 
-function renderStatCards(
-  items: StaticStatCardViewModel[],
-  t: ReturnType<typeof useI18n>["t"]
-) {
+function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof useI18n>["t"]) {
   return items.map((metric) => (
     <StatCard
       supportingMeta={
@@ -126,10 +123,7 @@ export function GovernanceSections({ onNavigate, viewModel }: GovernanceSections
         supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
         title={translateKey(t, viewModel.pageTitleKey)}
       >
-        {renderSummaryCards(
-          [...viewModel.governanceOverview, viewModel.governancePolicyDetail],
-          t
-        )}
+        {renderSummaryCards([...viewModel.governanceOverview, viewModel.governancePolicyDetail], t)}
         {renderStatCards(viewModel.metricCards, t)}
       </PageIntro>
 

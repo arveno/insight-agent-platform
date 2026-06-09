@@ -5,12 +5,17 @@ import {
   analysisRunStatuses,
   analysisRunWaitingFors,
   approvalStatuses,
+  conversationStatuses,
   contractsDocsPath,
   executionAttemptStatuses,
   formalRuntimeEnumDocs,
   generateArtifacts,
   generatedPythonPath,
   generatedTypeScriptPath,
+  messageRoles,
+  messageStatuses,
+  messageStreamEventTypes,
+  messageStreamStatuses,
   minimumOpenApiPaths,
   openApiPath,
   readDocsEnumBlock,
@@ -73,9 +78,16 @@ for (const [relativePath, requiredFields] of Object.entries(requiredFieldsBySche
 }
 
 const analysisRunSchema = schemaByPath.get("analysis/analysis-run.schema.json");
+const conversationSchema = schemaByPath.get("analysis/conversation.schema.json");
+const messageSchema = schemaByPath.get("analysis/message.schema.json");
+const messageStreamSchema = schemaByPath.get("analysis/message-stream.schema.json");
 
 if (!analysisRunSchema) {
   fail("analysis/analysis-run.schema.json is missing.");
+}
+
+if (!conversationSchema || !messageSchema || !messageStreamSchema) {
+  fail("Conversation, Message, or MessageStream schema is missing.");
 }
 
 if (
@@ -102,6 +114,34 @@ if (
   JSON.stringify(analysisRunWaitingFors)
 ) {
   fail("AnalysisRun.waitingFor enum does not match the formal AnalysisRunWaitingFor list.");
+}
+
+if (
+  JSON.stringify(conversationSchema.properties.status.enum) !== JSON.stringify(conversationStatuses)
+) {
+  fail("Conversation.status enum does not match the formal ConversationStatus list.");
+}
+
+if (JSON.stringify(messageSchema.properties.role.enum) !== JSON.stringify(messageRoles)) {
+  fail("Message.role enum does not match the formal MessageRole list.");
+}
+
+if (JSON.stringify(messageSchema.properties.status.enum) !== JSON.stringify(messageStatuses)) {
+  fail("Message.status enum does not match the formal MessageStatus list.");
+}
+
+if (
+  JSON.stringify(messageStreamSchema.properties.eventType.enum) !==
+  JSON.stringify(messageStreamEventTypes)
+) {
+  fail("MessageStream.eventType enum does not match the formal MessageStreamEventType list.");
+}
+
+if (
+  JSON.stringify(messageStreamSchema.properties.status.enum) !==
+  JSON.stringify(messageStreamStatuses)
+) {
+  fail("MessageStream.status enum does not match the formal MessageStreamStatus list.");
 }
 
 const runEventSchema = schemaByPath.get("analysis/run-event.schema.json");
@@ -175,7 +215,15 @@ for (const schema of schemaEntries.map((entry) => entry.schema)) {
   }
 }
 
-const requiredCanonicalIds = ["evaluationScoreId", "attemptId", "approvalId"];
+const requiredCanonicalIds = [
+  "conversationId",
+  "messageId",
+  "turnId",
+  "messageStreamId",
+  "evaluationScoreId",
+  "attemptId",
+  "approvalId"
+];
 
 for (const identifier of requiredCanonicalIds) {
   if (!contractsDocs.includes(identifier)) {
@@ -191,6 +239,9 @@ for (const requiredPath of minimumOpenApiPaths) {
 
 for (const componentName of [
   "AnalysisRun",
+  "Conversation",
+  "Message",
+  "MessageStream",
   "RunEvent",
   "ToolCall",
   "ModelCall",

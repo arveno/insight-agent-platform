@@ -8,9 +8,9 @@ export type AnalysisSessionNavProps = {
   onBack: () => void;
   onCreateNewAnalysis: () => void;
   onSearchChange: (value: string) => void;
-  onSelectSession: (sessionId: string) => void;
+  onSelectSession: (conversationId: string) => void;
   searchValue: string;
-  selectedSessionId: string;
+  selectedConversationId: string;
   sessions: AnalysisSessionViewModel[];
 };
 
@@ -20,7 +20,7 @@ export function AnalysisSessionNav({
   onSearchChange,
   onSelectSession,
   searchValue,
-  selectedSessionId,
+  selectedConversationId,
   sessions
 }: AnalysisSessionNavProps) {
   return (
@@ -33,7 +33,7 @@ export function AnalysisSessionNav({
       ariaLabel="Analysis session navigation"
       emptyText="暂无匹配会话"
       items={sessions.map((session) => ({
-        key: session.sessionId,
+        key: session.conversationId,
         title: session.sessionSummary.title
       }))}
       onBack={onBack}
@@ -42,7 +42,7 @@ export function AnalysisSessionNav({
       searchLabel="搜索会话"
       searchPlaceholder="搜索会话"
       searchValue={searchValue}
-      selectedKey={selectedSessionId}
+      selectedKey={selectedConversationId}
       title="分析"
     />
   );

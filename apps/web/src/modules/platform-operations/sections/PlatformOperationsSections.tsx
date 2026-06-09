@@ -178,11 +178,7 @@ function StatusSummaryCard({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   return (
-    <ContentCard
-      description={description}
-      tagSlot={buildTagSlot(t, item)}
-      title={item.title}
-    >
+    <ContentCard description={description} tagSlot={buildTagSlot(t, item)} title={item.title}>
       <Typography.Text style={{ display: "block", fontWeight: 600 }}>
         {item.category}
       </Typography.Text>
@@ -300,12 +296,10 @@ export function PlatformOperationsSections({
         >
           <Space direction="vertical" size={8} style={{ width: "100%" }}>
             <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-              先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或
-              Analysis。
+              先区分经营异常和平台链路异常，再决定是否进入 Dashboard、Data & Knowledge 或 Analysis。
             </Typography.Text>
             <Typography.Text type="secondary">
-              当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke
-              或手工改库。
+              当前页面只提供只读风险解释和跳转入口，不执行 Job、部署、migration、smoke 或手工改库。
             </Typography.Text>
           </Space>
         </ContentCard>

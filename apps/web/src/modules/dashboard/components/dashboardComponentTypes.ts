@@ -19,9 +19,7 @@ export type DashboardStatCardProps = DashboardNavigationProps & {
 
 export type DashboardRiskCardProps = DashboardNavigationProps & {
   isRiskSummary?: boolean;
-  item:
-    | DashboardViewModel["anomalyCards"][number]
-    | DashboardViewModel["riskSummary"][number];
+  item: DashboardViewModel["anomalyCards"][number] | DashboardViewModel["riskSummary"][number];
 };
 
 export type DashboardReportEvidenceCardProps =

@@ -24,9 +24,7 @@ beforeAll(() => {
   });
 });
 
-function createController(
-  selectedMetricKey = "metric-gross-margin"
-): MetricsOverviewController {
+function createController(selectedMetricKey = "metric-gross-margin"): MetricsOverviewController {
   const viewModel = createMetricsViewModel(selectedMetricKey);
 
   return {
@@ -60,7 +58,9 @@ describe("MetricsPage", () => {
     expect(screen.getByText("动作")).toBeTruthy();
     expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
     expect(screen.getByText("当前指标目录属于当前 Workspace。")).toBeTruthy();
-    expect(screen.getByText("Metrics 当前阶段只读展示指标语义，不提供新增、编辑或真实计算。")).toBeTruthy();
+    expect(
+      screen.getByText("Metrics 当前阶段只读展示指标语义，不提供新增、编辑或真实计算。")
+    ).toBeTruthy();
     expect(screen.queryByText("指标目录")).toBeNull();
     expect(screen.queryByText("公式与阈值")).toBeNull();
     expect(screen.queryByText("趋势与异常")).toBeNull();

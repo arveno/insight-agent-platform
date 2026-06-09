@@ -60,6 +60,19 @@ export interface ApprovalRequest {
   decisionReason?: string | null;
 }
 
+/** Generated from packages/contracts/schemas/analysis/conversation.schema.json */
+export interface Conversation {
+  conversationId: string;
+  workspaceId: string;
+  userId: string;
+  analysisTaskId: string;
+  currentRunId: string | null;
+  title: string;
+  status: "active" | "archived" | "closed";
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Generated from packages/contracts/schemas/analysis/execution-attempt.schema.json */
 export interface ExecutionAttempt {
   attemptId: string;
@@ -74,6 +87,37 @@ export interface ExecutionAttempt {
   releasedAt?: string | null;
   failureCode?: string | null;
   failureMessage?: string | null;
+}
+
+/** Generated from packages/contracts/schemas/analysis/message-stream.schema.json */
+export interface MessageStream {
+  messageStreamId: string;
+  conversationId: string;
+  messageId: string;
+  runId: string;
+  sequence: number;
+  eventType: "stream.started" | "stream.delta" | "stream.completed" | "stream.failed" | "stream.cancelled";
+  delta: string;
+  status: "created" | "streaming" | "completed" | "failed" | "cancelled";
+  occurredAt: string;
+  errorCode: string | null;
+  errorMessage: string | null;
+}
+
+/** Generated from packages/contracts/schemas/analysis/message.schema.json */
+export interface Message {
+  messageId: string;
+  conversationId: string;
+  turnId: string;
+  runId: string | null;
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+  status: "created" | "streaming" | "completed" | "failed" | "cancelled";
+  sourceEvidenceIds: Array<string>;
+  toolCallIds: Array<string>;
+  reportId: string | null;
+  createdAt: string;
+  completedAt: string | null;
 }
 
 /** Generated from packages/contracts/schemas/analysis/model-call.schema.json */

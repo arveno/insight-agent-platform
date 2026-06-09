@@ -43,9 +43,7 @@ describe("DashboardHero", () => {
       </TestProviders>
     );
 
-    expect(
-      screen.queryByRole("heading", { level: 2, name: "经营状态总览" })
-    ).toBeNull();
+    expect(screen.queryByRole("heading", { level: 2, name: "经营状态总览" })).toBeNull();
 
     const eyebrow = screen.getByText("经营工作台");
     const title = screen.getByText("经营状态总览");
@@ -57,7 +55,9 @@ describe("DashboardHero", () => {
     const evidenceFact = screen.getByText("相关证据");
     const contextFact = screen.getByText("右侧上下文");
 
-    expect(eyebrow.getAttribute("style")).toContain(`font-size: ${shellThemeTokens.fontSizeMeta}px`);
+    expect(eyebrow.getAttribute("style")).toContain(
+      `font-size: ${shellThemeTokens.fontSizeMeta}px`
+    );
     expect(title.getAttribute("style")).toContain(
       `font-size: ${shellThemeTokens.fontSizeHeroTitle}px`
     );

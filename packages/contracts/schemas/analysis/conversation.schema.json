@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/conversation.schema.json",
+  "title": "Conversation",
+  "description": "Analysis 工作区中的多轮会话契约对象，用于承接 conversation 主线和当前关联的 AnalysisRun。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conversationId",
+    "workspaceId",
+    "userId",
+    "analysisTaskId",
+    "currentRunId",
+    "title",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "conversationId": {
+      "description": "会话的 canonical 标识，用于承接 Analysis 工作区主线，不得退回旧会话 ID 命名。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "description": "会话所属工作区标识。",
+      "type": "string"
+    },
+    "userId": {
+      "description": "会话所属用户标识。",
+      "type": "string"
+    },
+    "analysisTaskId": {
+      "description": "触发当前会话主问题的 AnalysisTask 标识。",
+      "type": "string"
+    },
+    "currentRunId": {
+      "description": "当前会话关联的最新 AnalysisRun 标识；尚无运行时为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "description": "会话标题，用于 Analysis 工作区左侧会话导航展示。",
+      "type": "string"
+    },
+    "status": {
+      "description": "会话状态，必须使用 contracts 中定义的 ConversationStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "active",
+        "archived",
+        "closed"
+      ]
+    },
+    "createdAt": {
+      "description": "会话创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "description": "会话最近更新时间。",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -9,15 +9,15 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.sessions).toHaveLength(3);
     expect(result.current.visibleSessions).toHaveLength(3);
-    expect(result.current.selectedSessionId).toBe("session-revenue-gap-q2");
-    expect(result.current.selectedSession.sessionId).toBe("session-revenue-gap-q2");
+    expect(result.current.selectedConversationId).toBe("conversation-revenue-gap-q2");
+    expect(result.current.selectedSession.conversationId).toBe("conversation-revenue-gap-q2");
     expect(result.current.sessionSearchQuery).toBe("");
     expect(result.current.messages.map((message) => message.role)).toEqual([
       "system",
       "user",
       "assistant"
     ]);
-    expect(result.current.messages[0]?.sessionId).toBe("session-revenue-gap-q2");
+    expect(result.current.messages[0]?.conversationId).toBe("conversation-revenue-gap-q2");
     expect(result.current.messages[2]?.runId).toBe("analysis-q2-revenue-gap");
     expect(result.current.currentRun.runId).toBe("analysis-q2-revenue-gap");
     expect(result.current.currentRun.status).toBe("completed");
@@ -39,14 +39,14 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.sessionSearchQuery).toBe("毛利率");
     expect(result.current.visibleSessions).toHaveLength(1);
-    expect(result.current.visibleSessions[0]?.sessionId).toBe("session-margin-follow-up");
+    expect(result.current.visibleSessions[0]?.conversationId).toBe("conversation-margin-follow-up");
 
     act(() => {
-      result.current.onSelectSession("session-margin-follow-up");
+      result.current.onSelectSession("conversation-margin-follow-up");
     });
 
-    expect(result.current.selectedSessionId).toBe("session-margin-follow-up");
-    expect(result.current.messages[0]?.sessionId).toBe("session-margin-follow-up");
+    expect(result.current.selectedConversationId).toBe("conversation-margin-follow-up");
+    expect(result.current.messages[0]?.conversationId).toBe("conversation-margin-follow-up");
     expect(result.current.currentRun.runId).toBe("analysis-margin-follow-up");
     expect(result.current.currentRun.status).toBe("running");
     expect(result.current.selectedRunEventId).toBe("event-analysis-margin-follow-up-user-input");

@@ -120,10 +120,7 @@ function MetricSummaryCard({
 
 function MetricFormulaCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
-    <ContentCard
-      description="业务公式和技术字段映射只读展示，不触发真实计算或更新。"
-      title="公式"
-    >
+    <ContentCard description="业务公式和技术字段映射只读展示，不触发真实计算或更新。" title="公式">
       <Space direction="vertical" size={8} style={{ width: "100%" }}>
         <Typography.Text style={{ display: "block", fontWeight: 600 }}>
           业务公式：{metric.formula.businessFormula}

@@ -36,6 +36,9 @@ MetricThreshold
 MetricLineage
 AnalysisTask
 AnalysisRun
+Conversation
+Message
+MessageStream
 ExecutionAttempt
 ApprovalRequest
 RunEvent
@@ -99,6 +102,10 @@ metricThresholdId
 metricLineageId
 analysisTaskId
 runId
+conversationId
+messageId
+turnId
+messageStreamId
 eventId
 toolCallId
 modelCallId
@@ -155,13 +162,19 @@ workspaceMembershipId
 - 不得出现 `workspaceId || tenantId`、`organizationId || workspaceId`、`userId || memberId` 等兜底式混用。
 - 在当前 schema 现状下，不得把 `tenantId`、`organizationId` 或 `workspaceMembershipId` 写入“已进入 packages/contracts 的 canonical ID 列表”。
 
-新产品体验模型中以下对象已经进入审查范围，但本次文档更新不代表 schema 已完成：
+当前已正式进入 contracts 的 Analysis conversation / message canonical ID：
 
 ```text
-findingId
 conversationId
 messageId
 turnId
+messageStreamId
+```
+
+仍处于候选 / 待审查状态的产品对象 ID：
+
+```text
+findingId
 ```
 
 这些对象如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts`。
@@ -193,10 +206,10 @@ localOnlyId
 
 - `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
 - `tenantId / organizationId / workspaceMembershipId` 当前仍是候选 ID，不能在共享链路中直接升格为 canonical ID。
-- `product-experience.html` 已在原型中暴露出 `findingId`、`conversationId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId` 等候选产品对象 ID。
-- `findingId / conversationId / messageId` 如后续进入共享链路，必须先完成 contracts 文档与 schema 审查。
-- `product-experience.html` 中出现的 `findingId / conversationId / messageId` 等只代表原型里暴露出来的候选产品对象 ID，不代表它们已经成为正式 contract。
-- 这些候选 ID 只有在进入正式链路前，才需要先更新 `docs/contracts.md` 与 `packages/contracts`。
+- `product-experience.html` 已在原型中暴露出 `findingId`、`conversationId`、`messageId`、`turnId`、`messageStreamId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId` 等产品对象 ID。
+- `conversationId / messageId / turnId / messageStreamId` 已正式进入 contracts；`findingId` 如后续进入共享链路，仍必须先完成 contracts 文档与 schema 审查。
+- `product-experience.html` 中出现的 `findingId` 等候选对象 ID 不代表其已经成为正式 contract。
+- 仍处于候选态的 ID 只有在进入正式链路前，才需要先更新 `docs/contracts.md` 与 `packages/contracts`。
 - `eventId` 与 `runEventId` 的命名边界必须保持单义，避免在 Observability / Inspector / Action 链路中产生双轨。
 
 禁止混用：
@@ -268,6 +281,53 @@ external_dependency
 rate_limit
 quota_reset
 scheduled_resume
+```
+
+### ConversationStatus
+
+```text
+active
+archived
+closed
+```
+
+### MessageRole
+
+```text
+system
+user
+assistant
+tool
+```
+
+### MessageStatus
+
+```text
+created
+streaming
+completed
+failed
+cancelled
+```
+
+### MessageStreamEventType
+
+```text
+stream.started
+stream.delta
+stream.completed
+stream.failed
+stream.cancelled
+```
+
+### MessageStreamStatus
+
+```text
+created
+streaming
+completed
+failed
+cancelled
 ```
 
 ### RunEventStatus
@@ -400,6 +460,12 @@ manual_correction
 ```
 
 状态枚举必须来自 contracts，不允许手写自由字符串。
+
+Conversation / Message / MessageStream 的边界固定如下：
+
+- `Message` / `MessageStream` 不拥有 `AnalysisRun` 生命周期。
+- `Message` 可以引用 `runId`，但不得用 `message status` 替代 `run status`。
+- `stream.completed` 不能替代 `run.completed`。
 
 ## 5. AnalysisRun 生命周期
 
@@ -805,7 +871,7 @@ packages/contracts/schemas/
 - `workspace`：Workspace、User、Role、BusinessDomain。
 - `data-knowledge`：DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk。
 - `metrics`：Metric、MetricFormula、MetricThreshold、MetricLineage。
-- `analysis`：AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence。
+- `analysis`：AnalysisTask、AnalysisRun、Conversation、Message、MessageStream、RunEvent、ToolCall、ModelCall、SourceEvidence、ExecutionAttempt、ApprovalRequest。
 - `memory`：MemoryItem。
 - `feedback`：Feedback。
 - `evaluation`：EvaluationRun、EvaluationDataset、EvaluationScore、BadCase。

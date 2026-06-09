@@ -11,8 +11,11 @@ import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
 
 const defaultSession = analysisStaticViewModel.sessions[0];
 
-function findSession(sessionId: string): AnalysisSessionViewModel {
-  return analysisStaticViewModel.sessions.find((session) => session.sessionId === sessionId) ?? defaultSession;
+function findSession(conversationId: string): AnalysisSessionViewModel {
+  return (
+    analysisStaticViewModel.sessions.find((session) => session.conversationId === conversationId) ??
+    defaultSession
+  );
 }
 
 type ComposerState = "idle" | "running";
@@ -35,7 +38,7 @@ export type AnalysisWorkspaceController = {
   onResetForNewAnalysis: () => void;
   onSelectModel: (key: string) => void;
   onSelectRunEvent: (eventId: string) => void;
-  onSelectSession: (sessionId: string) => void;
+  onSelectSession: (conversationId: string) => void;
   onSessionSearchChange: (value: string) => void;
   onSubmitComposer: () => void;
   runEvents: AnalysisRunEvent[];
@@ -45,7 +48,7 @@ export type AnalysisWorkspaceController = {
   selectedRunEvent?: AnalysisRunEvent;
   selectedRunEventId: string | null;
   selectedSession: AnalysisSessionViewModel;
-  selectedSessionId: string;
+  selectedConversationId: string;
   selectedSourceEvidenceId: string | null;
   selectedToolCallId: string | null;
   sessionSearchQuery: string;
@@ -70,14 +73,18 @@ function getFirstRunEventId(session: AnalysisSessionViewModel): string | null {
 }
 
 export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
-  const [selectedSessionId, setSelectedSessionId] = useState(defaultSession.sessionId);
+  const [selectedConversationId, setSelectedConversationId] = useState(
+    defaultSession.conversationId
+  );
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
   const [analysisDraft, setAnalysisDraft] = useState(defaultSession.inputComposer.initialDraft);
   const [followUpDraft, setFollowUpDraft] = useState(defaultSession.followUpComposer.initialDraft);
   const [composerMode, setComposerMode] = useState<AnalysisComposerMode>("follow_up");
   const composerModeRef = useRef<AnalysisComposerMode>("follow_up");
   const [composerState, setComposerState] = useState<ComposerState>("idle");
-  const [selectedModelKey, setSelectedModelKey] = useState(analysisStaticViewModel.modelOptions[0].key);
+  const [selectedModelKey, setSelectedModelKey] = useState(
+    analysisStaticViewModel.modelOptions[0].key
+  );
   const [interactionMessage, setInteractionMessage] = useState("");
   const [activeInspectorPanel, setActiveInspectorPanel] =
     useState<AnalysisInspectorPanelKey>("run-trace");
@@ -94,7 +101,7 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(
     defaultSession.reportPreview?.reportId ?? null
   );
-  const selectedSession = findSession(selectedSessionId);
+  const selectedSession = findSession(selectedConversationId);
   const visibleSessions = useMemo(() => {
     const normalizedQuery = sessionSearchQuery.trim().toLowerCase();
 
@@ -154,7 +161,7 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
       );
     },
     onResetForNewAnalysis: () => {
-      setSelectedSessionId(defaultSession.sessionId);
+      setSelectedConversationId(defaultSession.conversationId);
       setSessionSearchQuery("");
       setAnalysisDraft(defaultSession.inputComposer.initialDraft);
       setFollowUpDraft("");
@@ -182,7 +189,9 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
 
       setSelectedModelKey(nextModel.key);
       setInteractionMessage(
-        createInteractionMessage(`已切换本地模型选项为 ${nextModel.label}，不触发真实 Model Gateway。`)
+        createInteractionMessage(
+          `已切换本地模型选项为 ${nextModel.label}，不触发真实 Model Gateway。`
+        )
       );
     },
     onSelectRunEvent: (eventId) => {
@@ -190,10 +199,10 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
       setSelectedRunEventId(eventId);
       setIsRunTraceDetailOpen(true);
     },
-    onSelectSession: (sessionId) => {
-      const nextSession = findSession(sessionId);
+    onSelectSession: (conversationId) => {
+      const nextSession = findSession(conversationId);
 
-      setSelectedSessionId(nextSession.sessionId);
+      setSelectedConversationId(nextSession.conversationId);
       setAnalysisDraft(nextSession.inputComposer.initialDraft);
       setFollowUpDraft(nextSession.followUpComposer.initialDraft);
       composerModeRef.current = "follow_up";
@@ -225,7 +234,7 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
     selectedRunEvent,
     selectedRunEventId,
     selectedSession,
-    selectedSessionId,
+    selectedConversationId,
     selectedSourceEvidenceId,
     selectedToolCallId,
     sessionSearchQuery,

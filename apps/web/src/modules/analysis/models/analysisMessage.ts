@@ -1,20 +1,24 @@
-export type AnalysisMessageRole = "system" | "user" | "assistant";
+import type { MessageRole, MessageStatus } from "./runtimeContractTypes";
 
-export type AnalysisMessageStatus = "completed" | "failed" | "streaming" | "cancelled";
+export type AnalysisMessageRole = MessageRole;
+
+export type AnalysisMessageStatus = MessageStatus;
 
 export type AnalysisMessage = {
   content: string;
+  completedAt: string | null;
+  conversationId: string;
   createdAt: string;
-  clientMessageId?: string;
   footerText?: string;
   messageId: string;
   metaText?: string;
   role: AnalysisMessageRole;
-  runId?: string;
-  sessionId: string;
-  sourceRefs?: string[];
+  reportId: string | null;
+  runId: string | null;
+  sourceEvidenceIds: string[];
   status: AnalysisMessageStatus;
   supportingItems?: string[];
   supportingTitle?: string;
-  toolRefs?: string[];
+  toolCallIds: string[];
+  turnId: string;
 };

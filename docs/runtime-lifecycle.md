@@ -41,12 +41,12 @@ AnalysisRun 如何作为运行主线
 
 ## 1. 命名边界
 
-| 类型 | 当前正式事实 | 目标模型 | Contract Gap |
-| --- | --- | --- | --- |
-| 运行主对象 | 当前正式对象名是 `AnalysisRun` | 产品语义上可称为 Agent Run，表示一次 Agent 分析运行 | 不得在实现中另起 `AgentRun` 对象名，除非 contracts 正式改名 |
-| 主归属 ID | 当前正式 ID 是 `runId` | 所有运行过程、证据、产物、反馈、评估都围绕 `runId` 归属 | 不得引入 `agentRunId / runtimeId / traceId` 替代 `runId` |
-| 运行状态 | 当前正式枚举是 `AnalysisRunStatus` | 后续可补强为企业级状态机 | 不得私自新增 `AgentRunStatus` 双轨 |
-| 运行事件 ID | 当前正式 ID 是 `eventId` | `RunEvent` 用于运行审计事件 | 不得把 `eventId` 和 `runEventId` 当同义字段混用 |
+| 类型        | 当前正式事实                       | 目标模型                                                | Contract Gap                                                |
+| ----------- | ---------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------- |
+| 运行主对象  | 当前正式对象名是 `AnalysisRun`     | 产品语义上可称为 Agent Run，表示一次 Agent 分析运行     | 不得在实现中另起 `AgentRun` 对象名，除非 contracts 正式改名 |
+| 主归属 ID   | 当前正式 ID 是 `runId`             | 所有运行过程、证据、产物、反馈、评估都围绕 `runId` 归属 | 不得引入 `agentRunId / runtimeId / traceId` 替代 `runId`    |
+| 运行状态    | 当前正式枚举是 `AnalysisRunStatus` | 后续可补强为企业级状态机                                | 不得私自新增 `AgentRunStatus` 双轨                          |
+| 运行事件 ID | 当前正式 ID 是 `eventId`           | `RunEvent` 用于运行审计事件                             | 不得把 `eventId` 和 `runEventId` 当同义字段混用             |
 
 硬规则：
 
@@ -66,6 +66,9 @@ Agent Run 只是运行时语义名，不是当前 contract 对象名。
 ```text
 AnalysisTask
 AnalysisRun
+Conversation
+Message
+MessageStream
 ExecutionAttempt
 ApprovalRequest
 RunEvent
@@ -102,6 +105,10 @@ DataQualityCheck
 ```text
 analysisTaskId
 runId
+conversationId
+messageId
+turnId
+messageStreamId
 eventId
 toolCallId
 modelCallId
@@ -232,8 +239,6 @@ ApprovalRequest
 ### 3.1 当前仍未正式进入 contracts 的对象
 
 ```text
-Message
-MessageStream
 PostRunJob
 VerificationResult
 ContextSnapshot
@@ -285,7 +290,6 @@ additionalProperties 边界
 但以下范围仍保持为后续 Contract Gap：
 
 ```text
-Message / MessageStream runtime transport contract
 PostRunJob contract
 VerificationResult contract
 Context / Permission / ToolScope / Retrieval snapshot contracts
@@ -383,7 +387,6 @@ ErrorRecord
 目标企业级运行时可能需要以下对象直接或间接围绕 `runId` 建模：
 
 ```text
-Message / MessageStream
 PostRunJob
 VerificationResult
 ContextSnapshot
@@ -411,20 +414,20 @@ RunAuditRecord
 
 页面结构已经完成基础搭建，后续不应继续重做页面结构，而应把运行时对象插入对应模块。
 
-| 页面 / 模块 | 与 AnalysisRun 的关系 |
-| --- | --- |
-| `Analysis` | 运行入口和工作区，发起、继续、查看一次分析运行 |
-| `Observability` | 展示 RunEvent、ModelCall、ToolCall、成本、延迟、错误、trace |
-| `Reports` | 展示 Report、ReportSection、Decision、ActionSuggestion |
-| `Data Knowledge` | 展示 SourceEvidence 背后的数据、知识、lineage、对象上下文 |
-| `Metrics` | 展示运行使用的业务指标上下文，Metric 可被 run 引用，但不是 run 产物 |
-| `Memory` | 展示运行后的长期记忆沉淀 |
-| `Feedback` | 展示用户对运行结果的反馈，必须绑定 runId |
-| `Evaluation` | 展示运行质量评估和坏例复盘 |
-| `Governance` | 配置和展示运行前 / 运行中的权限、风险、策略、审批、审计 |
-| `Model Tools` | 配置运行能力来源，包括模型、工具、Prompt、RAG 策略 |
-| `Platform Operations` | 支撑调度、通知、数据质量和运维状态 |
-| `Workspace / Settings` | 支撑工作区、用户、偏好和平台配置边界 |
+| 页面 / 模块            | 与 AnalysisRun 的关系                                               |
+| ---------------------- | ------------------------------------------------------------------- |
+| `Analysis`             | 运行入口和工作区，发起、继续、查看一次分析运行                      |
+| `Observability`        | 展示 RunEvent、ModelCall、ToolCall、成本、延迟、错误、trace         |
+| `Reports`              | 展示 Report、ReportSection、Decision、ActionSuggestion              |
+| `Data Knowledge`       | 展示 SourceEvidence 背后的数据、知识、lineage、对象上下文           |
+| `Metrics`              | 展示运行使用的业务指标上下文，Metric 可被 run 引用，但不是 run 产物 |
+| `Memory`               | 展示运行后的长期记忆沉淀                                            |
+| `Feedback`             | 展示用户对运行结果的反馈，必须绑定 runId                            |
+| `Evaluation`           | 展示运行质量评估和坏例复盘                                          |
+| `Governance`           | 配置和展示运行前 / 运行中的权限、风险、策略、审批、审计             |
+| `Model Tools`          | 配置运行能力来源，包括模型、工具、Prompt、RAG 策略                  |
+| `Platform Operations`  | 支撑调度、通知、数据质量和运维状态                                  |
+| `Workspace / Settings` | 支撑工作区、用户、偏好和平台配置边界                                |
 
 硬规则：
 
@@ -458,19 +461,19 @@ completed
 expired
 ```
 
-| 状态 | 说明 |
-| --- | --- |
-| `created` | 运行已创建，尚未进入 validating |
-| `validating` | 正在做入场校验、治理校验或基础限制校验 |
-| `rejected` | 入场前被拒绝，属于终态 |
-| `queued` | 已通过校验，等待 worker / 并发槽位 / 资源 |
-| `running` | 正在执行 |
-| `waiting` | 暂停等待外部动作 |
-| `cancelling` | 收到取消请求，正在收尾 |
-| `cancelled` | 已取消，属于终态 |
-| `failed` | 执行失败，属于终态 |
-| `completed` | 正常完成，属于终态 |
-| `expired` | 等待或调度超时，属于终态 |
+| 状态         | 说明                                      |
+| ------------ | ----------------------------------------- |
+| `created`    | 运行已创建，尚未进入 validating           |
+| `validating` | 正在做入场校验、治理校验或基础限制校验    |
+| `rejected`   | 入场前被拒绝，属于终态                    |
+| `queued`     | 已通过校验，等待 worker / 并发槽位 / 资源 |
+| `running`    | 正在执行                                  |
+| `waiting`    | 暂停等待外部动作                          |
+| `cancelling` | 收到取消请求，正在收尾                    |
+| `cancelled`  | 已取消，属于终态                          |
+| `failed`     | 执行失败，属于终态                        |
+| `completed`  | 正常完成，属于终态                        |
+| `expired`    | 等待或调度超时，属于终态                  |
 
 当前正式模型中，旧的 `waiting_approval` 已被拆分为：
 
@@ -617,7 +620,7 @@ AnalysisRun 有 runId、workspaceId、userId、analysisTaskId。
 创建 runId
 绑定 workspaceId
 绑定 userId / requester
-绑定 sessionId 或 analysisTaskId
+绑定 conversationId 或 analysisTaskId
 记录 input snapshot
 记录 idempotency key
 创建 root trace id
@@ -629,7 +632,6 @@ Contract Gap：
 inputSnapshotId
 idempotencyKey
 rootTraceId
-sessionId
 ```
 
 ### 8.2 Preflight
@@ -839,7 +841,7 @@ VerificationResult
 创建 final assistant message
 持久化 report / artifact / decision / action suggestion
 持久化 source evidence refs
-关闭 stream
+关闭 MessageStream
 释放 worker lease
 结算 cost
 写 run.completed event
@@ -848,7 +850,6 @@ VerificationResult
 Contract Gap：
 
 ```text
-Message / MessageStream
 Artifact
 CostRecord
 ```
@@ -1014,27 +1015,17 @@ RunEvent 不承载高频 token delta。
 当前事实：
 
 ```text
-conversationId / messageId / turnId 当前仍是候选对象，不是正式 contract。
+conversationId / messageId / turnId / messageStreamId 已进入正式 contracts。
 ```
 
-目标模型：
+硬规则：
 
 ```text
+Conversation 承接会话主线和 currentRunId 引用。
 Message 展示 conversation 内容。
 MessageStream 传输流式输出。
 RunEvent 记录审计事实。
 Message 不拥有 ToolCall / Evidence / Report 生命周期。
-```
-
-Contract Gap：
-
-```text
-Message
-MessageStream
-conversationId
-messageId
-turnId
-stream chunk schema
 ```
 
 禁止：
@@ -1117,7 +1108,6 @@ raw provider output 进入 UI
 ### P1 建议补强
 
 ```text
-Message / MessageStream 是否进入正式 contracts
 CostRecord
 ErrorRecord
 RunAuditRecord 与 RunEvent 关系

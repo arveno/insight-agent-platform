@@ -56,7 +56,8 @@ function ModuleRouteShellLayout({
   routeKey,
   slots
 }: ModuleRouteShellLayoutProps) {
-  const leftNavContent = leftNavMode === routeKey && slots.leftNav ? slots.leftNav : rootLeftNavContent;
+  const leftNavContent =
+    leftNavMode === routeKey && slots.leftNav ? slots.leftNav : rootLeftNavContent;
 
   return (
     <AppShellLayout
@@ -192,7 +193,11 @@ function DefaultRouteShell({
   rootLeftNavContent
 }: RouteShellOutletProps) {
   return (
-    <AppShellLayout header={header} leftNav={renderLeftNav(rootLeftNavContent)} rightAssistPanel={null}>
+    <AppShellLayout
+      header={header}
+      leftNav={renderLeftNav(rootLeftNavContent)}
+      rightAssistPanel={null}
+    >
       {defaultMainContent}
     </AppShellLayout>
   );

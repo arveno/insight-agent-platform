@@ -1,4 +1,7 @@
-import type { SharedRiskViewModel, SharedStatusViewModel } from "../../../shared/utils/viewModelState";
+import type {
+  SharedRiskViewModel,
+  SharedStatusViewModel
+} from "../../../shared/utils/viewModelState";
 
 import type { AnalysisMessage } from "./analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "./analysisRun";
@@ -29,10 +32,10 @@ export type AnalysisContextPackViewModel = {
 };
 
 export type AnalysisSessionSummaryViewModel = {
+  conversationId: string;
   contextLabel: string;
   riskViewModel?: SharedRiskViewModel;
   runLabel: string;
-  sessionId: string;
   statusViewModel: SharedStatusViewModel;
   summary: string;
   title: string;
@@ -89,6 +92,7 @@ export type AnalysisInspectorPanelKey =
 export type AnalysisComposerMode = "analysis" | "follow_up";
 
 export type AnalysisSessionViewModel = {
+  conversationId: string;
   currentRun: AnalysisRun;
   contextPack: AnalysisContextPackViewModel;
   followUpComposer: AnalysisComposerViewModel;
@@ -98,7 +102,6 @@ export type AnalysisSessionViewModel = {
   reportPreview?: AnalysisReportPreviewViewModel;
   resultSummary: AnalysisResultSummaryViewModel;
   runEvents: AnalysisRunEvent[];
-  sessionId: string;
   sessionSummary: AnalysisSessionSummaryViewModel;
   sourceEvidence: AnalysisSourceEvidenceViewModel[];
   toolDetails: AnalysisToolDetailViewModel[];

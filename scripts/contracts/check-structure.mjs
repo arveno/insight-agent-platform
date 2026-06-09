@@ -240,9 +240,9 @@ const backendFiles = [
   "services/agent-runtime/src/modules/conversations/analysis_service.py",
   "services/agent-runtime/src/modules/conversations/memory_service.py",
   "services/agent-runtime/src/modules/conversations/analysis_memory.py",
-  "services/agent-runtime/src/modules/agent_runs/evaluation_service.py",
-  "services/agent-runtime/src/modules/agent_runs/observability_service.py",
-  "services/agent-runtime/src/modules/agent_runs/regression.py",
+  "services/agent-runtime/src/modules/analysis_runs/evaluation_service.py",
+  "services/agent-runtime/src/modules/analysis_runs/observability_service.py",
+  "services/agent-runtime/src/modules/analysis_runs/regression.py",
   "services/agent-runtime/src/modules/data_knowledge/data_source_service.py",
   "services/agent-runtime/src/modules/data_knowledge/knowledge_service.py",
   "services/agent-runtime/src/modules/model_tools/model_tool_service.py",
@@ -277,7 +277,7 @@ const backendFiles = [
 const moduleDirs = [
   "workspace",
   "conversations",
-  "agent_runs",
+  "analysis_runs",
   "data_knowledge",
   "model_tools",
   "governance",
@@ -887,6 +887,26 @@ const analysisIdFallbackViolations = collectScopedFileContentViolations(
     }
   ]
 );
+const analysisLegacyConversationIdentityViolations = [
+  ...collectScopedFileContentViolations(
+    "apps/web/src/modules/analysis",
+    () => true,
+    [
+      {
+        pattern: /\b(sessionId|selectedSessionId|clientMessageId)\b/,
+        message:
+          "Analysis 必须使用 conversationId / selectedConversationId / messageId；禁止保留 sessionId、selectedSessionId 或 clientMessageId"
+      }
+    ]
+  ),
+  ...collectScopedFileContentViolations("apps/web/src/app/shell", () => true, [
+    {
+      pattern: /\b(sessionId|selectedSessionId|clientMessageId)\b/,
+      message:
+        "AppShell 不得回流 Analysis 旧会话标识；shell 侧不得出现 sessionId、selectedSessionId 或 clientMessageId"
+    }
+  ])
+];
 const moduleSectionLayoutViolations = collectScopedFileContentViolations(
   "apps/web/src/modules",
   (filePath) => filePath.includes("/sections/") && !filePath.includes("/modules/analysis/"),
@@ -1160,6 +1180,13 @@ if (analysisStandardPageStructureViolations.length > 0) {
 
 if (analysisIdFallbackViolations.length > 0) {
   fail("Analysis 模块检测到已禁止的 canonical id fallback：", analysisIdFallbackViolations);
+}
+
+if (analysisLegacyConversationIdentityViolations.length > 0) {
+  fail(
+    "Analysis 模块检测到未迁移的旧会话标识：",
+    analysisLegacyConversationIdentityViolations
+  );
 }
 
 if (moduleSectionLayoutViolations.length > 0) {

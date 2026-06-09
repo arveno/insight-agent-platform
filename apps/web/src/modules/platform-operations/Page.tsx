@@ -9,7 +9,10 @@ export function PlatformOperationsPage({ onNavigate }: PageRouteProps) {
 
   return (
     <ResponsivePageShell>
-      <PlatformOperationsSections controller={fallbackPlatformOperationsState} onNavigate={onNavigate} />
+      <PlatformOperationsSections
+        controller={fallbackPlatformOperationsState}
+        onNavigate={onNavigate}
+      />
     </ResponsivePageShell>
   );
 }

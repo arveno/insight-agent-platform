@@ -82,6 +82,28 @@ export const runEventStatuses = [
   "cancelled"
 ];
 
+export const conversationStatuses = ["active", "archived", "closed"];
+
+export const messageRoles = ["system", "user", "assistant", "tool"];
+
+export const messageStatuses = ["created", "streaming", "completed", "failed", "cancelled"];
+
+export const messageStreamEventTypes = [
+  "stream.started",
+  "stream.delta",
+  "stream.completed",
+  "stream.failed",
+  "stream.cancelled"
+];
+
+export const messageStreamStatuses = [
+  "created",
+  "streaming",
+  "completed",
+  "failed",
+  "cancelled"
+];
+
 export const runEventTypes = [
   "run.created",
   "run.validating",
@@ -164,6 +186,11 @@ export const formalRuntimeEnumDocs = [
   { heading: "AnalysisRunPhase", values: analysisRunPhases },
   { heading: "AnalysisRunOutcome", values: analysisRunOutcomes },
   { heading: "AnalysisRunWaitingFor", values: analysisRunWaitingFors },
+  { heading: "ConversationStatus", values: conversationStatuses },
+  { heading: "MessageRole", values: messageRoles },
+  { heading: "MessageStatus", values: messageStatuses },
+  { heading: "MessageStreamEventType", values: messageStreamEventTypes },
+  { heading: "MessageStreamStatus", values: messageStreamStatuses },
   { heading: "RunEventStatus", values: runEventStatuses },
   { heading: "RunEventType", values: runEventTypes },
   { heading: "ExecutionAttemptStatus", values: executionAttemptStatuses },
@@ -173,6 +200,9 @@ export const formalRuntimeEnumDocs = [
 
 export const runtimeSchemaPaths = [
   "analysis/analysis-run.schema.json",
+  "analysis/conversation.schema.json",
+  "analysis/message.schema.json",
+  "analysis/message-stream.schema.json",
   "analysis/run-event.schema.json",
   "analysis/tool-call.schema.json",
   "analysis/model-call.schema.json",
@@ -198,6 +228,44 @@ export const requiredFieldsBySchema = {
     "status",
     "phase",
     "createdAt"
+  ],
+  "analysis/conversation.schema.json": [
+    "conversationId",
+    "workspaceId",
+    "userId",
+    "analysisTaskId",
+    "currentRunId",
+    "title",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "analysis/message.schema.json": [
+    "messageId",
+    "conversationId",
+    "turnId",
+    "runId",
+    "role",
+    "content",
+    "status",
+    "sourceEvidenceIds",
+    "toolCallIds",
+    "reportId",
+    "createdAt",
+    "completedAt"
+  ],
+  "analysis/message-stream.schema.json": [
+    "messageStreamId",
+    "conversationId",
+    "messageId",
+    "runId",
+    "sequence",
+    "eventType",
+    "delta",
+    "status",
+    "occurredAt",
+    "errorCode",
+    "errorMessage"
   ],
   "analysis/run-event.schema.json": [
     "eventId",
@@ -331,6 +399,11 @@ export const minimumOpenApiPaths = [
   "/health",
   "/analysis-runs",
   "/analysis-runs/{runId}",
+  "/analysis-runs/{runId}/conversation",
+  "/conversations/{conversationId}",
+  "/conversations/{conversationId}/messages",
+  "/conversations/{conversationId}/messages/{messageId}",
+  "/conversations/{conversationId}/messages/{messageId}/stream",
   "/analysis-runs/{runId}/events",
   "/analysis-runs/{runId}/tool-calls",
   "/analysis-runs/{runId}/model-calls",

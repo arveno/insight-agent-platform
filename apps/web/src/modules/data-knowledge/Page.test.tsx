@@ -52,9 +52,7 @@ beforeAll(() => {
   });
 });
 
-function createController(
-  selectedAssetKey?: string
-): DataKnowledgeOverviewController {
+function createController(selectedAssetKey?: string): DataKnowledgeOverviewController {
   const viewModel = createDataKnowledgeViewModel(selectedAssetKey);
   const selectedNode =
     viewModel.relationshipNodeDetails.find(
@@ -68,24 +66,18 @@ function createController(
     onSelectNode: vi.fn(),
     searchValue: "",
     selectedAssetKey: viewModel.selectedAsset.key,
-    selectedNodeId: viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId,
+    selectedNodeId:
+      viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId,
     selectedNode,
     viewModel
   };
 }
 
-function InteractiveDataKnowledgePage({
-  selectedAssetKey
-}: {
-  selectedAssetKey?: string;
-}) {
+function InteractiveDataKnowledgePage({ selectedAssetKey }: { selectedAssetKey?: string }) {
   const [currentAssetKey, setCurrentAssetKey] = useState(
     selectedAssetKey ?? createDataKnowledgeViewModel().selectedAsset.key
   );
-  const viewModel = useMemo(
-    () => createDataKnowledgeViewModel(currentAssetKey),
-    [currentAssetKey]
-  );
+  const viewModel = useMemo(() => createDataKnowledgeViewModel(currentAssetKey), [currentAssetKey]);
   const [selectedNodeId, setSelectedNodeId] = useState(
     viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
   );

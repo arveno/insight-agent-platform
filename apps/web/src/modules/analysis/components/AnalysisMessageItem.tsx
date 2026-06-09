@@ -8,6 +8,8 @@ function getRoleLabel(role: AnalysisMessage["role"]): string {
       return "Assistant";
     case "system":
       return "System";
+    case "tool":
+      return "Tool";
     case "user":
       return "User";
   }
@@ -18,6 +20,7 @@ function getTone(role: AnalysisMessage["role"]): "assistant" | "system" | "user"
     case "assistant":
       return "assistant";
     case "system":
+    case "tool":
       return "system";
     case "user":
       return "user";
@@ -72,7 +75,9 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
             />
           </div>
         ) : null}
-        {message.metaText ? <Typography.Text type="secondary">{message.metaText}</Typography.Text> : null}
+        {message.metaText ? (
+          <Typography.Text type="secondary">{message.metaText}</Typography.Text>
+        ) : null}
         {message.footerText ? (
           <Typography.Text type="secondary">{message.footerText}</Typography.Text>
         ) : null}

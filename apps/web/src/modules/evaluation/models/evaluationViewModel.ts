@@ -1,4 +1,8 @@
-import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticPageStateViewModel,
+  StaticPageViewModelBase,
+  StaticSummaryItemViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 
 export type EvaluationViewModel = StaticPageViewModelBase & {
   badCases: StaticSummaryItemViewModel[];

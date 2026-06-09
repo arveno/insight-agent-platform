@@ -167,7 +167,7 @@ AppShell
 - 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
 - `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
 - `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只承接 module 暴露的 Analysis workspace 入口或 slots，不直接拼 session nav、message list、composer、inspector、drawer。
-- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedSessionId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得多处维护。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得多处维护。
 - `AnalysisMessageList` 只负责 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须有独立承载位，不得继续塞进 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；页面内容结构从 `ModuleSections` 开始组织，不再承接自动 header。
 - 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面主内容的大块纵向节奏和宽度，不承接 padding。

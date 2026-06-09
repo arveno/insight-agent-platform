@@ -201,7 +201,10 @@ export function AppShell() {
     </div>
   );
   const defaultMainContent = (
-    <ActivePage key={`${selectedWorkspace.workspaceId}:${activeRoute}`} onNavigate={handleNavigate} />
+    <ActivePage
+      key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+      onNavigate={handleNavigate}
+    />
   );
 
   return (

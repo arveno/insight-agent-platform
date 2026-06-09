@@ -43,7 +43,8 @@ export function mapMetricEvidenceItem(t: Translate, item: StaticEvidenceEntrance
   return {
     confidenceText: translateMappedText(t, item.confidenceText, confidenceKeyByText),
     key: item.key,
-    sourceTypeLabel: translateMappedText(t, item.sourceType, sourceTypeKeyByLabel) ?? item.sourceType,
+    sourceTypeLabel:
+      translateMappedText(t, item.sourceType, sourceTypeKeyByLabel) ?? item.sourceType,
     summary: summaryKey ? translateKey(t, summaryKey) : item.summary,
     title: titleKey ? translateKey(t, titleKey) : item.title
   };

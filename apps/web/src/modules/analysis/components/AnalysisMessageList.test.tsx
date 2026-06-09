@@ -11,11 +11,17 @@ afterEach(cleanup);
 const customMessages: AnalysisMessage[] = [
   {
     content: "只渲染传入的 assistant 消息。",
+    completedAt: "2026-06-09T10:00:10+08:00",
+    conversationId: "conversation-custom",
     createdAt: "2026-06-09T10:00:00+08:00",
     messageId: "message-assistant-only",
+    reportId: null,
     role: "assistant",
-    sessionId: "session-custom",
-    status: "completed"
+    runId: "analysis-custom",
+    sourceEvidenceIds: [],
+    status: "completed",
+    toolCallIds: [],
+    turnId: "turn-conversation-custom-1"
   }
 ];
 

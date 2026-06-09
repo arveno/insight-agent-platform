@@ -43,9 +43,9 @@ export function DashboardHero({
     })
   ];
   const timeRangeOptions = viewModel.timeRange.options.map((option) => ({
-      label: option.label,
-      value: option.key
-    }));
+    label: option.label,
+    value: option.key
+  }));
   const heroFacts = [
     {
       key: "metrics",

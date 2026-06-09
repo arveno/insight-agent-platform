@@ -1,4 +1,11 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../shared/view-model/staticStateFixtures";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  warningRisk
+} from "../../../shared/view-model/staticStateFixtures";
 import type { SettingsViewModel } from "../models/settingsViewModel";
 
 export const settingsStaticViewModel: SettingsViewModel = {

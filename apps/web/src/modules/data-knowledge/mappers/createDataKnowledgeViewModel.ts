@@ -1,10 +1,31 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../shared/view-model/staticStateFixtures";
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  warningRisk,
+  warningStatus
+} from "../../../shared/view-model/staticStateFixtures";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 import {
   dataKnowledgeStaticContracts,
   defaultDataKnowledgeWorkspaceBinding
 } from "../fixtures/dataKnowledgeStaticContracts";
-import type { DataKnowledgeAssetKind, DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeQualityCheckViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel, DataKnowledgeViewModel, DataKnowledgeWorkspaceBindingViewModel } from "../models/dataKnowledgeViewModel";
+import type {
+  DataKnowledgeAssetKind,
+  DataKnowledgeChunkViewModel,
+  DataKnowledgeEvidenceViewModel,
+  DataKnowledgeFieldViewModel,
+  DataKnowledgeQualityCheckViewModel,
+  DataKnowledgeSelectedAssetViewModel,
+  DataKnowledgeTableViewModel,
+  DataKnowledgeViewModel,
+  DataKnowledgeWorkspaceBindingViewModel
+} from "../models/dataKnowledgeViewModel";
 import { createDataKnowledgeRelationshipGraph } from "./createDataKnowledgeRelationshipGraph";
 
 const lowRisk = {
@@ -59,8 +80,7 @@ const dataSourcePresentationById: Record<string, AssetPresentation> = {
     risk: lowRisk,
     status: readyStatus,
     subtitle: "ClickHouse / Growth",
-    summary:
-      "承接获客效率和渠道投放事实的只读资产目录，用于 Metrics 和 Analysis 的上下文绑定。"
+    summary: "承接获客效率和渠道投放事实的只读资产目录，用于 Metrics 和 Analysis 的上下文绑定。"
   }
 };
 
@@ -75,8 +95,7 @@ const knowledgeDocumentPresentationById: Record<string, AssetPresentation> = {
     risk: warningRisk,
     status: readyStatus,
     subtitle: "Weekly report",
-    summary:
-      "沉淀渠道经营复盘、促销上下文和异常解释的知识文档，当前只展示切片与承接边界。"
+    summary: "沉淀渠道经营复盘、促销上下文和异常解释的知识文档，当前只展示切片与承接边界。"
   }
 };
 
@@ -85,8 +104,7 @@ const tablePresentationById: Record<string, TablePresentation> = {
     summary: "承接渠道投放与新增客户的日粒度事实，不在本页执行真实同步或下钻。"
   },
   "table-refund-order": {
-    summary:
-      "用于解释退款波动与收入扣减来源，表级证据进入 SourceEvidence 后才对 UI 可见。"
+    summary: "用于解释退款波动与收入扣减来源，表级证据进入 SourceEvidence 后才对 UI 可见。"
   },
   "table-sales-order": {
     summary: "收入确认主表，只读展示 schema 范围，不展示 raw SQL、raw API 或真实数据连接结果。"
@@ -142,24 +160,21 @@ const qualityCheckPresentationById: Record<string, QualityCheckPresentation> = {
     risk: warningRisk,
     statusLabel: "Needs review",
     statusView: warningStatus,
-    summary:
-      "知识文档 freshness 需要人工复核。详情、真实 Job 和重跑入口仍归 Platform Operations。",
+    summary: "知识文档 freshness 需要人工复核。详情、真实 Job 和重跑入口仍归 Platform Operations。",
     title: "Knowledge freshness review"
   },
   "data-quality-check-refund-reconciliation": {
     risk: lowRisk,
     statusLabel: "Ready",
     statusView: readyStatus,
-    summary:
-      "退款明细与收入扣减对账状态正常。本页只展示摘要，不执行真实对账任务。",
+    summary: "退款明细与收入扣减对账状态正常。本页只展示摘要，不执行真实对账任务。",
     title: "Refund reconciliation"
   },
   "data-quality-check-revenue-completeness": {
     risk: warningRisk,
     statusLabel: "Attention",
     statusView: warningStatus,
-    summary:
-      "Revenue completeness 存在需要复核的缺口波动，可能影响收入类指标和报告证据可信度。",
+    summary: "Revenue completeness 存在需要复核的缺口波动，可能影响收入类指标和报告证据可信度。",
     title: "Revenue completeness"
   }
 };
@@ -177,9 +192,7 @@ const usagePresentationByRunId: Record<string, UsagePresentation> = {
   }
 };
 
-function withWorkspaceBinding(
-  workspaceBinding: DataKnowledgeWorkspaceBindingViewModel
-) {
+function withWorkspaceBinding(workspaceBinding: DataKnowledgeWorkspaceBindingViewModel) {
   return {
     dataQualityChecks: dataKnowledgeStaticContracts.dataQualityChecks.map((item) => ({
       ...item,

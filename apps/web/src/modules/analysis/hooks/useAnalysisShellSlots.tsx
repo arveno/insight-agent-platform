@@ -26,7 +26,7 @@ export function useAnalysisShellSlots({
         onSearchChange={controller.onSessionSearchChange}
         onSelectSession={controller.onSelectSession}
         searchValue={controller.sessionSearchQuery}
-        selectedSessionId={controller.selectedSessionId}
+        selectedConversationId={controller.selectedConversationId}
         sessions={controller.visibleSessions}
       />
     ),

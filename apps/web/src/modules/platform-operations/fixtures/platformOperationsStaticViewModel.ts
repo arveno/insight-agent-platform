@@ -1,5 +1,18 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk, warningStatus } from "../../../shared/view-model/staticStateFixtures";
-import type { PlatformOperationDetailViewModel, PlatformOperationListItemViewModel, PlatformOperationsViewModel, PlatformOperationsWorkspaceBinding } from "../models/platformOperationsViewModel";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  warningRisk,
+  warningStatus
+} from "../../../shared/view-model/staticStateFixtures";
+import type {
+  PlatformOperationDetailViewModel,
+  PlatformOperationListItemViewModel,
+  PlatformOperationsViewModel,
+  PlatformOperationsWorkspaceBinding
+} from "../models/platformOperationsViewModel";
 
 const lowRisk = {
   level: "low",
@@ -16,8 +29,7 @@ type OperationBlueprint = Omit<PlatformOperationDetailViewModel, "workspaceId">;
 const operationBlueprints: OperationBlueprint[] = [
   {
     category: "job",
-    description:
-      "夜间数据质量 Job 只作为当前 Workspace 的只读运行摘要，不触发真实任务执行或重跑。",
+    description: "夜间数据质量 Job 只作为当前 Workspace 的只读运行摘要，不触发真实任务执行或重跑。",
     impactText:
       "1 个下游数据质量检查处于关注态，需要结合平台状态和通知判断是否影响 Dashboard 可信度。",
     key: "nightly-data-quality",
@@ -77,8 +89,7 @@ const operationBlueprints: OperationBlueprint[] = [
   },
   {
     category: "notification",
-    description:
-      "通知 / 告警只作为当前 Workspace 的只读摘要，不触发真实告警发送或升级。",
+    description: "通知 / 告警只作为当前 Workspace 的只读摘要，不触发真实告警发送或升级。",
     impactText: "用于提醒当前异常更可能来自数据质量或链路状态，而不是经营指标本身。",
     key: "quality-notification",
     lastRunText: "最近通知：今天 02:22",
@@ -150,7 +161,8 @@ const operationBlueprints: OperationBlueprint[] = [
   },
   {
     category: "migration",
-    description: "Migration 状态只读展示，用于解释近期结构变更是否可能影响当前 Workspace 的数据链路。",
+    description:
+      "Migration 状态只读展示，用于解释近期结构变更是否可能影响当前 Workspace 的数据链路。",
     impactText: "Migration 关注态需要优先作为平台原因排查入口，而不是直接判定为业务异常。",
     key: "migration",
     lastRunText: "最近更新：昨天 23:48",
@@ -202,9 +214,7 @@ function toWorkspaceDetail(
   return {
     ...blueprint,
     relatedObjects: blueprint.relatedObjects?.map((object) =>
-      object.label === "workspaceId"
-        ? { ...object, value: workspaceBinding.workspaceId }
-        : object
+      object.label === "workspaceId" ? { ...object, value: workspaceBinding.workspaceId } : object
     ),
     workspaceId: workspaceBinding.workspaceId
   };
@@ -263,8 +273,7 @@ export function createPlatformOperationsViewModel(
       labelKey: "action.platformOpenDashboard.label",
       targetRoute: "dashboard"
     },
-    readonlyNotice:
-      "不执行真实 Job，不执行真实数据质量检查，不执行部署、migration 或 smoke。",
+    readonlyNotice: "不执行真实 Job，不执行真实数据质量检查，不执行部署、migration 或 smoke。",
     readonlyState: defaultReadonlyState,
     rightAssistSummary: createRightAssistSummary(
       "platform-operations-right-assist",

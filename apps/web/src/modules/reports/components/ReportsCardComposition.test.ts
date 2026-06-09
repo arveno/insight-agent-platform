@@ -22,9 +22,7 @@ describe("Reports card composition", () => {
   it.each(reportsComponentSources)(
     "keeps $fileName on shared card patterns instead of raw Ant Card shells",
     ({ source }) => {
-      expect(source).not.toMatch(
-        /import\s*\{[^}]*\bCard\b[^}]*\}\s*from\s*["']antd["']/
-      );
+      expect(source).not.toMatch(/import\s*\{[^}]*\bCard\b[^}]*\}\s*from\s*["']antd["']/);
       expect(source).toMatch(/ContentCard|CardSurface/);
     }
   );

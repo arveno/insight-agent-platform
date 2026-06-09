@@ -1,6 +1,23 @@
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
-import type { RelationshipGraphEdgeViewModel, RelationshipGraphNodeKind, RelationshipGraphNodeViewModel, RelationshipGraphViewModel } from "../../../shared/graph/models";
-import type { DataKnowledgeChunkViewModel, DataKnowledgeEvidenceViewModel, DataKnowledgeFieldViewModel, DataKnowledgeRelationshipNodeFactViewModel, DataKnowledgeRelationshipNodeKind, DataKnowledgeRelationshipNodeViewModel, DataKnowledgeSelectedAssetViewModel, DataKnowledgeTableViewModel } from "../models/dataKnowledgeViewModel";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  RelationshipGraphEdgeViewModel,
+  RelationshipGraphNodeKind,
+  RelationshipGraphNodeViewModel,
+  RelationshipGraphViewModel
+} from "../../../shared/graph/models";
+import type {
+  DataKnowledgeChunkViewModel,
+  DataKnowledgeEvidenceViewModel,
+  DataKnowledgeFieldViewModel,
+  DataKnowledgeRelationshipNodeFactViewModel,
+  DataKnowledgeRelationshipNodeKind,
+  DataKnowledgeRelationshipNodeViewModel,
+  DataKnowledgeSelectedAssetViewModel,
+  DataKnowledgeTableViewModel
+} from "../models/dataKnowledgeViewModel";
 
 type CreateDataKnowledgeRelationshipGraphArgs = {
   chunks: DataKnowledgeChunkViewModel[];
@@ -99,28 +116,16 @@ function createEdge(
 }
 
 function createUsageNodeDetails(evidenceItems: DataKnowledgeEvidenceViewModel[]) {
-  return Array.from(new Map(evidenceItems.map((item) => [item.runId, item])).values()).map(
-    (item) =>
-      createNodeDetail(
-        `usage:${item.runId}`,
-        "usage",
-        item.usageTitle,
-        item.usageSummary,
-        [
-          { label: "runId", value: item.runId },
-          { label: "reportId", value: item.reportId ?? "N/A" },
-          { label: "usage", value: item.usageSummary }
-        ]
-      )
+  return Array.from(new Map(evidenceItems.map((item) => [item.runId, item])).values()).map((item) =>
+    createNodeDetail(`usage:${item.runId}`, "usage", item.usageTitle, item.usageSummary, [
+      { label: "runId", value: item.runId },
+      { label: "reportId", value: item.reportId ?? "N/A" },
+      { label: "usage", value: item.usageSummary }
+    ])
   );
 }
 
-function createEmptyNodeDetail(
-  nodeId: string,
-  title: string,
-  summary: string,
-  state: string
-) {
+function createEmptyNodeDetail(nodeId: string, title: string, summary: string, state: string) {
   return createNodeDetail(nodeId, "empty", title, summary, [{ label: "state", value: state }]);
 }
 
@@ -233,18 +238,17 @@ function createDataSourceRelationshipGraph({
             "waiting for first run or report reference"
           )
         ];
-  const tableNodeIdsByTableId = new Map(tableNodes.map((node) => [node.nodeId.split(":")[1], node.nodeId]));
-  const fieldNodeIdsByTableId = fields.reduce(
-    (fieldMap, field) => {
-      const items = fieldMap.get(field.tableId) ?? [];
-
-      items.push(`data_field:${field.fieldId}`);
-      fieldMap.set(field.tableId, items);
-
-      return fieldMap;
-    },
-    new Map<string, string[]>()
+  const tableNodeIdsByTableId = new Map(
+    tableNodes.map((node) => [node.nodeId.split(":")[1], node.nodeId])
   );
+  const fieldNodeIdsByTableId = fields.reduce((fieldMap, field) => {
+    const items = fieldMap.get(field.tableId) ?? [];
+
+    items.push(`data_field:${field.fieldId}`);
+    fieldMap.set(field.tableId, items);
+
+    return fieldMap;
+  }, new Map<string, string[]>());
   const usageNodeIdByRunId = new Map(
     usageNodes
       .filter((node) => node.kind === "usage")
@@ -257,7 +261,9 @@ function createDataSourceRelationshipGraph({
   const edges: RelationshipGraphEdgeViewModel[] = [];
 
   tableNodes.forEach((tableNode) => {
-    edges.push(createEdge(`edge:${assetNodeId}:${tableNode.nodeId}`, assetNodeId, tableNode.nodeId));
+    edges.push(
+      createEdge(`edge:${assetNodeId}:${tableNode.nodeId}`, assetNodeId, tableNode.nodeId)
+    );
   });
 
   fields.forEach((field) => {
@@ -277,7 +283,11 @@ function createDataSourceRelationshipGraph({
   if (fields.length === 0) {
     tableNodes.forEach((tableNode) => {
       edges.push(
-        createEdge(`edge:${tableNode.nodeId}:${fieldNodes[0].nodeId}`, tableNode.nodeId, fieldNodes[0].nodeId)
+        createEdge(
+          `edge:${tableNode.nodeId}:${fieldNodes[0].nodeId}`,
+          tableNode.nodeId,
+          fieldNodes[0].nodeId
+        )
       );
     });
   }
@@ -286,12 +296,19 @@ function createDataSourceRelationshipGraph({
     evidenceItems.forEach((evidence) => {
       const evidenceNodeId = `source_evidence:${evidence.sourceEvidenceId}`;
       const sourceFieldNodeIds =
-        evidence.sourceType === "data_table" ? fieldNodeIdsByTableId.get(evidence.sourceId) ?? [] : [];
+        evidence.sourceType === "data_table"
+          ? (fieldNodeIdsByTableId.get(evidence.sourceId) ?? [])
+          : [];
 
       if (sourceFieldNodeIds.length > 0) {
         sourceFieldNodeIds.forEach((fieldNodeId) => {
           edges.push(
-            createEdge(`edge:${fieldNodeId}:${evidenceNodeId}`, fieldNodeId, evidenceNodeId, "evidence")
+            createEdge(
+              `edge:${fieldNodeId}:${evidenceNodeId}`,
+              fieldNodeId,
+              evidenceNodeId,
+              "evidence"
+            )
           );
         });
       } else {
@@ -299,7 +316,12 @@ function createDataSourceRelationshipGraph({
 
         if (tableNodeId) {
           edges.push(
-            createEdge(`edge:${tableNodeId}:${evidenceNodeId}`, tableNodeId, evidenceNodeId, "evidence")
+            createEdge(
+              `edge:${tableNodeId}:${evidenceNodeId}`,
+              tableNodeId,
+              evidenceNodeId,
+              "evidence"
+            )
           );
         }
       }
@@ -307,7 +329,9 @@ function createDataSourceRelationshipGraph({
       const usageNodeId = usageNodeIdByRunId.get(evidence.runId);
 
       if (usageNodeId) {
-        edges.push(createEdge(`edge:${evidenceNodeId}:${usageNodeId}`, evidenceNodeId, usageNodeId, "usage"));
+        edges.push(
+          createEdge(`edge:${evidenceNodeId}:${usageNodeId}`, evidenceNodeId, usageNodeId, "usage")
+        );
       }
     });
   } else {
@@ -316,15 +340,33 @@ function createDataSourceRelationshipGraph({
 
     if (fieldNodes.length > 0) {
       fieldNodes.forEach((fieldNode) => {
-        edges.push(createEdge(`edge:${fieldNode.nodeId}:${emptyEvidenceNodeId}`, fieldNode.nodeId, emptyEvidenceNodeId));
+        edges.push(
+          createEdge(
+            `edge:${fieldNode.nodeId}:${emptyEvidenceNodeId}`,
+            fieldNode.nodeId,
+            emptyEvidenceNodeId
+          )
+        );
       });
     } else {
       tableNodes.forEach((tableNode) => {
-        edges.push(createEdge(`edge:${tableNode.nodeId}:${emptyEvidenceNodeId}`, tableNode.nodeId, emptyEvidenceNodeId));
+        edges.push(
+          createEdge(
+            `edge:${tableNode.nodeId}:${emptyEvidenceNodeId}`,
+            tableNode.nodeId,
+            emptyEvidenceNodeId
+          )
+        );
       });
     }
 
-    edges.push(createEdge(`edge:${emptyEvidenceNodeId}:${emptyUsageNodeId}`, emptyEvidenceNodeId, emptyUsageNodeId));
+    edges.push(
+      createEdge(
+        `edge:${emptyEvidenceNodeId}:${emptyUsageNodeId}`,
+        emptyEvidenceNodeId,
+        emptyUsageNodeId
+      )
+    );
   }
 
   const nodeDetails = [assetNode, ...tableNodes, ...fieldNodes, ...evidenceNodes, ...usageNodes];
@@ -475,8 +517,7 @@ function createKnowledgeRelationshipGraph({
     chunkNodes
       .filter((node) => node.kind === "knowledge_chunk")
       .map((node) => {
-        const chunkId =
-          node.facts.find((fact) => fact.label === "knowledgeChunkId")?.value ?? "";
+        const chunkId = node.facts.find((fact) => fact.label === "knowledgeChunkId")?.value ?? "";
 
         return [chunkId, node.nodeId] as const;
       })
@@ -484,7 +525,9 @@ function createKnowledgeRelationshipGraph({
   const edges: RelationshipGraphEdgeViewModel[] = [];
 
   groupNodes.forEach((groupNode) => {
-    edges.push(createEdge(`edge:${documentNodeId}:${groupNode.nodeId}`, documentNodeId, groupNode.nodeId));
+    edges.push(
+      createEdge(`edge:${documentNodeId}:${groupNode.nodeId}`, documentNodeId, groupNode.nodeId)
+    );
   });
 
   chunkGroups.forEach(([groupTitle, groupChunks]) => {
@@ -501,7 +544,13 @@ function createKnowledgeRelationshipGraph({
 
   if (chunks.length === 0) {
     groupNodes.forEach((groupNode) => {
-      edges.push(createEdge(`edge:${groupNode.nodeId}:${chunkNodes[0].nodeId}`, groupNode.nodeId, chunkNodes[0].nodeId));
+      edges.push(
+        createEdge(
+          `edge:${groupNode.nodeId}:${chunkNodes[0].nodeId}`,
+          groupNode.nodeId,
+          chunkNodes[0].nodeId
+        )
+      );
     });
   }
 
@@ -511,15 +560,31 @@ function createKnowledgeRelationshipGraph({
       const chunkNodeId = chunkNodeIdByChunkId.get(evidence.sourceId);
 
       if (evidence.sourceType === "knowledge_document" || !chunkNodeId) {
-        edges.push(createEdge(`edge:${documentNodeId}:${evidenceNodeId}`, documentNodeId, evidenceNodeId, "evidence"));
+        edges.push(
+          createEdge(
+            `edge:${documentNodeId}:${evidenceNodeId}`,
+            documentNodeId,
+            evidenceNodeId,
+            "evidence"
+          )
+        );
       } else {
-        edges.push(createEdge(`edge:${chunkNodeId}:${evidenceNodeId}`, chunkNodeId, evidenceNodeId, "evidence"));
+        edges.push(
+          createEdge(
+            `edge:${chunkNodeId}:${evidenceNodeId}`,
+            chunkNodeId,
+            evidenceNodeId,
+            "evidence"
+          )
+        );
       }
 
       const usageNodeId = usageNodeIdByRunId.get(evidence.runId);
 
       if (usageNodeId) {
-        edges.push(createEdge(`edge:${evidenceNodeId}:${usageNodeId}`, evidenceNodeId, usageNodeId, "usage"));
+        edges.push(
+          createEdge(`edge:${evidenceNodeId}:${usageNodeId}`, evidenceNodeId, usageNodeId, "usage")
+        );
       }
     });
   } else {
@@ -528,13 +593,31 @@ function createKnowledgeRelationshipGraph({
 
     if (chunkNodes.length > 0) {
       chunkNodes.forEach((chunkNode) => {
-        edges.push(createEdge(`edge:${chunkNode.nodeId}:${emptyEvidenceNodeId}`, chunkNode.nodeId, emptyEvidenceNodeId));
+        edges.push(
+          createEdge(
+            `edge:${chunkNode.nodeId}:${emptyEvidenceNodeId}`,
+            chunkNode.nodeId,
+            emptyEvidenceNodeId
+          )
+        );
       });
     } else {
-      edges.push(createEdge(`edge:${documentNodeId}:${emptyEvidenceNodeId}`, documentNodeId, emptyEvidenceNodeId));
+      edges.push(
+        createEdge(
+          `edge:${documentNodeId}:${emptyEvidenceNodeId}`,
+          documentNodeId,
+          emptyEvidenceNodeId
+        )
+      );
     }
 
-    edges.push(createEdge(`edge:${emptyEvidenceNodeId}:${emptyUsageNodeId}`, emptyEvidenceNodeId, emptyUsageNodeId));
+    edges.push(
+      createEdge(
+        `edge:${emptyEvidenceNodeId}:${emptyUsageNodeId}`,
+        emptyEvidenceNodeId,
+        emptyUsageNodeId
+      )
+    );
   }
 
   const nodeDetails = [documentNode, ...groupNodes, ...chunkNodes, ...evidenceNodes, ...usageNodes];

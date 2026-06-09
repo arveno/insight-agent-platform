@@ -1,4 +1,7 @@
-import type { SharedRiskViewModel, SharedStatusViewModel } from "../../../shared/utils/viewModelState";
+import type {
+  SharedRiskViewModel,
+  SharedStatusViewModel
+} from "../../../shared/utils/viewModelState";
 import type {
   AnalysisContextPackViewModel,
   AnalysisMemoryContextViewModel,
@@ -11,7 +14,12 @@ import type {
   AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
 import type { AnalysisMessage } from "../models/analysisMessage";
-import type { AnalysisRun, AnalysisRunEvent, AnalysisRunEventStatus, AnalysisRunStatus } from "../models/analysisRun";
+import type {
+  AnalysisRun,
+  AnalysisRunEvent,
+  AnalysisRunEventStatus,
+  AnalysisRunStatus
+} from "../models/analysisRun";
 
 const successStatus: SharedStatusViewModel = {
   labelKey: "state.success.default.title",
@@ -177,29 +185,29 @@ function createRunEvent({
 }
 
 function createSessionSummary({
+  conversationId,
   contextLabel,
   riskViewModel,
   runLabel,
-  sessionId,
   statusViewModel,
   summary,
   title,
   updatedAtText
 }: {
+  conversationId: string;
   contextLabel: string;
   riskViewModel?: SharedRiskViewModel;
   runLabel: string;
-  sessionId: string;
   statusViewModel: SharedStatusViewModel;
   summary: string;
   title: string;
   updatedAtText: string;
 }): AnalysisSessionSummaryViewModel {
   return {
+    conversationId,
     contextLabel,
     riskViewModel,
     runLabel,
-    sessionId,
     statusViewModel,
     summary,
     title,
@@ -239,59 +247,78 @@ function createResultSummary({
 }
 
 function createMessages({
+  conversationId,
   contextPack,
+  reportId,
   resultSummary,
   runId,
-  sessionId,
   sourceEvidenceIds,
   toolDetails,
   userPrompt
 }: {
+  conversationId: string;
   contextPack: AnalysisContextPackViewModel;
+  reportId: string | null;
   resultSummary: AnalysisResultSummaryViewModel;
   runId: string;
-  sessionId: string;
   sourceEvidenceIds: string[];
   toolDetails: AnalysisToolDetailViewModel[];
   userPrompt: string;
 }): AnalysisMessage[] {
+  const userTurnId = `turn-${conversationId}-1`;
+  const assistantStatus =
+    resultSummary.statusViewModel.status === "loading"
+      ? "streaming"
+      : resultSummary.statusViewModel.status === "risk"
+        ? "failed"
+        : "completed";
+
   return [
     {
       content: contextPack.systemText,
+      completedAt: "2026-06-05T11:08:00+08:00",
+      conversationId,
       createdAt: "2026-06-05T11:08:00+08:00",
-      messageId: `message-${sessionId}-system`,
+      messageId: `message-${conversationId}-system`,
       metaText: contextPack.stripText,
+      reportId: null,
       role: "system",
-      sessionId,
-      status: "completed"
+      runId: null,
+      sourceEvidenceIds: [],
+      status: "completed",
+      toolCallIds: [],
+      turnId: `turn-${conversationId}-context`
     },
     {
       content: userPrompt,
+      completedAt: "2026-06-05T11:08:12+08:00",
+      conversationId,
       createdAt: "2026-06-05T11:08:12+08:00",
-      messageId: `message-${sessionId}-user`,
+      messageId: `message-${conversationId}-user`,
+      reportId: null,
       role: "user",
       runId,
-      sessionId,
-      status: "completed"
+      sourceEvidenceIds: [],
+      status: "completed",
+      toolCallIds: [],
+      turnId: userTurnId
     },
     {
       content: resultSummary.conclusion,
+      completedAt: assistantStatus === "streaming" ? null : "2026-06-05T11:22:00+08:00",
+      conversationId,
       createdAt: "2026-06-05T11:22:00+08:00",
       footerText: "完整执行过程见右侧 Run Trace。",
-      messageId: `message-${sessionId}-assistant`,
+      messageId: `message-${conversationId}-assistant`,
+      reportId,
       role: "assistant",
       runId,
-      sessionId,
-      sourceRefs: sourceEvidenceIds,
-      status:
-        resultSummary.statusViewModel.status === "loading"
-          ? "streaming"
-          : resultSummary.statusViewModel.status === "risk"
-            ? "failed"
-            : "completed",
+      sourceEvidenceIds,
+      status: assistantStatus,
       supportingItems: resultSummary.findingBullets.slice(0, 2),
       supportingTitle: "关键发现",
-      toolRefs: toolDetails.map((toolDetail) => toolDetail.toolCallId)
+      toolCallIds: toolDetails.map((toolDetail) => toolDetail.toolCallId),
+      turnId: userTurnId
     }
   ];
 }
@@ -593,7 +620,8 @@ const revenueSession: AnalysisSessionViewModel = {
     title: "后续追问"
   },
   inputComposer: {
-    contextHint: "Conversation-first: 用户主动发起分析，未来可带着 Dashboard、Metrics 和 Reports 上下文进入。",
+    contextHint:
+      "Conversation-first: 用户主动发起分析，未来可带着 Dashboard、Metrics 和 Reports 上下文进入。",
     helperText: "本次只展示静态问题输入区，不创建真实 Agent Run。",
     initialDraft: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
     key: "analysis-input-revenue-gap",
@@ -612,11 +640,14 @@ const revenueSession: AnalysisSessionViewModel = {
     title: "经营周会背景记忆"
   }),
   messages: createMessages({
+    conversationId: "conversation-revenue-gap-q2",
     contextPack: revenueContextPack,
+    reportId: "report-weekly-operating-review",
     resultSummary: revenueResultSummary,
     runId: revenueRun.runId,
-    sessionId: "session-revenue-gap-q2",
-    sourceEvidenceIds: revenueSourceEvidence.map((sourceEvidence) => sourceEvidence.sourceEvidenceId),
+    sourceEvidenceIds: revenueSourceEvidence.map(
+      (sourceEvidence) => sourceEvidence.sourceEvidenceId
+    ),
     toolDetails: revenueToolDetails,
     userPrompt: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。"
   }),
@@ -628,12 +659,12 @@ const revenueSession: AnalysisSessionViewModel = {
   }),
   resultSummary: revenueResultSummary,
   runEvents: revenueRunEvents,
-  sessionId: "session-revenue-gap-q2",
+  conversationId: "conversation-revenue-gap-q2",
   sessionSummary: createSessionSummary({
+    conversationId: "conversation-revenue-gap-q2",
     contextLabel: "Dashboard / Revenue",
     riskViewModel: mediumRisk,
     runLabel: `Run: ${revenueRun.runId}`,
-    sessionId: "session-revenue-gap-q2",
     statusViewModel: successStatus,
     summary: "围绕 Dashboard 收入异常做渠道和时间窗口追问。",
     title: "Q2 收入异常追问",
@@ -878,11 +909,14 @@ const marginSession: AnalysisSessionViewModel = {
     title: "报告复盘口径记忆"
   }),
   messages: createMessages({
+    conversationId: "conversation-margin-follow-up",
     contextPack: marginContextPack,
+    reportId: "report-margin-follow-up-preview",
     resultSummary: marginResultSummary,
     runId: marginRun.runId,
-    sessionId: "session-margin-follow-up",
-    sourceEvidenceIds: marginSourceEvidence.map((sourceEvidence) => sourceEvidence.sourceEvidenceId),
+    sourceEvidenceIds: marginSourceEvidence.map(
+      (sourceEvidence) => sourceEvidence.sourceEvidenceId
+    ),
     toolDetails: marginToolDetails,
     userPrompt: "复盘本季度毛利率波动，重点解释促销投放和商品结构变化。"
   }),
@@ -894,12 +928,12 @@ const marginSession: AnalysisSessionViewModel = {
   }),
   resultSummary: marginResultSummary,
   runEvents: marginRunEvents,
-  sessionId: "session-margin-follow-up",
+  conversationId: "conversation-margin-follow-up",
   sessionSummary: createSessionSummary({
+    conversationId: "conversation-margin-follow-up",
     contextLabel: "Reports / Margin",
     riskViewModel: mediumRisk,
     runLabel: `Run: ${marginRun.runId}`,
-    sessionId: "session-margin-follow-up",
     statusViewModel: loadingStatus,
     summary: "从 Reports 结论继续追问毛利率波动归因。",
     title: "毛利率波动复盘",
@@ -1150,10 +1184,11 @@ const stockoutSession: AnalysisSessionViewModel = {
     title: "异常调查约束记忆"
   }),
   messages: createMessages({
+    conversationId: "conversation-stockout-risk",
     contextPack: stockoutContextPack,
+    reportId: null,
     resultSummary: stockoutResultSummary,
     runId: stockoutRun.runId,
-    sessionId: "session-stockout-risk",
     sourceEvidenceIds: stockoutSourceEvidence.map(
       (sourceEvidence) => sourceEvidence.sourceEvidenceId
     ),
@@ -1163,19 +1198,21 @@ const stockoutSession: AnalysisSessionViewModel = {
     message.role === "assistant"
       ? {
           ...message,
-          sourceRefs: stockoutSourceEvidence.map((sourceEvidence) => sourceEvidence.sourceEvidenceId),
+          sourceEvidenceIds: stockoutSourceEvidence.map(
+            (sourceEvidence) => sourceEvidence.sourceEvidenceId
+          ),
           status: "failed"
         }
       : message
   ),
   resultSummary: stockoutResultSummary,
   runEvents: stockoutRunEvents,
-  sessionId: "session-stockout-risk",
+  conversationId: "conversation-stockout-risk",
   sessionSummary: createSessionSummary({
+    conversationId: "conversation-stockout-risk",
     contextLabel: "Metrics / Stockout",
     riskViewModel: highRisk,
     runLabel: `Run: ${stockoutRun.runId}`,
-    sessionId: "session-stockout-risk",
     statusViewModel: warningStatus,
     summary: "围绕缺货率异常保留观测和治理入口，不自动升级为真实告警。",
     title: "库存异常定位",

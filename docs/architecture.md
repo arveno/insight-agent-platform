@@ -144,7 +144,7 @@ insight-agent-platform/
 - 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
 - `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
 - `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只能消费 module 暴露的 Analysis workspace 入口或 slots，不直接拼低层 Analysis 业务结构。
-- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedSessionId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
 - `AnalysisMessageList` 只展示 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须保留独立承载位，不得回塞 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；`SectionStack` 只负责页面内容大块纵向节奏。
 - 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
@@ -156,7 +156,7 @@ packages/contracts/schemas/
 ├─ workspace/             # Workspace、User、Role、BusinessDomain
 ├─ data-knowledge/        # DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk
 ├─ metrics/               # Metric、MetricFormula、MetricThreshold、MetricLineage
-├─ analysis/              # AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence
+├─ analysis/              # AnalysisTask、AnalysisRun、Conversation、Message、MessageStream、RunEvent、ToolCall、ModelCall、SourceEvidence、ExecutionAttempt、ApprovalRequest
 ├─ memory/                # MemoryItem
 ├─ feedback/              # Feedback
 ├─ evaluation/            # EvaluationRun、EvaluationDataset、EvaluationScore、BadCase
@@ -417,7 +417,7 @@ services/agent-runtime/src/
 ├─ modules/                       # 按业务垂直切片组织的服务代码
 │  ├─ workspace/
 │  ├─ conversations/
-│  ├─ agent_runs/
+│  ├─ analysis_runs/
 │  ├─ data_knowledge/
 │  ├─ model_tools/
 │  ├─ governance/
@@ -460,6 +460,8 @@ services/agent-runtime/tests/
 
 - `app` 不写业务逻辑，只负责启动、配置和 HTTP 边界。
 - `modules/*` 承接业务切片，不通过全局横向目录拆散链路。
+- `modules/analysis_runs` 是 `AnalysisRun / runId / Runtime Lifecycle` 的唯一后端 owner；后续真实运行实现必须从这里落地。
+- `modules/conversations/analysis_service.py` 只承接 conversation-level orchestration / facade，不拥有 `AnalysisRun` 生命周期。
 - `infrastructure/database` 是唯一数据库访问入口承载位。
 - `infrastructure/model_gateway` 是唯一模型调用入口。
 - `infrastructure/tool_registry` 是唯一工具调用入口。

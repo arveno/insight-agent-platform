@@ -1,4 +1,9 @@
-import type { StaticPageStateViewModel, StaticPageViewModelBase, StaticSummaryItemViewModel, StaticTraceEntranceViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticPageStateViewModel,
+  StaticPageViewModelBase,
+  StaticSummaryItemViewModel,
+  StaticTraceEntranceViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 
 export type ObservabilityViewModel = StaticPageViewModelBase & {
   costLatencySummary: StaticSummaryItemViewModel[];

@@ -1,4 +1,11 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../shared/view-model/staticStateFixtures";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  warningRisk
+} from "../../../shared/view-model/staticStateFixtures";
 import type { GovernanceViewModel } from "../models/governanceViewModel";
 
 const permissionPolicy = {

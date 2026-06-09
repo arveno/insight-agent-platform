@@ -63,10 +63,7 @@ function renderSummaryCards(
   });
 }
 
-function renderStatCards(
-  items: StaticStatCardViewModel[],
-  t: ReturnType<typeof useI18n>["t"]
-) {
+function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof useI18n>["t"]) {
   return items.map((metric) => (
     <StatCard
       supportingMeta={
@@ -116,7 +113,9 @@ export function ModelToolsSections({ onNavigate, viewModel }: ModelToolsSections
     t
   );
   const tabContentByKey = {
-    modelConfigs: <PropertyList items={[viewModel.selectedModelConfig, ...viewModel.modelConfigs]} />,
+    modelConfigs: (
+      <PropertyList items={[viewModel.selectedModelConfig, ...viewModel.modelConfigs]} />
+    ),
     promptVersions: (
       <PropertyList items={[viewModel.selectedPromptVersion, ...viewModel.promptVersions]} />
     ),

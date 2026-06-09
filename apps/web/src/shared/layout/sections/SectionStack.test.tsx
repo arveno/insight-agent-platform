@@ -19,6 +19,8 @@ describe("SectionStack", () => {
 
     expect(stack).toBeTruthy();
     expect(stack?.getAttribute("style")).toContain("width: 100%");
-    expect(stack?.getAttribute("style")).not.toContain(`padding: ${shellThemeTokens.pagePadding}px`);
+    expect(stack?.getAttribute("style")).not.toContain(
+      `padding: ${shellThemeTokens.pagePadding}px`
+    );
   });
 });

@@ -63,10 +63,7 @@ function renderSummaryCards(
   });
 }
 
-function renderStatCards(
-  items: StaticStatCardViewModel[],
-  t: ReturnType<typeof useI18n>["t"]
-) {
+function renderStatCards(items: StaticStatCardViewModel[], t: ReturnType<typeof useI18n>["t"]) {
   return items.map((metric) => (
     <StatCard
       supportingMeta={
