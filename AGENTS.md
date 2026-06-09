@@ -19,6 +19,7 @@
 - `docs/ui-design.md`：UI taxonomy、AppShell、shared primitive、Analysis exception、页面编排规则事实源。
 - `docs/contracts.md`：对象、字段、ID、状态、枚举的说明性事实源。
 - `docs/runtime-lifecycle.md`：`AnalysisRun / runId` 生命周期和运行时归属规则事实源。
+- `docs/runtime-capability-coverage.md`：`#155` Runtime 运行能力覆盖、首轮验收深度和范围压缩边界事实源。
 - `docs/runtime-business-integration.md`：真实业务接入手册，不是新的事实源。
 - `docs/database.md`：数据库结构、命名、迁移和落库路线事实源。
 - `docs/deployment.md`：部署、环境变量、smoke、rollback 事实源。
