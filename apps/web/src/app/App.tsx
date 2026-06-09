@@ -1,5 +1,5 @@
 import { AppProviders } from "./providers/AppProviders";
-import { AppShell } from "./layout/AppShell";
+import { AppShell } from "./shell/AppShell";
 
 export function App() {
   return (

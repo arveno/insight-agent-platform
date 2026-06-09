@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件是 Codex / AI Agent / 人类开发者在本仓库执行任务时必须遵守的硬规则。
+本文件是 Codex / AI Agent / 人类开发者在本仓库执行任务时必须遵守的宪法级硬规则。
 
 ## 1. 项目定位
 
@@ -8,108 +8,89 @@
 
 目标是从第一天建立完整企业级 Agent 产品骨架，覆盖数据、知识、指标、Multi-Agent、Memory、Feedback、Evaluation、Governance、Observability、Model Gateway、报告决策、CI、契约、部署和运维承载位。
 
-## 2. 执行流程
+## 2. 事实源分工
 
-- 需求必须先被拆成 Issue。
-- Issue 是执行合同。
-- Issue 必须基于需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts` 建立。
-- Issue 建立后不能直接交给 Codex 执行。
-- 必须先进行 Issue 合规审查。
-- Issue 合规审查通过并明确允许 Codex 执行后，Codex 才能执行代码。
-- Codex 执行前必须确认 Issue 已按 `docs/workflow.md` 完成合规审查。
-- 未经审查通过的 Issue，不允许进入代码执行阶段。
-- PR 是履约证明。
-- PR 只按已审查通过的 Issue 和 `docs/workflow.md` 反查，不重新发明标准。
-- CI 是自动守门。
-- 用户最终决定是否 Merge。
-- Codex 不得绕过 Issue 自由发挥。
+事实源分工固定如下：
 
-每个任务必须基于：
+- `AGENTS.md`：宪法级硬边界；定义不可违反的执行与实现规则。
+- `docs/workflow.md`：Issue / PR / review / merge 流程事实源。
+- `docs/architecture.md`：系统架构、目录职责、模块 owner、前后端边界事实源。
+- `docs/product-design.md`：产品能力、用户流程、页面职责和对象关系事实源。
+- `docs/ui-design.md`：UI taxonomy、AppShell、shared primitive、Analysis exception、页面编排规则事实源。
+- `docs/contracts.md`：对象、字段、ID、状态、枚举的说明性事实源。
+- `docs/runtime-lifecycle.md`：`AnalysisRun / runId` 生命周期和运行时归属规则事实源。
+- `docs/runtime-business-integration.md`：真实业务接入手册，不是新的事实源。
+- `docs/database.md`：数据库结构、命名、迁移和落库路线事实源。
+- `docs/deployment.md`：部署、环境变量、smoke、rollback 事实源。
+- `packages/contracts/**`：schema / OpenAPI / generated 的机器可校验事实源。
+- `docs/prototypes/**`：产品体验原型参考，不是正式事实源。
 
-- `AGENTS.md`
-- `docs/workflow.md`
-- `docs/architecture.md`
-- `docs/contracts.md`
-- `packages/contracts/*`
+硬规则：
 
-并在 Issue 中摘出本次任务相关规则。
+- 不得用口头约束覆盖仓库事实源。
+- 原型、外部设计稿、截图、临时说明都不能覆盖正式事实源。
+- 如果规则缺失、事实源冲突或对象尚未正式化，先补文档与 contracts，再写代码。
 
-## 3. Issue 合规审查
+## 3. 执行门禁
 
-Issue 建立后必须先完成合规审查，审查通过后才允许进入 Codex 代码执行阶段。
+- 需求必须先进入 Issue。
+- Issue 是执行合同，必须引用本次任务相关事实源并摘出相关规则。
+- Issue 未完成合规审查、未明确允许 Codex 执行前，Codex 不得写代码。
+- Codex 只能在已审查通过的 Issue 范围内执行；范围变化时必须先回到 Issue 重审。
+- 流程细节、审查项、PR 门禁、merge 条件以 `docs/workflow.md` 为准。
+- Codex 不能自审，不能自行判断“审核通过”，不能自行决定 merge，不能自行关闭治理 Issue。
+- Issue / PR 的最终判断仍等待 ChatGPT / human review 与用户决策。
 
-审查项至少包括：
-
-- 目标是否清楚。
-- 修改范围是否明确。
-- 事实源是否完整，包括需求、`AGENTS.md`、`docs/workflow.md`、`docs/architecture.md`、`docs/contracts.md`、`packages/contracts`。
-- 是否摘出了本次任务相关规则，而不是只写“遵守文档”。
-- 禁止项是否明确。
-- 验收标准是否可检查。
-- 测试要求是否明确。
-- 是否存在 Codex 自由发挥空间。
-- 是否越过 `AGENTS` / `workflow` / `architecture` / `contracts` / `packages/contracts` 事实源。
-- 是否引入 Mock / Real 双链路、无关依赖、无关重构或业务范围外实现。
-
-审查结论必须明确写入 Issue。未通过审查的 Issue 必须退回补充，不能进入代码执行阶段。
-
-## 4. 总体代码规则
+## 4. 单链路实现
 
 - 采用 monorepo + modular monolith。
-- 采用 Contracts-first。
-- 保持单链路实现，不做 old / new、mock / real、legacy / current 双轨。
+- 采用 contracts-first。
+- 保持单链路实现，不做 `old / new`、`mock / real`、`legacy / current` 双轨。
+- 不写 demo-only 逻辑进入正式目录。
+- 不保留长期兼容字段兜底。
 - 不新增无关依赖。
 - 不做无关重构。
-- 不写临时代码进入正式目录。
-- 不把 demo-only 逻辑混入主链路。
-- 不保留长期兼容字段兜底。
-
-### Codex 代码生成硬规则
-
-- Codex 只能在已审查通过的 Issue 范围内写代码。
-- Codex 不允许为了“保险”新增双轨实现。
-- Codex 不允许新增 `oldField || newField`、`mockData || realData`、`status === "done" || status === "success"` 这类兜底代码。
-- Codex 不允许新增无关依赖。
-- Codex 不允许无关重构。
-- Codex 不允许为了炫技做过度抽象。
-- Codex 不允许把一段清晰顺序逻辑拆成大量无意义小函数。
-- 拆函数 / 拆模块只能用于隔离明确职责、减少真实重复、收敛复杂业务链路或让阅读路径更清楚。
-- 后端不得绕过 Repository、Model Gateway、Tool Registry。
-- 前端不得绕过 Contract -> ViewModel -> UI 链路。
-- 代码必须优先清晰、直接、可审查。
-
-### 固定工具链规则
-
-- Codex 不允许自行替换已固定工具链。
-- 包管理固定使用 pnpm，不允许引入 npm / yarn 双轨。
-- Python 环境 / 依赖管理固定使用 uv，不允许引入 pip requirements 双轨。
-- 前端质量检查使用 ESLint，格式化使用 Prettier。
-- ESLint 不接入 `eslint-plugin-prettier`，不把 Prettier 当 ESLint rule 跑。
-- 前端类型检查使用 TypeScript / `tsc`。
-- 前端单元测试和组件测试使用 Vitest / React Testing Library。
-- 前端 E2E 和手机浏览器响应式验证使用 Playwright。
-- 后端 lint / format 使用 Ruff。
-- 后端类型检查使用 mypy。
-- 后端测试使用 pytest。
-
-## 5. 前后端字段一致
-
-核心业务字段以 `packages/contracts` 为事实源。
-
-固定规则：
-
-- 一字段一语义。
-- 一语义一字段。
-- 同一链路尽量保持字段名一致。
-- 字段转换只允许出现在 DB repository、API schema、ViewModel mapper 三个明确边界。
+- 不为“保险”新增双轨实现或 fallback 兼容代码。
 
 禁止：
 
 ```ts
-run.id || run.runId || run.analysisRunId
-status === 'done' || status === 'completed' || status === 'success'
-source.sources || source.evidences || source.references
+oldField || newField;
+mockData || realData;
+id || xxxId;
+metadata.xxxId || xxxId;
+status === "done" || status === "completed" || status === "success";
 ```
+
+## 5. Contracts 与字段语义
+
+- 核心业务字段以 `packages/contracts/**` 为机器可校验事实源。
+- `docs/contracts.md` 负责解释对象、字段、ID、状态和枚举语义。
+- `docs/runtime-lifecycle.md` 负责解释 `AnalysisRun / runId` 生命周期，不得重新发明字段或枚举。
+- `docs/runtime-business-integration.md` 只提供接入路径，不得升格为新的事实源。
+- 一字段一语义，一语义一字段。
+- 跨前后端共享链路、产品对象链路和 UI 可见业务链路必须使用 canonical business id。
+- 字段转换只允许出现在 `repository / API schema / ViewModel mapper` 三个明确边界。
+
+当前 runtime / conversation 主线固定为：
+
+```text
+AnalysisRun / runId
+Conversation / conversationId
+Message / messageId / turnId
+MessageStream / messageStreamId
+RunEvent / eventId
+ExecutionAttempt / attemptId
+ApprovalRequest / approvalId
+```
+
+禁止：
+
+- `AgentRun` 作为新的正式 contract 对象名。
+- `agentRunId / runtimeId / traceId` 替代 `runId`。
+- `runEventId` 替代 `eventId`。
+- `sessionId / clientMessageId` 回流到正式共享链路，或把本地会话选择态升格为正式共享业务 ID。
+- 私自新增第二套 lifecycle status、event type、ID 或字段别名。
 
 ## 6. 数据链路
 
@@ -124,135 +105,69 @@ External Raw Data
 -> UI
 ```
 
-禁止：
+硬规则：
 
-- UI 直接解析 raw API response。
-- UI 直接使用 DB 字段。
-- UI 直接使用模型原始输出。
-- UI 直接使用 Tool 原始输出。
-- UI 直接使用 LangGraph 原始 state。
+- 前端必须遵守 `Contract -> mapper -> ViewModel -> UI`。
+- UI 不直接消费 raw API response。
+- UI 不直接使用 DB 字段。
+- UI 不直接使用模型原始输出、Tool 原始输出或 LangGraph raw state。
+- `Analysis` 的正式共享状态必须围绕 `conversationId / selectedConversationId / messages / currentRun / runEvents` 展开，不得回退到旧 session 命名。
 
-## 7. 前端规则
+## 7. 前端边界
 
-- 前端采用 React / TypeScript / Vite / Ant Design 体系。
+- 前端采用 `React / TypeScript / Vite / Ant Design` 体系。
 - 不允许引入第二套 UI 组件库。
-- 页面只做编排，不写业务清洗。
-- 组件只消费 ViewModel 和 UI State。
-- API response 必须先通过 mapper 转成 ViewModel。
-- 状态标签、风险等级、空态、错误态必须使用 `shared/ui`。
-- 设计 token 必须走 `shared/theme`。
+- UI taxonomy、AppShell、shell slots、Analysis exception、页面编排和 shared primitive 细则以 `docs/ui-design.md` 为准。
+- 模块 owner、`app / shared / modules` 边界、AppShell / backend owner 归属以 `docs/architecture.md` 为准。
 
-## 8. 后端规则
+硬规则：
 
-后端采用 Python / FastAPI / LangGraph。
+- `app/shell` 只放通用应用外壳，不承接模块业务组件。
+- 模块专属 `nav / inspector / workspace / drawer / panel / section / components` 必须留在 `modules/<domain>`。
+- `shared` 只放无业务语义 primitive，不得依赖 `app` 或 `modules`。
+- `modules` 不得依赖 `app`；`modules` 之间不得直接 import 其他 module 的业务组件。
+- `Analysis` 是 conversation-workspace exception，不得被拉回标准 `PageIntro / ContentSection` 主链路。
 
-固定分层：
+## 8. 后端边界
 
-- `api`：请求、鉴权、参数校验、响应。
-- `application`：业务用例编排。
-- `domain`：业务对象和业务规则。
-- `runtime`：LangGraph 执行。
-- `agents`：Agent 职责实现。
-- `tools`：受控工具注册与执行。
-- `model_gateway`：统一模型调用。
-- `memory`：Memory 读写策略。
-- `evaluation`：评估、Bad Case、数据集。
-- `governance`：权限、SQL Guard、Tool Permission、审计。
-- `observability`：Trace、Metrics、Cost、日志。
-- `infrastructure`：DB、向量库、缓存、队列、外部依赖。
-- `schemas`：API DTO。
+- 后端采用 `Python / FastAPI / LangGraph`。
+- 后端分层、模块 owner、route / module / runtime 边界以 `docs/architecture.md` 为准。
+- `AnalysisRun` 的运行主线和 owner 边界以 `docs/runtime-lifecycle.md` 与 `docs/architecture.md` 为准。
 
-禁止：
+硬规则：
 
-- Agent Runtime 写进前端。
-- Agent 绕过 Tool Registry 调工具。
-- 模型调用绕过 Model Gateway。
-- 业务代码直接访问数据库连接。
-- 模型直接执行 SQL。
+- 不得绕过 `Repository` 访问业务数据。
+- 不得绕过 `Model Gateway` 调模型。
+- 不得绕过 `Tool Registry` 调工具。
+- 不得让模型直接执行 SQL。
+- 不得把 Agent Runtime、Tool 调用、模型调用或向量检索逻辑写进前端。
 
-## 9. Tool Registry 规则
+## 9. Mock、Memory、Feedback、Evaluation
 
-所有工具必须注册，并包含：
+- 产品没有 Mock 模式。
+- 允许 `seed demo workspace`、`test fixtures`、`fake provider for tests`、`local dev adapter`、`contract test data`。
+- 禁止 `Mock / Real` 模式切换。
+- 禁止 `mockRun / realRun` 双链路。
+- `Memory`、`Feedback`、`Evaluation` 三域不得混用。
 
-- name
-- description
-- input schema
-- output schema
-- permission
-- risk level
-- timeout
-- handler
-- error type
-- trace event type
+## 10. 固定工具链与验证
 
-## 10. Model Gateway 规则
+- 包管理固定使用 `pnpm`。
+- Python 环境与依赖管理固定使用 `uv`。
+- 前端 lint 使用 `ESLint`，格式化使用 `Prettier`，类型检查使用 `tsc`，测试使用 `Vitest / React Testing Library / Playwright`。
+- 后端 lint / format 使用 `Ruff`，类型检查使用 `mypy`，测试使用 `pytest`。
+- 每个任务都必须提供对应验证证据。
+- CI 至少覆盖 Issue / PR 模板检查、lint、typecheck、unit test、contract test、backend test、frontend build、smoke test。
 
-所有模型调用必须统一走 Model Gateway。
+## 11. 原型与正式实现
 
-Model Gateway 负责：
+- `docs/prototypes/**` 只用于产品体验原型参考、用户流程讨论和可点击验证。
+- 原型不得作为正式 React 组件结构、API、DB、contracts、ViewModel 或真实 runtime 的事实源。
+- 原型中的内容只有在沉淀进 `docs/**` 与 `packages/contracts/**` 后，才能进入 Issue 和代码实现。
 
-- provider adapter
-- routing
-- retry
-- fallback
-- cost
-- token usage
-- latency
-- trace
-- error mapping
+## 12. PR 与合并
 
-## 11. Memory / Feedback / Evaluation 分域
-
-- Memory：系统长期记住的信息。
-- Feedback：用户对本次结果的反馈。
-- Evaluation：系统对结果质量的评估。
-
-三者不得混用。
-
-## 12. Mock 策略
-
-产品没有 Mock 模式。
-
-允许：
-
-- seed demo workspace
-- test fixtures
-- fake provider for tests
-- local dev adapter
-- contract test data
-
-禁止：
-
-- Mock / Real 模式切换。
-- mockRun / realRun 双链路。
-- 组件中判断 mock 数据。
-
-## 13. 测试和 CI
-
-每个任务必须给出对应测试或验证证据。
-
-CI 至少覆盖：
-
-- Issue / PR 模板检查
-- lint
-- typecheck
-- unit test
-- contract test
-- backend test
-- frontend build
-- smoke test
-
-## 14. PR 规则
-
-PR 必须说明：
-
-- 对应 Issue。
-- 实现内容。
-- 修改范围。
-- 规则遵守情况。
-- 契约是否变更。
-- 测试结果。
-- 风险和未完成事项。
-
-PR 不重新发明标准，只按 Issue 反查。
-PR 审查必须按 `docs/workflow.md` 和已审查通过的 Issue 反查。
+- PR 是履约证明，不重新发明标准。
+- PR 必须按已审查通过的 Issue 与 `docs/workflow.md` 反查。
+- PR 必须说明实现内容、修改范围、规则遵守情况、契约是否变更、测试结果和风险。
+- 用户最终决定是否 merge。

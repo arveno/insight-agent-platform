@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "conversationId": "conversation-revenue-gap-q2",
+      "delta": "",
+      "errorCode": null,
+      "errorMessage": null,
+      "eventType": "stream.started",
+      "messageId": "message-revenue-gap-q2-assistant",
+      "messageStreamId": "message-stream-revenue-gap-q2-0",
+      "occurredAt": "2026-06-05T11:22:00+08:00",
+      "runId": "analysis-q2-revenue-gap",
+      "sequence": 0,
+      "status": "created"
+    },
+    {
+      "conversationId": "conversation-revenue-gap-q2",
+      "delta": "收入增速下滑主要来自华东核心渠道确认延迟",
+      "errorCode": null,
+      "errorMessage": null,
+      "eventType": "stream.delta",
+      "messageId": "message-revenue-gap-q2-assistant",
+      "messageStreamId": "message-stream-revenue-gap-q2-1",
+      "occurredAt": "2026-06-05T11:23:00+08:00",
+      "runId": "analysis-q2-revenue-gap",
+      "sequence": 1,
+      "status": "streaming"
+    },
+    {
+      "conversationId": "conversation-revenue-gap-q2",
+      "delta": "与促销库存错配。",
+      "errorCode": null,
+      "errorMessage": null,
+      "eventType": "stream.completed",
+      "messageId": "message-revenue-gap-q2-assistant",
+      "messageStreamId": "message-stream-revenue-gap-q2-2",
+      "occurredAt": "2026-06-05T11:24:00+08:00",
+      "runId": "analysis-q2-revenue-gap",
+      "sequence": 2,
+      "status": "completed"
+    }
+  ]
+}

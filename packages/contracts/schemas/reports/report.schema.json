@@ -5,6 +5,15 @@
   "description": "Agent 生成的正式分析报告契约。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "reportId",
+    "runId",
+    "workspaceId",
+    "title",
+    "summary",
+    "sections",
+    "createdAt"
+  ],
   "properties": {
     "reportId": {
       "description": "报告唯一标识。",
@@ -27,10 +36,10 @@
       "type": "string"
     },
     "sections": {
-      "description": "报告章节列表，后续应由 ReportSection 契约承载结构化字段。",
+      "description": "报告章节列表，使用 ReportSection 契约承载结构化章节字段。",
       "type": "array",
       "items": {
-        "type": "object"
+        "$ref": "./report-section.schema.json"
       }
     },
     "sourceEvidence": {

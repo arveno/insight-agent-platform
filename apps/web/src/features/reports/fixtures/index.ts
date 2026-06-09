@@ -1,1 +1,0 @@
-export { reportsStaticViewModel } from "./reportsStaticViewModel";

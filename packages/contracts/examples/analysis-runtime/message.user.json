@@ -1,0 +1,14 @@
+{
+  "completedAt": "2026-06-05T11:08:12+08:00",
+  "content": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+  "conversationId": "conversation-revenue-gap-q2",
+  "createdAt": "2026-06-05T11:08:12+08:00",
+  "messageId": "message-revenue-gap-q2-user",
+  "reportId": null,
+  "role": "user",
+  "runId": "analysis-q2-revenue-gap",
+  "sourceEvidenceIds": [],
+  "status": "completed",
+  "toolCallIds": [],
+  "turnId": "turn-revenue-gap-q2-1"
+}

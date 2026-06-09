@@ -21,14 +21,25 @@ body:
     id: fact-sources
     attributes:
       label: 事实源 / Fact Sources
-      description: 请列出本任务必须依据的事实源，包括需求、AGENTS.md、协作流程、架构文档、契约文档、数据库文档和 packages/contracts。
+      description: >
+        请列出本任务必须依据的事实源。按任务类型引用相关文档，不要只写“遵守文档”。
+        涉及 UI / 页面 / AppShell / Analysis workspace 时必须引用 docs/ui-design.md；
+        涉及 runtime / AnalysisRun / RunEvent / MessageStream 时必须引用 docs/runtime-lifecycle.md 和 docs/runtime-business-integration.md；
+        涉及字段 / ID / enum / API / schema 时必须引用 docs/contracts.md 和 packages/contracts/**；
+        涉及数据库 / migration / SQL 时必须引用 docs/database.md；
+        涉及部署 / smoke / rollback 时必须引用 docs/deployment.md。
       placeholder: |
         - 需求来源：
         - AGENTS.md：
         - docs/workflow.md：
         - docs/architecture.md：
+        - docs/product-design.md（按需）：
+        - docs/ui-design.md（UI / 页面 / AppShell / Analysis workspace 任务必填）：
         - docs/contracts.md：
+        - docs/runtime-lifecycle.md（runtime / AnalysisRun 任务必填）：
+        - docs/runtime-business-integration.md（真实 runtime 接入任务必填）：
         - docs/database.md：
+        - docs/deployment.md（部署 / smoke / rollback 任务必填）：
         - packages/contracts：
     validations:
       required: true

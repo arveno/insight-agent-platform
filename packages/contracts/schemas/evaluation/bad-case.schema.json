@@ -5,6 +5,15 @@
   "description": "由反馈或评估沉淀的问题案例契约，用于后续回归和改进。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "badCaseId",
+    "workspaceId",
+    "runId",
+    "failureType",
+    "failureReason",
+    "expectedBehavior",
+    "createdAt"
+  ],
   "properties": {
     "badCaseId": {
       "description": "Bad Case 唯一标识。",

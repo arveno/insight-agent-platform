@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { ConfigProvider } from "antd";
 
-import { useAppTheme, AppThemeProvider } from "../theme";
-import { I18nProvider, useI18n } from "../../shared/i18n";
+import { AppThemeProvider, useAppTheme } from "./AppThemeProvider";
+import { I18nProvider, useI18n } from "../../shared/i18n/I18nProvider";
 
 type AppProvidersProps = {
   children: ReactNode;

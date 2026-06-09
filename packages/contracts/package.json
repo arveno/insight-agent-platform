@@ -4,12 +4,18 @@
   "version": "0.1.0",
   "description": "Insight Agent Platform 的 contracts-first schema 与生成类型事实源。",
   "type": "module",
+  "exports": {
+    "./generated/typescript": "./generated/typescript/index.ts",
+    "./package.json": "./package.json"
+  },
   "files": [
     "schemas",
     "openapi",
-    "generated"
+    "generated",
+    "examples"
   ],
   "scripts": {
-    "check": "echo \"contracts 布局检查占位\""
+    "generate": "node ../../scripts/contracts/generate-contract-types.mjs",
+    "check": "node ../../scripts/contracts/check-contracts.mjs"
   }
 }

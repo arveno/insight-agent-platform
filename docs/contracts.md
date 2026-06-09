@@ -2,6 +2,10 @@
 
 本文档是业务对象、字段语义、ID、状态枚举、生命周期和前后端契约的事实源。
 
+`docs/runtime-lifecycle.md` 负责解释 AnalysisRun 生命周期、运行状态流转、RunEvent 审计、ToolCall / ModelCall / SourceEvidence / Report / Feedback / Evaluation 的运行归属和实现约束。
+
+`docs/contracts.md` 与 `packages/contracts` 仍然是字段、ID、对象名、状态枚举的唯一事实源。
+
 ## 1. 总原则
 
 - Contracts-first。
@@ -32,6 +36,11 @@ MetricThreshold
 MetricLineage
 AnalysisTask
 AnalysisRun
+Conversation
+Message
+MessageStream
+ExecutionAttempt
+ApprovalRequest
 RunEvent
 ToolCall
 ModelCall
@@ -61,7 +70,21 @@ DataQualityCheck
 
 ## 3. ID 规则
 
-统一使用 camelCase contract 字段：
+统一使用 camelCase contract 字段。
+
+跨前后端共享链路、产品对象链路和 UI 可见业务链路必须使用统一 canonical business id。
+
+同一个业务对象在 `contracts / API / backend / frontend service / mapper / ViewModel / UI / route / action / inspector` 中只能有一个 canonical id。
+
+不得长期存在：
+
+```text
+id || xxxId
+oldId || newId
+metadata.xxxId || xxxId
+```
+
+已进入 `packages/contracts` 的 canonical ID 至少包括：
 
 ```text
 workspaceId
@@ -74,8 +97,15 @@ fieldId
 knowledgeDocumentId
 knowledgeChunkId
 metricId
+metricFormulaId
+metricThresholdId
+metricLineageId
 analysisTaskId
 runId
+conversationId
+messageId
+turnId
+messageStreamId
 eventId
 toolCallId
 modelCallId
@@ -83,11 +113,104 @@ sourceEvidenceId
 memoryItemId
 feedbackId
 badCaseId
+datasetId
 evaluationRunId
+evaluationScoreId
 reportId
+reportSectionId
 decisionId
+actionSuggestionId
+attemptId
+approvalId
+modelConfigId
+routingPolicyId
+promptVersionId
+toolDefinitionId
+ragStrategyId
+jobId
+notificationId
+dataQualityCheckId
 auditLogId
+permissionPolicyId
+riskRuleId
 ```
+
+### Workspace / Tenant / IAM ID Boundary
+
+已确定 canonical ID：
+
+```text
+workspaceId
+userId
+roleId
+permissionPolicyId
+```
+
+候选 / 待审查 ID：
+
+```text
+tenantId
+organizationId
+workspaceMembershipId
+```
+
+边界规则：
+
+- `tenantId / organizationId / workspaceMembershipId` 当前属于产品和架构审查范围；如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts` schema。
+- 所有核心业务对象默认必须归属 `workspaceId`。
+- 如果未来某对象是全局资源，例如 `Model Provider`、`Tool Template`、`Prompt Template`，必须显式建模为 global resource，不得默认跨 `Workspace` 混用。
+- 不得出现 `workspaceId || tenantId`、`organizationId || workspaceId`、`userId || memberId` 等兜底式混用。
+- 在当前 schema 现状下，不得把 `tenantId`、`organizationId` 或 `workspaceMembershipId` 写入“已进入 packages/contracts 的 canonical ID 列表”。
+
+当前已正式进入 contracts 的 Analysis conversation / message canonical ID：
+
+```text
+conversationId
+messageId
+turnId
+messageStreamId
+```
+
+仍处于候选 / 待审查状态的产品对象 ID：
+
+```text
+findingId
+```
+
+这些对象如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts`。
+
+命名边界固定如下：
+
+- `eventId`：当前 `RunEvent` 的 canonical id。
+- `runEventId`：只有在未来引入独立于 `RunEvent` 的新对象并同步更新 `docs/contracts.md` 与 `packages/contracts` 后才允许使用。
+- 在当前链路中，不允许把 `eventId` 和 `runEventId` 当作同义字段混用。
+
+以下字段只允许作为本地表达，不得替代 canonical object id：
+
+```text
+key
+targetId
+pendingId
+draftId
+clientMessageId
+localOnlyId
+```
+
+例如：
+
+- `StaticSummaryItemViewModel.key` 可以作为 UI 列表 key。
+- `StaticFeedbackEntranceViewModel.targetId / targetType` 可以作为 UI 本地表达。
+- 以上字段都不得替代 `runId`、`reportId`、`sourceEvidenceId`、`metricId` 等 canonical object id。
+
+当前已知风险：
+
+- `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
+- `tenantId / organizationId / workspaceMembershipId` 当前仍是候选 ID，不能在共享链路中直接升格为 canonical ID。
+- `product-experience.html` 已在原型中暴露出 `findingId`、`conversationId`、`messageId`、`turnId`、`messageStreamId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId` 等产品对象 ID。
+- `conversationId / messageId / turnId / messageStreamId` 已正式进入 contracts；`findingId` 如后续进入共享链路，仍必须先完成 contracts 文档与 schema 审查。
+- `product-experience.html` 中出现的 `findingId` 等候选对象 ID 不代表其已经成为正式 contract。
+- 仍处于候选态的 ID 只有在进入正式链路前，才需要先更新 `docs/contracts.md` 与 `packages/contracts`。
+- `eventId` 与 `runEventId` 的命名边界必须保持单义，避免在 Observability / Inspector / Action 链路中产生双轨。
 
 禁止混用：
 
@@ -103,9 +226,105 @@ id / run_id / agentRunId / runtimeId / traceId
 
 ```text
 created
-planning
+validating
+rejected
+queued
 running
-waiting_approval
+waiting
+cancelling
+cancelled
+failed
+completed
+expired
+```
+
+### AnalysisRunPhase
+
+```text
+intake
+preflight
+governance
+context_binding
+planning
+approval
+queueing
+execution
+tool_execution
+evidence_binding
+synthesis
+verification
+delivery
+post_run
+```
+
+### AnalysisRunOutcome
+
+```text
+success
+partial_success
+policy_rejected
+user_cancelled
+timeout
+system_failure
+tool_failure
+model_failure
+verification_failure
+```
+
+### AnalysisRunWaitingFor
+
+```text
+approval
+user_input
+tool_callback
+external_dependency
+rate_limit
+quota_reset
+scheduled_resume
+```
+
+### ConversationStatus
+
+```text
+active
+archived
+closed
+```
+
+### MessageRole
+
+```text
+system
+user
+assistant
+tool
+```
+
+### MessageStatus
+
+```text
+created
+streaming
+completed
+failed
+cancelled
+```
+
+### MessageStreamEventType
+
+```text
+stream.started
+stream.delta
+stream.completed
+stream.failed
+stream.cancelled
+```
+
+### MessageStreamStatus
+
+```text
+created
+streaming
 completed
 failed
 cancelled
@@ -119,6 +338,92 @@ running
 succeeded
 failed
 skipped
+cancelled
+```
+
+### RunEventType
+
+```text
+run.created
+run.validating
+run.rejected
+run.queued
+run.started
+run.waiting
+run.cancel_requested
+run.cancelling
+run.cancelled
+run.failed
+run.completed
+run.expired
+validation.started
+validation.passed
+validation.rejected
+policy.check_started
+policy.decision_recorded
+context.bound
+plan.created
+approval.requested
+approval.granted
+approval.denied
+approval.expired
+worker.lease_acquired
+worker.heartbeat
+worker.lease_released
+execution_attempt.created
+execution_attempt.lost
+model_call.started
+model_call.completed
+model_call.failed
+tool_call.requested
+tool_call.policy_checked
+tool_call.started
+tool_call.completed
+tool_call.failed
+evidence.retrieved
+evidence.bound
+synthesis.started
+verification.started
+verification.passed
+verification.failed
+delivery.started
+artifact.persisted
+feedback.received
+evaluation.started
+evaluation.completed
+error.recorded
+```
+
+### ExecutionAttemptStatus
+
+```text
+leased
+running
+lost
+released
+failed
+completed
+```
+
+### ApprovalStatus
+
+```text
+requested
+granted
+denied
+expired
+cancelled
+superseded
+```
+
+### DecisionStatus
+
+```text
+proposed
+accepted
+rejected
+in_progress
+completed
 ```
 
 ### EvaluationStatus
@@ -156,17 +461,32 @@ manual_correction
 
 状态枚举必须来自 contracts，不允许手写自由字符串。
 
+Conversation / Message / MessageStream 的边界固定如下：
+
+- `Message` / `MessageStream` 不拥有 `AnalysisRun` 生命周期。
+- `Message` 可以引用 `runId`，但不得用 `message status` 替代 `run status`。
+- `stream.completed` 不能替代 `run.completed`。
+
 ## 5. AnalysisRun 生命周期
 
 ```text
 created
--> planning
--> running
--> waiting_approval 可选
--> completed / failed / cancelled
+-> validating
+    -> rejected
+    -> queued
+        -> running
+            -> waiting
+                -> queued
+                -> expired
+                -> cancelling
+            -> cancelling
+                -> cancelled
+            -> failed
+            -> completed
+        -> expired
 ```
 
-每次 AnalysisRun 必须记录：
+每次 AnalysisRun 自身必须记录的直接字段：
 
 ```text
 runId
@@ -174,18 +494,58 @@ workspaceId
 userId
 analysisTaskId
 status
+phase
+outcome
+waitingFor
+createdAt
+validatingAt
+queuedAt
 startedAt
+waitingSince
+timeoutAt
+cancelRequestedAt
+cancellingAt
 completedAt
-events
-toolCalls
-modelCalls
-memoryReads
-memoryWrites
-sourceEvidence
-evaluationResult
-reportId
-error
+failedAt
+cancelledAt
+expiredAt
+rejectedAt
+terminalReason
+failureCode
+retryable
+retryOfRunId
+originalRunId
 ```
+
+以下对象不得作为 AnalysisRun 内嵌字段；它们必须通过 runId 或父对象链路关联查询：
+
+```text
+RunEvent
+ToolCall
+ModelCall
+SourceEvidence
+Report
+Decision
+Feedback
+EvaluationRun
+BadCase
+ExecutionAttempt
+ApprovalRequest
+ReportSection -> Report.runId
+EvaluationScore -> EvaluationRun.runId
+ActionSuggestion -> Decision.runId / Decision.reportId
+```
+
+`MemoryItem` 和 `AuditLog` 当前不是 direct run-bound。
+
+如需表达某次 run 产生的 memory 写入或 run 审计记录，必须先补 `MemoryWrite`、`RunAuditRecord` 等正式 contract。
+
+生命周期规则固定如下：
+
+- `waiting_approval` 已被正式模型替换为 `status=waiting + waitingFor=approval`。
+- 终态固定为 `rejected / cancelled / failed / completed / expired`，终态不可复活。
+- 用户 retry 必须创建新的 `AnalysisRun`，并通过 `retryOfRunId / originalRunId` 记录链路。
+- 系统恢复必须在同一个 `AnalysisRun` 下创建新的 `ExecutionAttempt`，不得复活旧 terminal status。
 
 ## 6. RunEvent
 
@@ -198,12 +558,18 @@ eventId
 runId
 eventType
 status
+phase
+sequence
+actor
+occurredAt
+summary
+parentEventId
+refType
+refId
 nodeName
 agentName
 toolName
-inputSummary
-outputSummary
-errorType
+errorCode
 errorMessage
 startedAt
 completedAt
@@ -211,7 +577,50 @@ completedAt
 
 RunEvent 不等于 UI timeline item。UI 必须通过 mapper 转成 ViewModel。
 
-## 7. ToolCall
+## 7. ExecutionAttempt
+
+ExecutionAttempt 表示同一个 AnalysisRun 在 worker lease、恢复和重试过程中的执行尝试。
+
+必须绑定：
+
+```text
+attemptId
+runId
+attemptNumber
+workerId
+leaseId
+status
+leaseAcquiredAt
+leaseExpiresAt
+heartbeatAt
+releasedAt
+failureCode
+failureMessage
+```
+
+## 8. ApprovalRequest
+
+ApprovalRequest 表示运行中高风险计划、动作或工具调用的审批请求。
+
+必须绑定：
+
+```text
+approvalId
+runId
+planId
+planVersion
+toolCallId
+requestedAction
+riskLevel
+status
+requestedAt
+expiresAt
+decidedAt
+decidedBy
+decisionReason
+```
+
+## 9. ToolCall
 
 ToolCall 必须记录：
 
@@ -231,7 +640,7 @@ completedAt
 
 Agent 不能绕过 Tool Registry 调工具。
 
-## 8. ModelCall
+## 10. ModelCall
 
 ModelCall 必须记录：
 
@@ -253,7 +662,7 @@ completedAt
 
 模型调用必须走 Model Gateway。
 
-## 9. SourceEvidence
+## 11. SourceEvidence
 
 SourceEvidence 用于报告、结论和 RAG 引用追溯。
 
@@ -283,7 +692,7 @@ analysis_memory
 decision_memory
 ```
 
-## 10. Memory
+## 12. Memory
 
 MemoryItem 表示系统长期记住的信息。
 
@@ -298,7 +707,7 @@ decision
 
 Memory 不等于 Feedback，不等于 Evaluation。
 
-## 11. Feedback
+## 13. Feedback
 
 Feedback 表示用户对本次结果的反馈。
 
@@ -316,7 +725,7 @@ correction
 createdAt
 ```
 
-## 12. Evaluation
+## 14. Evaluation
 
 EvaluationRun 表示一次评估任务。
 
@@ -336,7 +745,7 @@ completedAt
 
 Evaluation 可以来自 DeepEval、RAGAs、LangSmith Dataset 或自建 evaluator。
 
-## 13. BadCase
+## 15. BadCase
 
 BadCase 必须绑定：
 
@@ -354,7 +763,7 @@ relatedContract
 createdAt
 ```
 
-## 14. Report & Decision
+## 16. Report & Decision
 
 Report 记录 Agent 生成的正式分析报告。
 
@@ -373,7 +782,7 @@ createdAt
 
 Decision 用于记录建议是否被采纳以及后续效果。
 
-## 15. ViewModel / Mapper 规则
+## 17. ViewModel / Mapper 规则
 
 - 从 Contract Model 到 Frontend ViewModel，核心业务字段名必须保持一致。
 - ViewModel 只能增加展示派生字段，不允许重命名核心业务字段。
@@ -415,7 +824,7 @@ type AnalysisRunViewModel = {
 };
 ```
 
-## 16. packages/contracts
+## 18. packages/contracts
 
 `packages/contracts` 必须包含：
 
@@ -433,9 +842,10 @@ generated/
 - generated types
 - contract tests
 
-## 17. Schema 分组规则
+## 19. Schema 分组规则
 
-`packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/features`、后端 `services/agent-runtime/app/domain` 保持一致。
+`packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致。
+这里的 contracts domain 目录可以保留 kebab-case；后端 Python runtime package 目录必须使用 snake_case。
 
 禁止把核心 schema 长期平铺在 `packages/contracts/schemas/*.schema.json` 下。新增核心对象时，必须先确认所属业务域，再放入对应分组目录。
 
@@ -461,7 +871,7 @@ packages/contracts/schemas/
 - `workspace`：Workspace、User、Role、BusinessDomain。
 - `data-knowledge`：DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk。
 - `metrics`：Metric、MetricFormula、MetricThreshold、MetricLineage。
-- `analysis`：AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence。
+- `analysis`：AnalysisTask、AnalysisRun、Conversation、Message、MessageStream、RunEvent、ToolCall、ModelCall、SourceEvidence、ExecutionAttempt、ApprovalRequest。
 - `memory`：MemoryItem。
 - `feedback`：Feedback。
 - `evaluation`：EvaluationRun、EvaluationDataset、EvaluationScore、BadCase。

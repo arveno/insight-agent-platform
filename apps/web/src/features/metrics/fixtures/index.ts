@@ -1,1 +1,0 @@
-export { metricsStaticViewModel } from "./metricsStaticViewModel";

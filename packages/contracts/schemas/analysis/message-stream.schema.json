@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/message-stream.schema.json",
+  "title": "MessageStream",
+  "description": "Message 的流式输出契约对象，只承接流式传输，不拥有 AnalysisRun 生命周期。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "messageStreamId",
+    "conversationId",
+    "messageId",
+    "runId",
+    "sequence",
+    "eventType",
+    "delta",
+    "status",
+    "occurredAt",
+    "errorCode",
+    "errorMessage"
+  ],
+  "properties": {
+    "messageStreamId": {
+      "description": "流式片段或流式事件的 canonical 标识。",
+      "type": "string"
+    },
+    "conversationId": {
+      "description": "流式事件所属会话标识。",
+      "type": "string"
+    },
+    "messageId": {
+      "description": "流式事件所属消息标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "流式事件所属 AnalysisRun 标识。",
+      "type": "string"
+    },
+    "sequence": {
+      "description": "同一消息流内的顺序号，从 0 开始递增。",
+      "type": "integer",
+      "minimum": 0
+    },
+    "eventType": {
+      "description": "流式事件类型，必须使用 contracts 中定义的 MessageStreamEventType 枚举。",
+      "type": "string",
+      "enum": [
+        "stream.started",
+        "stream.delta",
+        "stream.completed",
+        "stream.failed",
+        "stream.cancelled"
+      ]
+    },
+    "delta": {
+      "description": "当前流式事件携带的增量内容；非 delta 事件时可为空字符串。",
+      "type": "string"
+    },
+    "status": {
+      "description": "流式输出状态，必须使用 contracts 中定义的 MessageStreamStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "created",
+        "streaming",
+        "completed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "occurredAt": {
+      "description": "流式事件发生时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "errorCode": {
+      "description": "错误码；非错误事件时为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "errorMessage": {
+      "description": "错误说明；非错误事件时为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

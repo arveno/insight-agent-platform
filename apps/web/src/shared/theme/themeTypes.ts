@@ -1,3 +1,5 @@
-export type ThemeMode = "light" | "dark";
+export type ResolvedThemeMode = "light" | "dark";
 
-export const defaultThemeMode: ThemeMode = "light";
+export type ThemeMode = "system" | ResolvedThemeMode;
+
+export const defaultThemeMode: ThemeMode = "system";

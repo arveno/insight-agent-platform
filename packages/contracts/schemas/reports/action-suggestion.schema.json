@@ -4,6 +4,12 @@
   "title": "ActionSuggestion",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "actionSuggestionId",
+    "decisionId",
+    "summary",
+    "createdAt"
+  ],
   "properties": {
     "actionSuggestionId": {
       "type": "string"

@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
-import { Card, Space, Typography } from "antd";
 
-import { EmptyState, ErrorState, LoadingState } from "../ui";
+import { shellThemeTokens } from "../theme/tokens";
+import { shellTypographyStyles } from "../theme/typography";
+import { EmptyState } from "../ui/states/EmptyState";
+import { ErrorState } from "../ui/states/ErrorState";
+import { LoadingState } from "../ui/states/LoadingState";
+import { CardSurface } from "../ui/surfaces/CardSurface";
 import type { ChartCardViewModel } from "./chartTypes";
 
 export type ChartCardProps = ChartCardViewModel & {
@@ -14,7 +18,14 @@ export type ChartCardProps = ChartCardViewModel & {
  * ChartCard 只承接图表标题、状态和 slot；
  * 具体 series 必须由 feature mapper 产出 ViewModel，不直接消费 raw metric rows。
  */
-export function ChartCard({ actions, children, legend, state = { kind: "ready" }, subtitle, title }: ChartCardProps) {
+export function ChartCard({
+  actions,
+  children,
+  legend,
+  state = { kind: "ready" },
+  subtitle,
+  title
+}: ChartCardProps) {
   let content: ReactNode = children;
 
   if (state.kind === "loading") {
@@ -30,18 +41,35 @@ export function ChartCard({ actions, children, legend, state = { kind: "ready" }
   }
 
   return (
-    <Card>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Typography.Text strong>{title}</Typography.Text>
-            {subtitle ? <Typography.Text type="secondary">{subtitle}</Typography.Text> : null}
-          </Space>
+    <CardSurface>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: shellThemeTokens.cardContentGap,
+          width: "100%"
+        }}
+      >
+        <div
+          style={{
+            alignItems: "flex-start",
+            display: "flex",
+            gap: shellThemeTokens.cardContentGap,
+            justifyContent: "space-between",
+            width: "100%"
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={shellTypographyStyles.cardTitle}>{title}</span>
+            {subtitle ? (
+              <span style={shellTypographyStyles.cardDescription}>{subtitle}</span>
+            ) : null}
+          </div>
           {actions}
-        </Space>
+        </div>
         {content}
         {legend}
-      </Space>
-    </Card>
+      </div>
+    </CardSurface>
   );
 }
