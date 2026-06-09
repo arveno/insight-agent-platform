@@ -2,6 +2,10 @@
 
 本文档是业务对象、字段语义、ID、状态枚举、生命周期和前后端契约的事实源。
 
+`docs/runtime-lifecycle.md` 负责解释 AnalysisRun 生命周期、运行状态流转、RunEvent 审计、ToolCall / ModelCall / SourceEvidence / Report / Feedback / Evaluation 的运行归属和实现约束。
+
+`docs/contracts.md` 与 `packages/contracts` 仍然是字段、ID、对象名、状态枚举的唯一事实源。
+
 ## 1. 总原则
 
 - Contracts-first。
@@ -32,6 +36,8 @@ MetricThreshold
 MetricLineage
 AnalysisTask
 AnalysisRun
+ExecutionAttempt
+ApprovalRequest
 RunEvent
 ToolCall
 ModelCall
@@ -102,10 +108,13 @@ feedbackId
 badCaseId
 datasetId
 evaluationRunId
+evaluationScoreId
 reportId
 reportSectionId
 decisionId
 actionSuggestionId
+attemptId
+approvalId
 modelConfigId
 routingPolicyId
 promptVersionId
@@ -204,12 +213,61 @@ id / run_id / agentRunId / runtimeId / traceId
 
 ```text
 created
-planning
+validating
+rejected
+queued
 running
-waiting_approval
-completed
-failed
+waiting
+cancelling
 cancelled
+failed
+completed
+expired
+```
+
+### AnalysisRunPhase
+
+```text
+intake
+preflight
+governance
+context_binding
+planning
+approval
+queueing
+execution
+tool_execution
+evidence_binding
+synthesis
+verification
+delivery
+post_run
+```
+
+### AnalysisRunOutcome
+
+```text
+success
+partial_success
+policy_rejected
+user_cancelled
+timeout
+system_failure
+tool_failure
+model_failure
+verification_failure
+```
+
+### AnalysisRunWaitingFor
+
+```text
+approval
+user_input
+tool_callback
+external_dependency
+rate_limit
+quota_reset
+scheduled_resume
 ```
 
 ### RunEventStatus
@@ -220,6 +278,92 @@ running
 succeeded
 failed
 skipped
+cancelled
+```
+
+### RunEventType
+
+```text
+run.created
+run.validating
+run.rejected
+run.queued
+run.started
+run.waiting
+run.cancel_requested
+run.cancelling
+run.cancelled
+run.failed
+run.completed
+run.expired
+validation.started
+validation.passed
+validation.rejected
+policy.check_started
+policy.decision_recorded
+context.bound
+plan.created
+approval.requested
+approval.granted
+approval.denied
+approval.expired
+worker.lease_acquired
+worker.heartbeat
+worker.lease_released
+execution_attempt.created
+execution_attempt.lost
+model_call.started
+model_call.completed
+model_call.failed
+tool_call.requested
+tool_call.policy_checked
+tool_call.started
+tool_call.completed
+tool_call.failed
+evidence.retrieved
+evidence.bound
+synthesis.started
+verification.started
+verification.passed
+verification.failed
+delivery.started
+artifact.persisted
+feedback.received
+evaluation.started
+evaluation.completed
+error.recorded
+```
+
+### ExecutionAttemptStatus
+
+```text
+leased
+running
+lost
+released
+failed
+completed
+```
+
+### ApprovalStatus
+
+```text
+requested
+granted
+denied
+expired
+cancelled
+superseded
+```
+
+### DecisionStatus
+
+```text
+proposed
+accepted
+rejected
+in_progress
+completed
 ```
 
 ### EvaluationStatus
@@ -261,10 +405,19 @@ manual_correction
 
 ```text
 created
--> planning
--> running
--> waiting_approval 可选
--> completed / failed / cancelled
+-> validating
+    -> rejected
+    -> queued
+        -> running
+            -> waiting
+                -> queued
+                -> expired
+                -> cancelling
+            -> cancelling
+                -> cancelled
+            -> failed
+            -> completed
+        -> expired
 ```
 
 每次 AnalysisRun 必须记录：
@@ -275,8 +428,27 @@ workspaceId
 userId
 analysisTaskId
 status
+phase
+outcome
+waitingFor
+createdAt
+validatingAt
+queuedAt
 startedAt
+waitingSince
+timeoutAt
+cancelRequestedAt
+cancellingAt
 completedAt
+failedAt
+cancelledAt
+expiredAt
+rejectedAt
+terminalReason
+failureCode
+retryable
+retryOfRunId
+originalRunId
 events
 toolCalls
 modelCalls
@@ -287,6 +459,13 @@ evaluationResult
 reportId
 error
 ```
+
+生命周期规则固定如下：
+
+- `waiting_approval` 已被正式模型替换为 `status=waiting + waitingFor=approval`。
+- 终态固定为 `rejected / cancelled / failed / completed / expired`，终态不可复活。
+- 用户 retry 必须创建新的 `AnalysisRun`，并通过 `retryOfRunId / originalRunId` 记录链路。
+- 系统恢复必须在同一个 `AnalysisRun` 下创建新的 `ExecutionAttempt`，不得复活旧 terminal status。
 
 ## 6. RunEvent
 
@@ -299,12 +478,18 @@ eventId
 runId
 eventType
 status
+phase
+sequence
+actor
+occurredAt
+summary
+parentEventId
+refType
+refId
 nodeName
 agentName
 toolName
-inputSummary
-outputSummary
-errorType
+errorCode
 errorMessage
 startedAt
 completedAt
@@ -312,7 +497,50 @@ completedAt
 
 RunEvent 不等于 UI timeline item。UI 必须通过 mapper 转成 ViewModel。
 
-## 7. ToolCall
+## 7. ExecutionAttempt
+
+ExecutionAttempt 表示同一个 AnalysisRun 在 worker lease、恢复和重试过程中的执行尝试。
+
+必须绑定：
+
+```text
+attemptId
+runId
+attemptNumber
+workerId
+leaseId
+status
+leaseAcquiredAt
+leaseExpiresAt
+heartbeatAt
+releasedAt
+failureCode
+failureMessage
+```
+
+## 8. ApprovalRequest
+
+ApprovalRequest 表示运行中高风险计划、动作或工具调用的审批请求。
+
+必须绑定：
+
+```text
+approvalId
+runId
+planId
+planVersion
+toolCallId
+requestedAction
+riskLevel
+status
+requestedAt
+expiresAt
+decidedAt
+decidedBy
+decisionReason
+```
+
+## 9. ToolCall
 
 ToolCall 必须记录：
 
@@ -332,7 +560,7 @@ completedAt
 
 Agent 不能绕过 Tool Registry 调工具。
 
-## 8. ModelCall
+## 10. ModelCall
 
 ModelCall 必须记录：
 
@@ -354,7 +582,7 @@ completedAt
 
 模型调用必须走 Model Gateway。
 
-## 9. SourceEvidence
+## 11. SourceEvidence
 
 SourceEvidence 用于报告、结论和 RAG 引用追溯。
 
@@ -384,7 +612,7 @@ analysis_memory
 decision_memory
 ```
 
-## 10. Memory
+## 12. Memory
 
 MemoryItem 表示系统长期记住的信息。
 
@@ -399,7 +627,7 @@ decision
 
 Memory 不等于 Feedback，不等于 Evaluation。
 
-## 11. Feedback
+## 13. Feedback
 
 Feedback 表示用户对本次结果的反馈。
 
@@ -417,7 +645,7 @@ correction
 createdAt
 ```
 
-## 12. Evaluation
+## 14. Evaluation
 
 EvaluationRun 表示一次评估任务。
 
@@ -437,7 +665,7 @@ completedAt
 
 Evaluation 可以来自 DeepEval、RAGAs、LangSmith Dataset 或自建 evaluator。
 
-## 13. BadCase
+## 15. BadCase
 
 BadCase 必须绑定：
 
@@ -455,7 +683,7 @@ relatedContract
 createdAt
 ```
 
-## 14. Report & Decision
+## 16. Report & Decision
 
 Report 记录 Agent 生成的正式分析报告。
 
@@ -474,7 +702,7 @@ createdAt
 
 Decision 用于记录建议是否被采纳以及后续效果。
 
-## 15. ViewModel / Mapper 规则
+## 17. ViewModel / Mapper 规则
 
 - 从 Contract Model 到 Frontend ViewModel，核心业务字段名必须保持一致。
 - ViewModel 只能增加展示派生字段，不允许重命名核心业务字段。
@@ -516,7 +744,7 @@ type AnalysisRunViewModel = {
 };
 ```
 
-## 16. packages/contracts
+## 18. packages/contracts
 
 `packages/contracts` 必须包含：
 
@@ -534,7 +762,7 @@ generated/
 - generated types
 - contract tests
 
-## 17. Schema 分组规则
+## 19. Schema 分组规则
 
 `packages/contracts/schemas` 必须按业务域分组，长期标准是和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致。
 这里的 contracts domain 目录可以保留 kebab-case；后端 Python runtime package 目录必须使用 snake_case。

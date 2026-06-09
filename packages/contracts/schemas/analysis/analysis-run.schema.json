@@ -5,6 +5,15 @@
   "description": "一次 Agent 分析运行的契约对象，用于串联任务、事件、工具、模型、报告和评估结果。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "runId",
+    "workspaceId",
+    "userId",
+    "analysisTaskId",
+    "status",
+    "phase",
+    "createdAt"
+  ],
   "properties": {
     "runId": {
       "description": "分析运行的全局唯一标识，贯穿 runtime、事件、工具调用、模型调用和报告链路。",
@@ -27,13 +36,100 @@
       "type": "string",
       "enum": [
         "created",
-        "planning",
+        "validating",
+        "rejected",
+        "queued",
         "running",
-        "waiting_approval",
-        "completed",
+        "waiting",
+        "cancelling",
+        "cancelled",
         "failed",
-        "cancelled"
+        "completed",
+        "expired"
       ]
+    },
+    "phase": {
+      "description": "运行当前所在的业务阶段，必须使用 contracts 中定义的 AnalysisRunPhase 枚举。",
+      "type": "string",
+      "enum": [
+        "intake",
+        "preflight",
+        "governance",
+        "context_binding",
+        "planning",
+        "approval",
+        "queueing",
+        "execution",
+        "tool_execution",
+        "evidence_binding",
+        "synthesis",
+        "verification",
+        "delivery",
+        "post_run"
+      ]
+    },
+    "outcome": {
+      "description": "运行终态结果质量与原因；未结束时为 null。",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "success",
+            "partial_success",
+            "policy_rejected",
+            "user_cancelled",
+            "timeout",
+            "system_failure",
+            "tool_failure",
+            "model_failure",
+            "verification_failure"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "waitingFor": {
+      "description": "waiting 状态下的等待原因；非 waiting 时为 null。",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "approval",
+            "user_input",
+            "tool_callback",
+            "external_dependency",
+            "rate_limit",
+            "quota_reset",
+            "scheduled_resume"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "createdAt": {
+      "description": "运行创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "validatingAt": {
+      "description": "进入 validating 状态的时间；未进入时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "queuedAt": {
+      "description": "进入 queued 状态的时间；未排队时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
     },
     "startedAt": {
       "description": "运行实际开始时间；尚未开始时为 null。",
@@ -43,13 +139,109 @@
       ],
       "format": "date-time"
     },
-    "completedAt": {
-      "description": "运行结束时间；运行中、等待审批或尚未结束时为 null。",
+    "waitingSince": {
+      "description": "进入 waiting 状态的时间；不在 waiting 时为 null。",
       "type": [
         "string",
         "null"
       ],
       "format": "date-time"
+    },
+    "timeoutAt": {
+      "description": "等待或调度超时时间；没有超时边界时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "cancelRequestedAt": {
+      "description": "收到取消请求的时间；未收到取消请求时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "cancellingAt": {
+      "description": "进入 cancelling 状态的时间；未进入时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "运行成功完成时间；未 completed 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "failedAt": {
+      "description": "运行失败时间；未 failed 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "cancelledAt": {
+      "description": "运行取消完成时间；未 cancelled 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "expiredAt": {
+      "description": "运行过期时间；未 expired 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "rejectedAt": {
+      "description": "运行被拒绝时间；未 rejected 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "terminalReason": {
+      "description": "终态原因说明；未终态时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failureCode": {
+      "description": "标准失败码；没有失败码时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "retryable": {
+      "description": "该运行是否允许作为 retry 起点。",
+      "type": "boolean"
+    },
+    "retryOfRunId": {
+      "description": "用户 retry 时指向上一个运行；不是 retry 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "originalRunId": {
+      "description": "该 retry 链路的原始运行标识；不是 retry 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }

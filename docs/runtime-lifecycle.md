@@ -66,6 +66,8 @@ Agent Run 只是运行时语义名，不是当前 contract 对象名。
 ```text
 AnalysisTask
 AnalysisRun
+ExecutionAttempt
+ApprovalRequest
 RunEvent
 ToolCall
 ModelCall
@@ -109,10 +111,13 @@ feedbackId
 badCaseId
 datasetId
 evaluationRunId
+evaluationScoreId
 reportId
 reportSectionId
 decisionId
 actionSuggestionId
+attemptId
+approvalId
 auditLogId
 permissionPolicyId
 riskRuleId
@@ -124,12 +129,16 @@ riskRuleId
 
 ```text
 created
-planning
+validating
+rejected
+queued
 running
-waiting_approval
-completed
-failed
+waiting
+cancelling
 cancelled
+failed
+completed
+expired
 ```
 
 ### 2.4 当前正式 RunEventStatus
@@ -142,9 +151,61 @@ running
 succeeded
 failed
 skipped
+cancelled
 ```
 
-### 2.5 当前已确认的 runId 归属关系
+### 2.5 当前正式 AnalysisRunPhase
+
+当前正式 `AnalysisRunPhase` 为：
+
+```text
+intake
+preflight
+governance
+context_binding
+planning
+approval
+queueing
+execution
+tool_execution
+evidence_binding
+synthesis
+verification
+delivery
+post_run
+```
+
+### 2.6 当前正式 AnalysisRunOutcome
+
+当前正式 `AnalysisRunOutcome` 为：
+
+```text
+success
+partial_success
+policy_rejected
+user_cancelled
+timeout
+system_failure
+tool_failure
+model_failure
+verification_failure
+```
+
+### 2.7 当前正式 AnalysisRunWaitingFor
+
+当前正式 `AnalysisRunWaitingFor` 为：
+
+```text
+approval
+user_input
+tool_callback
+external_dependency
+rate_limit
+quota_reset
+scheduled_resume
+```
+
+### 2.8 当前已确认的 runId 归属关系
 
 当前 contracts 已经确认以下对象必须绑定 `runId`：
 
@@ -156,58 +217,21 @@ SourceEvidence
 Feedback
 EvaluationRun
 Report
+Decision
+BadCase
+ExecutionAttempt
+ApprovalRequest
 ```
 
 ---
 
 ## 3. 当前 contracts 不足
 
-当前 contracts 已有运行主对象和部分运行过程对象，但还不足以承载完整企业级 Agent Runtime。
+本次已完成 runtime lifecycle 的 P0 contract hardening，但仍存在剩余 Contract Gap。
 
-### 3.1 状态不足
-
-当前 `AnalysisRunStatus` 无法表达：
+### 3.1 当前仍未正式进入 contracts 的对象
 
 ```text
-入场校验
-治理拒绝
-排队等待
-普通 waiting
-取消中
-等待超时
-部分成功
-交付前校验
-系统恢复
-worker lease
-```
-
-### 3.2 字段不足
-
-当前 `AnalysisRun` 目标上可能需要，但 contracts 尚未正式确认的字段包括：
-
-```text
-phase
-outcome
-waitingFor
-timeoutAt
-retryOfRunId
-originalRunId
-rootTraceId
-contextSnapshotId
-permissionSnapshotId
-toolScopeSnapshotId
-retrievalScopeId
-```
-
-这些字段在进入实现前必须先完成 contracts 补强。
-
-### 3.3 对象不足
-
-当前 contracts 尚未正式确认，但目标生命周期可能需要的对象包括：
-
-```text
-ExecutionAttempt
-ApprovalRequest
 Message
 MessageStream
 PostRunJob
@@ -218,11 +242,25 @@ ToolScopeSnapshot
 RetrievalScope
 CostRecord
 ErrorRecord
+RunAuditRecord
+MemoryWrite
 ```
 
-这些对象只能作为 `Contract Gap`，不能被实现层私自创建。
+这些对象当前仍只能作为 `Contract Gap`，不得进入实现链路。
 
-### 3.4 Schema 强约束不足
+### 3.2 当前仍未正式进入 contracts 的字段
+
+```text
+rootTraceId
+contextSnapshotId
+permissionSnapshotId
+toolScopeSnapshotId
+retrievalScopeId
+```
+
+这些字段如果后续需要进入 API / DB / ViewModel / UI，共享链路前必须先补齐 contracts。
+
+### 3.3 当前仍需继续补强的 schema 约束
 
 当前部分 schema 仍偏宽松，例如数组项、状态字段、metadata、输入输出结构等还没有完整强约束。
 
@@ -240,18 +278,18 @@ additionalProperties 边界
 时间字段
 ```
 
-### 3.5 OpenAPI / generated 不足
+### 3.4 当前仍未收口的 contract / OpenAPI / generated 范围
 
-当前 OpenAPI 和 generated types 尚不足以承接完整运行时主链路。
+本次已补最小 runtime OpenAPI 主链路、TypeScript / Python generated outputs 和 contracts drift check。
 
-目标上需要补强：
+但以下范围仍保持为后续 Contract Gap：
 
 ```text
-最小 runtime API
-TypeScript generated types
-Python generated types
-contract check
-schema / OpenAPI / generated drift check
+Message / MessageStream runtime transport contract
+PostRunJob contract
+VerificationResult contract
+Context / Permission / ToolScope / Retrieval snapshot contracts
+Cost / Error / RunAudit / MemoryWrite contracts
 ```
 
 ---
@@ -275,6 +313,10 @@ SourceEvidence
 Feedback
 EvaluationRun
 Report
+Decision
+BadCase
+ExecutionAttempt
+ApprovalRequest
 ```
 
 规则：
@@ -341,8 +383,6 @@ ErrorRecord
 目标企业级运行时可能需要以下对象直接或间接围绕 `runId` 建模：
 
 ```text
-ExecutionAttempt
-ApprovalRequest
 Message / MessageStream
 PostRunJob
 VerificationResult
@@ -356,7 +396,7 @@ ErrorRecord
 RunAuditRecord
 ```
 
-但这些对象尚未全部进入当前 contracts。
+其中 `ExecutionAttempt`、`ApprovalRequest` 已在当前 contracts 中正式化，其余对象尚未进入当前 contracts。
 
 规则：
 
@@ -396,15 +436,13 @@ RunAuditRecord
 
 ---
 
-## 6. 目标生命周期模型 / Contract Gap
+## 6. 当前正式生命周期模型
 
-以下内容是目标生命周期模型，不是当前 contracts 已落地事实。
+以下内容已经进入当前 contracts，是当前正式 runtime lifecycle 事实。
 
-在 `docs/contracts.md`、`packages/contracts/schemas/**`、OpenAPI、generated types 同步完成前，不得进入 API / DB / ViewModel / UI 实现链路。
+### 6.1 当前正式 status
 
-### 6.1 目标 status
-
-目标状态建议：
+当前正式状态为：
 
 ```text
 created
@@ -420,32 +458,30 @@ completed
 expired
 ```
 
-| 状态 | 说明 | 当前是否正式进入 contracts |
-| --- | --- | --- |
-| `created` | 运行已创建 | 是 |
-| `validating` | 正在入场校验 / 治理校验 | 否，Contract Gap |
-| `rejected` | 入场前被拒绝 | 否，Contract Gap |
-| `queued` | 等待 worker / 并发槽位 / 模型资源 | 否，Contract Gap |
-| `running` | 正在执行 | 是 |
-| `waiting` | 暂停等待外部动作 | 否，Contract Gap |
-| `cancelling` | 收到取消请求，正在收尾 | 否，Contract Gap |
-| `cancelled` | 已取消 | 是 |
-| `failed` | 执行失败 | 是 |
-| `completed` | 正常完成 | 是 |
-| `expired` | 等待或调度超时 | 否，Contract Gap |
+| 状态 | 说明 |
+| --- | --- |
+| `created` | 运行已创建，尚未进入 validating |
+| `validating` | 正在做入场校验、治理校验或基础限制校验 |
+| `rejected` | 入场前被拒绝，属于终态 |
+| `queued` | 已通过校验，等待 worker / 并发槽位 / 资源 |
+| `running` | 正在执行 |
+| `waiting` | 暂停等待外部动作 |
+| `cancelling` | 收到取消请求，正在收尾 |
+| `cancelled` | 已取消，属于终态 |
+| `failed` | 执行失败，属于终态 |
+| `completed` | 正常完成，属于终态 |
+| `expired` | 等待或调度超时，属于终态 |
 
-当前正式 `waiting_approval` 是较粗的等待审批状态。目标模型中建议将其演进为：
+当前正式模型中，旧的 `waiting_approval` 已被拆分为：
 
 ```text
 status = waiting
 waitingFor = approval
 ```
 
-该演进必须经过 contracts 更新，不能直接在实现中替换。
+### 6.2 当前正式 phase
 
-### 6.2 目标 phase
-
-目标阶段建议：
+当前正式阶段为：
 
 ```text
 intake
@@ -464,18 +500,9 @@ delivery
 post_run
 ```
 
-当前 contracts 尚未正式提供 `phase` 字段。
+### 6.3 当前正式 outcome
 
-因此：
-
-```text
-phase 属于 Contract Gap。
-实现层不得私自添加 phase 字段。
-```
-
-### 6.3 目标 outcome
-
-目标 outcome 建议：
+当前正式 outcome 为：
 
 ```text
 success
@@ -489,25 +516,22 @@ model_failure
 verification_failure
 ```
 
-当前 contracts 尚未正式提供 `outcome` 字段。
-
-因此：
-
-```text
-outcome 属于 Contract Gap。
-不得新增 completed_with_warnings 这类 status。
-```
-
-目标表达方式：
+正式表达方式：
 
 ```text
 status = completed
 outcome = partial_success
 ```
 
-### 6.4 目标 waitingFor
+不得新增：
 
-目标 waitingFor 建议：
+```text
+completed_with_warnings
+```
+
+### 6.4 当前正式 waitingFor
+
+当前正式 waitingFor 为：
 
 ```text
 approval
@@ -519,20 +543,9 @@ quota_reset
 scheduled_resume
 ```
 
-当前 contracts 尚未正式提供 `waitingFor` 字段。
-
-因此：
-
-```text
-waitingFor 属于 Contract Gap。
-当前实现不得私自引入。
-```
-
 ---
 
-## 7. 目标业务阶段流
-
-以下为目标模型，不是当前正式状态机。
+## 7. 当前正式业务阶段流
 
 ```text
 intake
@@ -552,7 +565,7 @@ intake
   -> post_run
 ```
 
-目标主状态流：
+当前正式主状态流：
 
 ```text
 created
@@ -584,11 +597,11 @@ verification 前不得 completed
 delivery 前不得持久化最终 artifact
 ```
 
-以上规则需要在 contracts 补强后进入实现。
+以上规则当前已经由 contracts 承接，可作为实现约束。
 
 ---
 
-## 8. 目标阶段规则
+## 8. 生命周期阶段规则
 
 ### 8.1 Intake
 
@@ -636,10 +649,7 @@ sessionId
 Contract Gap：
 
 ```text
-validating status
-rejected status
 reject reason
-validation event type
 ```
 
 ### 8.3 Governance
@@ -663,7 +673,6 @@ Contract Gap：
 
 ```text
 policy decision object
-ApprovalRequest
 risk policy result
 permission snapshot
 ```
@@ -696,7 +705,7 @@ retrievalScopeId
 当前事实：
 
 ```text
-AnalysisRunStatus 当前有 planning。
+AnalysisRunPhase 当前有 planning。
 ```
 
 目标模型：
@@ -728,10 +737,11 @@ approvalRequirements
 当前事实：
 
 ```text
-AnalysisRunStatus 当前有 waiting_approval。
+ApprovalRequest 已是正式 contract 对象。
+AnalysisRun 当前通过 status=waiting + waitingFor=approval 表达等待审批。
 ```
 
-目标模型：
+当前正式规则：
 
 ```text
 ApprovalRequest 是独立对象。
@@ -741,20 +751,9 @@ approval 只批准明确动作，不批准整个 run 的所有后续行为。
 plan 变化后旧 approval 必须 superseded。
 ```
 
-Contract Gap：
-
-```text
-ApprovalRequest
-approvalId
-ApprovalStatus
-waiting status
-waitingFor = approval
-timeoutAt
-```
-
 ### 8.7 Queueing / ExecutionAttempt
 
-目标模型：
+当前正式规则：
 
 ```text
 进入队列
@@ -764,18 +763,6 @@ timeoutAt
 记录 leaseExpiresAt
 记录 heartbeat
 worker crash 后同 run 创建新 ExecutionAttempt
-```
-
-Contract Gap：
-
-```text
-queued status
-ExecutionAttempt
-attemptId
-leaseId
-workerId
-leaseExpiresAt
-heartbeatAt
 ```
 
 ### 8.8 Execution
@@ -800,7 +787,6 @@ Contract Gap：
 
 ```text
 recovery policy
-event type enum
 tool/model/evidence failure policy
 ```
 
@@ -843,8 +829,6 @@ Contract Gap：
 
 ```text
 VerificationResult
-verification event type
-verification_failure outcome
 ```
 
 ### 8.11 Delivery
@@ -867,7 +851,6 @@ Contract Gap：
 Message / MessageStream
 Artifact
 CostRecord
-delivery event type
 ```
 
 ### 8.12 Post-run
@@ -895,30 +878,22 @@ AuditArchive event
 
 ---
 
-## 9. Retry / Recovery 目标规则
-
-以下为目标模型 / Contract Gap。
+## 9. Retry / Recovery 规则
 
 ### 9.1 用户 Retry
 
-目标规则：
+当前正式规则：
 
 ```text
 用户 retry 必须创建新 run。
 终态 run 不复活。
 ```
 
-目标字段：
+当前正式字段：
 
 ```text
 retryOfRunId
 originalRunId
-```
-
-Contract Gap：
-
-```text
-retryOfRunId / originalRunId 尚未确认进入 contracts。
 ```
 
 禁止：
@@ -932,26 +907,18 @@ completed -> running
 
 ### 9.2 系统恢复
 
-目标规则：
+当前正式规则：
 
 ```text
 系统恢复不创建新 run。
 系统恢复在同一个 run 下创建新的 ExecutionAttempt。
 ```
 
-Contract Gap：
-
-```text
-ExecutionAttempt 尚未进入 contracts。
-```
-
 ---
 
-## 10. Cancellation 目标规则
+## 10. Cancellation 规则
 
-以下为目标模型 / Contract Gap。
-
-目标流转：
+当前正式流转：
 
 ```text
 queued/running/waiting
@@ -959,7 +926,7 @@ queued/running/waiting
   -> cancelled
 ```
 
-目标动作：
+当前正式动作：
 
 ```text
 记录 cancel request
@@ -969,15 +936,6 @@ queued/running/waiting
 记录已发生外部副作用
 释放 worker lease
 写 terminal event
-```
-
-Contract Gap：
-
-```text
-cancelling status
-cancelRequestedAt
-sideEffectCommitted
-tool/model cancel event type
 ```
 
 硬规则：
@@ -994,9 +952,9 @@ cancelled 后不得创建 final assistant answer。
 当前事实：
 
 ```text
-RunEvent 已有 eventId、runId、eventType、status、nodeName、agentName、toolName、startedAt、completedAt。
-eventType 当前是 string。
-RunEventStatus 当前是 pending / running / succeeded / failed / skipped。
+RunEvent 已有 eventId、runId、eventType、status、phase、sequence、actor、occurredAt、summary、parentEventId、refType、refId、errorCode、errorMessage、nodeName、agentName、toolName、startedAt、completedAt。
+eventType 当前已经收敛为受控 RunEventType 枚举。
+RunEventStatus 当前是 pending / running / succeeded / failed / skipped / cancelled。
 ```
 
 目标模型：
@@ -1040,16 +998,6 @@ evaluation
 cost
 audit
 error
-```
-
-Contract Gap：
-
-```text
-RunEventType enum
-cancelled event status
-event refType / refId
-event sequence
-parentEventId
 ```
 
 硬规则：
@@ -1163,35 +1111,23 @@ raw provider output 进入 UI
 ### P0 必须补强
 
 ```text
-AnalysisRunStatus 企业级状态补强
-AnalysisRun phase 字段
-AnalysisRun outcome 字段
-AnalysisRun waitingFor 字段
-AnalysisRun terminal timestamp 字段
-AnalysisRun retryOfRunId / originalRunId
-AnalysisRun / Report / ToolCall / ModelCall / SourceEvidence schema required 补强
-RunEventType 收敛
-ExecutionAttempt schema
-ApprovalRequest schema
-OpenAPI 从 /health 扩到最小 runtime 主链路
-generated TypeScript / Python types
+本轮 P0 已收口，当前无新增 P0 Contract Gap。
 ```
 
 ### P1 建议补强
 
 ```text
-RunEventStatus 是否补 cancelled
 Message / MessageStream 是否进入正式 contracts
 CostRecord
 ErrorRecord
-AuditRecord 与 RunEvent 关系
+RunAuditRecord 与 RunEvent 关系
 PostRunJob
 VerificationResult
 ContextSnapshot
 PermissionSnapshot
 ToolScopeSnapshot
 RetrievalScope
-Artifact / DraftArtifact
+rootTraceId / contextSnapshotId / permissionSnapshotId / toolScopeSnapshotId / retrievalScopeId
 ```
 
 ### P2 后续按功能触发

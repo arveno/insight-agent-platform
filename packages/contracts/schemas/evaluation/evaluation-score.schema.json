@@ -4,6 +4,12 @@
   "title": "EvaluationScore",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "evaluationScoreId",
+    "evaluationRunId",
+    "score",
+    "createdAt"
+  ],
   "properties": {
     "evaluationScoreId": {
       "type": "string"

@@ -181,6 +181,8 @@ const contractSchemaPaths = [
   "packages/contracts/schemas/metrics/metric-lineage.schema.json",
   "packages/contracts/schemas/analysis/analysis-task.schema.json",
   "packages/contracts/schemas/analysis/analysis-run.schema.json",
+  "packages/contracts/schemas/analysis/execution-attempt.schema.json",
+  "packages/contracts/schemas/analysis/approval-request.schema.json",
   "packages/contracts/schemas/analysis/run-event.schema.json",
   "packages/contracts/schemas/analysis/tool-call.schema.json",
   "packages/contracts/schemas/analysis/model-call.schema.json",

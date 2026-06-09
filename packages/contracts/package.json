@@ -10,6 +10,7 @@
     "generated"
   ],
   "scripts": {
-    "check": "echo \"contracts 布局检查占位\""
+    "generate": "node ../../scripts/contracts/generate-contract-types.mjs",
+    "check": "node ../../scripts/contracts/check-contracts.mjs"
   }
 }

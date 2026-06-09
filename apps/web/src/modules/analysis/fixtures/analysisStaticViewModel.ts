@@ -922,7 +922,7 @@ const stockoutRun = createRun({
   riskViewModel: highRisk,
   runId: "analysis-stockout-risk",
   stageSummary: "Evidence 存在冲突，当前只展示风险提示和下一步追问入口。",
-  status: "waiting_approval",
+  status: "waiting",
   statusViewModel: warningStatus,
   tokenUsageText: "6,140",
   totalDurationText: "6.8s",

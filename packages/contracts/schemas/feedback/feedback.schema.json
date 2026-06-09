@@ -5,6 +5,15 @@
   "description": "用户对一次分析结果或报告的反馈契约，不等同于 Evaluation 或 Memory。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "feedbackId",
+    "workspaceId",
+    "userId",
+    "runId",
+    "reportId",
+    "feedbackType",
+    "createdAt"
+  ],
   "properties": {
     "feedbackId": {
       "description": "反馈唯一标识。",

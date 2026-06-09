@@ -5,6 +5,14 @@
   "description": "一次系统评估任务的契约对象，用于质量验证和回归检查。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "evaluationRunId",
+    "workspaceId",
+    "runId",
+    "datasetId",
+    "status",
+    "createdAt"
+  ],
   "properties": {
     "evaluationRunId": {
       "description": "评估运行唯一标识。",

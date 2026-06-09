@@ -2,14 +2,24 @@ import type { SharedRiskViewModel, SharedStatusViewModel } from "../../../shared
 
 export type AnalysisRunStatus =
   | "created"
-  | "planning"
+  | "validating"
+  | "rejected"
+  | "queued"
   | "running"
-  | "waiting_approval"
-  | "completed"
+  | "waiting"
+  | "cancelling"
+  | "cancelled"
   | "failed"
-  | "cancelled";
+  | "completed"
+  | "expired";
 
-export type AnalysisRunEventStatus = "pending" | "running" | "succeeded" | "failed" | "skipped";
+export type AnalysisRunEventStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "skipped"
+  | "cancelled";
 
 export type AnalysisRunEventType =
   | "user_input"

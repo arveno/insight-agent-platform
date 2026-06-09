@@ -2,7 +2,9 @@ openapi: 3.1.0
 info:
   title: Insight Agent Runtime API
   version: 0.1.0
-  description: Agent Runtime 服务的最小 OpenAPI 契约占位，用于固定 contracts-first 的 API 入口。
+  description: >
+    Agent Runtime 服务的最小 OpenAPI 契约。该文档只定义 runtime contract surface，
+    不代表后端 handler、worker、SSE 或真实模型/工具执行已经实现。
 paths:
   /health:
     get:
@@ -16,7 +18,190 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /analysis-runs:
+    post:
+      summary: 创建分析运行
+      description: 创建一次新的 AnalysisRun 契约对象，不代表后端已实现真实执行。
+      operationId: createAnalysisRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnalysisRunRequest"
+      responses:
+        "201":
+          description: 已创建 AnalysisRun 契约响应。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+  /analysis-runs/{runId}:
+    get:
+      summary: 获取分析运行详情
+      operationId: getAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: AnalysisRun 详情。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+  /analysis-runs/{runId}/events:
+    get:
+      summary: 获取运行事件列表
+      operationId: listRunEvents
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: RunEvent 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunEventList"
+  /analysis-runs/{runId}/tool-calls:
+    get:
+      summary: 获取工具调用列表
+      operationId: listToolCalls
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: ToolCall 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolCallList"
+  /analysis-runs/{runId}/model-calls:
+    get:
+      summary: 获取模型调用列表
+      operationId: listModelCalls
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: ModelCall 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelCallList"
+  /analysis-runs/{runId}/source-evidence:
+    get:
+      summary: 获取来源证据列表
+      operationId: listSourceEvidence
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: SourceEvidence 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceEvidenceList"
+  /analysis-runs/{runId}/reports:
+    get:
+      summary: 获取报告列表
+      operationId: listReports
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Report 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportList"
+  /analysis-runs/{runId}/execution-attempts:
+    get:
+      summary: 获取执行尝试列表
+      operationId: listExecutionAttempts
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: ExecutionAttempt 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutionAttemptList"
+  /analysis-runs/{runId}/approvals:
+    get:
+      summary: 获取审批请求列表
+      operationId: listApprovalRequests
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: ApprovalRequest 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequestList"
+  /analysis-runs/{runId}/cancel:
+    post:
+      summary: 取消分析运行
+      operationId: cancelAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "202":
+          description: 已记录取消请求。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+  /analysis-runs/{runId}/retry:
+    post:
+      summary: 基于旧运行创建 retry
+      operationId: retryAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "202":
+          description: 已创建新的 retry AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+  /analysis-runs/{runId}/approvals/{approvalId}/decision:
+    post:
+      summary: 提交审批决定
+      operationId: decideApprovalRequest
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/ApprovalId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecisionRequest"
+      responses:
+        "200":
+          description: 更新后的 ApprovalRequest。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
 components:
+  parameters:
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: AnalysisRun 的 canonical runId。
+    ApprovalId:
+      name: approvalId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: ApprovalRequest 的 canonical approvalId。
   schemas:
     HealthResponse:
       type: object
@@ -38,3 +223,119 @@ components:
         version:
           type: string
           description: 返回健康状态的后端服务版本。
+    CreateAnalysisRunRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - userId
+        - analysisTaskId
+      properties:
+        workspaceId:
+          type: string
+        userId:
+          type: string
+        analysisTaskId:
+          type: string
+    ApprovalDecisionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - granted
+            - denied
+            - cancelled
+        decisionReason:
+          type:
+            - string
+            - "null"
+    AnalysisRun:
+      $ref: "../schemas/analysis/analysis-run.schema.json"
+    RunEvent:
+      $ref: "../schemas/analysis/run-event.schema.json"
+    ToolCall:
+      $ref: "../schemas/analysis/tool-call.schema.json"
+    ModelCall:
+      $ref: "../schemas/analysis/model-call.schema.json"
+    SourceEvidence:
+      $ref: "../schemas/analysis/source-evidence.schema.json"
+    Report:
+      $ref: "../schemas/reports/report.schema.json"
+    ExecutionAttempt:
+      $ref: "../schemas/analysis/execution-attempt.schema.json"
+    ApprovalRequest:
+      $ref: "../schemas/analysis/approval-request.schema.json"
+    RunEventList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunEvent"
+    ToolCallList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCall"
+    ModelCallList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelCall"
+    SourceEvidenceList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceEvidence"
+    ReportList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Report"
+    ExecutionAttemptList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExecutionAttempt"
+    ApprovalRequestList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApprovalRequest"
