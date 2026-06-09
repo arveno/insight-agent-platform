@@ -7,11 +7,13 @@ import {
   approvalStatuses,
   contractsDocsPath,
   executionAttemptStatuses,
+  formalRuntimeEnumDocs,
   generateArtifacts,
   generatedPythonPath,
   generatedTypeScriptPath,
   minimumOpenApiPaths,
   openApiPath,
+  readDocsEnumBlock,
   readContractsDocs,
   requiredFieldsBySchema,
   runEventStatuses,
@@ -221,6 +223,16 @@ if (analysisRunSchema.properties.status.enum.includes("waiting_approval")) {
 
 if (!schemaByTitle.has("ExecutionAttempt") || !schemaByTitle.has("ApprovalRequest")) {
   fail("ExecutionAttempt and ApprovalRequest must be present in the formal contracts set.");
+}
+
+for (const { heading, values } of formalRuntimeEnumDocs) {
+  const docsValues = readDocsEnumBlock(contractsDocs, heading);
+
+  if (JSON.stringify(docsValues) !== JSON.stringify(values)) {
+    fail(
+      `docs/contracts.md enum block ${heading} does not match formal runtime enum values in scripts/contracts/contracts-lib.mjs.`
+    );
+  }
 }
 
 console.log("Contracts check passed.");

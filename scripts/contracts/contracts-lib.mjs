@@ -159,6 +159,18 @@ export const decisionStatuses = [
   "completed"
 ];
 
+export const formalRuntimeEnumDocs = [
+  { heading: "AnalysisRunStatus", values: analysisRunStatuses },
+  { heading: "AnalysisRunPhase", values: analysisRunPhases },
+  { heading: "AnalysisRunOutcome", values: analysisRunOutcomes },
+  { heading: "AnalysisRunWaitingFor", values: analysisRunWaitingFors },
+  { heading: "RunEventStatus", values: runEventStatuses },
+  { heading: "RunEventType", values: runEventTypes },
+  { heading: "ExecutionAttemptStatus", values: executionAttemptStatuses },
+  { heading: "ApprovalStatus", values: approvalStatuses },
+  { heading: "DecisionStatus", values: decisionStatuses }
+];
+
 export const runtimeSchemaPaths = [
   "analysis/analysis-run.schema.json",
   "analysis/run-event.schema.json",
@@ -635,4 +647,24 @@ export function readContractsDocs() {
 
 export function readOpenApiSource() {
   return readFileSync(openApiPath, "utf8");
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function readDocsEnumBlock(source, heading) {
+  const pattern = new RegExp(
+    `### ${escapeRegExp(heading)}\\n\\n\`\`\`text\\n([\\s\\S]*?)\\n\`\`\``
+  );
+  const match = source.match(pattern);
+
+  if (!match) {
+    throw new Error(`Unable to locate enum block ${heading} in ${contractsDocsPath}.`);
+  }
+
+  return match[1]
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }

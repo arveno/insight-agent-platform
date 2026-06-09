@@ -420,7 +420,7 @@ created
         -> expired
 ```
 
-每次 AnalysisRun 必须记录：
+每次 AnalysisRun 自身必须记录的直接字段：
 
 ```text
 runId
@@ -449,16 +449,30 @@ failureCode
 retryable
 retryOfRunId
 originalRunId
-events
-toolCalls
-modelCalls
-memoryReads
-memoryWrites
-sourceEvidence
-evaluationResult
-reportId
-error
 ```
+
+以下对象不得作为 AnalysisRun 内嵌字段；它们必须通过 runId 或父对象链路关联查询：
+
+```text
+RunEvent
+ToolCall
+ModelCall
+SourceEvidence
+Report
+Decision
+Feedback
+EvaluationRun
+BadCase
+ExecutionAttempt
+ApprovalRequest
+ReportSection -> Report.runId
+EvaluationScore -> EvaluationRun.runId
+ActionSuggestion -> Decision.runId / Decision.reportId
+```
+
+`MemoryItem` 和 `AuditLog` 当前不是 direct run-bound。
+
+如需表达某次 run 产生的 memory 写入或 run 审计记录，必须先补 `MemoryWrite`、`RunAuditRecord` 等正式 contract。
 
 生命周期规则固定如下：
 

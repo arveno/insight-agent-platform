@@ -211,7 +211,7 @@ describe("AppShell", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
     expect(within(dialog).getByText("1. 接收用户问题")).toBeTruthy();
-    expect(within(dialog).getByText("user_input")).toBeTruthy();
+    expect(within(dialog).getByText("run.created")).toBeTruthy();
     expect(
       within(dialog).getByText("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。")
     ).toBeTruthy();
