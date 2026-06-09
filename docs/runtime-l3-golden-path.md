@@ -160,21 +160,21 @@ businessDomainId = business-domain-revenue-quality
 
 本切片冻结的最小成功流转如下：
 
-| 顺序 | AnalysisRun.status | AnalysisRun.phase  | 说明                                         |
-| ---- | ------------------ | ------------------ | -------------------------------------------- |
-| 1    | `created`          | `intake`           | 用户发送问题后创建 run                       |
-| 2    | `validating`       | `preflight`        | 校验 workspace、user、question、context pack |
-| 3    | `validating`       | `governance`       | 完成权限和治理判定                           |
-| 4    | `queued`           | `queueing`         | 进入真实 runtime dispatch 队列               |
-| 5    | `running`          | `context_binding`  | 绑定指标、表、文档上下文                     |
-| 6    | `running`          | `planning`         | 形成问题拆解和证据召回计划                   |
-| 7    | `running`          | `execution`        | 运行主执行阶段已开始                         |
-| 8    | `running`          | `tool_execution`   | 指标或检索调用已完成                         |
-| 9    | `running`          | `evidence_binding` | 证据对象已标准化回挂到 `runId`               |
-| 10   | `running`          | `synthesis`        | 形成结论和报告草稿                           |
-| 11   | `running`          | `verification`     | 验证证据、报告、消息引用关系                 |
-| 12   | `running`          | `delivery`         | 持久化消息、流、报告、决策                   |
-| 13   | `completed`        | `delivery`         | 该轮 run 的成功终态                          |
+| 顺序 | AnalysisRun.status        | AnalysisRun.phase  | 说明                                         |
+| ---- | ------------------------- | ------------------ | -------------------------------------------- |
+| 1    | `created`                 | `intake`           | 用户发送问题后创建 run                       |
+| 2    | `validating`              | `preflight`        | 校验 workspace、user、question、context pack |
+| 3    | `validating`              | `governance`       | 完成权限和治理判定                           |
+| 4    | `validating` 或 `running` | `context_binding`  | 绑定指标、表、文档上下文                     |
+| 5    | `validating` 或 `running` | `planning`         | 形成问题拆解和证据召回计划                   |
+| 6    | `queued`                  | `queueing`         | 进入真实 runtime dispatch 队列               |
+| 7    | `running`                 | `execution`        | 运行主执行阶段已开始                         |
+| 8    | `running`                 | `tool_execution`   | 指标或检索调用已完成                         |
+| 9    | `running`                 | `evidence_binding` | 证据对象已标准化回挂到 `runId`               |
+| 10   | `running`                 | `synthesis`        | 形成结论和报告草稿                           |
+| 11   | `running`                 | `verification`     | 验证证据、报告、消息引用关系                 |
+| 12   | `running`                 | `delivery`         | 持久化消息、流、报告、决策                   |
+| 13   | `completed`               | `delivery`         | 该轮 run 的成功终态                          |
 
 补充约束：
 
