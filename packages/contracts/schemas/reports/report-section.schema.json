@@ -4,6 +4,13 @@
   "title": "ReportSection",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "reportSectionId",
+    "reportId",
+    "title",
+    "content",
+    "createdAt"
+  ],
   "properties": {
     "reportSectionId": {
       "type": "string"

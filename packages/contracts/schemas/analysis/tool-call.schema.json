@@ -5,6 +5,16 @@
   "description": "Agent 通过 Tool Registry 发起的一次受控工具调用契约。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "toolCallId",
+    "runId",
+    "toolName",
+    "input",
+    "status",
+    "riskLevel",
+    "permission",
+    "startedAt"
+  ],
   "properties": {
     "toolCallId": {
       "description": "工具调用唯一标识，用于审计、trace 和运行回放。",
@@ -19,15 +29,17 @@
       "type": "string"
     },
     "input": {
-      "description": "符合工具输入 schema 的结构化入参。",
-      "type": "object"
+      "description": "符合 ToolDefinition input schema 的结构化入参；字段结构由工具定义约束，不得作为任意 raw provider output 的逃逸口。",
+      "type": "object",
+      "additionalProperties": true
     },
     "output": {
-      "description": "符合工具输出 schema 的结构化结果；调用失败或未完成时可为 null。",
+      "description": "符合 ToolDefinition output schema 的结构化结果；调用失败或未完成时可为 null，不得作为任意 raw provider output 的逃逸口。",
       "type": [
         "object",
         "null"
-      ]
+      ],
+      "additionalProperties": true
     },
     "status": {
       "description": "工具调用状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
@@ -37,7 +49,8 @@
         "running",
         "succeeded",
         "failed",
-        "skipped"
+        "skipped",
+        "cancelled"
       ]
     },
     "riskLevel": {
@@ -56,6 +69,13 @@
     },
     "errorType": {
       "description": "工具调用失败时的标准错误类型；成功或未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "errorMessage": {
+      "description": "工具调用失败时的错误说明；成功或未结束时为 null。",
       "type": [
         "string",
         "null"

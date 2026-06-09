@@ -18,38 +18,39 @@
 ```text
 需求输入
 -> 需求分析 / 任务拆解
+-> 产品体验原型确认
+-> 文档事实源更新
+-> Issue 体系重整
 -> 创建 Issue
--> Issue Pending
--> ChatGPT / 人工审核 Issue
--> Issue Approved
+-> Issue 合规审查
+-> Issue 审查通过
 -> Codex 执行
+-> 人工截图验收
 -> 创建 PR
--> ChatGPT / 人工审核 PR
+-> PR 按 Issue 反查
 -> CI / 测试 / 契约检查
 -> 用户最终 Merge
 ```
 
-代码 / 仓库变更路径：
-
-```text
-Approved Issue
--> Codex 执行
--> PR
--> ChatGPT / 人工反向审核 PR
--> 用户 merge
-```
-
-无 PR 设计 / 文档 / 审核路径：
-
-```text
-Approved Issue
--> Codex 写回 Issue / sub-issue Body
--> ChatGPT / 人工反向审核 Issue 执行结果
--> Codex 按明确审核结论收口
--> 用户确认进入下一阶段
-```
-
 任何节点未完成时，不允许跳到后续节点。
+
+产品体验与正式 UI 相关任务固定追加门禁：
+
+```text
+产品体验原型确认
+-> 文档事实源更新
+-> Issue 体系重整
+-> 正式 UI 实现
+-> 人工截图验收
+```
+
+明确禁止：
+
+- 不能从原型直接进入正式代码。
+- 不能用口头规则覆盖文档事实源。
+- Issue 重整必须发生在正式 UI 实现前。
+- 产品体验原型确认只代表用户流程、页面关系、对象归属和入口流向已被讨论确认，不代表 HTML 原型本身成为正式事实源。
+- 必须先把确认后的规则沉淀到 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts`，再进入 Issue 和代码。
 
 ## 4. 需求分析阶段
 
@@ -65,9 +66,6 @@ Issue 必须包含：
 - 目标。
 - 背景 / 需求来源。
 - 修改范围。
-- Issue 层级：parent issue、sub-issue、sub-sub-issue 或 standalone issue。
-- Parent Issue：sub-issue / sub-sub-issue 必须填写。
-- Sub-issue Plan：说明是否拆分、拆分原因和目录。
 - 事实源。
 - 必须遵守的规则。
 - 禁止项。
@@ -85,70 +83,17 @@ Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format
 - `docs/architecture.md`。
 - `docs/contracts.md`。
 - `packages/contracts`。
+- 涉及产品体验、导航、页面职责、Inspector 的任务可以附带 `docs/prototypes/product-experience.html` 作为产品体验原型参考，但必须明确正式规则已经沉淀到 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts`。
 
 Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”，必须摘出本次任务相关规则。
 
-### 5.1 Issue 层级
-
-Issue 层级按任务复杂度决定，不预设固定层级。
-
-```text
-父 Issue：
-承载一个阶段 / 一个大目标 / 一个可管理的业务闭环。
-负责阶段目标、背景、事实源、范围、sub-issue 目录、总体验收标准和关闭条件。
-
-sub-issue：
-承载父 Issue 下可独立执行、独立审核、独立验收的产出块或审查块。
-
-sub-sub-issue：
-只在 sub-issue 仍然过大，或存在多个独立执行 / 审核对象时使用。
-
-standalone issue：
-只用于能一次说清楚、一次完成、一次审核的独立任务。
-```
-
-### 5.2 拆分判断规则
-
-- 能用一个 Issue 说清楚、一次完成、一次审核的，不拆。
-- 一个阶段包含多个独立产出，就拆 sub-issue。
-- 一个 sub-issue 内部又有多个独立页面、流程、模块或审核对象，再拆 sub-sub-issue。
-- 不为了流程而流程。
-- 不预设固定几级 sub-issue。
-
-### 5.3 Comment 和正式产出承载规则
-
-Comment 只用于过程记录、状态更新、链接、简短说明和历史记录。
-
-明确禁止：
-
-- Comment 承载长期正式产出。
-- Comment 承载长期验收结构。
-- Comment 作为事实源。
-
-正式产出优先进入：
-
-```text
-docs
-Issue Body
-sub-issue Body
-PR
-Code
-```
-
-如果早期已经把正式内容输出在 comment 中，后续应通过 sub-issue / 文档 / PR 重新结构化，不能长期依赖 comment。
-
 ## 6. Issue 合规审查阶段
 
-- Issue 创建后默认是“待审查 / Pending”。
+- Issue 创建后默认是“待审查”。
 - Issue 创建后不能直接交给 Codex 执行。
 - 用户本人或 ChatGPT 可以辅助审查。
 - 审核权最终掌握在用户手里。
-- 只有经过人工或 ChatGPT 辅助审查后，Issue 才能改为“审查通过 / Approved”。
-- 只有 Issue 已 Approved，并明确允许 Codex 执行后，Codex 才能开始写代码。
-- Codex 不得自行判断 Issue 是否通过。
-- Codex 不得自行把 Pending Issue 改为 Approved。
-- Codex 可以按 ChatGPT / 人工明确 prompt 代写 Issue Review Status、Review Result 或勾选项。
-- Codex 不得自行勾选 Issue 审查清单。
+- 只有 Issue 审查通过，并明确允许 Codex 执行后，Codex 才能开始写代码。
 
 审查项必须包括：
 
@@ -170,35 +115,15 @@ Code
 ## 7. Codex 执行阶段
 
 - Codex 只能执行已审查通过的 Issue。
-- Codex 执行已批准任务动作，包括但不限于：创建 Issue、更新 Issue Body、创建 sub-issue、写回执行结果、创建 PR、修改代码、运行检查、按 ChatGPT / 人工审核结论收口 Issue。
 - Codex 只能在 Issue 允许范围内修改。
 - Codex 不能自由发挥。
 - Codex 不能新增无关依赖、无关目录、无关抽象或无关重构。
 - Codex 发现 Issue 不清楚时，必须停止执行，说明问题，退回 Issue 补充。
 - Codex 不得绕过 `Tool Registry`、`Model Gateway`、contracts、UI ViewModel 链路等硬规则。
-- Codex 不得把 comment 当正式产出。
-- Codex 可以填写执行报告、已运行检查、修改范围、风险和未完成事项。
-- Codex 不能自己审核。
-- Codex 不能自己判断通过。
-- Codex 不能自己推进下一阶段。
-- Codex 不能把执行结果当审核结论。
-- Codex 不得自行声明“审核通过”“用户可以 merge”或“可以进入下一阶段”。
+- 涉及正式 UI 的任务，Codex 不得绕过已沉淀进 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts` 的产品体验规则、页面编排和 canonical id 规则。
+- `docs/prototypes/product-experience.html` 只用于辅助理解用户逻辑、页面跳转、对象归属和入口关系，不能从原型直接进入正式代码。
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
-
-Codex 只读自检 / Codex Read-only Self-check：
-
-```text
-在 ChatGPT 制定计划前，Codex 只读查看仓库现状并回报事实，不修改代码、不创建 Issue、不创建 PR。
-```
-
-Codex Execution Report：
-
-```text
-Codex 执行已审查 Issue 后，回报执行结果、修改范围、检查命令、风险和未完成事项。
-```
-
-以上两者都不是人工审核结论，不能替代 ChatGPT / 人工审核。
 
 ## 8. PR 创建阶段
 
@@ -216,35 +141,7 @@ PR 必须提供对应工具命令的执行结果；如某类命令不适用，�
 
 PR 是履约证明，不是重新解释需求的地方。
 
-PR Body 必须区分：
-
-```text
-Codex Execution Report / Codex 执行报告
-Review Checklist / 审查清单
-```
-
-Codex Execution Report 可以由 Codex 填写，用于说明执行结果、修改范围、已运行检查、风险和未完成事项。
-
-Review Checklist 只能由人工或 ChatGPT 辅助审核后勾选。Codex 创建 PR 时不得自行勾选 Review Checklist。
-
-## 9. Issue 执行结果审查阶段
-
-无 PR 任务完成后，ChatGPT / 人工必须按 Approved Issue 反向审核 Issue Body / sub-issue Body 的执行结果。
-
-审核内容包括：
-
-- 是否只做了 Issue 允许的事。
-- 是否触碰禁止项。
-- 是否越过事实源。
-- 是否完成验收标准。
-- 是否需要回退上游 Issue。
-- 是否可以收口 parent issue。
-- 是否可以进入下一阶段待审查准备。
-
-Codex 可以按明确审核结论代写 Review Status、勾选 Acceptance Criteria、追加 Final Review Summary、关闭 Issue。
-Codex 不得自行产生审核结论。
-
-## 10. PR 审查阶段
+## 9. PR 审查阶段
 
 PR 审查必须按 Issue 反查：
 
@@ -253,20 +150,30 @@ PR 审查必须按 Issue 反查：
 - 是否违反 `AGENTS.md` / `docs/workflow.md` / `docs/architecture.md` / `docs/contracts.md`。
 - 是否违反前后端字段一致。
 - 是否违反 UI 不消费 raw 数据。
-- 是否存在用户可见文案散落在组件中，未进入 i18n。
-- 是否关键链路缺少必要中文主体注释。
-- 是否存在废话注释、长期 TODO 或用注释掩盖不清晰代码。
-- 是否提前引入未审查的文档生成工具或依赖。
 - 是否绕过 `Tool Registry` / `Model Gateway`。
 - 是否引入 Mock / Real 双链路。
 - 是否有测试和证据。
 - 是否需要退回 Issue 重新审查。
+- 是否符合 `Ant Design-first Vertical Slice UI Architecture`。
+- 是否新增错误的 shared 抽象，或把业务组件放进 `shared/ui`、`shared/layout`、`shared/navigation`。
+- 如果修改了 `shared/ui` 公共 API，是否同步维护 export 组件、export 函数、props contract 和 item contract 的契约 JSDoc。
+- 是否让 `modules` 互相引用业务组件。
+- 是否让 `modules` import `app`，或让 `shared` import `modules / app`。
+- 是否新增 `index.ts / index.tsx`、`shared/product`、`legacy / temporary / transitional` 或其它旧结构回流目录。
+- 是否绕开 Ant Design 自造基础组件，或只是为了少写 JSX 创建组件。
+- 是否把排序、过滤、分组、权限显隐塞进 UI primitive。
+- 如果当前 PR 属于治理收口阶段，是否仍保留已识别的 `P1 / P2 / watch items`；治理收口阶段不允许把已识别问题留到后续。
 
 PR 审查不能重新发明标准，只能依据已审查通过的 Issue 和仓库事实源判断是否合格。
 
-PR 审查结论只能由人工或 ChatGPT 辅助审核后形成。Codex 不得自行声明“用户可以 merge”或“可以进入下一阶段”。
+补充规则：
 
-## 11. 退回机制
+- Codex 只能报告执行结果、测试结果和风险，不能自行判断“审核通过”。
+- ChatGPT 审核 PR 时必须显式检查上述 UI taxonomy 边界，而不是只看页面是否可运行。
+- 只有不存在已知未修复的架构问题、taxonomy 问题或治理 watch items 时，才允许建议关闭对应治理 Issue。
+- 用户最终决定是否 merge。
+
+## 10. 退回机制
 
 - Issue 不合格：退回 Issue 补充，不进入 Codex 执行。
 - Issue 范围变化：先更新 Issue，再重新审查。
@@ -275,7 +182,7 @@ PR 审查结论只能由人工或 ChatGPT 辅助审核后形成。Codex 不得�
 - CI 失败：修复后重新验证，不允许带失败合并。
 - Codex 自由发挥：判定不通过，要求回到 Issue 范围内重做。
 
-## 12. Merge 条件
+## 11. Merge 条件
 
 Merge 必须同时满足：
 
@@ -287,22 +194,12 @@ Merge 必须同时满足：
 - 测试 / 验证证据完整。
 - 用户最终确认。
 
-## 13. 无 PR parent issue 关闭条件
-
-无 PR 的 parent issue 关闭必须满足：
-
-- 所有 sub-issue 已完成执行结果审核。
-- 无阻塞问题。
-- 不需要回退上游 Issue。
-- 未自动推进下一阶段。
-- Final Review Summary 已写入 parent issue。
-- 用户最终确认。
-
-## 14. 禁止跳步
+## 12. 禁止跳步
 
 明确禁止：
 
 - 需求直接交给 Codex 写代码。
+- 从产品体验原型直接跳到正式代码。
 - Issue 未审查通过就执行。
 - PR 超出 Issue 范围。
 - 发现规则缺失时直接补代码。

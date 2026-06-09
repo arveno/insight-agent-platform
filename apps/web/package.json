@@ -15,6 +15,9 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@insight-agent/contracts": "workspace:*",
+    "@antv/g6": "^5.1.1",
     "antd": "^5.22.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
