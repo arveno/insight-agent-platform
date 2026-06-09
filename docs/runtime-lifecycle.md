@@ -1026,6 +1026,8 @@ Message 展示 conversation 内容。
 MessageStream 传输流式输出。
 RunEvent 记录审计事实。
 Message 不拥有 ToolCall / Evidence / Report 生命周期。
+SSE 是 live MessageStream 的唯一实时传输方式。
+HTTP JSON 只用于 MessageStream snapshot / replay / history，不替代 live streaming 主通道。
 ```
 
 禁止：
@@ -1034,6 +1036,22 @@ Message 不拥有 ToolCall / Evidence / Report 生命周期。
 用 message status 代替 run status
 用 stream done 代替 run.completed
 把 tool/evidence/report 塞进 message 文本作为事实源
+```
+
+当前冻结的 transport 策略：
+
+```text
+GET /conversations/{conversationId}/messages/{messageId}/stream
+  - Accept: text/event-stream -> live SSE stream
+  - Accept: application/json -> replay / history snapshot
+```
+
+实现边界：
+
+```text
+stream.completed 表示消息流结束，不表示 AnalysisRun 已 completed。
+RunEvent 不承载 token delta。
+前端实时渲染 assistant 增量时，事实源是 MessageStream，不是 RunEvent。
 ```
 
 ---
@@ -1058,6 +1076,7 @@ ViewModel 不能重命名核心业务字段。
 前端不得自行发明 run status。
 前端不得自行推导 terminal status。
 前端不得用 message stream 替代 run lifecycle。
+前端真实接线主线固定为 Contract -> mapper -> ViewModel -> UI。
 ```
 
 Analysis 工作区目标：
@@ -1067,6 +1086,14 @@ MessageList 只展示 conversation。
 Inspector 展示 RunEvent / ToolCall / ModelCall / SourceEvidence / Report / Memory context。
 Composer 只提交用户输入，不直接驱动状态机。
 RunTrace 以 RunEvent ViewModel 为事实源。
+```
+
+当前接入骨架：
+
+```text
+apps/web/src/modules/analysis/mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel.ts
+  -> 读取 Conversation / Message / AnalysisRun / RunEvent / ToolCall / ModelCall / SourceEvidence / Report / MessageStream
+  -> 输出 AnalysisWorkspaceViewModel
 ```
 
 ---
@@ -1093,6 +1120,22 @@ HTTP route 直接执行工具
 modules 绕过 contracts
 tool call 绕过 governance
 raw provider output 进入 UI
+```
+
+当前 route skeleton：
+
+```text
+services/agent-runtime/src/app/routes/conversations.py
+services/agent-runtime/src/app/routes/analysis_runs.py
+```
+
+硬规则：
+
+```text
+route stub 当前可以返回统一 501 NOT_IMPLEMENTED。
+route stub 不得返回 fake success 业务数据。
+conversations route 只代表 Conversation facade 边界。
+analysis_runs route 只代表 AnalysisRun lifecycle owner 边界。
 ```
 
 ---
@@ -1166,9 +1209,10 @@ metadata 作为未类型化生命周期逃逸口
 4. 补 packages/contracts/schemas/**
 5. 补 OpenAPI 最小 runtime 主链路
 6. 补 generated TypeScript / Python types
-7. 补 contract check / drift check
-8. 再实现 backend lifecycle service
-9. 再接 frontend ViewModel / Analysis workspace
+7. 补 contract examples / validation / route stubs / mapper skeleton
+8. 补 runtime-business-integration guide
+9. 再实现 backend lifecycle service / SSE / real API
+10. 再接 frontend live data source
 ```
 
 不得跳过 contracts 直接实现 runtime 状态机。

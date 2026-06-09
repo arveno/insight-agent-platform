@@ -18,51 +18,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
-  /analysis-runs:
+  /conversations:
     post:
-      summary: 创建分析运行
-      description: 创建一次新的 AnalysisRun 契约对象，不代表后端已实现真实执行。
-      operationId: createAnalysisRun
+      summary: 创建会话
+      description: >
+        创建一个新的 Conversation 主线对象。当前 route stub 只保证路径、请求体和错误格式稳定，
+        不返回 fake success 业务结果。
+      operationId: createConversation
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAnalysisRunRequest"
+              $ref: "#/components/schemas/CreateConversationRequest"
+            example:
+              workspaceId: workspace-northstar-retail-china
+              userId: user-zoe
+              analysisTaskId: analysis-task-revenue-gap-q2
+              title: 收入增速异常
       responses:
         "201":
-          description: 已创建 AnalysisRun 契约响应。
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AnalysisRun"
-  /analysis-runs/{runId}:
-    get:
-      summary: 获取分析运行详情
-      operationId: getAnalysisRun
-      parameters:
-        - $ref: "#/components/parameters/RunId"
-      responses:
-        "200":
-          description: AnalysisRun 详情。
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AnalysisRun"
-  /analysis-runs/{runId}/conversation:
-    get:
-      summary: 获取运行关联会话
-      description: 返回当前 AnalysisRun 关联的 Conversation 契约对象，不代表后端已实现真实持久化或 join 查询。
-      operationId: getAnalysisRunConversation
-      parameters:
-        - $ref: "#/components/parameters/RunId"
-      responses:
-        "200":
-          description: AnalysisRun 当前绑定的 Conversation。
+          description: Conversation 创建成功后的正式契约响应示例。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Conversation"
+              example:
+                conversationId: conversation-revenue-gap-q2
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-revenue-gap-q2
+                currentRunId: null
+                title: 收入增速异常
+                status: active
+                createdAt: "2026-06-05T11:08:00+08:00"
+                updatedAt: "2026-06-05T11:08:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations/{conversationId}:
     get:
       summary: 获取会话详情
@@ -76,6 +68,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Conversation"
+              example:
+                conversationId: conversation-revenue-gap-q2
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-revenue-gap-q2
+                currentRunId: analysis-q2-revenue-gap
+                title: 收入增速异常
+                status: active
+                createdAt: "2026-06-05T11:08:00+08:00"
+                updatedAt: "2026-06-05T11:24:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations/{conversationId}/messages:
     get:
       summary: 获取会话消息列表
@@ -89,6 +93,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageList"
+              example:
+                items:
+                  - messageId: message-revenue-gap-q2-user
+                    conversationId: conversation-revenue-gap-q2
+                    turnId: turn-revenue-gap-q2-1
+                    runId: analysis-q2-revenue-gap
+                    role: user
+                    content: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+                    status: completed
+                    sourceEvidenceIds: []
+                    toolCallIds: []
+                    reportId: null
+                    createdAt: "2026-06-05T11:08:12+08:00"
+                    completedAt: "2026-06-05T11:08:12+08:00"
+                  - messageId: message-revenue-gap-q2-assistant
+                    conversationId: conversation-revenue-gap-q2
+                    turnId: turn-revenue-gap-q2-1
+                    runId: analysis-q2-revenue-gap
+                    role: assistant
+                    content: 收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，而不是整体价格体系失效。
+                    status: completed
+                    sourceEvidenceIds:
+                      - source-evidence-channel-weekly-17
+                      - source-evidence-inventory-note-east-04
+                    toolCallIds:
+                      - tool-call-analysis-q2-revenue-gap-metrics
+                    reportId: report-revenue-gap-q2
+                    createdAt: "2026-06-05T11:22:00+08:00"
+                    completedAt: "2026-06-05T11:22:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations/{conversationId}/messages/{messageId}:
     get:
       summary: 获取单条消息
@@ -103,21 +138,213 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Message"
+              example:
+                messageId: message-revenue-gap-q2-assistant
+                conversationId: conversation-revenue-gap-q2
+                turnId: turn-revenue-gap-q2-1
+                runId: analysis-q2-revenue-gap
+                role: assistant
+                content: 收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，而不是整体价格体系失效。
+                status: completed
+                sourceEvidenceIds:
+                  - source-evidence-channel-weekly-17
+                  - source-evidence-inventory-note-east-04
+                toolCallIds:
+                  - tool-call-analysis-q2-revenue-gap-metrics
+                reportId: report-revenue-gap-q2
+                createdAt: "2026-06-05T11:22:00+08:00"
+                completedAt: "2026-06-05T11:22:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations/{conversationId}/messages/{messageId}/stream:
     get:
-      summary: 获取消息流式输出事件
-      description: 返回当前消息的 MessageStream 事件列表，用于 formal contract surface；不代表真实 SSE transport 已实现。
-      operationId: listMessageStreamEvents
+      summary: 获取消息流
+      description: >
+        `text/event-stream` 是 live MessageStream 的唯一实时传输方式。
+        同一路径的 `application/json` 仅用于 snapshot / replay / history，
+        不得替代 live streaming 主通道。`stream.completed` 不等于 `run.completed`。
+      operationId: streamConversationMessage
       parameters:
         - $ref: "#/components/parameters/ConversationId"
         - $ref: "#/components/parameters/MessageId"
       responses:
         "200":
-          description: MessageStream 事件列表。
+          description: MessageStream 的 live 或 replay contract surface。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageStreamList"
+              example:
+                items:
+                  - messageStreamId: message-stream-revenue-gap-q2-0
+                    conversationId: conversation-revenue-gap-q2
+                    messageId: message-revenue-gap-q2-assistant
+                    runId: analysis-q2-revenue-gap
+                    sequence: 0
+                    eventType: stream.started
+                    delta: ""
+                    status: created
+                    occurredAt: "2026-06-05T11:22:00+08:00"
+                    errorCode: null
+                    errorMessage: null
+                  - messageStreamId: message-stream-revenue-gap-q2-1
+                    conversationId: conversation-revenue-gap-q2
+                    messageId: message-revenue-gap-q2-assistant
+                    runId: analysis-q2-revenue-gap
+                    sequence: 1
+                    eventType: stream.delta
+                    delta: 收入增速下滑主要来自华东核心渠道确认延迟
+                    status: streaming
+                    occurredAt: "2026-06-05T11:23:00+08:00"
+                    errorCode: null
+                    errorMessage: null
+                  - messageStreamId: message-stream-revenue-gap-q2-2
+                    conversationId: conversation-revenue-gap-q2
+                    messageId: message-revenue-gap-q2-assistant
+                    runId: analysis-q2-revenue-gap
+                    sequence: 2
+                    eventType: stream.completed
+                    delta: 与促销库存错配。
+                    status: completed
+                    occurredAt: "2026-06-05T11:24:00+08:00"
+                    errorCode: null
+                    errorMessage: null
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: stream.started
+                data: {"messageStreamId":"message-stream-revenue-gap-q2-0","conversationId":"conversation-revenue-gap-q2","messageId":"message-revenue-gap-q2-assistant","runId":"analysis-q2-revenue-gap","sequence":0,"eventType":"stream.started","delta":"","status":"created","occurredAt":"2026-06-05T11:22:00+08:00","errorCode":null,"errorMessage":null}
+
+                event: stream.delta
+                data: {"messageStreamId":"message-stream-revenue-gap-q2-1","conversationId":"conversation-revenue-gap-q2","messageId":"message-revenue-gap-q2-assistant","runId":"analysis-q2-revenue-gap","sequence":1,"eventType":"stream.delta","delta":"收入增速下滑主要来自华东核心渠道确认延迟","status":"streaming","occurredAt":"2026-06-05T11:23:00+08:00","errorCode":null,"errorMessage":null}
+
+                event: stream.completed
+                data: {"messageStreamId":"message-stream-revenue-gap-q2-2","conversationId":"conversation-revenue-gap-q2","messageId":"message-revenue-gap-q2-assistant","runId":"analysis-q2-revenue-gap","sequence":2,"eventType":"stream.completed","delta":"与促销库存错配。","status":"completed","occurredAt":"2026-06-05T11:24:00+08:00","errorCode":null,"errorMessage":null}
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+  /analysis-runs:
+    post:
+      summary: 创建分析运行
+      description: >
+        创建一次新的 AnalysisRun 契约对象，并把 run 绑定到既有 conversationId。
+        当前 route stub 只保证路径、请求体和错误格式稳定，不代表真实执行已实现。
+      operationId: createAnalysisRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnalysisRunRequest"
+            example:
+              workspaceId: workspace-northstar-retail-china
+              userId: user-zoe
+              analysisTaskId: analysis-task-revenue-gap-q2
+              conversationId: conversation-revenue-gap-q2
+      responses:
+        "201":
+          description: AnalysisRun 创建成功后的正式契约响应示例。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+              example:
+                runId: analysis-q2-revenue-gap
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-revenue-gap-q2
+                status: created
+                phase: intake
+                outcome: null
+                waitingFor: null
+                createdAt: "2026-06-05T11:08:00+08:00"
+                validatingAt: null
+                queuedAt: null
+                startedAt: null
+                waitingSince: null
+                timeoutAt: null
+                cancelRequestedAt: null
+                cancellingAt: null
+                completedAt: null
+                failedAt: null
+                cancelledAt: null
+                expiredAt: null
+                rejectedAt: null
+                terminalReason: null
+                failureCode: null
+                retryable: true
+                retryOfRunId: null
+                originalRunId: null
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+  /analysis-runs/{runId}:
+    get:
+      summary: 获取分析运行详情
+      operationId: getAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: AnalysisRun 详情。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+              example:
+                runId: analysis-q2-revenue-gap
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-revenue-gap-q2
+                status: completed
+                phase: delivery
+                outcome: success
+                waitingFor: null
+                createdAt: "2026-06-05T11:08:00+08:00"
+                validatingAt: "2026-06-05T11:08:00+08:00"
+                queuedAt: "2026-06-05T11:08:00+08:00"
+                startedAt: "2026-06-05T11:08:30+08:00"
+                waitingSince: null
+                timeoutAt: null
+                cancelRequestedAt: null
+                cancellingAt: null
+                completedAt: "2026-06-05T11:24:00+08:00"
+                failedAt: null
+                cancelledAt: null
+                expiredAt: null
+                rejectedAt: null
+                terminalReason: null
+                failureCode: null
+                retryable: true
+                retryOfRunId: null
+                originalRunId: null
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+  /analysis-runs/{runId}/conversation:
+    get:
+      summary: 获取运行关联会话
+      description: 返回当前 AnalysisRun 关联的 Conversation 契约对象。
+      operationId: getAnalysisRunConversation
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: AnalysisRun 当前绑定的 Conversation。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+              example:
+                conversationId: conversation-revenue-gap-q2
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-revenue-gap-q2
+                currentRunId: analysis-q2-revenue-gap
+                title: 收入增速异常
+                status: active
+                createdAt: "2026-06-05T11:08:00+08:00"
+                updatedAt: "2026-06-05T11:24:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/events:
     get:
       summary: 获取运行事件列表
@@ -131,6 +358,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RunEventList"
+              example:
+                items:
+                  - eventId: event-analysis-q2-revenue-gap-user-input
+                    runId: analysis-q2-revenue-gap
+                    eventType: run.created
+                    status: succeeded
+                    phase: intake
+                    sequence: 0
+                    actor: analysis_runtime_stub
+                    occurredAt: "2026-06-05T11:08:00+08:00"
+                    summary: 记录当前用户问题，并为后续运行绑定上下文。
+                    parentEventId: null
+                    refType: null
+                    refId: null
+                    errorCode: null
+                    errorMessage: null
+                    nodeName: run.created
+                    agentName: analysis-agent
+                    toolName: null
+                    startedAt: "2026-06-05T11:08:00+08:00"
+                    completedAt: "2026-06-05T11:08:00+08:00"
+                  - eventId: event-analysis-q2-revenue-gap-feedback-waiting
+                    runId: analysis-q2-revenue-gap
+                    eventType: run.completed
+                    status: succeeded
+                    phase: delivery
+                    sequence: 7
+                    actor: analysis_runtime_stub
+                    occurredAt: "2026-06-05T11:15:00+08:00"
+                    summary: 当前运行完成，等待用户继续追问或进入报告入口。
+                    parentEventId: null
+                    refType: null
+                    refId: null
+                    errorCode: null
+                    errorMessage: null
+                    nodeName: run.completed
+                    agentName: analysis-agent
+                    toolName: null
+                    startedAt: "2026-06-05T11:15:00+08:00"
+                    completedAt: "2026-06-05T11:15:00+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/tool-calls:
     get:
       summary: 获取工具调用列表
@@ -144,6 +413,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ToolCallList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/model-calls:
     get:
       summary: 获取模型调用列表
@@ -157,6 +428,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelCallList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/source-evidence:
     get:
       summary: 获取来源证据列表
@@ -170,6 +443,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SourceEvidenceList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/reports:
     get:
       summary: 获取报告列表
@@ -183,6 +458,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/execution-attempts:
     get:
       summary: 获取执行尝试列表
@@ -196,6 +473,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExecutionAttemptList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/approvals:
     get:
       summary: 获取审批请求列表
@@ -209,6 +488,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApprovalRequestList"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/cancel:
     post:
       summary: 取消分析运行
@@ -217,11 +498,13 @@ paths:
         - $ref: "#/components/parameters/RunId"
       responses:
         "202":
-          description: 已记录取消请求。
+          description: 已记录取消请求后的正式契约响应示例。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/retry:
     post:
       summary: 基于旧运行创建 retry
@@ -230,11 +513,13 @@ paths:
         - $ref: "#/components/parameters/RunId"
       responses:
         "202":
-          description: 已创建新的 retry AnalysisRun。
+          description: 已创建新的 retry AnalysisRun 的正式契约响应示例。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /analysis-runs/{runId}/approvals/{approvalId}/decision:
     post:
       summary: 提交审批决定
@@ -248,6 +533,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ApprovalDecisionRequest"
+            example:
+              status: granted
+              decisionReason: Finance lead approved the retry.
       responses:
         "200":
           description: 更新后的 ApprovalRequest。
@@ -255,7 +543,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApprovalRequest"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
 components:
+  responses:
+    NotImplementedRuntimeRoute:
+      description: Runtime route stub is registered; real implementation is pending.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NotImplementedErrorResponse"
+          example:
+            errorCode: NOT_IMPLEMENTED
+            message: Runtime route stub is registered; real implementation is pending.
   parameters:
     RunId:
       name: runId
@@ -306,6 +606,36 @@ components:
         version:
           type: string
           description: 返回健康状态的后端服务版本。
+    NotImplementedErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - errorCode
+        - message
+      properties:
+        errorCode:
+          type: string
+          enum:
+            - NOT_IMPLEMENTED
+        message:
+          type: string
+    CreateConversationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - userId
+        - analysisTaskId
+        - title
+      properties:
+        workspaceId:
+          type: string
+        userId:
+          type: string
+        analysisTaskId:
+          type: string
+        title:
+          type: string
     CreateAnalysisRunRequest:
       type: object
       additionalProperties: false
@@ -313,12 +643,15 @@ components:
         - workspaceId
         - userId
         - analysisTaskId
+        - conversationId
       properties:
         workspaceId:
           type: string
         userId:
           type: string
         analysisTaskId:
+          type: string
+        conversationId:
           type: string
     ApprovalDecisionRequest:
       type: object

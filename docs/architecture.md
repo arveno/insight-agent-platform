@@ -462,6 +462,9 @@ services/agent-runtime/tests/
 - `modules/*` 承接业务切片，不通过全局横向目录拆散链路。
 - `modules/analysis_runs` 是 `AnalysisRun / runId / Runtime Lifecycle` 的唯一后端 owner；后续真实运行实现必须从这里落地。
 - `modules/conversations/analysis_service.py` 只承接 conversation-level orchestration / facade，不拥有 `AnalysisRun` 生命周期。
+- `app/routes/conversations.py` 是 Conversation facade 的正式 HTTP skeleton。
+- `app/routes/analysis_runs.py` 是 AnalysisRun lifecycle owner 的正式 HTTP skeleton。
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 live transport 已冻结为 SSE；JSON 只用于 replay / history。
 - `infrastructure/database` 是唯一数据库访问入口承载位。
 - `infrastructure/model_gateway` 是唯一模型调用入口。
 - `infrastructure/tool_registry` 是唯一工具调用入口。
@@ -470,6 +473,8 @@ services/agent-runtime/tests/
 - 后端 service 不允许直接调用模型 provider。
 - Agent 不允许直接查库、直接调模型、直接调用外部 API。
 - 后端同样遵守“框架优先、薄适配、业务垂直切片、shared 只放无业务基础能力”的思想：FastAPI router / dependency / response model 优先，Pydantic 校验优先，LangChain / LangGraph / LlamaIndex / Milvus 优先；`modules/*` 承接业务闭环，`infrastructure/*` 承接技术适配，`shared/*` 只放 errors / validation / utils / types。
+
+`docs/runtime-business-integration.md` 只提供业务接入手册，不新增事实源。对象、字段、ID、状态仍以 `docs/contracts.md`、`packages/contracts` 和 `docs/runtime-lifecycle.md` 为准。
 
 ## 8. 依赖方向
 

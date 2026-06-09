@@ -10,6 +10,7 @@ export const openApiPath = resolve(
   repoRoot,
   "packages/contracts/openapi/agent-runtime.openapi.yaml"
 );
+export const examplesRoot = resolve(repoRoot, "packages/contracts/examples");
 export const generatedTypeScriptPath = resolve(
   repoRoot,
   "packages/contracts/generated/typescript/index.ts"
@@ -397,6 +398,7 @@ export const requiredFieldsBySchema = {
 
 export const minimumOpenApiPaths = [
   "/health",
+  "/conversations",
   "/analysis-runs",
   "/analysis-runs/{runId}",
   "/analysis-runs/{runId}/conversation",
@@ -720,6 +722,186 @@ export function readContractsDocs() {
 
 export function readOpenApiSource() {
   return readFileSync(openApiPath, "utf8");
+}
+
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateNumberConstraints(value, schemaFragment, path, errors) {
+  if (typeof schemaFragment.minimum === "number" && value < schemaFragment.minimum) {
+    errors.push(`${path} must be >= ${schemaFragment.minimum}.`);
+  }
+
+  if (typeof schemaFragment.maximum === "number" && value > schemaFragment.maximum) {
+    errors.push(`${path} must be <= ${schemaFragment.maximum}.`);
+  }
+}
+
+function validateSchemaFragment(value, schemaFragment, context, path, errors) {
+  if (schemaFragment.$ref) {
+    const resolvedSchema = resolveSchemaRef(
+      schemaFragment.$ref,
+      context.relativePath,
+      context.schemaIndex
+    );
+    validateSchemaFragment(
+      value,
+      resolvedSchema.schema,
+      { relativePath: resolvedSchema.relativePath, schemaIndex: context.schemaIndex },
+      path,
+      errors
+    );
+    return;
+  }
+
+  if (schemaFragment.anyOf) {
+    const memberErrors = schemaFragment.anyOf.map((member) => {
+      const branchErrors = [];
+      validateSchemaFragment(value, member, context, path, branchErrors);
+      return branchErrors;
+    });
+
+    if (!memberErrors.some((branchErrors) => branchErrors.length === 0)) {
+      errors.push(
+        `${path} does not satisfy any allowed schema shape: ${memberErrors
+          .flat()
+          .join(" | ")}`
+      );
+    }
+
+    return;
+  }
+
+  if (schemaFragment.enum && !schemaFragment.enum.includes(value)) {
+    errors.push(`${path} must be one of ${schemaFragment.enum.join(", ")}.`);
+    return;
+  }
+
+  if (Array.isArray(schemaFragment.type)) {
+    const branchErrors = schemaFragment.type.map((typeName) => {
+      const nextErrors = [];
+      validateSchemaFragment(
+        value,
+        { ...schemaFragment, type: typeName, enum: undefined },
+        context,
+        path,
+        nextErrors
+      );
+      return nextErrors;
+    });
+
+    if (!branchErrors.some((nextErrors) => nextErrors.length === 0)) {
+      errors.push(`${path} type mismatch: ${branchErrors.flat().join(" | ")}`);
+    }
+
+    return;
+  }
+
+  switch (schemaFragment.type) {
+    case "string":
+      if (typeof value !== "string") {
+        errors.push(`${path} must be a string.`);
+        return;
+      }
+
+      if (schemaFragment.format === "date-time" && Number.isNaN(Date.parse(value))) {
+        errors.push(`${path} must be a valid date-time string.`);
+      }
+      return;
+    case "integer":
+      if (!Number.isInteger(value)) {
+        errors.push(`${path} must be an integer.`);
+        return;
+      }
+
+      validateNumberConstraints(value, schemaFragment, path, errors);
+      return;
+    case "number":
+      if (typeof value !== "number" || Number.isNaN(value)) {
+        errors.push(`${path} must be a number.`);
+        return;
+      }
+
+      validateNumberConstraints(value, schemaFragment, path, errors);
+      return;
+    case "boolean":
+      if (typeof value !== "boolean") {
+        errors.push(`${path} must be a boolean.`);
+      }
+      return;
+    case "null":
+      if (value !== null) {
+        errors.push(`${path} must be null.`);
+      }
+      return;
+    case "array":
+      if (!Array.isArray(value)) {
+        errors.push(`${path} must be an array.`);
+        return;
+      }
+
+      value.forEach((item, index) => {
+        validateSchemaFragment(item, schemaFragment.items ?? {}, context, `${path}[${index}]`, errors);
+      });
+      return;
+    case "object":
+      if (!isPlainObject(value)) {
+        errors.push(`${path} must be an object.`);
+        return;
+      }
+
+      for (const requiredField of schemaFragment.required ?? []) {
+        if (!(requiredField in value)) {
+          errors.push(`${path}.${requiredField} is required.`);
+        }
+      }
+
+      const properties = schemaFragment.properties ?? {};
+
+      if (schemaFragment.additionalProperties === false) {
+        for (const key of Object.keys(value)) {
+          if (!(key in properties)) {
+            errors.push(`${path}.${key} is not allowed.`);
+          }
+        }
+      }
+
+      for (const [propertyName, propertySchema] of Object.entries(properties)) {
+        if (propertyName in value) {
+          validateSchemaFragment(
+            value[propertyName],
+            propertySchema,
+            context,
+            `${path}.${propertyName}`,
+            errors
+          );
+        }
+      }
+      return;
+    default:
+      return;
+  }
+}
+
+export function validateExampleAgainstSchema(value, schemaTitle, schemaEntries) {
+  const schemaIndex = createSchemaIndex(schemaEntries);
+  const schemaEntry = schemaIndex.byTitle.get(schemaTitle);
+
+  if (!schemaEntry) {
+    throw new Error(`Unable to locate schema titled ${schemaTitle}.`);
+  }
+
+  const errors = [];
+  validateSchemaFragment(
+    value,
+    schemaEntry.schema,
+    { relativePath: schemaEntry.relativePath, schemaIndex },
+    schemaTitle,
+    errors
+  );
+
+  return errors;
 }
 
 function escapeRegExp(text) {

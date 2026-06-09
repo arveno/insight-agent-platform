@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import {
   analysisRunOutcomes,
@@ -7,6 +8,7 @@ import {
   approvalStatuses,
   conversationStatuses,
   contractsDocsPath,
+  examplesRoot,
   executionAttemptStatuses,
   formalRuntimeEnumDocs,
   generateArtifacts,
@@ -20,6 +22,7 @@ import {
   openApiPath,
   readDocsEnumBlock,
   readContractsDocs,
+  validateExampleAgainstSchema,
   requiredFieldsBySchema,
   runEventStatuses,
   runEventTypes
@@ -237,6 +240,18 @@ for (const requiredPath of minimumOpenApiPaths) {
   }
 }
 
+if (!openApiSource.includes("text/event-stream")) {
+  fail("OpenAPI must declare text/event-stream for the MessageStream live transport path.");
+}
+
+if (!openApiSource.includes("CreateConversationRequest")) {
+  fail("OpenAPI must declare CreateConversationRequest.");
+}
+
+if (!openApiSource.includes("conversationId")) {
+  fail("OpenAPI must keep conversationId bound in runtime request/response surfaces.");
+}
+
 for (const componentName of [
   "AnalysisRun",
   "Conversation",
@@ -283,6 +298,89 @@ for (const { heading, values } of formalRuntimeEnumDocs) {
     fail(
       `docs/contracts.md enum block ${heading} does not match formal runtime enum values in scripts/contracts/contracts-lib.mjs.`
     );
+  }
+}
+
+function readExampleFile(fileName) {
+  return JSON.parse(
+    readFileSync(resolve(examplesRoot, "analysis-runtime", fileName), "utf8")
+  );
+}
+
+for (const [fileName, schemaTitle] of [
+  ["conversation.created.json", "Conversation"],
+  ["analysis-run.created.json", "AnalysisRun"],
+  ["message.user.json", "Message"],
+  ["message.assistant.completed.json", "Message"]
+]) {
+  const example = readExampleFile(fileName);
+  const errors = validateExampleAgainstSchema(example, schemaTitle, schemaEntries);
+
+  if (errors.length > 0) {
+    fail(`${fileName} is not aligned with schema ${schemaTitle}: ${errors.join(" ")}`);
+  }
+}
+
+const runEventSequence = readExampleFile("run-event.sequence.json");
+if (!Array.isArray(runEventSequence.items) || runEventSequence.items.length === 0) {
+  fail("run-event.sequence.json must contain a non-empty items array.");
+}
+
+for (const [index, item] of runEventSequence.items.entries()) {
+  const errors = validateExampleAgainstSchema(item, "RunEvent", schemaEntries);
+  if (errors.length > 0) {
+    fail(`run-event.sequence.json item ${index} is invalid: ${errors.join(" ")}`);
+  }
+}
+
+const messageStreamSequence = readExampleFile("message-stream.sequence.json");
+if (!Array.isArray(messageStreamSequence.items) || messageStreamSequence.items.length === 0) {
+  fail("message-stream.sequence.json must contain a non-empty items array.");
+}
+
+for (const [index, item] of messageStreamSequence.items.entries()) {
+  const errors = validateExampleAgainstSchema(item, "MessageStream", schemaEntries);
+  if (errors.length > 0) {
+    fail(`message-stream.sequence.json item ${index} is invalid: ${errors.join(" ")}`);
+  }
+}
+
+const goldenPath = readExampleFile("golden-path.json");
+const goldenPathSchemaPairs = [
+  ["conversation", "Conversation"],
+  ["analysisRun", "AnalysisRun"]
+];
+
+for (const [fieldName, schemaTitle] of goldenPathSchemaPairs) {
+  const errors = validateExampleAgainstSchema(goldenPath[fieldName], schemaTitle, schemaEntries);
+  if (errors.length > 0) {
+    fail(`golden-path.json field ${fieldName} is invalid: ${errors.join(" ")}`);
+  }
+}
+
+for (const [fieldName, schemaTitle] of [
+  ["messages", "Message"],
+  ["runEvents", "RunEvent"],
+  ["messageStream", "MessageStream"],
+  ["toolCalls", "ToolCall"],
+  ["modelCalls", "ModelCall"],
+  ["sourceEvidence", "SourceEvidence"],
+  ["reports", "Report"],
+  ["decisions", "Decision"],
+  ["executionAttempts", "ExecutionAttempt"],
+  ["approvals", "ApprovalRequest"]
+]) {
+  const values = goldenPath[fieldName];
+
+  if (!Array.isArray(values)) {
+    fail(`golden-path.json field ${fieldName} must be an array.`);
+  }
+
+  for (const [index, item] of values.entries()) {
+    const errors = validateExampleAgainstSchema(item, schemaTitle, schemaEntries);
+    if (errors.length > 0) {
+      fail(`golden-path.json field ${fieldName}[${index}] is invalid: ${errors.join(" ")}`);
+    }
   }
 }
 

@@ -3,7 +3,11 @@ import type {
   Conversation as ConversationContract,
   Message as MessageContract,
   MessageStream as MessageStreamContract,
-  RunEvent as RunEventContract
+  ModelCall,
+  Report,
+  RunEvent as RunEventContract,
+  SourceEvidence,
+  ToolCall
 } from "@insight-agent/contracts/generated/typescript";
 
 export type {
@@ -11,7 +15,11 @@ export type {
   ConversationContract,
   MessageContract,
   MessageStreamContract,
-  RunEventContract
+  ModelCall,
+  Report,
+  RunEventContract,
+  SourceEvidence,
+  ToolCall
 };
 
 export type AnalysisRunStatus = AnalysisRunContract["status"];

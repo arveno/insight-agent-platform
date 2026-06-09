@@ -55,7 +55,7 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" }));
+    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. run.created" }));
 
     expect(onSelectRunEvent).toHaveBeenCalledWith("event-analysis-q2-revenue-gap-user-input");
     expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
