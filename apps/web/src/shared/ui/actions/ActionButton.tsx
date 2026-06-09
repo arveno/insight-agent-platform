@@ -16,6 +16,13 @@ const actionButtonPropsByVariant: Record<
   sourceLink: { size: "small", type: "link" }
 };
 
+/**
+ * UI Primitive：项目按钮薄封装。
+ *
+ * 基于 Ant Button，只统一 variant、图标和项目级排版风格。
+ * 不负责导航、排序、权限判断、业务判断或 route 映射。
+ * 业务模块必须先决定按钮是否展示、如何排序，再把通用 props 传给这里。
+ */
 export function ActionButton({
   children,
   iconName,

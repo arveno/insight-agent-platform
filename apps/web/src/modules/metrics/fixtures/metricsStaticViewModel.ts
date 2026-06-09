@@ -1,5 +1,19 @@
-import { createRightAssistSummary, defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, sharedEvidenceEntrances, warningRisk } from "../../../shared/view-model/staticStateFixtures";
-import type { MetricAnalysisContextViewModel, MetricDetailViewModel, MetricListItemViewModel, MetricsViewModel, MetricsWorkspaceBinding } from "../models/metricsViewModel";
+import {
+  createRightAssistSummary,
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  sharedEvidenceEntrances,
+  warningRisk
+} from "../../../shared/view-model/staticStateFixtures";
+import type {
+  MetricAnalysisContextViewModel,
+  MetricDetailViewModel,
+  MetricListItemViewModel,
+  MetricsViewModel,
+  MetricsWorkspaceBinding
+} from "../models/metricsViewModel";
 
 const lowRisk = {
   level: "low",

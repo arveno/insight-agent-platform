@@ -1,6 +1,9 @@
 import { Flex, Space, Typography, theme } from "antd";
 
-import type { StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
@@ -44,9 +47,7 @@ function buildTagSlot(
   );
 }
 
-function renderNavigationActions(
-  actions: ReturnType<typeof createRouteAction>[]
-) {
+function renderNavigationActions(actions: ReturnType<typeof createRouteAction>[]) {
   return (
     <Flex gap={12} wrap>
       {actions.map((action) => (
@@ -62,8 +63,13 @@ export function DataKnowledgeInspectorPanel({
 }: DataKnowledgeInspectorPanelProps) {
   const { t } = useI18n();
   const { token } = theme.useToken();
-  const { selectedAsset, summaryCards, qualityChecks, readonlyBoundaryItems, technicalBoundaryItems } =
-    controller.viewModel;
+  const {
+    selectedAsset,
+    summaryCards,
+    qualityChecks,
+    readonlyBoundaryItems,
+    technicalBoundaryItems
+  } = controller.viewModel;
 
   return (
     <SidePanel
@@ -92,7 +98,10 @@ export function DataKnowledgeInspectorPanel({
           {readonlyBoundaryItems.map((item) => (
             <Typography.Text
               key={item}
-              style={{ ...shellTypographyStyles.cardDescription, color: token.colorTextDescription }}
+              style={{
+                ...shellTypographyStyles.cardDescription,
+                color: token.colorTextDescription
+              }}
             >
               {`• ${item}`}
             </Typography.Text>
@@ -124,10 +133,7 @@ export function DataKnowledgeInspectorPanel({
               >
                 {`dataQualityCheckId: ${qualityCheck.dataQualityCheckId}`}
               </Typography.Text>
-              <Typography.Text
-                type="secondary"
-                style={shellTypographyStyles.cardDescription}
-              >
+              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
                 {qualityCheck.summary}
               </Typography.Text>
             </Space>
@@ -200,7 +206,10 @@ export function DataKnowledgeInspectorPanel({
           {technicalBoundaryItems.map((item) => (
             <Typography.Text
               key={item}
-              style={{ ...shellTypographyStyles.cardDescription, color: token.colorTextDescription }}
+              style={{
+                ...shellTypographyStyles.cardDescription,
+                color: token.colorTextDescription
+              }}
             >
               {`• ${item}`}
             </Typography.Text>

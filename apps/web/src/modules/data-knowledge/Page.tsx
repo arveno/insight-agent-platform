@@ -1,5 +1,5 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useDataKnowledgeOverviewState,
@@ -7,17 +7,23 @@ import {
 } from "./hooks/useDataKnowledgeOverviewState";
 import { DataKnowledgeSections } from "./sections/DataKnowledgeSections";
 
-export type DataKnowledgePageProps = WebPageProps & {
-  dataKnowledgeState?: DataKnowledgeOverviewController;
+export type DataKnowledgePageContentProps = PageRouteProps & {
+  controller: DataKnowledgeOverviewController;
 };
 
-export function DataKnowledgePage({ dataKnowledgeState, onNavigate }: DataKnowledgePageProps) {
-  const fallbackDataKnowledgeState = useDataKnowledgeOverviewState();
-  const controller = dataKnowledgeState ?? fallbackDataKnowledgeState;
+export function DataKnowledgePage({ onNavigate }: PageRouteProps) {
+  const controller = useDataKnowledgeOverviewState();
 
+  return <DataKnowledgePageContent controller={controller} onNavigate={onNavigate} />;
+}
+
+export function DataKnowledgePageContent({
+  controller,
+  onNavigate
+}: DataKnowledgePageContentProps) {
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <ResponsivePageShell>
       <DataKnowledgeSections controller={controller} onNavigate={onNavigate} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

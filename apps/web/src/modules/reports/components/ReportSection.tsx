@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Card, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
-import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import type { RiskBadgeProps } from "../../../shared/ui/status/RiskBadge";
 
@@ -28,24 +28,27 @@ export function ReportSection({
   title
 }: ReportSectionProps) {
   return (
-    <Card>
-      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-          <Space wrap>
-            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
-            {risk ? <RiskBadge {...risk} /> : null}
-          </Space>
-          {actions}
-        </Space>
-        <Typography.Paragraph style={{ ...shellTypographyStyles.body, margin: 0 }}>
-          {content}
-        </Typography.Paragraph>
-        {evidenceSummary ? (
+    <ContentCard
+      meta={
+        evidenceSummary ? (
           <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
             {evidenceSummary}
           </Typography.Text>
-        ) : null}
-      </Space>
-    </Card>
+        ) : null
+      }
+      tagSlot={
+        risk || actions ? (
+          <Space wrap>
+            {risk ? <RiskBadge {...risk} /> : null}
+            {actions}
+          </Space>
+        ) : null
+      }
+      title={title}
+    >
+      <Typography.Paragraph style={{ ...shellTypographyStyles.body, margin: 0 }}>
+        {content}
+      </Typography.Paragraph>
+    </ContentCard>
   );
 }

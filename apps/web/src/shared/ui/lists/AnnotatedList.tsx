@@ -10,9 +10,17 @@ import type { RiskBadgeProps } from "../status/RiskBadge";
 import { StatusTag } from "../status/StatusTag";
 import type { StatusTagProps } from "../status/StatusTag";
 
+/**
+ * Shared Pattern：AnnotatedList 的通用 item contract。
+ *
+ * 适用于需要 title、description、status、risk 和 actions 的注释型列表展示。
+ * 不包含 SourceEvidence、Report、RunTrace 等业务对象；调用方必须先完成映射。
+ */
 export type AnnotatedListItem = {
+  /** 行内动作 slot；排序、显隐和权限判断必须在调用方完成。 */
   actions?: ReactNode;
   description?: ReactNode;
+  /** Header 右侧的补充 slot，不承接 route 映射或业务判断。 */
   extra?: ReactNode;
   key: string;
   meta?: ReactNode;
@@ -21,16 +29,21 @@ export type AnnotatedListItem = {
   title: ReactNode;
 };
 
+/**
+ * Shared Pattern：AnnotatedList 的公共 props 契约。
+ *
+ * 组件只消费通用列表项和空态配置，不解析业务对象或 raw data。
+ */
 export type AnnotatedListProps = {
   empty?: EmptyStateProps;
   items: AnnotatedListItem[];
 };
 
 /**
- * Mobile / 低密度卡片列表容器。
+ * Shared Pattern：注释型列表容器。
  *
- * 字段优先级由页面 Surface 和 ViewModel 决定；
- * AnnotatedList 只负责把主字段、状态、风险和操作稳定排布。
+ * 基于 Ant List / Card，只负责把主字段、状态、风险和操作稳定排布。
+ * 字段优先级和业务含义由调用方 ViewModel 决定；组件不做业务映射、权限判断或排序。
  */
 export function AnnotatedList({ empty, items }: AnnotatedListProps) {
   if (items.length === 0) {

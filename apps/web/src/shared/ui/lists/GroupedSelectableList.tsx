@@ -7,6 +7,12 @@ import { shellTypographyStyles } from "../../theme/typography";
 import type { SelectableListItemData } from "./SelectableList";
 import { SelectableListItem } from "./SelectableListItem";
 
+/**
+ * Shared Pattern：GroupedSelectableList 的通用分组 contract。
+ *
+ * 只描述通用分组标题、描述和条目集合。
+ * 分组规则必须由调用方在 mapper / hook 中完成，shared/ui 不做业务 grouping。
+ */
 export type GroupedSelectableListGroup = {
   description?: ReactNode;
   items: SelectableListItemData[];
@@ -14,6 +20,12 @@ export type GroupedSelectableListGroup = {
   title: ReactNode;
 };
 
+/**
+ * Shared Pattern：GroupedSelectableList 的公共 props 契约。
+ *
+ * 组件只消费已经分好组的通用列表数据。
+ * 搜索、选择、返回和分组显隐均由调用方控制，不做 route 映射或业务判断。
+ */
 export type GroupedSelectableListProps = {
   action?: ReactNode;
   ariaLabel: string;
@@ -29,6 +41,13 @@ export type GroupedSelectableListProps = {
   title: ReactNode;
 };
 
+/**
+ * Shared Pattern：分组可选列表。
+ *
+ * 基于 SelectableListItem 和 Ant Input / Typography / Space，
+ * 只负责分组标题、搜索输入承接和选中态排布。
+ * 不负责业务分组规则、route 映射或跨模块逻辑。
+ */
 export function GroupedSelectableList({
   action,
   ariaLabel,
@@ -101,10 +120,7 @@ export function GroupedSelectableList({
                   {group.title}
                 </Typography.Text>
                 {group.description ? (
-                  <Typography.Text
-                    type="secondary"
-                    style={shellTypographyStyles.cardDescription}
-                  >
+                  <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
                     {group.description}
                   </Typography.Text>
                 ) : null}

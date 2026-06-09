@@ -1,4 +1,10 @@
-import type { StaticEvidenceEntranceViewModel, StaticPageStateViewModel, StaticPageViewModelBase, StaticRiskViewModel, StaticStatusViewModel } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  StaticEvidenceEntranceViewModel,
+  StaticPageStateViewModel,
+  StaticPageViewModelBase,
+  StaticRiskViewModel,
+  StaticStatusViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 
 export type MetricsWorkspaceBinding = {
   workspaceId: string;

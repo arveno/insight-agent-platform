@@ -5,6 +5,16 @@
   "description": "报告、结论和 RAG 引用的来源证据契约，用于可追溯分析。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "sourceEvidenceId",
+    "runId",
+    "sourceType",
+    "sourceId",
+    "title",
+    "snippet",
+    "confidence",
+    "createdAt"
+  ],
   "properties": {
     "sourceEvidenceId": {
       "description": "来源证据唯一标识。",
@@ -40,8 +50,9 @@
       "type": "string"
     },
     "metadata": {
-      "description": "证据扩展元数据，必须保持结构化，不能替代标准字段。",
-      "type": "object"
+      "description": "证据扩展元数据，只用于 source-specific display metadata，不得承载 lifecycle ID、状态或 raw provider output。",
+      "type": "object",
+      "additionalProperties": true
     },
     "confidence": {
       "description": "证据可信度，取值范围为 0 到 1。",

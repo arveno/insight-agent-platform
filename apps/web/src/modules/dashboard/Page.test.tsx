@@ -41,4 +41,25 @@ describe("DashboardPage", () => {
     expect(screen.getByText("当前展示最近 7 天内的指标摘要、异常和报告入口。")).toBeTruthy();
     expect(onNavigate).not.toHaveBeenCalled();
   });
+
+  it("uses the shared ContentSection cards layout for responsive dashboard card sections and renders three report-evidence cards", () => {
+    render(
+      <TestProviders>
+        <DashboardPage />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("周经营分析报告")).toBeTruthy();
+    expect(screen.getByText("季度收入证据摘要")).toBeTruthy();
+    expect(screen.getByText("数据质量与任务证据")).toBeTruthy();
+
+    expect(screen.getByText("季度收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
+    expect(screen.getByText("收入增速异常").closest(".ant-col")?.className).toContain(
+      "ant-col-md-12"
+    );
+    expect(screen.getByText("周经营分析报告").closest(".ant-col")?.className).toContain(
+      "ant-col-xl-8"
+    );
+    expect(screen.getByText("平台质量").closest(".ant-col")?.className).toContain("ant-col-md-12");
+  });
 });

@@ -97,7 +97,9 @@ export function HeaderBar({
         >
           <Space size={4}>
             <Typography.Text>{currentWorkspaceName}</Typography.Text>
-            <DownOutlined style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }} />
+            <DownOutlined
+              style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+            />
           </Space>
         </Button>
       </Dropdown>

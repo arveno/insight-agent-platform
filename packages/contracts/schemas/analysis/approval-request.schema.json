@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/approval-request.schema.json",
+  "title": "ApprovalRequest",
+  "description": "AnalysisRun 在高风险计划或动作上触发的审批请求契约。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approvalId",
+    "runId",
+    "requestedAction",
+    "riskLevel",
+    "status",
+    "requestedAt",
+    "expiresAt"
+  ],
+  "properties": {
+    "approvalId": {
+      "description": "审批请求唯一标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "审批请求所属分析运行标识。",
+      "type": "string"
+    },
+    "planId": {
+      "description": "审批对应的计划标识；没有计划标识时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "planVersion": {
+      "description": "审批对应的计划版本；没有计划版本时为 null。",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "toolCallId": {
+      "description": "审批直接关联的工具调用标识；不是工具级审批时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requestedAction": {
+      "description": "请求审批的明确动作，不允许泛化为整个 run 的长期授权。",
+      "type": "string"
+    },
+    "riskLevel": {
+      "description": "审批动作的风险等级，必须使用 contracts 中定义的 RiskLevel 枚举。",
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "status": {
+      "description": "审批请求状态，必须使用 contracts 中定义的 ApprovalStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "requested",
+        "granted",
+        "denied",
+        "expired",
+        "cancelled",
+        "superseded"
+      ]
+    },
+    "requestedAt": {
+      "description": "审批请求创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "description": "审批请求过期时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "decidedAt": {
+      "description": "审批被处理的时间；尚未处理时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "decidedBy": {
+      "description": "做出审批决定的用户标识；尚未决策时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decisionReason": {
+      "description": "审批决定原因；没有决定原因时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

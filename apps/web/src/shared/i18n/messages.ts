@@ -213,8 +213,7 @@ export const messages = {
     "page.dataKnowledge.nav.searchPlaceholder": "搜索数据与知识资产",
     "page.dataKnowledge.nav.title": "数据与知识资产",
     "page.dataKnowledge.relationship.dataSourceTitle": "DataSource relationship",
-    "page.dataKnowledge.relationship.knowledgeDocumentTitle":
-      "Knowledge document relationship",
+    "page.dataKnowledge.relationship.knowledgeDocumentTitle": "Knowledge document relationship",
     "page.dataKnowledge.rightAssist.description":
       "Inspector 承接当前 Workspace 的全局摘要、只读边界、质量摘要和导航动作。",
     "page.dataKnowledge.rightAssist.title": "数据与知识上下文",
@@ -289,24 +288,31 @@ export const messages = {
     "page.memory.section.memoryUsage.description": "记忆使用轨迹信息区。",
     "page.memory.section.memoryUsage.title": "记忆使用轨迹",
     "page.memory.title": "记忆",
-    "page.metrics.description": "当前 Workspace 下的只读指标目录与当前指标详情，解释指标语义、阈值、血缘、证据与 Analysis 入口。",
+    "page.metrics.description":
+      "当前 Workspace 下的只读指标目录与当前指标详情，解释指标语义、阈值、血缘、证据与 Analysis 入口。",
     "page.metrics.rightAssist.description": "展示指标相关证据摘要、上下文入口和只读边界说明。",
     "page.metrics.rightAssist.title": "指标辅助区",
-    "page.metrics.section.analysisContext.description": "Metric-level context 只表达带上下文进入 Analysis 的草稿态。",
+    "page.metrics.section.analysisContext.description":
+      "Metric-level context 只表达带上下文进入 Analysis 的草稿态。",
     "page.metrics.section.analysisContext.title": "带上下文进入 Analysis",
-    "page.metrics.section.evidenceEntry.description": "证据入口只展示静态摘要，不触发真实查询或真实分析。",
+    "page.metrics.section.evidenceEntry.description":
+      "证据入口只展示静态摘要，不触发真实查询或真实分析。",
     "page.metrics.section.evidenceEntry.title": "证据入口",
     "page.metrics.section.formulaThreshold.description": "只读展示指标怎么算、什么时候异常。",
     "page.metrics.section.formulaThreshold.title": "公式与阈值",
-    "page.metrics.section.lineageSource.description": "血缘与字段来源只解释从哪来，不执行真实 SQL 或下钻。",
+    "page.metrics.section.lineageSource.description":
+      "血缘与字段来源只解释从哪来，不执行真实 SQL 或下钻。",
     "page.metrics.section.lineageSource.title": "血缘与字段来源",
     "page.metrics.section.metricCatalog.description": "只读指标目录属于当前 Workspace。",
     "page.metrics.section.metricCatalog.title": "指标目录",
-    "page.metrics.section.metricsOverview.description": "概览当前 Workspace 的指标语义层范围和只读边界。",
+    "page.metrics.section.metricsOverview.description":
+      "概览当前 Workspace 的指标语义层范围和只读边界。",
     "page.metrics.section.metricsOverview.title": "指标总览",
-    "page.metrics.section.selectedMetricDetail.description": "围绕当前选中指标展示定义、摘要、公式、阈值、血缘、证据和动作。",
+    "page.metrics.section.selectedMetricDetail.description":
+      "围绕当前选中指标展示定义、摘要、公式、阈值、血缘、证据和动作。",
     "page.metrics.section.selectedMetricDetail.title": "当前指标详情",
-    "page.metrics.section.trendAnomaly.description": "趋势与异常只解释为什么值得追问，不触发真实规则引擎。",
+    "page.metrics.section.trendAnomaly.description":
+      "趋势与异常只解释为什么值得追问，不触发真实规则引擎。",
     "page.metrics.section.trendAnomaly.title": "趋势与异常",
     "page.metrics.title": "指标",
     "page.modelTools.description": "模型与工具工作台。",
@@ -352,28 +358,34 @@ export const messages = {
       "提供风险解释和跨页面跳转入口，但不创建真实 conversation、run 或执行链路。",
     "page.platformOperations.section.riskNavigation.title": "风险与跳转入口",
     "page.platformOperations.title": "平台运维",
-    "page.reports.description": "Report-first Reader Page，承接正式报告资产的阅读、追溯、反馈和继续追问。",
+    "page.reports.description":
+      "Report-first Reader Page，承接正式报告资产的阅读、追溯、反馈和继续追问。",
     "page.reports.rightAssist.description": "仅保留轻量报告上下文、目录和证据摘要。",
     "page.reports.rightAssist.title": "报告上下文",
-    "page.reports.section.decisionAction.description": "承接决策建议、行动建议、反馈入口和继续追问。",
+    "page.reports.section.decisionAction.description":
+      "承接决策建议、行动建议、反馈入口和继续追问。",
     "page.reports.section.decisionAction.title": "决策与后续动作",
     "page.reports.section.reportList.description": "报告列表信息区。",
     "page.reports.section.reportList.title": "报告列表",
-    "page.reports.section.reportReader.description": "按结构化 Report 展示标题、摘要、章节和来源上下文。",
+    "page.reports.section.reportReader.description":
+      "按结构化 Report 展示标题、摘要、章节和来源上下文。",
     "page.reports.section.reportReader.title": "Report Reader",
     "page.reports.section.reportSection.description": "报告段落信息区。",
     "page.reports.section.reportSection.title": "报告段落",
-    "page.reports.section.sourceEvidence.description": "展示结构化 sourceEvidence 摘要，不展示原始 Tool 输出或模型原文。",
+    "page.reports.section.sourceEvidence.description":
+      "展示结构化 sourceEvidence 摘要，不展示原始 Tool 输出或模型原文。",
     "page.reports.section.sourceEvidence.title": "证据引用",
     "page.reports.title": "报告",
     "reports.inspector.context.title": "来源上下文",
     "reports.inspector.meta.title": "报告元信息",
     "reports.inspector.outline.title": "报告目录",
-    "reports.reader.actionSuggestions.description": "行动建议只展示静态 Reader 内容，不执行真实任务或写入。",
+    "reports.reader.actionSuggestions.description":
+      "行动建议只展示静态 Reader 内容，不执行真实任务或写入。",
     "reports.reader.actionSuggestions.title": "行动建议",
     "reports.reader.decisions.title": "决策建议",
     "reports.reader.feedback.title": "反馈入口",
-    "reports.reader.followUp.description": "继续追问会带着当前 reportId / runId 上下文返回 Analysis，但不会触发真实 Agent。",
+    "reports.reader.followUp.description":
+      "继续追问会带着当前 reportId / runId 上下文返回 Analysis，但不会触发真实 Agent。",
     "reports.reader.followUp.title": "Open in Analysis with context",
     "page.settings.description": "设置工作台。",
     "page.settings.rightAssist.description": "展示设置相关证据、运行轨迹和上下文入口。",
@@ -409,10 +421,8 @@ export const messages = {
     "shell.inspector.metrics.description": "指标用于定义口径、阈值、血缘和异常规则。",
     "shell.inspector.modelTools.description":
       "模型与工具用于配置模型、Prompt、Tool、RAG 策略等平台能力。",
-    "shell.inspector.observability.description":
-      "观测用于查看运行轨迹、成本、延迟和错误定位入口。",
-    "shell.inspector.platformOperations.description":
-      "平台运维用于查看任务、通知和数据质量入口。",
+    "shell.inspector.observability.description": "观测用于查看运行轨迹、成本、延迟和错误定位入口。",
+    "shell.inspector.platformOperations.description": "平台运维用于查看任务、通知和数据质量入口。",
     "shell.inspector.reports.description": "报告用于查看当前工作区的报告列表和沉淀结果。",
     "shell.inspector.settings.description": "设置用于查看系统默认策略、环境配置和偏好入口。",
     "shell.inspector.workspace.description": "工作区管理用于查看成员、角色、业务域和空间配置入口。",
@@ -680,8 +690,7 @@ export const messages = {
     "page.dataKnowledge.nav.searchPlaceholder": "Search data and knowledge assets",
     "page.dataKnowledge.nav.title": "Data & Knowledge assets",
     "page.dataKnowledge.relationship.dataSourceTitle": "DataSource relationship",
-    "page.dataKnowledge.relationship.knowledgeDocumentTitle":
-      "Knowledge document relationship",
+    "page.dataKnowledge.relationship.knowledgeDocumentTitle": "Knowledge document relationship",
     "page.dataKnowledge.rightAssist.description":
       "Inspector carries the workspace summary, readonly boundaries, quality summary, and navigation-only actions.",
     "page.dataKnowledge.rightAssist.title": "Data & Knowledge context",
@@ -779,7 +788,8 @@ export const messages = {
     "page.metrics.section.lineageSource.description":
       "Lineage and field sources explain origin only and do not execute SQL or drill-down.",
     "page.metrics.section.lineageSource.title": "Lineage and field sources",
-    "page.metrics.section.metricCatalog.description": "The read-only metric catalog belongs to the current Workspace.",
+    "page.metrics.section.metricCatalog.description":
+      "The read-only metric catalog belongs to the current Workspace.",
     "page.metrics.section.metricCatalog.title": "Metric catalog",
     "page.metrics.section.metricsOverview.description":
       "Overview of the current Workspace metric semantic layer and read-only scope.",

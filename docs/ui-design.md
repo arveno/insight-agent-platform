@@ -98,7 +98,7 @@ Code
 - `Data & Knowledge` 的 LeftNav 二级列表承接当前 `Workspace` 的 grouped asset list，复用 grouped object list；分组固定为 `数据资产 Data` 和 `知识文档 Docs`。
 - `Data & Knowledge` 的分组标题不可选，不代表 route，不代表新的业务对象；列表项只负责选择当前资产，不承载字段、证据、质量摘要或动作按钮。
 - `Data & Knowledge` 一级入口需要和 `Analysis / Reports / Metrics` 等存在二级列表的入口保持一致的可进入提示。
-- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector`。
+- `app/shell` 只保留通用 App Shell 组件：`AppShell / AppShellLayout / HeaderBar / LeftNav`。
 - `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / ReportsListNav / ReportsInspectorPanel / DataKnowledgeListNav / MetricsListNav` 这类模块专属 nav / inspector / drawer / panel 必须放回对应 `modules/<domain>`。
 
 建议结构：
@@ -143,21 +143,50 @@ Page Composition 是正式 Web 页面的默认编排层级。
 ```text
 AppShell
 └─ Page
-   └─ SectionStack
-      └─ ContentSection
-         └─ Ant Flex / Space / Row / Col
-            └─ CardSurface / ContentCard / StatCard / 模块内业务组件
-               └─ ActionButton / NavigationActionButton
+   └─ ResponsivePageShell
+      └─ ModuleSections
+         └─ SectionStack
+            ├─ PageIntro (optional, page first block)
+└─ ContentSection
+   └─ ContentSlotLayout
+      └─ Ant Flex / Space / Row / Col
+         └─ CardSurface / ContentCard / StatCard / 模块内业务组件
+            └─ ActionButton / NavigationActionButton
 ```
+
+- `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 保持全局 workspace header。
+- 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots。
+- `AppShell` 不直接调用 module shell hooks；active route shell hook 必须通过 `RouteShellOutlet` 这类子组件按需挂载。
+- `AppShell` 不持有 module controller 生命周期。
+- `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不保留默认 fallback inspector。
+- `LeftNav` 只展示 root navigation；是否存在二级模块导航由 `AppShell` 消费 slots 决定，不在 `LeftNav` 内硬编码。
+- 有 shell slots 的页面需要拆分为自管理 `Page` 和受控 `PageContent`；shell hook 只能渲染 `PageContent`，不得再保留 optional controller prop + fallback controller 双轨。
 
 规则：
 
-- `SectionStack` 只负责页面 section 间距。
-- `ContentSection` 只负责 section 语义、title、description、extra。
+- 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
+- `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只承接 module 暴露的 Analysis workspace 入口或 slots，不直接拼 session nav、message list、composer、inspector、drawer。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得多处维护。
+- `AnalysisMessageList` 只负责 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须有独立承载位，不得继续塞进 assistant message。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载；页面内容结构从 `ModuleSections` 开始组织，不再承接自动 header。
+- 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面主内容的大块纵向节奏和宽度，不承接 padding。
+- `PageScaffold` 已删除；不允许再通过页面壳自动生成 `PageIntro` 或自动注入页面操作区。
+- `ResponsivePageShell` 不再新增 `filters / rightAside / header / viewModel / actions / hideHeader / hideHeaderActions`。
+- `PageIntro` 是 shared/layout/containers 的唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责左侧标题说明和右侧 `extra` 操作区；children slot 的 `plain / cards / stack` 布局统一由 `ContentSlotLayout` 承接。
+- `Page.tsx` 只负责状态接入和 `ResponsivePageShell -> ModuleSections` 组合；非 `Analysis` 页面不得在 `Page.tsx` 中直接组织 `PageIntro / SectionStack / ContentSection`。
+- `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是唯一允许的 module component 例外。
+- `SectionStack` 只负责页面 section 间距，不要求子节点必须是 `ContentSection`。
+- `ContentSection` 只负责普通内容区的 section 语义、eyebrow、title、extra 和 children slot。
+- `ContentSlotLayout` 只负责 `plain / cards / stack` 的 children slot 布局。
+- `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区；`ContentSection` 只用于页面后续普通内容分区，不承接 Hero 语义。
 - 布局优先使用 Ant `Flex / Space / Row / Col / Layout`。
 - `ActionButton` 只负责按钮视觉、variant、icon、loading、disabled、danger。
 - `NavigationActionButton` 只负责 route-aware 行为组合，不负责 route 到 Page 的映射。
 - `CardSurface` 只负责统一卡片壳；`ContentCard` 负责通用内容结构；`StatCard` 只负责通用数值摘要。
+- Hero facts / summary 小卡片优先使用 `StatCard`；普通内容入口卡优先使用 `ContentCard`；不要用 `CardSurface` 手写小卡片壳。
+- 普通业务卡片不得绕开 `ContentCard / StatCard / CardSurface` 直接使用 Ant `Card` 重画外壳；`Reports` 模块同样必须遵守这条规则。
+- 除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 应统一使用 `PageIntro`；页面顶部操作区由 module 本地组件组合后通过 `PageIntro extra` 传入，不提前抽 shared `PageHeroActions`；替换完成后不保留旧 `PageHeader` / intro / hero-like 结构。
 - 业务模块可以在 `modules/<domain>` 内组合业务组件，但不得把业务对象组件塞回 shared。
 
 明确禁止：
@@ -173,15 +202,37 @@ AppShell
 
 ### Section Primitive
 
-- `SectionStack` 统一页面主内容的 section 垂直排列和间距。
-- `ContentSection` 统一 section 标题区和内容区语义，不绑定卡片、表格、图表、列表或 Graph。
+- `SectionStack` 统一页面主内容的 section 垂直排列和间距；Hero 或其它不需要 section header 的区域可以直接放入 `SectionStack`，但 page padding 始终由 `ResponsivePageShell` 单独承接。
+- `ContentSection` 统一普通内容区的 section 标题区和内容区语义，不绑定卡片、表格、图表、列表或 Graph。
+- `ContentSection` header 右侧 slot 固定使用 `extra`，不使用 `titleSuffix`。
+- `ContentSection contentLayout="plain"` 表示保留 section header 和 section 语义，但 children 原样渲染；图表、表格和复杂自定义区域优先使用 plain。
+- `ContentSection` 和 `PageIntro` 不得各自重复实现 `plain / cards / stack`；slot 布局统一通过 `ContentSlotLayout` 承接。
+- `ContentSlotLayout layout="cards"` 表示使用受控 Ant `Row / Col` 排列 children，间距必须来自 shared/theme token。
+- `ContentSlotLayout layout="stack"` 表示使用受控 Ant `Space` 做纵向排列。
+- 普通内容区如果是卡片组，优先使用 `ContentSection contentLayout="cards"`；如果只是纵向大块，优先使用 `ContentSection contentLayout="stack"`。
+- `ContentSection` 只暴露 `contentLayout` 和 `colProps` 两个布局入口；不新增 `columns / grid / wrap / minItemWidth` 这类自定义布局 API。
+- Dashboard 等卡片区不应再在页面内重复手写 `Row / Col / gutter`，而应通过 `ContentSection contentLayout="cards"` 声明。
+- module `sections/**` 不得再手写 section 级 `Flex wrap / cardItemStyle / flex: "1 1 xxxpx"` 卡片排列；footer actions、卡片内部布局和复杂表格 / 图表 / Tabs / timeline 保留在组件内部解决。
+- section 内响应式卡片布局固定优先使用 Ant `Row / Col`：手机浏览器 `xs={24}` 单列，中屏常用 `md={12}` 双列，大屏三卡区使用 `xl={8}` 三列。
+- 双卡区默认 `colProps={ xs: 24, md: 12 }`，三卡区默认 `colProps={ xs: 24, md: 12, xl: 8 }`，单卡区默认 `colProps={ xs: 24 }`。
+- 卡片区间距必须来自 shared/theme token，禁止在业务页面或 shared/layout 中硬编码 `gutter={[16, 16]}`。
+- 如果某个区域不需要 section header，就不要使用 `ContentSection`，直接放到 `SectionStack` 或模块自定义区域里。
 - section 内按钮排列直接使用 Ant `Flex / Space`，不要额外抽 `ActionGroup`。
+- `Dashboard` 这类 overview page 的标准结构固定为 `SectionStack -> Hero -> ContentSection(contentLayout="cards") -> Cards`。
+- `DashboardHero` 的 canonical 模式是 `PageIntro + DashboardHeroActions(local) + StatCard facts`；facts 使用 `PageIntro contentLayout="cards"` 和 Ant `Col` 响应式语义，不新增 `HeroGrid / HeroCard / ActionGroup / CardGrid`。
+- 业务模块需要特殊卡片时，只在 module 内轻封单张卡片，不额外创建 `Panel / Grid / ActionGroup / HeaderActionGroup / SectionActionGroup` 分组层。
+- module 业务卡片可以存在，但必须组合 `ContentCard / StatCard / PropertyList` 这类 shared pattern；不得重新实现 shared card 的壳、标题区、footer、padding 或 border。
+- 业务 mapper 默认只负责整理业务 item，不应预先生成 JSX、`NavigationAction` 或 `ContentCard` slot；Dashboard 普通卡片优先在业务组件内部组合 `ContentCard`、`meta` 和 footer actions。
+- 同一 module 内的简单卡片列表，不要为了统一渲染再创建中间 `CardItem / DTO`；业务卡片应直接接收业务 item，并在组件内部完成展示字段、meta 和 actions 组合。
+- 同一业务卡片私有使用的文案映射或显示 helper，应内聚在该组件文件内部；没有跨组件复用或明确 ViewModel 边界时，不额外创建独立 mapper。
+- 同一 module 内的组件 props 应优先表达真实依赖；不要为了复用少量字段创建包含无关字段的父 props 类型。
+- 如果组件只需要 `onNavigate`，应使用局部窄类型承接导航能力，不要从包含 `viewModel` 的大 props 类型里 `Pick` 字段。
 
 ### Card Primitive
 
 - `CardSurface` 基于 Ant `Card` 做视觉壳薄封装。
 - `ContentCard` 组合 `CardSurface`，承接通用标题、描述、extra、body、footer 结构。
-- `StatCard` 只用于无业务语义的数值摘要；如果卡片依赖 `MetricDefinition / ToolDefinition / ReportFinding` 等业务对象，应留在对应 module。
+- `StatCard` 只用于无业务语义的数值摘要，允许 `supportingMeta / contextMeta` 这类通用辅助信息 slot；不允许 `evidenceSummary`、`MetricDefinition`、业务 contract 或业务对象 props。
 - `RiskBadge / StatusTag` 只负责状态表达，不承接业务逻辑。
 
 ### List Primitive
@@ -195,6 +246,7 @@ AppShell
 
 - `shared/ui` 不知道 route。
 - route-aware action helper 放在 `shared/navigation`，只知道 route key，不知道具体 Page。
+- `shared/navigation` 里的 `PageRouteProps` 只允许包含 `onNavigate`；任何 `dataKnowledgeState / metricsState / platformOperationsState / reportsState` 这类 app composition state slot 必须留在 `app/router` 或对应 module page props。
 - `app/router` 只负责 route key 到 Page 的映射。
 - helper 负责把 route key、variant、iconName、label、onNavigate 转成 `NavigationActionButton` 可消费的通用 action props。
 - 后续入口跳转不得在页面中随意散写。
@@ -203,7 +255,7 @@ AppShell
 
 ### Page Archetype
 
-默认页面必须使用 `SectionStack` + `ContentSection`，并在 section 内优先使用 Ant 布局 primitive。
+默认页面应优先使用 `SectionStack` + `ContentSection`；如果某个区域不需要 section header，可以直接作为 `SectionStack` 子节点存在。
 
 特殊页面必须落入明确 Page Archetype：
 
@@ -253,15 +305,27 @@ shared 只保留无业务语义的公共能力，固定边界如下：
 - `shared/graph`：唯一允许封装 `@antv/g6` 的关系图底座。
 - `shared/charts`：无业务语义图表 primitive。
 - `shared/navigation`：`navigationTypes / createRouteAction / NavigationActionButton` 这类 route-key 级别导航能力。
-- `shared/layout`：`ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame` 等无业务语义页面结构 primitive。
+- `shared/layout`：`ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame` 等无业务语义页面结构 primitive。
 - `shared/ui/actions`：`ActionButton`。
 - `shared/ui/surfaces`：`CardSurface` 这类视觉壳。
 - `shared/ui/cards`：`ContentCard / StatCard / EntryCard / DetailCard` 等无业务语义 card pattern。
 - `shared/ui/lists`：`PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline` 等无业务语义 list pattern。
 - `shared/ui/states`：`EmptyState / ErrorState / LoadingState / WarningState`。
 - `shared/ui/status`：`StatusTag / RiskBadge`。
-- `shared/view-model`：跨 app / modules 边界需要共享的静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助。
+- `shared/view-model`：跨 app / modules 边界需要共享的静态 ViewModel 类型、fixtures 和真正无业务的通用 helper。
 - `shared/test`：测试期 provider / helper。
+
+### UI Component Comment Standard
+
+- 注释解释组件契约，不解释显而易见实现。
+- `shared/ui` 的 export 组件、export 函数、export 类型、props contract 和 item contract 必须有 JSDoc。
+- JSDoc 必须说明 `Layer / Based on / Responsibilities / Forbidden responsibilities / Caller contract`。
+- 调用方契约必须明确：module 先把业务数据映射成通用 props，`shared/ui` 只消费通用 props，不知道 `SourceEvidence / Report / RunTrace / ToolDefinition / MetricDefinition / DataSource / KnowledgeDocument` 等业务对象。
+- 参数和字段只在含义不直观、影响行为、容易误用或属于公共 contract 时单独说明。
+- `title / description / children / className / style / key / value` 这类含义足够直观的字段，不要写“标题 / 描述 / 子元素”这类废话注释。
+- callback、slot、status、risk、variant、action 这类容易误用字段，必须在 props contract 或 item contract 中说明边界。
+- 如果一个组件需要大量注释才能解释清楚，优先检查组件职责是否过重，而不是继续堆砌说明。
+- 后续 PR 修改 `shared/ui` 公共 API 时，必须同步维护这些契约注释。
 
 明确不允许进入 shared 的内容：
 
@@ -327,7 +391,7 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - Risk Tag / 风险标签固定在卡片 Header 右上角，表示当前卡片对象风险等级，最多 1 个。
 - Status Tag / 状态标签仅在非 ready 状态展示，位置同 Header 右上角。
 - ready 状态默认不展示。
-- 页面级主操作放在 Hero / 页面头部右侧。
+- 页面级主操作放在 `PageIntro` / module Hero 的右侧 `extra`。
 - Section 级模块入口放在 Section Header 右侧。
 - 卡片内部动作统一放在 Footer Actions 左下横向排列。
 - Inspector 内动作在分组内左对齐横向排列。
@@ -346,7 +410,7 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - 单一 module 内部组件不得提前抽到 `shared`。
 - `shared` 组件不得依赖 `modules` 或 `app`。
 - `shared` 组件只消费 ViewModel、UI State 或 contract 枚举。
-- `shared/view-model` 只允许静态 ViewModel 类型、fixtures 和与这些静态类型一一对应的轻量映射辅助；不得演变为业务聚合层。
+- `shared/view-model` 只允许静态 ViewModel 类型、fixtures 和真正无业务的通用 helper；不得演变为业务聚合层。
 - `shared/test` 只允许测试期 provider / helper；不得放业务测试数据。
 - `shared` 组件不得访问数据库字段、模型原始输出、Tool 原始输出、LangGraph raw state、raw provider response、raw vector、raw embedding 或 raw SQL result。
 - `shared` 不新增 `index.ts / index.tsx` barrel export；import 必须显式到具体文件。
@@ -410,56 +474,55 @@ shared/
 
 ### Current UI Component Taxonomy
 
-| Component                 | Layer              | Location                                           | Based on                                        | Allowed responsibilities                    | Forbidden responsibilities                  | Can be used by                                       | Cannot depend on        |
-| ------------------------- | ------------------ | -------------------------------------------------- | ----------------------------------------------- | ------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- | ----------------------- |
-| `ActionButton`            | Behavior Primitive | `shared/ui/actions/ActionButton.tsx`               | Ant `Button`                                    | variant、icon、loading、disabled、danger    | 排序、布局、导航、权限、业务判断            | `app`、`modules`、`shared/navigation`                | `app`、`modules`        |
-| `actionTypes`             | UI Support         | `shared/ui/actions/actionTypes.ts`                 | TypeScript types                                | action primitive 类型                       | route 映射、业务对象                        | `shared/ui/actions`、`shared/navigation`、`modules`  | `app`、`modules`        |
-| `CardSurface`             | Surface / Frame    | `shared/ui/surfaces/CardSurface.tsx`               | Ant `Card`                                      | 视觉壳、边框、圆角、padding、hover          | 业务 props、route、数据映射                 | `shared/ui/cards`、`modules`                         | `app`、`modules`        |
-| `ContentCard`             | Shared Pattern     | `shared/ui/cards/ContentCard.tsx`                  | `CardSurface`                                   | title、description、meta、footer、children  | 业务对象解析、布局绑定                      | `app`、`modules`                                     | `app`、`modules`        |
-| `StatCard`                | Shared Pattern     | `shared/ui/cards/StatCard.tsx`                     | `ContentCard`                                   | title、value、status、risk、trend、meta     | `MetricDefinition`、业务 contract、数据计算 | `app`、`modules`                                     | `app`、`modules`        |
-| `PropertyList`            | Shared Pattern     | `shared/ui/lists/PropertyList.tsx`                 | Ant `Descriptions / List / Typography`          | label-value 展示                            | 业务对象解析                                | `app`、`modules`                                     | `app`、`modules`        |
-| `TitledList`              | Shared Pattern     | `shared/ui/lists/TitledList.tsx`                   | Ant `List / Space / Typography`                 | title + summary list                        | 业务对象解析、排序                          | `app`、`modules`                                     | `app`、`modules`        |
-| `AnnotatedList`           | Shared Pattern     | `shared/ui/lists/AnnotatedList.tsx`                | Ant `List / Typography`                         | 注释型列表展示                              | 业务映射、权限判断                          | `app`、`modules`                                     | `app`、`modules`        |
-| `SelectableList`          | Shared Pattern     | `shared/ui/lists/SelectableList.tsx`               | Ant `List / Button / Space`                     | 通用可选列表                                | 业务 route、跨模块逻辑                      | `app`、`modules`                                     | `app`、`modules`        |
-| `SelectableListItem`      | Shared Pattern     | `shared/ui/lists/SelectableListItem.tsx`           | Ant `Button / Space / Typography`               | 单个可选列表项壳                            | 业务对象解析                                | `SelectableList`、`GroupedSelectableList`、`modules` | `app`、`modules`        |
-| `GroupedSelectableList`   | Shared Pattern     | `shared/ui/lists/GroupedSelectableList.tsx`        | `SelectableListItem` + Ant `Space`              | 分组可选列表                                | route 映射、业务分组规则                    | `app`、`modules`                                     | `app`、`modules`        |
-| `EventTimeline`           | Shared Pattern     | `shared/ui/lists/EventTimeline.tsx`                | Ant `Timeline / List / Typography`              | 通用事件时间线                              | `RunTrace` 业务对象解析                     | `modules`                                            | `app`、`modules`        |
-| `EmptyState`              | Shared Pattern     | `shared/ui/states/EmptyState.tsx`                  | Ant `Empty / Typography`                        | 空态展示                                    | 业务取数                                    | `app`、`modules`                                     | `app`、`modules`        |
-| `ErrorState`              | Shared Pattern     | `shared/ui/states/ErrorState.tsx`                  | Ant `Alert / Result / Typography`               | 错误态展示                                  | 错误恢复业务逻辑                            | `app`、`modules`                                     | `app`、`modules`        |
-| `LoadingState`            | Shared Pattern     | `shared/ui/states/LoadingState.tsx`                | Ant `Skeleton / Spin / Typography`              | 加载态展示                                  | 业务轮询逻辑                                | `app`、`modules`                                     | `app`、`modules`        |
-| `WarningState`            | Shared Pattern     | `shared/ui/states/WarningState.tsx`                | Ant `Alert / Result / Typography`               | 风险或告警空态展示                          | 业务规则判断                                | `app`、`modules`                                     | `app`、`modules`        |
-| `StatusTag`               | Shared Pattern     | `shared/ui/status/StatusTag.tsx`                   | Ant `Tag`                                       | 状态映射展示                                | 业务状态兜底                                | `app`、`modules`                                     | `app`、`modules`        |
-| `RiskBadge`               | Shared Pattern     | `shared/ui/status/RiskBadge.tsx`                   | Ant `Tag / Badge`                               | 风险等级展示                                | 风险规则计算                                | `app`、`modules`                                     | `app`、`modules`        |
-| `ContentSection`          | Shared Pattern     | `shared/layout/sections/ContentSection.tsx`        | Ant `Space / Typography / Flex`                 | section title、description、extra、children | card layout、业务对象                       | `app`、`modules`                                     | `app`、`modules`        |
-| `SectionStack`            | Layout             | `shared/layout/sections/SectionStack.tsx`          | Ant `Flex / Space`                              | section 垂直节奏                            | 复杂布局系统、业务布局                      | `app`、`modules`                                     | `app`、`modules`        |
-| `sectionTypes`            | Layout Support     | `shared/layout/sections/sectionTypes.ts`           | TypeScript types                                | section primitive 类型                      | 业务对象                                    | `shared/layout`、`modules`                           | `app`、`modules`        |
-| `getStaticSectionProps`   | Layout Support     | `shared/layout/sections/getStaticSectionProps.tsx` | static section vm + i18n                        | 静态 section props 映射                     | 业务取数                                    | `modules`                                            | `app`、`modules`        |
-| `PageHeader`              | Layout / Container | `shared/layout/containers/PageHeader.tsx`          | Ant `Typography / Space / Flex`                 | 页面头部结构                                | 业务数据获取                                | `app`、`modules`                                     | `app`、`modules`        |
-| `PageScaffold`            | Layout / Container | `shared/layout/containers/PageScaffold.tsx`        | Ant `Layout / Space`                            | 页面主骨架                                  | route 映射、业务对象                        | `app`、`modules`                                     | `app`、`modules`        |
-| `ResponsivePageShell`     | Layout / Container | `shared/layout/containers/ResponsivePageShell.tsx` | Ant `Layout / Grid / Flex`                      | 响应式页面壳                                | 业务组件拼装                                | `app`、`modules`                                     | `app`、`modules`        |
-| `FilterBar`               | Layout / Container | `shared/layout/containers/FilterBar.tsx`           | Ant `Card / Space / Flex`                       | 过滤区容器与统一壳                          | 排序、筛选业务规则                          | `modules`                                            | `app`、`modules`        |
-| `SidePanel`               | Surface / Frame    | `shared/layout/panels/SidePanel.tsx`               | Ant `Card / Layout / Space`                     | 侧栏面板壳                                  | 业务对象解析                                | `app`、`modules`                                     | `app`、`modules`        |
-| `DrawerFrame`             | Surface / Frame    | `shared/layout/panels/DrawerFrame.tsx`             | Ant `Drawer`                                    | Drawer 壳、统一边距与 header 区域           | 业务对象解析、route 映射                    | `app`、`modules`                                     | `app`、`modules`        |
-| `NavigationActionButton`  | Behavior Wrapper   | `shared/navigation/NavigationActionButton.tsx`     | `ActionButton`                                  | route-aware button 行为包装                 | 自己实现按钮视觉、Page 映射                 | `app`、`modules`                                     | `app`、`modules`        |
-| `createRouteAction`       | Behavior Support   | `shared/navigation/createRouteAction.ts`           | route key + i18n + action types                 | 构造 route-aware action 数据                | 排序、权限判断、UI 渲染                     | `app`、`modules`                                     | `app/router`、`modules` |
-| `navigationTypes`         | Behavior Support   | `shared/navigation/navigationTypes.ts`             | TypeScript types                                | route key、导航 action 类型                 | Page 映射                                   | `app`、`modules`、`shared/navigation`                | `app/router`、`modules` |
-| `RelationshipGraphCanvas` | Shared Pattern     | `shared/graph/RelationshipGraphCanvas.tsx`         | `@antv/g6`                                      | 只读关系图展示、选中、fit view、zoom、pan   | 业务图谱逻辑、raw G6 泄漏                   | `modules`                                            | `app`、`modules`        |
-| `relationshipGraphTheme`  | Graph Support      | `shared/graph/relationshipGraphTheme.ts`           | theme tokens                                    | 图谱视觉配置                                | 业务映射                                    | `shared/graph`                                       | `app`、`modules`        |
-| `graph models`            | Graph Support      | `shared/graph/models.ts`                           | TypeScript types                                | 关系图 ViewModel 类型                       | 业务模块逻辑                                | `shared/graph`、`modules`                            | `app`、`modules`        |
-| `StaticChart`             | Shared Pattern     | `shared/charts/StaticChart.tsx`                    | Ant Charts / chart wrapper                      | 静态图表展示                                | 业务对象解析                                | `modules`                                            | `app`、`modules`        |
-| `ChartCard`               | Shared Pattern     | `shared/charts/ChartCard.tsx`                      | `ContentCard` + chart wrapper                   | 图表内容卡片模式                            | 业务对象解析                                | `modules`                                            | `app`、`modules`        |
-| `chartTypes`              | Chart Support      | `shared/charts/chartTypes.ts`                      | TypeScript types                                | 图表 primitive 类型                         | 业务映射                                    | `shared/charts`、`modules`                           | `app`、`modules`        |
-| `I18nProvider`            | Foundation Support | `shared/i18n/I18nProvider.tsx`                     | React context                                   | i18n provider、translate hook               | 业务模块逻辑                                | `app`、`modules`                                     | `app`、`modules`        |
-| `messages`                | Foundation Support | `shared/i18n/messages.ts`                          | message catalog                                 | i18n key 事实源                             | 业务数据计算                                | `shared/i18n`、`modules`                             | `app`、`modules`        |
-| `translateKey`            | Foundation Support | `shared/i18n/translateKey.ts`                      | i18n helper                                     | 统一 key 翻译                               | 业务逻辑                                    | `app`、`shared`、`modules`                           | `app`、`modules`        |
-| `localeTypes`             | Foundation Support | `shared/i18n/localeTypes.ts`                       | TypeScript types                                | locale 类型                                 | Page 映射                                   | `shared/i18n`、`app`                                 | `app`、`modules`        |
-| `AppIcon`                 | Foundation Support | `shared/icons/AppIcon.tsx`                         | icon registry                                   | 项目图标入口                                | 业务对象解析                                | `app`、`modules`                                     | `app`、`modules`        |
-| `iconTypes`               | Foundation Support | `shared/icons/iconTypes.ts`                        | TypeScript types                                | icon name 类型                              | 业务逻辑                                    | `shared/icons`、`modules`                            | `app`、`modules`        |
-| `TestProviders`           | Test Support       | `shared/test/TestProviders.tsx`                    | provider composition                            | 测试期 provider 装配                        | 运行时业务逻辑                              | tests                                                | `app`、`modules`        |
-| `staticViewModelTypes`    | Shared Support     | `shared/view-model/staticViewModelTypes.ts`        | TypeScript types                                | 静态 ViewModel 类型事实源                   | 业务聚合逻辑                                | `app`、`modules`、`shared`                           | `app`、`modules`        |
-| `staticStateFixtures`     | Shared Support     | `shared/view-model/staticStateFixtures.ts`         | static view-model types                         | 静态状态 fixtures                           | 运行时业务逻辑                              | `modules`、tests                                     | `app`、`modules`        |
-| `staticViewModelAdapters` | Shared Support     | `shared/view-model/staticViewModelAdapters.ts`     | static ViewModel + i18n + shared status mapping | 静态共享 ViewModel 的轻量映射辅助           | 业务聚合、跨模块业务规则                    | `modules`                                            | `app`、`modules`        |
-| `viewModelState`          | Shared Support     | `shared/utils/viewModelState.ts`                   | static state vm + i18n                          | risk/status 映射                            | 业务权限和排序                              | `shared`、`modules`                                  | `app`、`modules`        |
+| Component                 | Layer              | Location                                           | Based on                                                              | Allowed responsibilities                                | Forbidden responsibilities                                     | Can be used by                                       | Cannot depend on        |
+| ------------------------- | ------------------ | -------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- | ----------------------- |
+| `ActionButton`            | Behavior Primitive | `shared/ui/actions/ActionButton.tsx`               | Ant `Button`                                                          | variant、icon、loading、disabled、danger                | 排序、布局、导航、权限、业务判断                               | `app`、`modules`、`shared/navigation`                | `app`、`modules`        |
+| `actionTypes`             | UI Support         | `shared/ui/actions/actionTypes.ts`                 | TypeScript types                                                      | action primitive 类型                                   | route 映射、业务对象                                           | `shared/ui/actions`、`shared/navigation`、`modules`  | `app`、`modules`        |
+| `CardSurface`             | Surface / Frame    | `shared/ui/surfaces/CardSurface.tsx`               | Ant `Card`                                                            | 视觉壳、边框、圆角、padding、hover                      | 业务 props、route、数据映射                                    | `shared/ui/cards`、`modules`                         | `app`、`modules`        |
+| `ContentCard`             | Shared Pattern     | `shared/ui/cards/ContentCard.tsx`                  | `CardSurface`                                                         | title、description、meta、footer、children              | 业务对象解析、布局绑定                                         | `app`、`modules`                                     | `app`、`modules`        |
+| `StatCard`                | Shared Pattern     | `shared/ui/cards/StatCard.tsx`                     | `ContentCard`                                                         | title、value、status、risk、trend、meta、supportingMeta | `MetricDefinition`、`evidenceSummary`、业务 contract、数据计算 | `app`、`modules`                                     | `app`、`modules`        |
+| `PropertyList`            | Shared Pattern     | `shared/ui/lists/PropertyList.tsx`                 | Ant `Descriptions / List / Typography`                                | label-value 展示                                        | 业务对象解析                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `TitledList`              | Shared Pattern     | `shared/ui/lists/TitledList.tsx`                   | Ant `List / Space / Typography`                                       | title + summary list                                    | 业务对象解析、排序                                             | `app`、`modules`                                     | `app`、`modules`        |
+| `AnnotatedList`           | Shared Pattern     | `shared/ui/lists/AnnotatedList.tsx`                | Ant `List / Typography`                                               | 注释型列表展示                                          | 业务映射、权限判断                                             | `app`、`modules`                                     | `app`、`modules`        |
+| `SelectableList`          | Shared Pattern     | `shared/ui/lists/SelectableList.tsx`               | Ant `List / Button / Space`                                           | 通用可选列表                                            | 业务 route、跨模块逻辑                                         | `app`、`modules`                                     | `app`、`modules`        |
+| `SelectableListItem`      | Shared Pattern     | `shared/ui/lists/SelectableListItem.tsx`           | Ant `Button / Space / Typography`                                     | 单个可选列表项壳                                        | 业务对象解析                                                   | `SelectableList`、`GroupedSelectableList`、`modules` | `app`、`modules`        |
+| `GroupedSelectableList`   | Shared Pattern     | `shared/ui/lists/GroupedSelectableList.tsx`        | `SelectableListItem` + Ant `Space`                                    | 分组可选列表                                            | route 映射、业务分组规则                                       | `app`、`modules`                                     | `app`、`modules`        |
+| `EventTimeline`           | Shared Pattern     | `shared/ui/lists/EventTimeline.tsx`                | Ant `Timeline / List / Typography`                                    | 通用事件时间线                                          | `RunTrace` 业务对象解析                                        | `modules`                                            | `app`、`modules`        |
+| `EmptyState`              | Shared Pattern     | `shared/ui/states/EmptyState.tsx`                  | Ant `Empty / Typography`                                              | 空态展示                                                | 业务取数                                                       | `app`、`modules`                                     | `app`、`modules`        |
+| `ErrorState`              | Shared Pattern     | `shared/ui/states/ErrorState.tsx`                  | Ant `Alert / Result / Typography`                                     | 错误态展示                                              | 错误恢复业务逻辑                                               | `app`、`modules`                                     | `app`、`modules`        |
+| `LoadingState`            | Shared Pattern     | `shared/ui/states/LoadingState.tsx`                | Ant `Skeleton / Spin / Typography`                                    | 加载态展示                                              | 业务轮询逻辑                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `WarningState`            | Shared Pattern     | `shared/ui/states/WarningState.tsx`                | Ant `Alert / Result / Typography`                                     | 风险或告警空态展示                                      | 业务规则判断                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `StatusTag`               | Shared Pattern     | `shared/ui/status/StatusTag.tsx`                   | Ant `Tag`                                                             | 状态映射展示                                            | 业务状态兜底                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `RiskBadge`               | Shared Pattern     | `shared/ui/status/RiskBadge.tsx`                   | Ant `Tag / Badge`                                                     | 风险等级展示                                            | 风险规则计算                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `ContentSlotLayout`       | Layout Primitive   | `shared/layout/ContentSlotLayout.tsx`              | Ant `Space / Row / Col`                                               | children slot 的 `plain / cards / stack` 布局           | section header、page intro、业务对象、route 映射               | `shared/layout`、`modules`                           | `app`、`modules`        |
+| `ContentSection`          | Shared Pattern     | `shared/layout/sections/ContentSection.tsx`        | Ant `Flex / Space / Typography` + `ContentSlotLayout`                 | section eyebrow、title、extra、children slot            | 业务判断、排序分组、route 映射、专用 panel 分支                | `app`、`modules`                                     | `app`、`modules`        |
+| `SectionStack`            | Layout             | `shared/layout/sections/SectionStack.tsx`          | Ant `Flex / Space`                                                    | section 垂直节奏                                        | 复杂布局系统、业务布局                                         | `app`、`modules`                                     | `app`、`modules`        |
+| `sectionTypes`            | Layout Support     | `shared/layout/sections/sectionTypes.ts`           | TypeScript types                                                      | section primitive 类型                                  | 业务对象                                                       | `shared/layout`、`modules`                           | `app`、`modules`        |
+| `getStaticSectionProps`   | Layout Support     | `shared/layout/sections/getStaticSectionProps.tsx` | static section vm + i18n                                              | 静态 section props 映射                                 | 业务取数                                                       | `modules`                                            | `app`、`modules`        |
+| `PageIntro`               | Layout / Container | `shared/layout/containers/PageIntro.tsx`           | `CardSurface` + Ant `Flex / Space / Typography` + `ContentSlotLayout` | 页面顶部介绍区、标题说明、`extra`、children slot        | 业务对象、route 映射、排序过滤分组、权限判断                   | `app`、`modules`                                     | `app`、`modules`        |
+| `ResponsivePageShell`     | Layout / Container | `shared/layout/containers/ResponsivePageShell.tsx` | React container + shared/theme                                        | page padding 和 children 承载                           | filters、rightAside、header、业务组件拼装、页面顶部介绍区生成  | `app`、`modules`                                     | `app`、`modules`        |
+| `FilterBar`               | Layout / Container | `shared/layout/containers/FilterBar.tsx`           | Ant `Card / Space / Flex`                                             | 过滤区容器与统一壳                                      | 排序、筛选业务规则                                             | `modules`                                            | `app`、`modules`        |
+| `SidePanel`               | Surface / Frame    | `shared/layout/panels/SidePanel.tsx`               | Ant `Card / Layout / Space`                                           | 侧栏面板壳                                              | 业务对象解析                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `DrawerFrame`             | Surface / Frame    | `shared/layout/panels/DrawerFrame.tsx`             | Ant `Drawer`                                                          | Drawer 壳、统一边距与 header 区域                       | 业务对象解析、route 映射                                       | `app`、`modules`                                     | `app`、`modules`        |
+| `NavigationActionButton`  | Behavior Wrapper   | `shared/navigation/NavigationActionButton.tsx`     | `ActionButton`                                                        | route-aware button 行为包装                             | 自己实现按钮视觉、Page 映射                                    | `app`、`modules`                                     | `app`、`modules`        |
+| `createRouteAction`       | Behavior Support   | `shared/navigation/createRouteAction.ts`           | route key + i18n + action types                                       | 构造 route-aware action 数据                            | 排序、权限判断、UI 渲染                                        | `app`、`modules`                                     | `app/router`、`modules` |
+| `navigationTypes`         | Behavior Support   | `shared/navigation/navigationTypes.ts`             | TypeScript types                                                      | route key、`PageRouteProps`、导航 action 类型           | Page composition state、Page 映射                              | `app`、`modules`、`shared/navigation`                | `app/router`、`modules` |
+| `RelationshipGraphCanvas` | Shared Pattern     | `shared/graph/RelationshipGraphCanvas.tsx`         | `@antv/g6`                                                            | 只读关系图展示、选中、fit view、zoom、pan               | 业务图谱逻辑、raw G6 泄漏                                      | `modules`                                            | `app`、`modules`        |
+| `relationshipGraphTheme`  | Graph Support      | `shared/graph/relationshipGraphTheme.ts`           | theme tokens                                                          | 图谱视觉配置                                            | 业务映射                                                       | `shared/graph`                                       | `app`、`modules`        |
+| `graph models`            | Graph Support      | `shared/graph/models.ts`                           | TypeScript types                                                      | 关系图 ViewModel 类型                                   | 业务模块逻辑                                                   | `shared/graph`、`modules`                            | `app`、`modules`        |
+| `StaticChart`             | Shared Pattern     | `shared/charts/StaticChart.tsx`                    | `ChartCard`                                                           | 静态图表展示                                            | 业务对象解析                                                   | `modules`                                            | `app`、`modules`        |
+| `ChartCard`               | Shared Pattern     | `shared/charts/ChartCard.tsx`                      | `CardSurface` + chart wrapper                                         | 图表内容卡片模式                                        | 业务对象解析、重新实现 card shell                              | `modules`                                            | `app`、`modules`        |
+| `chartTypes`              | Chart Support      | `shared/charts/chartTypes.ts`                      | TypeScript types                                                      | 图表 primitive 类型                                     | 业务映射                                                       | `shared/charts`、`modules`                           | `app`、`modules`        |
+| `I18nProvider`            | Foundation Support | `shared/i18n/I18nProvider.tsx`                     | React context                                                         | i18n provider、translate hook                           | 业务模块逻辑                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `messages`                | Foundation Support | `shared/i18n/messages.ts`                          | message catalog                                                       | i18n key 事实源                                         | 业务数据计算                                                   | `shared/i18n`、`modules`                             | `app`、`modules`        |
+| `translateKey`            | Foundation Support | `shared/i18n/translateKey.ts`                      | i18n helper                                                           | 统一 key 翻译                                           | 业务逻辑                                                       | `app`、`shared`、`modules`                           | `app`、`modules`        |
+| `localeTypes`             | Foundation Support | `shared/i18n/localeTypes.ts`                       | TypeScript types                                                      | locale 类型                                             | Page 映射                                                      | `shared/i18n`、`app`                                 | `app`、`modules`        |
+| `AppIcon`                 | Foundation Support | `shared/icons/AppIcon.tsx`                         | icon registry                                                         | 项目图标入口                                            | 业务对象解析                                                   | `app`、`modules`                                     | `app`、`modules`        |
+| `iconTypes`               | Foundation Support | `shared/icons/iconTypes.ts`                        | TypeScript types                                                      | icon name 类型                                          | 业务逻辑                                                       | `shared/icons`、`modules`                            | `app`、`modules`        |
+| `TestProviders`           | Test Support       | `shared/test/TestProviders.tsx`                    | provider composition                                                  | 测试期 provider 装配                                    | 运行时业务逻辑                                                 | tests                                                | `app`、`modules`        |
+| `staticViewModelTypes`    | Shared Support     | `shared/view-model/staticViewModelTypes.ts`        | TypeScript types                                                      | 静态 ViewModel 类型事实源                               | 业务聚合逻辑                                                   | `app`、`modules`、`shared`                           | `app`、`modules`        |
+| `staticStateFixtures`     | Shared Support     | `shared/view-model/staticStateFixtures.ts`         | static view-model types                                               | 静态状态 fixtures                                       | 运行时业务逻辑                                                 | `modules`、tests                                     | `app`、`modules`        |
+| `viewModelState`          | Shared Support     | `shared/utils/viewModelState.ts`                   | static state vm + i18n                                                | risk/status 映射                                        | 业务权限和排序                                                 | `shared`、`modules`                                  | `app`、`modules`        |
 
 ### Promotion Rule
 
@@ -510,21 +573,26 @@ shared/
   - Forbidden: business object props
 - `StatCard`
   - Layer: `Shared Pattern`
-  - Allowed: title、value、delta / trend、status、description
-  - Forbidden: `MetricDefinition / MetricsViewModel / business contract`
+  - Allowed: title、value、delta / trend、status、description、meta、supportingMeta / contextMeta
+  - Forbidden: `MetricDefinition / MetricsViewModel / evidenceSummary / business contract`
+- `ChartCard`
+  - Layer: `Shared Pattern`
+  - Allowed: title、subtitle、actions、state、legend、children
+  - Forbidden: 直接依赖 Ant `Card`、重新实现平行 card shell、业务对象解析
 - 业务卡片必须放 `modules/<domain>/components`，可以组合 `ContentCard / StatCard / PropertyList`，但不得回流到 `shared/ui`。
+- Dashboard 普通卡片的 canonical 模式是：`ContentSection` 负责 section 和卡片排列，module business card 负责 `createRouteAction`、`meta` 与 `ContentCard / StatCard` 组合。
 
 ### Section / Layout Contract
 
 - `ContentSection`
   - Layer: `Layout / Section Pattern`
-  - Allowed: title、description、extra、children
-  - Forbidden: card layout、action sorting、business object
+  - Allowed: title、description、extra、children slot、`contentLayout="plain" | "cards" | "stack"`、Ant Col `colProps`
+  - Forbidden: 业务对象、route 映射、排序过滤分组、权限判断、`columns / grid / wrap / minItemWidth`
 - `SectionStack`
   - Layer: `Layout`
-  - Allowed: section vertical rhythm
+  - Allowed: section vertical rhythm、Hero 或其它无 header 自定义区域
   - Forbidden: complex layout system、business layout
-- `PageHeader / PageScaffold / ResponsivePageShell / FilterBar`
+- `PageIntro / ResponsivePageShell / FilterBar`
   - Layer: `Layout / Container`
   - Allowed: page-level structure
   - Forbidden: business data、route-to-page mapping
@@ -538,11 +606,13 @@ shared/
 
 - 是否新增了 `app/shell` 业务组件。
 - 是否新增了 `shared/ui` 业务组件或业务目录。
+- `shared/ui` 的 export 组件、export 函数、export 类型、props contract 和 item contract 是否补齐并维护了契约 JSDoc。
 - 是否新增了 `shared/layout` 业务命名文件。
 - 是否绕开 Ant Design 自造基础组件。
 - 是否新增了和具体内容组件强绑定的 layout。
 - 是否新增了 `index.ts / index.tsx`。
 - 是否让 `shared` 依赖 `app` 或 `modules`。
+- 如果本轮属于治理收口，是否仍保留 `P1 / P2 / watch items`；治理收口阶段必须修掉已识别问题，或明确证明它不是问题。
 - 是否把业务 ViewModel / Contract 泄漏到 `shared/ui`。
 
 ### Interaction States

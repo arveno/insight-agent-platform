@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/message.schema.json",
+  "title": "Message",
+  "description": "Conversation 内的单条消息契约对象，用于承接用户、系统、助手和工具消息。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "messageId",
+    "conversationId",
+    "turnId",
+    "runId",
+    "role",
+    "content",
+    "status",
+    "sourceEvidenceIds",
+    "toolCallIds",
+    "reportId",
+    "createdAt",
+    "completedAt"
+  ],
+  "properties": {
+    "messageId": {
+      "description": "消息的 canonical 标识。",
+      "type": "string"
+    },
+    "conversationId": {
+      "description": "消息所属会话标识。",
+      "type": "string"
+    },
+    "turnId": {
+      "description": "消息所属对话轮次标识，用于在 Conversation 内关联用户输入与系统输出。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "消息关联的 AnalysisRun 标识；不绑定运行时为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "role": {
+      "description": "消息角色，必须使用 contracts 中定义的 MessageRole 枚举。",
+      "type": "string",
+      "enum": [
+        "system",
+        "user",
+        "assistant",
+        "tool"
+      ]
+    },
+    "content": {
+      "description": "消息正文内容。",
+      "type": "string"
+    },
+    "status": {
+      "description": "消息状态，必须使用 contracts 中定义的 MessageStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "created",
+        "streaming",
+        "completed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "sourceEvidenceIds": {
+      "description": "消息引用的 SourceEvidence 标识列表。",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "toolCallIds": {
+      "description": "消息引用的 ToolCall 标识列表。",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reportId": {
+      "description": "消息关联的 Report 标识；没有关联报告时为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "createdAt": {
+      "description": "消息创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "completedAt": {
+      "description": "消息完成时间；尚未完成时为 null。",
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

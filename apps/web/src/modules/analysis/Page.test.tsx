@@ -45,8 +45,14 @@ describe("AnalysisPage", () => {
     expect(messageList.getAttribute("style")).toContain("overflow-y: auto");
     expect(composer).toBeTruthy();
     expect(composer.getAttribute("style")).toContain("flex: 0 0 auto");
-    expect(within(main).queryByText("当前展示静态 Analysis 会话。页面交互只更新 UI State，不创建真实 Agent Run。")).toBeNull();
-    expect(within(main).queryByText("继续追问会沿用当前静态会话上下文，但不会发起真实多轮请求。")).toBeNull();
+    expect(
+      within(main).queryByText(
+        "当前展示静态 Analysis 会话。页面交互只更新 UI State，不创建真实 Agent Run。"
+      )
+    ).toBeNull();
+    expect(
+      within(main).queryByText("继续追问会沿用当前静态会话上下文，但不会发起真实多轮请求。")
+    ).toBeNull();
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();

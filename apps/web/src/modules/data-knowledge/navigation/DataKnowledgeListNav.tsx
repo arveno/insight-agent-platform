@@ -7,10 +7,7 @@ export type DataKnowledgeListNavProps = {
   onBack: () => void;
 };
 
-export function DataKnowledgeListNav({
-  controller,
-  onBack
-}: DataKnowledgeListNavProps) {
+export function DataKnowledgeListNav({ controller, onBack }: DataKnowledgeListNavProps) {
   const { t } = useI18n();
   const groupedItems = [
     {

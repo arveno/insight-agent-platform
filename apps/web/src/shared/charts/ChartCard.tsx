@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { Card, Space, Typography } from "antd";
 
 import { shellThemeTokens } from "../theme/tokens";
 import { shellTypographyStyles } from "../theme/typography";
 import { EmptyState } from "../ui/states/EmptyState";
 import { ErrorState } from "../ui/states/ErrorState";
 import { LoadingState } from "../ui/states/LoadingState";
+import { CardSurface } from "../ui/surfaces/CardSurface";
 import type { ChartCardViewModel } from "./chartTypes";
 
 export type ChartCardProps = ChartCardViewModel & {
@@ -41,22 +41,35 @@ export function ChartCard({
   }
 
   return (
-    <Card>
-      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
+    <CardSurface>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: shellThemeTokens.cardContentGap,
+          width: "100%"
+        }}
+      >
+        <div
+          style={{
+            alignItems: "flex-start",
+            display: "flex",
+            gap: shellThemeTokens.cardContentGap,
+            justifyContent: "space-between",
+            width: "100%"
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={shellTypographyStyles.cardTitle}>{title}</span>
             {subtitle ? (
-              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                {subtitle}
-              </Typography.Text>
+              <span style={shellTypographyStyles.cardDescription}>{subtitle}</span>
             ) : null}
-          </Space>
+          </div>
           {actions}
-        </Space>
+        </div>
         {content}
         {legend}
-      </Space>
-    </Card>
+      </div>
+    </CardSurface>
   );
 }

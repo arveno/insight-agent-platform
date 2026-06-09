@@ -139,12 +139,24 @@ insight-agent-platform/
 `packages/contracts/schemas` 必须按业务域分层，不能长期平铺。contracts 的业务域分组必须和前端 `apps/web/src/modules`、后端 `services/agent-runtime/src/modules` 保持一致，使核心对象字段有单一事实源和清晰归属。
 其中 contracts 目录可以继续使用 kebab-case，Python runtime package 目录必须使用 snake_case。
 
+前端页面结构冻结边界固定如下：
+
+- 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
+- `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
+- `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只能消费 module 暴露的 Analysis workspace 入口或 slots，不直接拼低层 Analysis 业务结构。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
+- `AnalysisMessageList` 只展示 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须保留独立承载位，不得回塞 assistant message。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载；`SectionStack` 只负责页面内容大块纵向节奏。
+- 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
+- `PageIntro` 只能出现在 `ModuleSections` 或明确的 module hero 内；当前 `DashboardHero` 是允许例外。
+- 普通业务卡片必须优先组合 `ContentCard / StatCard / CardSurface`，不得直接用 Ant `Card` 重画 shared card shell；`Reports` 模块同样遵守。
+
 ```text
 packages/contracts/schemas/
 ├─ workspace/             # Workspace、User、Role、BusinessDomain
 ├─ data-knowledge/        # DataSource、DataTable、DataField、KnowledgeDocument、KnowledgeChunk
 ├─ metrics/               # Metric、MetricFormula、MetricThreshold、MetricLineage
-├─ analysis/              # AnalysisTask、AnalysisRun、RunEvent、ToolCall、ModelCall、SourceEvidence
+├─ analysis/              # AnalysisTask、AnalysisRun、Conversation、Message、MessageStream、RunEvent、ToolCall、ModelCall、SourceEvidence、ExecutionAttempt、ApprovalRequest
 ├─ memory/                # MemoryItem
 ├─ feedback/              # Feedback
 ├─ evaluation/            # EvaluationRun、EvaluationDataset、EvaluationScore、BadCase
@@ -333,16 +345,33 @@ UI 不得直接消费 raw API response。
 
 - `app/providers` 只负责运行时 Provider 装配，不承接业务状态。
 - `app/router` 只负责 route key 到 Page 的映射和路由表装配，不承接 shared action primitive。
-- `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav / AppShellInspector` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
+- `app/shell` 只负责 `AppShell / AppShellLayout / HeaderBar / LeftNav` 等通用应用外壳；业务模块自己的 `nav / inspector / drawer / panel` 必须回到 `modules/<domain>`。
+- `Analysis` 属于 `modules/analysis` 自管的会话工作区例外；`AppShell` 只承接其 workspace 入口或 slots adapter，不直接 import `AnalysisSessionNav / AnalysisInspectorPanel / RunTraceDetailDrawer / controller`。
+- `AppShell` 区域层固定为 `leftNav / header / mainContent / rightAssistPanel`；`HeaderBar` 是全局 workspace header，模块不得接管。
+- 模块如需覆盖 `leftNav / mainContent / rightAssistPanel`，必须通过 module-owned `use<Domain>ShellSlots` 暴露；`AppShell` 只消费 slots，不直接 import 模块低层 `ListNav / InspectorPanel / controller`。
+- `AppShell` 不直接调用 module shell hooks；active route shell hook 必须通过 `RouteShellOutlet` 这类子组件按需挂载。
+- `AppShell` 不持有 module controller 生命周期。
+- `rightAssistPanel` 默认 `null`；只有模块显式提供 inspector 才显示，不允许默认 fallback inspector 回流。
+- `LeftNav` 只展示 root navigation，不硬编码哪些 route 有二级模块导航。
+- 有 shell slots 的页面需要拆分为自管理 `Page` 和受控 `PageContent`；shell hook 只能渲染 `PageContent`，不得再保留 optional controller prop + fallback controller 双轨。
 - `api/client` 只承接 transport；`api/adapters` 只承接 API Response -> Frontend adapter 边界。
 - `modules/*` 是唯一业务落点；页面入口、hooks、fixtures、mappers、models、components 都应收口在对应模块内。
-- `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。
-- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSection / SectionStack / PageHeader / PageScaffold / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `shared/navigation` 只放 route-key 级别的公共导航能力，例如 `createRouteAction / NavigationActionButton / navigationTypes`；不得 import `app/router` 或 `modules/*`。`PageRouteProps` 只允许包含 `onNavigate`，任何 page composition state slot 必须留在 `app/router` 或对应 module page props。
+- `shared/layout` 只放无业务语义的页面结构 primitive，例如 `ContentSlotLayout / ContentSection / SectionStack / PageIntro / ResponsivePageShell / FilterBar / SidePanel / DrawerFrame`；不得放 `Analysis* / Reports* / Metrics* / DataKnowledge*` 等业务布局文件。
+- `PageScaffold` 已删除；页面外壳统一使用 `ResponsivePageShell`，页面内容结构从 `ModuleSections` 开始组织，不保留自动 header 链路。
+- `ResponsivePageShell` 只负责 page padding 和 children 承载，不再承接 `filters / rightAside / header / viewModel / actions / hideHeader / hideHeaderActions`。
+- `PageIntro` 是唯一标准页面顶部介绍区容器，只接通用 ReactNode 和 layout props，负责标题说明和 `extra` 操作区；children slot 的 `plain / cards / stack` 布局统一委托给 `ContentSlotLayout`；不得接业务对象、不得做 route 映射、不得依赖 `app / modules`。
+- `PageIntro` 与 `ContentSection` 的边界固定：`PageIntro` 只用于页面第一个顶部介绍区，`ContentSection` 只用于页面后续普通内容分区；除 `Analysis` 这类特殊页面外，标准模块页面顶部标题 / intro / hero / page header 优先统一到 `PageIntro`，替换后不保留旧 `PageHeader` / intro / hero-like 结构。
+- `Page.tsx` 只负责 controller / state 接入和 `ModuleSections` 组合，不负责页面标题、header 或 `PageIntro` 生成；标准模块页面结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`。
+- `ContentSection` 只负责普通 section 语义、标题区和 children slot；`plain / cards / stack` 内容布局统一由 `ContentSlotLayout` 承接；卡片组优先使用 `contentLayout="cards"`，纵向大块优先使用 `contentLayout="stack"`，复杂表格 / 图表 / Tabs / timeline 保持 `plain`。
+- `ContentSlotLayout` 只负责 `plain / cards / stack` children slot 布局；不得承接 section header、page intro、业务对象、route、权限或排序过滤分组。
+- module `sections/**` 不得再承担 section 级卡片排列实现，不允许回流 `cardItemStyle`、`flex: "1 1 xxxpx"`、`Flex wrap` 或手写 `gutter={[16, 16]}`；这些布局统一收口到 `ContentSection`，footer actions 和卡片内部布局除外。
 - `shared/ui/surfaces` 只放 `*Surface` 视觉壳，当前 canonical 文件为 `CardSurface`。
 - `shared/ui/cards` 只放无业务语义 card pattern，例如 `ContentCard / StatCard / EntryCard / DetailCard`；不得放 `*Surface`、业务前缀卡片或 `CardGrid`。
+- Hero facts / summary 小卡片优先使用 `StatCard`，普通内容入口卡优先使用 `ContentCard`，不要用 `CardSurface` 手写小卡片壳；页面顶部操作区由 module 本地组件组合后传给 `PageIntro extra`，不提前抽 shared `PageHeroActions`。
 - `shared/ui/lists` 只放无业务语义 list pattern，例如 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline`；不得放 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
 - `shared/ui` 只放无业务语义 UI primitive 或 Ant Design 薄封装；不得放 `evidence / report / trace / feedback panel` 等业务对象组件。
-- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和与这些静态类型一一对应的轻量映射辅助，不承接业务组件或业务聚合。
+- `shared/view-model` 只放跨模块共用的静态 ViewModel 支撑类型、fixtures 和真正无业务的通用 helper，不承接 evidence / trace / report / tool / metric / data source 级别的业务 adapter、业务 key map 或业务聚合。
 - `shared/test` 只放测试期共用 provider / helper，不承接运行时代码。
 - `shared` 不得依赖 `app` 或 `modules`；`modules` 可以依赖 `shared` 与 `api`，但不得依赖 `app`，也不得直接 import 其他 module 的业务组件。
 - `shared/graph` 是唯一 `@antv/g6` 使用入口，负责创建、更新、销毁只读关系图实例。
@@ -388,7 +417,7 @@ services/agent-runtime/src/
 ├─ modules/                       # 按业务垂直切片组织的服务代码
 │  ├─ workspace/
 │  ├─ conversations/
-│  ├─ agent_runs/
+│  ├─ analysis_runs/
 │  ├─ data_knowledge/
 │  ├─ model_tools/
 │  ├─ governance/
@@ -431,6 +460,11 @@ services/agent-runtime/tests/
 
 - `app` 不写业务逻辑，只负责启动、配置和 HTTP 边界。
 - `modules/*` 承接业务切片，不通过全局横向目录拆散链路。
+- `modules/analysis_runs` 是 `AnalysisRun / runId / Runtime Lifecycle` 的唯一后端 owner；后续真实运行实现必须从这里落地。
+- `modules/conversations/analysis_service.py` 只承接 conversation-level orchestration / facade，不拥有 `AnalysisRun` 生命周期。
+- `app/routes/conversations.py` 是 Conversation facade 的正式 HTTP skeleton。
+- `app/routes/analysis_runs.py` 是 AnalysisRun lifecycle owner 的正式 HTTP skeleton。
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 live transport 已冻结为 SSE；JSON 只用于 replay / history。
 - `infrastructure/database` 是唯一数据库访问入口承载位。
 - `infrastructure/model_gateway` 是唯一模型调用入口。
 - `infrastructure/tool_registry` 是唯一工具调用入口。
@@ -439,6 +473,8 @@ services/agent-runtime/tests/
 - 后端 service 不允许直接调用模型 provider。
 - Agent 不允许直接查库、直接调模型、直接调用外部 API。
 - 后端同样遵守“框架优先、薄适配、业务垂直切片、shared 只放无业务基础能力”的思想：FastAPI router / dependency / response model 优先，Pydantic 校验优先，LangChain / LangGraph / LlamaIndex / Milvus 优先；`modules/*` 承接业务闭环，`infrastructure/*` 承接技术适配，`shared/*` 只放 errors / validation / utils / types。
+
+`docs/runtime-business-integration.md` 只提供业务接入手册，不新增事实源。对象、字段、ID、状态仍以 `docs/contracts.md`、`packages/contracts` 和 `docs/runtime-lifecycle.md` 为准。
 
 ## 8. 依赖方向
 

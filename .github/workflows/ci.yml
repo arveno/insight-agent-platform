@@ -109,10 +109,15 @@ jobs:
             packages/contracts/schemas/metrics/metric-lineage.schema.json \
             packages/contracts/schemas/analysis/analysis-task.schema.json \
             packages/contracts/schemas/analysis/analysis-run.schema.json \
+            packages/contracts/schemas/analysis/conversation.schema.json \
+            packages/contracts/schemas/analysis/message.schema.json \
+            packages/contracts/schemas/analysis/message-stream.schema.json \
             packages/contracts/schemas/analysis/run-event.schema.json \
             packages/contracts/schemas/analysis/tool-call.schema.json \
             packages/contracts/schemas/analysis/model-call.schema.json \
             packages/contracts/schemas/analysis/source-evidence.schema.json \
+            packages/contracts/schemas/analysis/execution-attempt.schema.json \
+            packages/contracts/schemas/analysis/approval-request.schema.json \
             packages/contracts/schemas/memory/memory-item.schema.json \
             packages/contracts/schemas/feedback/feedback.schema.json \
             packages/contracts/schemas/evaluation/evaluation-run.schema.json \
@@ -164,7 +169,7 @@ jobs:
           for module_dir in \
             workspace \
             conversations \
-            agent_runs \
+            analysis_runs \
             data_knowledge \
             model_tools \
             governance \
@@ -202,9 +207,9 @@ jobs:
             services/agent-runtime/src/modules/conversations/analysis_service.py \
             services/agent-runtime/src/modules/conversations/memory_service.py \
             services/agent-runtime/src/modules/conversations/analysis_memory.py \
-            services/agent-runtime/src/modules/agent_runs/evaluation_service.py \
-            services/agent-runtime/src/modules/agent_runs/observability_service.py \
-            services/agent-runtime/src/modules/agent_runs/regression.py \
+            services/agent-runtime/src/modules/analysis_runs/evaluation_service.py \
+            services/agent-runtime/src/modules/analysis_runs/observability_service.py \
+            services/agent-runtime/src/modules/analysis_runs/regression.py \
             services/agent-runtime/src/modules/data_knowledge/data_source_service.py \
             services/agent-runtime/src/modules/data_knowledge/knowledge_service.py \
             services/agent-runtime/src/modules/model_tools/model_tool_service.py \

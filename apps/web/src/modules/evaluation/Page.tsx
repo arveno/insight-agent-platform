@@ -1,13 +1,13 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import { evaluationStaticViewModel } from "./fixtures/evaluationStaticViewModel";
 import { EvaluationSections } from "./sections/EvaluationSections";
 
-export function EvaluationPage({ onNavigate }: WebPageProps) {
+export function EvaluationPage({ onNavigate }: PageRouteProps) {
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={evaluationStaticViewModel}>
+    <ResponsivePageShell>
       <EvaluationSections onNavigate={onNavigate} viewModel={evaluationStaticViewModel} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

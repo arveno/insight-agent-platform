@@ -1,5 +1,15 @@
-import { defaultPermissionSummary, defaultReadonlyState, defaultStateCoverage, readyStatus, warningRisk } from "../../../shared/view-model/staticStateFixtures";
-import type { ReportDetailViewModel, ReportListItemViewModel, ReportsViewModel } from "../models/reportsViewModel";
+import {
+  defaultPermissionSummary,
+  defaultReadonlyState,
+  defaultStateCoverage,
+  readyStatus,
+  warningRisk
+} from "../../../shared/view-model/staticStateFixtures";
+import type {
+  ReportDetailViewModel,
+  ReportListItemViewModel,
+  ReportsViewModel
+} from "../models/reportsViewModel";
 
 function toReportListItem(report: ReportDetailViewModel): ReportListItemViewModel {
   return {
@@ -118,8 +128,7 @@ export const reportCatalog: ReportDetailViewModel[] = [
         title: "库存周转预警"
       }
     ],
-    summary:
-      "围绕收入增速放缓、毛利率波动和库存周转压力，沉淀本周经营复盘、关键证据与后续动作。",
+    summary: "围绕收入增速放缓、毛利率波动和库存周转压力，沉淀本周经营复盘、关键证据与后续动作。",
     title: "周经营分析报告",
     workspaceId: "workspace-northstar-retail-china"
   },
@@ -166,8 +175,7 @@ export const reportCatalog: ReportDetailViewModel[] = [
     sectionCount: 2,
     sections: [
       {
-        content:
-          "本季度毛利率波动主要由高频促销叠加和高折扣品类结构偏移带动，门店层级差异较明显。",
+        content: "本季度毛利率波动主要由高频促销叠加和高折扣品类结构偏移带动，门店层级差异较明显。",
         evidenceSummary: "覆盖促销档期和门店毛利率对比。",
         key: "report-section-margin-retrospective-summary",
         reportId: "report-margin-retrospective",
@@ -175,8 +183,7 @@ export const reportCatalog: ReportDetailViewModel[] = [
         title: "波动复盘"
       },
       {
-        content:
-          "建议将高折扣促销窗口错开，并在重点区域建立促销与毛利率联动复盘节奏。",
+        content: "建议将高折扣促销窗口错开，并在重点区域建立促销与毛利率联动复盘节奏。",
         evidenceSummary: "证据聚焦促销叠加时序与重点区域表现。",
         key: "report-section-margin-retrospective-recommendation",
         reportId: "report-margin-retrospective",
@@ -255,8 +262,7 @@ export const reportCatalog: ReportDetailViewModel[] = [
     sectionCount: 2,
     sections: [
       {
-        content:
-          "库存异常集中在低周转品类，区域仓与门店补货节奏不一致，导致积压 SKU 持续上升。",
+        content: "库存异常集中在低周转品类，区域仓与门店补货节奏不一致，导致积压 SKU 持续上升。",
         evidenceSummary: "聚焦区域仓库存和门店动销差异。",
         key: "report-section-inventory-tracking-summary",
         reportId: "report-inventory-exception-tracking",
@@ -264,8 +270,7 @@ export const reportCatalog: ReportDetailViewModel[] = [
         title: "异常概览"
       },
       {
-        content:
-          "建议先做高库存 SKU 清仓，再重新校准区域补货上限，避免下周再次积压。",
+        content: "建议先做高库存 SKU 清仓，再重新校准区域补货上限，避免下周再次积压。",
         evidenceSummary: "证据表明库存异常与补货节奏错配同时出现。",
         key: "report-section-inventory-tracking-action",
         reportId: "report-inventory-exception-tracking",
@@ -305,7 +310,9 @@ export const reportCatalog: ReportDetailViewModel[] = [
 
 const defaultSelectedReport = reportCatalog[0];
 
-export function createReportsViewModel(selectedReportKey = defaultSelectedReport.key): ReportsViewModel {
+export function createReportsViewModel(
+  selectedReportKey = defaultSelectedReport.key
+): ReportsViewModel {
   const selectedDetail =
     reportCatalog.find((report) => report.key === selectedReportKey) ?? defaultSelectedReport;
 

@@ -17,7 +17,7 @@ import { WorkspacePage } from "../../modules/workspace/Page";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import type { IconName } from "../../shared/icons/iconTypes";
 import type { I18nMessageKey } from "../../shared/i18n/messages";
-import type { StaticRouteKey, WebPageProps } from "../../shared/navigation/navigationTypes";
+import type { PageRouteProps, StaticRouteKey } from "../../shared/navigation/navigationTypes";
 import { appShellStaticViewModel } from "../shell/fixtures/appShellStaticViewModel";
 import type { NavigationGroup, NavigationItem } from "../shell/LeftNav";
 import type {
@@ -26,7 +26,7 @@ import type {
 } from "../shell/models/appShellViewModel";
 
 type Translate = (key: I18nMessageKey) => string;
-type RoutedPageComponent = ComponentType<WebPageProps>;
+type RoutedPageComponent = ComponentType<PageRouteProps>;
 
 const routeIconByRoute: Record<StaticRouteKey, IconName> = {
   analysis: "analysis",
@@ -52,16 +52,16 @@ const routeIconByRoute: Record<StaticRouteKey, IconName> = {
 export const webCompositionRoutes: Record<StaticRouteKey, RoutedPageComponent> = {
   analysis: AnalysisPage,
   dashboard: DashboardPage,
-  "data-knowledge": DataKnowledgePage as RoutedPageComponent,
+  "data-knowledge": DataKnowledgePage,
   evaluation: EvaluationPage,
   feedback: FeedbackPage,
   governance: GovernancePage,
   memory: MemoryPage,
-  metrics: MetricsPage as RoutedPageComponent,
+  metrics: MetricsPage,
   "model-tools": ModelToolsPage,
   observability: ObservabilityPage,
-  "platform-operations": PlatformOperationsPage as RoutedPageComponent,
-  reports: ReportsPage as RoutedPageComponent,
+  "platform-operations": PlatformOperationsPage,
+  reports: ReportsPage,
   settings: SettingsPage,
   workspace: WorkspacePage
 };

@@ -5,6 +5,15 @@
   "description": "基于报告形成的决策记录契约，用于追踪建议采纳和后续效果。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "decisionId",
+    "workspaceId",
+    "runId",
+    "reportId",
+    "title",
+    "status",
+    "createdAt"
+  ],
   "properties": {
     "decisionId": {
       "description": "决策唯一标识。",
@@ -27,8 +36,15 @@
       "type": "string"
     },
     "status": {
-      "description": "决策状态，用于表示建议、采纳、拒绝或后续执行状态。",
-      "type": "string"
+      "description": "决策状态，必须使用 contracts 中定义的 DecisionStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "proposed",
+        "accepted",
+        "rejected",
+        "in_progress",
+        "completed"
+      ]
     },
     "createdAt": {
       "description": "决策记录创建时间。",

@@ -1,5 +1,5 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import {
   useMetricsOverviewState,
@@ -7,17 +7,20 @@ import {
 } from "./hooks/useMetricsOverviewState";
 import { MetricsSections } from "./sections/MetricsSections";
 
-export type MetricsPageProps = WebPageProps & {
-  metricsState?: MetricsOverviewController;
+export type MetricsPageContentProps = PageRouteProps & {
+  controller: MetricsOverviewController;
 };
 
-export function MetricsPage({ metricsState, onNavigate }: MetricsPageProps) {
-  const fallbackMetricsState = useMetricsOverviewState();
-  const controller = metricsState ?? fallbackMetricsState;
+export function MetricsPage({ onNavigate }: PageRouteProps) {
+  const controller = useMetricsOverviewState();
 
+  return <MetricsPageContent controller={controller} onNavigate={onNavigate} />;
+}
+
+export function MetricsPageContent({ controller, onNavigate }: MetricsPageContentProps) {
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <ResponsivePageShell>
       <MetricsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

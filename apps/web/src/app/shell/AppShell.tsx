@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
 
@@ -10,28 +11,15 @@ import type { AppLocale } from "../../shared/i18n/localeTypes";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
-import { AnalysisSessionNav } from "../../modules/analysis/navigation/AnalysisSessionNav";
-import { AnalysisInspectorPanel } from "../../modules/analysis/panels/AnalysisInspectorPanel";
-import { useAnalysisConversationState } from "../../modules/analysis/hooks/useAnalysisConversationState";
-import { analysisStaticViewModel } from "../../modules/analysis/fixtures/analysisStaticViewModel";
-import { AnalysisPageContent } from "../../modules/analysis/Page";
-import { DataKnowledgeListNav } from "../../modules/data-knowledge/navigation/DataKnowledgeListNav";
-import { useDataKnowledgeOverviewState } from "../../modules/data-knowledge/hooks/useDataKnowledgeOverviewState";
-import { DataKnowledgeInspectorPanel } from "../../modules/data-knowledge/panels/DataKnowledgeInspectorPanel";
-import { MetricsListNav } from "../../modules/metrics/navigation/MetricsListNav";
-import { useMetricsOverviewState } from "../../modules/metrics/hooks/useMetricsOverviewState";
-import { usePlatformOperationsOverviewState } from "../../modules/platform-operations/hooks/usePlatformOperationsOverviewState";
-import { ReportsListNav } from "../../modules/reports/navigation/ReportsListNav";
-import { ReportsInspectorPanel } from "../../modules/reports/panels/ReportsInspectorPanel";
-import { useReportsReaderState } from "../../modules/reports/hooks/useReportsReaderState";
 import type { StaticRouteKey } from "../../shared/navigation/navigationTypes";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
 
-import { AppShellInspector } from "./AppShellInspector";
-import { AppShellLayout } from "./AppShellLayout";
 import { HeaderBar } from "./HeaderBar";
 import { LeftNav } from "./LeftNav";
+import { RouteShellOutlet, hasModuleShellRoute } from "./RouteShellOutlet";
+
+type LeftNavMode = "root" | StaticRouteKey;
 
 export function AppShell() {
   const { locale, setLocale, t } = useI18n();
@@ -40,12 +28,11 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
-  const [leftNavMode, setLeftNavMode] = useState<
-    "analysis" | "data-knowledge" | "metrics" | "reports" | "root"
-  >(
-    appShellStaticViewModel.currentRoute === "analysis" ? "analysis" : "root"
+  const [leftNavMode, setLeftNavMode] = useState<LeftNavMode>(
+    hasModuleShellRoute(appShellStaticViewModel.currentRoute)
+      ? appShellStaticViewModel.currentRoute
+      : "root"
   );
-  const [analysisSessionQuery, setAnalysisSessionQuery] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
     appShellStaticViewModel.workspace.workspaceId
   );
@@ -54,37 +41,22 @@ export function AppShell() {
     appShellStaticViewModel.workspaces.find(
       (workspace) => workspace.workspaceId === selectedWorkspaceId
     ) ?? appShellStaticViewModel.workspace;
-  const analysisConversationState = useAnalysisConversationState();
-  const dataKnowledgeOverviewState = useDataKnowledgeOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const metricsOverviewState = useMetricsOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const platformOperationsOverviewState = usePlatformOperationsOverviewState({
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
-  });
-  const reportsReaderState = useReportsReaderState();
   const ActivePage = webCompositionRoutes[activeRoute];
-  const activeInspector = appShellStaticViewModel.inspectorByRoute[activeRoute];
+  const handleNavigate = (route: StaticRouteKey) => {
+    setActiveRoute(route);
+    setLeftNavMode(hasModuleShellRoute(route) ? route : "root");
+  };
   const navigationGroups = useMemo(
-    () => createNavigationGroups(t, appShellStaticViewModel.navigationGroups),
+    () =>
+      createNavigationGroups(t, appShellStaticViewModel.navigationGroups).map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({
+          ...item,
+          showEntryArrow: hasModuleShellRoute(item.key as StaticRouteKey)
+        }))
+      })),
     [t]
   );
-  const filteredAnalysisSessions = useMemo(() => {
-    const normalizedQuery = analysisSessionQuery.trim().toLowerCase();
-
-    if (normalizedQuery.length === 0) {
-      return analysisStaticViewModel.sessions;
-    }
-
-    return analysisStaticViewModel.sessions.filter((session) =>
-      session.session.title.toLowerCase().includes(normalizedQuery)
-    );
-  }, [analysisSessionQuery]);
   const selectedNavigationKey = navigationGroups.some((group) =>
     group.items.some((item) => item.key === activeRoute)
   )
@@ -92,36 +64,6 @@ export function AppShell() {
       ? activeRoute
       : undefined
     : undefined;
-  const handleNavigate = (route: StaticRouteKey) => {
-    setActiveRoute(route);
-    setLeftNavMode(
-      route === "analysis"
-        ? "analysis"
-        : route === "data-knowledge"
-          ? "data-knowledge"
-          : route === "metrics"
-            ? "metrics"
-            : route === "reports"
-              ? "reports"
-              : "root"
-    );
-
-    if (route !== "analysis") {
-      setAnalysisSessionQuery("");
-    }
-
-    if (route !== "data-knowledge") {
-      dataKnowledgeOverviewState.onSearchChange("");
-    }
-
-    if (route !== "metrics") {
-      metricsOverviewState.onSearchChange("");
-    }
-
-    if (route !== "reports") {
-      reportsReaderState.onSearchChange("");
-    }
-  };
   const userPreferenceContent = (
     <Space
       direction="vertical"
@@ -163,180 +105,119 @@ export function AppShell() {
       </Space>
     </Space>
   );
+  const header = (
+    <HeaderBar
+      currentWorkspaceName={selectedWorkspace.name}
+      feedback={workspaceRefreshFeedback ? t("shell.workspace.switchFeedback") : undefined}
+      manageWorkspaceLabel={t("shell.workspace.manage")}
+      onOpenWorkspaceManagement={() => handleNavigate("workspace")}
+      onSelectWorkspace={(workspaceId) => {
+        if (workspaceId === selectedWorkspaceId) {
+          return;
+        }
 
-  return (
-    <AppShellLayout
-      header={
-        <HeaderBar
-          currentWorkspaceName={selectedWorkspace.name}
-          feedback={workspaceRefreshFeedback ? t("shell.workspace.switchFeedback") : undefined}
-          manageWorkspaceLabel={t("shell.workspace.manage")}
-          onOpenWorkspaceManagement={() => handleNavigate("workspace")}
-          onSelectWorkspace={(workspaceId) => {
-            if (workspaceId === selectedWorkspaceId) {
-              return;
-            }
-
-            setSelectedWorkspaceId(workspaceId);
-            setWorkspaceRefreshFeedback(true);
-          }}
-          selectedWorkspaceId={selectedWorkspaceId}
-          workspaceMenuLabel={t("shell.workspace.currentLabel")}
-          workspaces={appShellStaticViewModel.workspaces}
-        />
-      }
-      leftNav={
-        <div
+        setSelectedWorkspaceId(workspaceId);
+        setWorkspaceRefreshFeedback(true);
+      }}
+      selectedWorkspaceId={selectedWorkspaceId}
+      workspaceMenuLabel={t("shell.workspace.currentLabel")}
+      workspaces={appShellStaticViewModel.workspaces}
+    />
+  );
+  const rootLeftNavContent = (
+    <LeftNav
+      groups={navigationGroups}
+      onSelect={(key) => handleNavigate(key as StaticRouteKey)}
+      selectedKey={selectedNavigationKey}
+    />
+  );
+  const renderLeftNav = (content: ReactNode) => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+        width: "100%"
+      }}
+    >
+      <div
+        style={{
+          flex: "0 0 auto",
+          paddingBlock: shellThemeTokens.panelPadding,
+          paddingInline: shellThemeTokens.headerPaddingInline
+        }}
+      >
+        <Typography.Text
           style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            minHeight: 0,
-            width: "100%"
+            ...shellTypographyStyles.cardTitle,
+            color: token.colorText,
+            display: "inline-flex",
+            letterSpacing: -0.2
           }}
         >
-          <div
+          <AppIcon name="dashboard" title={t("appName")} variant="badge" />
+          {t("appName")}
+        </Typography.Text>
+      </div>
+      <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
+        {content}
+      </div>
+      <div
+        style={{
+          borderTop: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
+          flex: "0 0 auto",
+          padding: shellThemeTokens.shellFooterPadding
+        }}
+      >
+        <Popover
+          content={userPreferenceContent}
+          placement="topLeft"
+          title={t("userMenu")}
+          trigger="click"
+        >
+          <Button
+            block
             style={{
-              flex: "0 0 auto",
-              paddingBlock: shellThemeTokens.panelPadding,
-              paddingInline: shellThemeTokens.headerPaddingInline
+              ...shellTypographyStyles.buttonLabel,
+              height: "auto",
+              justifyContent: "flex-start",
+              paddingBlock: shellThemeTokens.userButtonPaddingBlock,
+              paddingInline: shellThemeTokens.userButtonPaddingInline
             }}
+            type="default"
           >
-            <Typography.Text
-              style={{
-                ...shellTypographyStyles.cardTitle,
-                color: token.colorText,
-                display: "inline-flex",
-                letterSpacing: -0.2
-              }}
-            >
-              <AppIcon name="dashboard" title={t("appName")} variant="badge" />
-              {t("appName")}
-            </Typography.Text>
-          </div>
-          <div style={{ flex: "1 1 auto", minHeight: 0, overflowX: "hidden", overflowY: "auto" }}>
-            {activeRoute === "analysis" && leftNavMode === "analysis" ? (
-              <AnalysisSessionNav
-                onBack={() => setLeftNavMode("root")}
-                onCreateNewAnalysis={() => {
-                  setActiveRoute("analysis");
-                  setLeftNavMode("analysis");
-                  setAnalysisSessionQuery("");
-                  analysisConversationState.onResetForNewAnalysis();
-                }}
-                onSearchChange={setAnalysisSessionQuery}
-                onSelectSession={(sessionKey) => {
-                  setActiveRoute("analysis");
-                  setLeftNavMode("analysis");
-                  analysisConversationState.onSelectSession(sessionKey);
-                }}
-                searchValue={analysisSessionQuery}
-                selectedSessionKey={analysisConversationState.selectedSessionKey}
-                sessions={filteredAnalysisSessions}
-              />
-            ) : activeRoute === "reports" && leftNavMode === "reports" ? (
-              <ReportsListNav
-                controller={reportsReaderState}
-                onBack={() => setLeftNavMode("root")}
-              />
-            ) : activeRoute === "data-knowledge" && leftNavMode === "data-knowledge" ? (
-              <DataKnowledgeListNav
-                controller={dataKnowledgeOverviewState}
-                onBack={() => setLeftNavMode("root")}
-              />
-            ) : activeRoute === "metrics" && leftNavMode === "metrics" ? (
-              <MetricsListNav
-                controller={metricsOverviewState}
-                onBack={() => setLeftNavMode("root")}
-              />
-            ) : (
-              <LeftNav
-                groups={navigationGroups}
-                onSelect={(key) => handleNavigate(key as StaticRouteKey)}
-                selectedKey={selectedNavigationKey}
-              />
-            )}
-          </div>
-          <div
-            style={{
-              borderTop: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
-              flex: "0 0 auto",
-              padding: shellThemeTokens.shellFooterPadding
-            }}
-          >
-            <Popover
-              content={userPreferenceContent}
-              placement="topLeft"
-              title={t("userMenu")}
-              trigger="click"
-            >
-              <Button
-                block
-                style={{
-                  ...shellTypographyStyles.buttonLabel,
-                  height: "auto",
-                  justifyContent: "flex-start",
-                  paddingBlock: shellThemeTokens.userButtonPaddingBlock,
-                  paddingInline: shellThemeTokens.userButtonPaddingInline
-                }}
-                type="default"
-              >
-                <Space direction="vertical" size={2} style={{ width: "100%" }}>
-                  <Typography.Text style={shellTypographyStyles.cardTitle}>
-                    {appShellStaticViewModel.currentUser.displayName}
-                  </Typography.Text>
-                  <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                    {appShellStaticViewModel.currentUser.roleLabel}
-                  </Typography.Text>
-                </Space>
-              </Button>
-            </Popover>
-          </div>
-        </div>
-      }
-      rightAssistPanel={
-        activeRoute === "analysis" ? (
-          <AnalysisInspectorPanel
-            conversationState={analysisConversationState}
-            workspaceName={selectedWorkspace.name}
-          />
-        ) : activeRoute === "reports" ? (
-          <ReportsInspectorPanel
-            reportSections={reportsReaderState.viewModel.reportSections}
-            selectedReport={reportsReaderState.viewModel.selectedReport}
-            workspaceName={selectedWorkspace.name}
-          />
-        ) : activeRoute === "data-knowledge" ? (
-          <DataKnowledgeInspectorPanel
-            controller={dataKnowledgeOverviewState}
-            onNavigate={handleNavigate}
-          />
-        ) : activeRoute === "metrics" ||
-          activeRoute === "platform-operations" ? null : (
-          <AppShellInspector inspector={activeInspector} workspaceName={selectedWorkspace.name} />
-        )
-      }
-    >
-      {activeRoute === "analysis" ? (
-        <AnalysisPageContent
-          conversationState={analysisConversationState}
-          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
-          onNavigate={handleNavigate}
-        />
-      ) : (
-        <ActivePage
-          key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
-          dataKnowledgeState={
-            activeRoute === "data-knowledge" ? dataKnowledgeOverviewState : undefined
-          }
-          metricsState={activeRoute === "metrics" ? metricsOverviewState : undefined}
-          onNavigate={handleNavigate}
-          platformOperationsState={
-            activeRoute === "platform-operations" ? platformOperationsOverviewState : undefined
-          }
-          reportsState={activeRoute === "reports" ? reportsReaderState : undefined}
-        />
-      )}
-    </AppShellLayout>
+            <Space direction="vertical" size={2} style={{ width: "100%" }}>
+              <Typography.Text style={shellTypographyStyles.cardTitle}>
+                {appShellStaticViewModel.currentUser.displayName}
+              </Typography.Text>
+              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+                {appShellStaticViewModel.currentUser.roleLabel}
+              </Typography.Text>
+            </Space>
+          </Button>
+        </Popover>
+      </div>
+    </div>
+  );
+  const defaultMainContent = (
+    <ActivePage
+      key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+      onNavigate={handleNavigate}
+    />
+  );
+
+  return (
+    <RouteShellOutlet
+      activeRoute={activeRoute}
+      defaultMainContent={defaultMainContent}
+      header={header}
+      leftNavMode={leftNavMode}
+      onBackToRoot={() => setLeftNavMode("root")}
+      onNavigate={handleNavigate}
+      renderLeftNav={renderLeftNav}
+      rootLeftNavContent={rootLeftNavContent}
+      selectedWorkspace={selectedWorkspace}
+    />
   );
 }

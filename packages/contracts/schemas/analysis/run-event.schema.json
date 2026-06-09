@@ -5,6 +5,17 @@
   "description": "Agent Runtime 在运行过程中产生的标准事件契约，不等同于前端 timeline ViewModel。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "eventId",
+    "runId",
+    "eventType",
+    "status",
+    "phase",
+    "sequence",
+    "actor",
+    "occurredAt",
+    "summary"
+  ],
   "properties": {
     "eventId": {
       "description": "运行事件唯一标识，用于定位 runtime 中的单个节点、工具或状态事件。",
@@ -15,8 +26,58 @@
       "type": "string"
     },
     "eventType": {
-      "description": "事件类型，用于区分节点执行、工具调用、模型调用、审批、错误等 runtime 事件。",
-      "type": "string"
+      "description": "事件类型，必须使用 contracts 中定义的 RunEventType 受控枚举。",
+      "type": "string",
+      "enum": [
+        "run.created",
+        "run.validating",
+        "run.rejected",
+        "run.queued",
+        "run.started",
+        "run.waiting",
+        "run.cancel_requested",
+        "run.cancelling",
+        "run.cancelled",
+        "run.failed",
+        "run.completed",
+        "run.expired",
+        "validation.started",
+        "validation.passed",
+        "validation.rejected",
+        "policy.check_started",
+        "policy.decision_recorded",
+        "context.bound",
+        "plan.created",
+        "approval.requested",
+        "approval.granted",
+        "approval.denied",
+        "approval.expired",
+        "worker.lease_acquired",
+        "worker.heartbeat",
+        "worker.lease_released",
+        "execution_attempt.created",
+        "execution_attempt.lost",
+        "model_call.started",
+        "model_call.completed",
+        "model_call.failed",
+        "tool_call.requested",
+        "tool_call.policy_checked",
+        "tool_call.started",
+        "tool_call.completed",
+        "tool_call.failed",
+        "evidence.retrieved",
+        "evidence.bound",
+        "synthesis.started",
+        "verification.started",
+        "verification.passed",
+        "verification.failed",
+        "delivery.started",
+        "artifact.persisted",
+        "feedback.received",
+        "evaluation.started",
+        "evaluation.completed",
+        "error.recorded"
+      ]
     },
     "status": {
       "description": "事件执行状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
@@ -26,7 +87,81 @@
         "running",
         "succeeded",
         "failed",
-        "skipped"
+        "skipped",
+        "cancelled"
+      ]
+    },
+    "phase": {
+      "description": "事件发生时所处的 AnalysisRunPhase。",
+      "type": "string",
+      "enum": [
+        "intake",
+        "preflight",
+        "governance",
+        "context_binding",
+        "planning",
+        "approval",
+        "queueing",
+        "execution",
+        "tool_execution",
+        "evidence_binding",
+        "synthesis",
+        "verification",
+        "delivery",
+        "post_run"
+      ]
+    },
+    "sequence": {
+      "description": "同一 run 内的事件顺序号，从 0 开始递增。",
+      "type": "integer",
+      "minimum": 0
+    },
+    "actor": {
+      "description": "产生该事件的责任主体，例如 user、worker、policy_engine、model_gateway。",
+      "type": "string"
+    },
+    "occurredAt": {
+      "description": "事件被记录的时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "summary": {
+      "description": "事件摘要，用于 trace、审计和运维界面展示。",
+      "type": "string"
+    },
+    "parentEventId": {
+      "description": "父事件标识；没有父事件时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "refType": {
+      "description": "事件直接引用的对象类型；没有引用时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "refId": {
+      "description": "事件直接引用的对象标识；没有引用时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "errorCode": {
+      "description": "标准错误码；非错误事件时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "errorMessage": {
+      "description": "错误说明；非错误事件时为 null。",
+      "type": [
+        "string",
+        "null"
       ]
     },
     "nodeName": {

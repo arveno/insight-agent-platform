@@ -7,21 +7,15 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { AnalysisRunTraceEventViewModel } from "../models/analysisViewModel";
+import type { AnalysisRunEvent } from "../models/analysisRun";
 
 export type RunTraceDetailDrawerProps = {
-  event?: AnalysisRunTraceEventViewModel;
+  event?: AnalysisRunEvent;
   onClose: () => void;
   open: boolean;
 };
 
-function DetailSection({
-  children,
-  title
-}: {
-  children: ReactNode;
-  title: string;
-}) {
+function DetailSection({ children, title }: { children: ReactNode; title: string }) {
   return (
     <Space direction="vertical" size={8} style={{ width: "100%" }}>
       <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
@@ -30,11 +24,7 @@ function DetailSection({
   );
 }
 
-export function RunTraceDetailDrawer({
-  event,
-  onClose,
-  open
-}: RunTraceDetailDrawerProps) {
+export function RunTraceDetailDrawer({ event, onClose, open }: RunTraceDetailDrawerProps) {
   const { t } = useI18n();
   const resourceItems = [
     event?.toolName
@@ -104,12 +94,16 @@ export function RunTraceDetailDrawer({
               {
                 key: "status",
                 label: "Status",
-                children: <StatusTag {...toStatusTag(t, event.status)!} />
+                children: <StatusTag {...toStatusTag(t, event.statusViewModel)!} />
               },
               {
                 key: "risk",
                 label: "Risk",
-                children: event.risk ? <RiskBadge {...toRiskBadge(t, event.risk)!} /> : "None"
+                children: event.riskViewModel ? (
+                  <RiskBadge {...toRiskBadge(t, event.riskViewModel)!} />
+                ) : (
+                  "None"
+                )
               },
               {
                 key: "timestamp",
@@ -128,9 +122,7 @@ export function RunTraceDetailDrawer({
           <Divider style={{ marginBlock: 0 }} />
 
           <DetailSection title="Detail">
-            <Typography.Paragraph style={{ marginBottom: 0 }}>
-              {event.detail}
-            </Typography.Paragraph>
+            <Typography.Paragraph style={{ marginBottom: 0 }}>{event.detail}</Typography.Paragraph>
           </DetailSection>
 
           {event.inputSummary ? (

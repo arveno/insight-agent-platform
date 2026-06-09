@@ -35,6 +35,9 @@ importers:
       '@antv/g6':
         specifier: ^5.1.1
         version: 5.1.1
+      '@insight-agent/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       antd:
         specifier: ^5.22.5
         version: 5.29.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)

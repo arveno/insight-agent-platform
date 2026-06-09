@@ -21,10 +21,7 @@ export type ReportsReaderController = {
 export function useReportsReaderState(): ReportsReaderController {
   const [searchValue, setSearchValue] = useState("");
   const [selectedReportKey, setSelectedReportKey] = useState(defaultSelectedReport.key);
-  const viewModel = useMemo(
-    () => createReportsViewModel(selectedReportKey),
-    [selectedReportKey]
-  );
+  const viewModel = useMemo(() => createReportsViewModel(selectedReportKey), [selectedReportKey]);
   const filteredReports = useMemo(() => {
     const normalizedQuery = searchValue.trim().toLowerCase();
 
@@ -32,7 +29,9 @@ export function useReportsReaderState(): ReportsReaderController {
       return viewModel.reports;
     }
 
-    return viewModel.reports.filter((report) => report.title.toLowerCase().includes(normalizedQuery));
+    return viewModel.reports.filter((report) =>
+      report.title.toLowerCase().includes(normalizedQuery)
+    );
   }, [searchValue, viewModel.reports]);
 
   return {

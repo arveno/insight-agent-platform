@@ -8,23 +8,45 @@ import { RiskBadge } from "../status/RiskBadge";
 import type { RiskBadgeProps } from "../status/RiskBadge";
 import type { StatusTagProps } from "../status/StatusTag";
 
+/**
+ * Shared Pattern：EventTimeline 的通用 item contract。
+ *
+ * 用于时间线式事件展示，不包含 RunTrace、TraceEvent 或其它业务对象本身。
+ * 各模块必须先把业务数据映射成 title、description、timestampText、status 和 risk 等通用字段。
+ */
 export type EventTimelineItem = {
   ariaLabel?: string;
   description?: ReactNode;
   key: string;
+  /** 点击回调只表达“查看该事件”，不承接 route 映射或业务判断。 */
   onClick?: () => void;
   risk?: RiskBadgeProps;
+  /** 纯展示选中态，不等同于业务生命周期状态。 */
   selected?: boolean;
   status?: StatusTagProps;
+  /** 已格式化的时间文本；组件不负责时间解析或格式化。 */
   timestampText?: string;
   title: ReactNode;
 };
 
+/**
+ * Shared Pattern：EventTimeline 的公共 props 契约。
+ *
+ * empty 用于空态展示，items 必须是已经去业务化的事件项。
+ * 组件不解析 raw trace data，也不做排序或过滤。
+ */
 export type EventTimelineProps = {
   empty?: EmptyStateProps;
   items: EventTimelineItem[];
 };
 
+/**
+ * Shared Pattern：通用事件时间线。
+ *
+ * 基于 Ant Timeline 和 shared status/risk primitives，
+ * 只负责稳定展示事件标题、描述、时间、状态点和风险信息。
+ * 不消费业务 trace 对象，不做 route 映射、排序或权限判断。
+ */
 export function EventTimeline({ empty, items }: EventTimelineProps) {
   const { token } = theme.useToken();
   const itemContainerStyle: CSSProperties = {

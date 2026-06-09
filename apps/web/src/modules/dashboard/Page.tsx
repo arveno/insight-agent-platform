@@ -1,11 +1,12 @@
 import { useState } from "react";
 
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
 import { dashboardStaticViewModel } from "./fixtures/dashboardStaticViewModel";
 import { DashboardSections } from "./sections/DashboardSections";
 
-export function DashboardPage({ onNavigate }: WebPageProps) {
+export function DashboardPage({ onNavigate }: PageRouteProps) {
   const [selectedTimeRangeKey, setSelectedTimeRangeKey] = useState(
     dashboardStaticViewModel.timeRange.selectedKey
   );
@@ -18,12 +19,14 @@ export function DashboardPage({ onNavigate }: WebPageProps) {
   }
 
   return (
-    <DashboardSections
-      onNavigate={onNavigate}
-      onTimeRangeChange={setSelectedTimeRangeKey}
-      selectedTimeRange={selectedTimeRange}
-      selectedTimeRangeKey={selectedTimeRangeKey}
-      viewModel={dashboardStaticViewModel}
-    />
+    <ResponsivePageShell>
+      <DashboardSections
+        onNavigate={onNavigate}
+        onTimeRangeChange={setSelectedTimeRangeKey}
+        selectedTimeRange={selectedTimeRange}
+        selectedTimeRangeKey={selectedTimeRangeKey}
+        viewModel={dashboardStaticViewModel}
+      />
+    </ResponsivePageShell>
   );
 }

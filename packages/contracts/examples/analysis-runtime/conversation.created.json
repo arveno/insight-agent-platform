@@ -1,0 +1,11 @@
+{
+  "analysisTaskId": "analysis-task-revenue-gap-q2",
+  "conversationId": "conversation-revenue-gap-q2",
+  "createdAt": "2026-06-05T11:08:00+08:00",
+  "currentRunId": "analysis-q2-revenue-gap",
+  "status": "active",
+  "title": "收入增速异常",
+  "updatedAt": "2026-06-05T11:24:00+08:00",
+  "userId": "user-zoe",
+  "workspaceId": "workspace-northstar-retail-china"
+}

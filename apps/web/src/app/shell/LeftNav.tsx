@@ -12,6 +12,7 @@ export type NavigationItem = {
   icon?: ReactNode;
   key: string;
   label: ReactNode;
+  showEntryArrow?: boolean;
 };
 
 export type NavigationGroup = {
@@ -35,7 +36,6 @@ export type LeftNavProps = {
  */
 export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
   const { token } = theme.useToken();
-  const secondaryListRoutes = new Set(["analysis", "data-knowledge", "metrics", "reports"]);
 
   return (
     <nav
@@ -73,7 +73,6 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
           >
             {group.items.map((item) => {
               const isSelected = selectedKey === item.key;
-              const showEntryArrow = secondaryListRoutes.has(item.key);
               const badge = item.badge ? (
                 <span
                   style={{
@@ -91,9 +90,9 @@ export function LeftNav({ groups, onSelect, selectedKey }: LeftNavProps) {
                 </span>
               ) : null;
               const rightContent =
-                showEntryArrow || badge ? (
+                item.showEntryArrow || badge ? (
                   <>
-                    {showEntryArrow ? (
+                    {item.showEntryArrow ? (
                       <span
                         aria-hidden="true"
                         style={{

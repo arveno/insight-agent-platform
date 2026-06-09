@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/execution-attempt.schema.json",
+  "title": "ExecutionAttempt",
+  "description": "同一个 AnalysisRun 在 worker lease、恢复和重试过程中的执行尝试契约。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attemptId",
+    "runId",
+    "attemptNumber",
+    "workerId",
+    "leaseId",
+    "status",
+    "leaseAcquiredAt",
+    "leaseExpiresAt"
+  ],
+  "properties": {
+    "attemptId": {
+      "description": "执行尝试唯一标识。",
+      "type": "string"
+    },
+    "runId": {
+      "description": "执行尝试所属分析运行标识。",
+      "type": "string"
+    },
+    "attemptNumber": {
+      "description": "同一 run 内从 1 开始递增的尝试序号。",
+      "type": "integer",
+      "minimum": 1
+    },
+    "workerId": {
+      "description": "领取该执行尝试的 worker 标识。",
+      "type": "string"
+    },
+    "leaseId": {
+      "description": "本次执行尝试对应的 worker lease 标识。",
+      "type": "string"
+    },
+    "status": {
+      "description": "执行尝试状态，必须使用 contracts 中定义的 ExecutionAttemptStatus 枚举。",
+      "type": "string",
+      "enum": [
+        "leased",
+        "running",
+        "lost",
+        "released",
+        "failed",
+        "completed"
+      ]
+    },
+    "leaseAcquiredAt": {
+      "description": "worker 获取 lease 的时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "leaseExpiresAt": {
+      "description": "当前 lease 的过期时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "heartbeatAt": {
+      "description": "最近一次 worker heartbeat 时间；尚未 heartbeat 时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "releasedAt": {
+      "description": "lease 被释放的时间；尚未释放时为 null。",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "failureCode": {
+      "description": "执行尝试失败码；没有失败码时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "failureMessage": {
+      "description": "执行尝试失败说明；没有失败说明时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

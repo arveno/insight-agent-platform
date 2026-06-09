@@ -57,7 +57,6 @@ export function DashboardRiskOverview({
           ))}
         </Flex>
       }
-      style={{ flex: "1 1 320px", minWidth: 0 }}
       tagSlot={risk ? <RiskBadge {...risk} /> : null}
       title={item.label}
     >

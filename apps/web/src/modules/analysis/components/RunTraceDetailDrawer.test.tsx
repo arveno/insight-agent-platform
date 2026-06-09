@@ -34,7 +34,7 @@ beforeAll(() => {
 describe("RunTraceDetailDrawer", () => {
   it("uses the standard drawer mask and closes through the shared close action", () => {
     const onClose = vi.fn();
-    const event = analysisStaticViewModel.sessions[0].runTrace.events[0];
+    const event = analysisStaticViewModel.sessions[0].runEvents[0];
 
     render(
       <TestProviders>

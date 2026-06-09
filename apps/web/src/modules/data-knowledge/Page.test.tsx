@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../shared/test/TestProviders";
-import { DataKnowledgePage } from "./Page";
+import { DataKnowledgePage, DataKnowledgePageContent } from "./Page";
 import type { DataKnowledgeOverviewController } from "./hooks/useDataKnowledgeOverviewState";
 import { createDataKnowledgeViewModel } from "./mappers/createDataKnowledgeViewModel";
 
@@ -52,9 +52,7 @@ beforeAll(() => {
   });
 });
 
-function createController(
-  selectedAssetKey?: string
-): DataKnowledgeOverviewController {
+function createController(selectedAssetKey?: string): DataKnowledgeOverviewController {
   const viewModel = createDataKnowledgeViewModel(selectedAssetKey);
   const selectedNode =
     viewModel.relationshipNodeDetails.find(
@@ -68,24 +66,18 @@ function createController(
     onSelectNode: vi.fn(),
     searchValue: "",
     selectedAssetKey: viewModel.selectedAsset.key,
-    selectedNodeId: viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId,
+    selectedNodeId:
+      viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId,
     selectedNode,
     viewModel
   };
 }
 
-function InteractiveDataKnowledgePage({
-  selectedAssetKey
-}: {
-  selectedAssetKey?: string;
-}) {
+function InteractiveDataKnowledgePage({ selectedAssetKey }: { selectedAssetKey?: string }) {
   const [currentAssetKey, setCurrentAssetKey] = useState(
     selectedAssetKey ?? createDataKnowledgeViewModel().selectedAsset.key
   );
-  const viewModel = useMemo(
-    () => createDataKnowledgeViewModel(currentAssetKey),
-    [currentAssetKey]
-  );
+  const viewModel = useMemo(() => createDataKnowledgeViewModel(currentAssetKey), [currentAssetKey]);
   const [selectedNodeId, setSelectedNodeId] = useState(
     viewModel.relationshipGraph.selectedNodeId ?? viewModel.relationshipNodeDetails[0].nodeId
   );
@@ -111,16 +103,16 @@ function InteractiveDataKnowledgePage({
     viewModel
   };
 
-  return <DataKnowledgePage dataKnowledgeState={controller} />;
+  return <DataKnowledgePageContent controller={controller} />;
 }
 
 describe("DataKnowledgePage", () => {
-  it("renders the main area around the selected data asset relationship instead of the old stacked overview cards", () => {
+  it("self-manages the default data knowledge controller when rendered from the route entry", () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <DataKnowledgePage dataKnowledgeState={createController()} onNavigate={onNavigate} />
+        <DataKnowledgePage onNavigate={onNavigate} />
       </TestProviders>
     );
 
@@ -133,6 +125,17 @@ describe("DataKnowledgePage", () => {
     expect(screen.getAllByText("CRM Revenue Warehouse").length).toBeGreaterThan(0);
     expect(screen.getAllByText("dataSourceId: data-source-crm-revenue").length).toBeGreaterThan(0);
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("uses the provided controller in DataKnowledgePageContent without creating a second page-owned state track", () => {
+    render(
+      <TestProviders>
+        <DataKnowledgePageContent controller={createController()} onNavigate={vi.fn()} />
+      </TestProviders>
+    );
+
+    expect(screen.getAllByText("CRM Revenue Warehouse").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("dataSourceId: data-source-crm-revenue").length).toBeGreaterThan(0);
   });
 
   it("updates node detail when clicking a field node in the data source relationship graph", () => {

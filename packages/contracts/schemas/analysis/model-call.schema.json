@@ -5,6 +5,19 @@
   "description": "一次经 Model Gateway 发起的模型调用契约，用于成本、延迟、错误和 trace 归集。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "modelCallId",
+    "runId",
+    "provider",
+    "modelId",
+    "promptVersionId",
+    "inputTokens",
+    "outputTokens",
+    "cost",
+    "latencyMs",
+    "status",
+    "startedAt"
+  ],
   "properties": {
     "modelCallId": {
       "description": "模型调用唯一标识，用于观测、审计和运行回放。",
@@ -54,11 +67,19 @@
         "running",
         "succeeded",
         "failed",
-        "skipped"
+        "skipped",
+        "cancelled"
       ]
     },
     "errorType": {
       "description": "模型调用失败时的标准错误类型；成功或未结束时为 null。",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "errorMessage": {
+      "description": "模型调用失败时的错误说明；成功或未结束时为 null。",
       "type": [
         "string",
         "null"

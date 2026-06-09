@@ -1,26 +1,18 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
-import {
-  usePlatformOperationsOverviewState,
-  type PlatformOperationsOverviewController
-} from "./hooks/usePlatformOperationsOverviewState";
+import { usePlatformOperationsOverviewState } from "./hooks/usePlatformOperationsOverviewState";
 import { PlatformOperationsSections } from "./sections/PlatformOperationsSections";
 
-export type PlatformOperationsPageProps = WebPageProps & {
-  platformOperationsState?: PlatformOperationsOverviewController;
-};
-
-export function PlatformOperationsPage({
-  onNavigate,
-  platformOperationsState
-}: PlatformOperationsPageProps) {
+export function PlatformOperationsPage({ onNavigate }: PageRouteProps) {
   const fallbackPlatformOperationsState = usePlatformOperationsOverviewState();
-  const controller = platformOperationsState ?? fallbackPlatformOperationsState;
 
   return (
-    <PageScaffold hideHeaderActions onNavigate={onNavigate} viewModel={controller.viewModel}>
-      <PlatformOperationsSections controller={controller} onNavigate={onNavigate} />
-    </PageScaffold>
+    <ResponsivePageShell>
+      <PlatformOperationsSections
+        controller={fallbackPlatformOperationsState}
+        onNavigate={onNavigate}
+      />
+    </ResponsivePageShell>
   );
 }

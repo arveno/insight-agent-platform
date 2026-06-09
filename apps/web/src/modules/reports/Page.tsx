@@ -1,23 +1,23 @@
-import { PageScaffold } from "../../shared/layout/containers/PageScaffold";
-import type { WebPageProps } from "../../shared/navigation/navigationTypes";
+import { ResponsivePageShell } from "../../shared/layout/containers/ResponsivePageShell";
+import type { PageRouteProps } from "../../shared/navigation/navigationTypes";
 
-import {
-  useReportsReaderState,
-  type ReportsReaderController
-} from "./hooks/useReportsReaderState";
+import { useReportsReaderState, type ReportsReaderController } from "./hooks/useReportsReaderState";
 import { ReportsSections } from "./sections/ReportsSections";
 
-export type ReportsPageProps = WebPageProps & {
-  reportsState?: ReportsReaderController;
+export type ReportsPageContentProps = PageRouteProps & {
+  controller: ReportsReaderController;
 };
 
-export function ReportsPage({ onNavigate, reportsState }: ReportsPageProps) {
-  const fallbackReportsState = useReportsReaderState();
-  const controller = reportsState ?? fallbackReportsState;
+export function ReportsPage({ onNavigate }: PageRouteProps) {
+  const controller = useReportsReaderState();
 
+  return <ReportsPageContent controller={controller} onNavigate={onNavigate} />;
+}
+
+export function ReportsPageContent({ controller, onNavigate }: ReportsPageContentProps) {
   return (
-    <PageScaffold onNavigate={onNavigate} viewModel={controller.viewModel}>
+    <ResponsivePageShell>
       <ReportsSections onNavigate={onNavigate} viewModel={controller.viewModel} />
-    </PageScaffold>
+    </ResponsivePageShell>
   );
 }

@@ -1,7 +1,8 @@
-import { Button, Card, Radio, Space, Typography } from "antd";
+import { Button, Radio, Space, Typography } from "antd";
 
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 
 export type FeedbackOption = {
   disabled?: boolean;
@@ -39,16 +40,22 @@ export function ReportFeedbackPanel({
   value
 }: ReportFeedbackPanelProps) {
   return (
-    <Card>
+    <ContentCard
+      footerActions={
+        submitLabel ? (
+          <Button color="default" disabled={disabled || !value} onClick={onSubmit} variant="solid">
+            {submitLabel}
+          </Button>
+        ) : null
+      }
+      title={title}
+    >
       <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
-        <Space direction="vertical" size={4}>
-          <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
-          {targetTitle ? (
-            <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-              {targetTitle}
-            </Typography.Text>
-          ) : null}
-        </Space>
+        {targetTitle ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+            {targetTitle}
+          </Typography.Text>
+        ) : null}
         <Radio.Group
           disabled={disabled}
           onChange={(event) => onChange?.(event.target.value as string)}
@@ -60,12 +67,7 @@ export function ReportFeedbackPanel({
             {helperText}
           </Typography.Text>
         ) : null}
-        {submitLabel ? (
-          <Button color="default" disabled={disabled || !value} onClick={onSubmit} variant="solid">
-            {submitLabel}
-          </Button>
-        ) : null}
       </Space>
-    </Card>
+    </ContentCard>
   );
 }

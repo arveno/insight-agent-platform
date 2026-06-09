@@ -1,8 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../shared/test/TestProviders";
-import { ReportsPage } from "./Page";
+import { createReportsViewModel } from "./fixtures/reportsStaticViewModel";
+import type { ReportsReaderController } from "./hooks/useReportsReaderState";
+import { ReportsPage, ReportsPageContent } from "./Page";
 
 afterEach(cleanup);
 
@@ -21,6 +23,21 @@ beforeAll(() => {
     })
   });
 });
+
+function createController(
+  selectedReportKey = "report-inventory-exception-tracking"
+): ReportsReaderController {
+  const viewModel = createReportsViewModel(selectedReportKey);
+
+  return {
+    filteredReports: viewModel.reports,
+    onSearchChange: vi.fn(),
+    onSelectReport: vi.fn(),
+    searchValue: "",
+    selectedReportKey: viewModel.selectedReport.key,
+    viewModel
+  };
+}
 
 describe("ReportsPage", () => {
   it("renders a structured report reader instead of the old summary grid", () => {
@@ -47,5 +64,17 @@ describe("ReportsPage", () => {
     expect(screen.getByRole("button", { name: "带上下文分析" })).toBeTruthy();
     expect(screen.queryByText("报告阅读器状态只作为静态展示模型。")).toBeNull();
     expect(screen.queryByText("Reader")).toBeNull();
+  });
+
+  it("uses the provided controller in ReportsPageContent without creating a second page-owned state track", () => {
+    render(
+      <TestProviders>
+        <ReportsPageContent controller={createController()} onNavigate={vi.fn()} />
+      </TestProviders>
+    );
+
+    expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
+    expect(screen.getByText("runId: run-inventory-exception-tracking")).toBeTruthy();
+    expect(screen.queryByText("周经营分析报告")).toBeNull();
   });
 });

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Card, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
-import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
+import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import type { RiskBadgeProps } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
@@ -32,29 +32,25 @@ export function DecisionCard({
   title
 }: DecisionCardProps) {
   return (
-    <Card>
-      <Space direction="vertical" size={shellThemeTokens.cardContentGap} style={{ width: "100%" }}>
-        <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
-          <Space direction="vertical" size={4}>
-            <Typography.Text style={shellTypographyStyles.cardTitle}>{title}</Typography.Text>
-            {description ? (
-              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                {description}
-              </Typography.Text>
-            ) : null}
-          </Space>
+    <ContentCard
+      description={description}
+      footerActions={actions ? <div>{actions}</div> : null}
+      meta={
+        evidenceSummary ? (
+          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
+            {evidenceSummary}
+          </Typography.Text>
+        ) : null
+      }
+      tagSlot={
+        status || risk ? (
           <Space wrap>
             {status ? <StatusTag {...status} /> : null}
             {risk ? <RiskBadge {...risk} /> : null}
           </Space>
-        </Space>
-        {evidenceSummary ? (
-          <Typography.Text type="secondary" style={shellTypographyStyles.meta}>
-            {evidenceSummary}
-          </Typography.Text>
-        ) : null}
-        {actions ? <div>{actions}</div> : null}
-      </Space>
-    </Card>
+        ) : null
+      }
+      title={title}
+    />
   );
 }

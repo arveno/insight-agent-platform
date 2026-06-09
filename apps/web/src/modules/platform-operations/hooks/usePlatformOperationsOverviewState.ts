@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { createPlatformOperationsViewModel, defaultPlatformOperationsWorkspaceBinding } from "../fixtures/platformOperationsStaticViewModel";
-import type { PlatformOperationsViewModel, PlatformOperationsWorkspaceBinding } from "../models/platformOperationsViewModel";
+import {
+  createPlatformOperationsViewModel,
+  defaultPlatformOperationsWorkspaceBinding
+} from "../fixtures/platformOperationsStaticViewModel";
+import type {
+  PlatformOperationsViewModel,
+  PlatformOperationsWorkspaceBinding
+} from "../models/platformOperationsViewModel";
 
 const defaultSelectedOperationKey = createPlatformOperationsViewModel().selectedOperation.key;
 

@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { createMetricsViewModel, defaultMetricsWorkspaceBinding } from "../fixtures/metricsStaticViewModel";
+import {
+  createMetricsViewModel,
+  defaultMetricsWorkspaceBinding
+} from "../fixtures/metricsStaticViewModel";
 import type { MetricsViewModel, MetricsWorkspaceBinding } from "../models/metricsViewModel";
 
 const defaultSelectedMetricKey = createMetricsViewModel().selectedMetric.key;
 
 function findMetricKey(viewModel: MetricsViewModel, metricKey: string) {
-  return viewModel.metrics.find((metric) => metric.key === metricKey)?.key ?? defaultSelectedMetricKey;
+  return (
+    viewModel.metrics.find((metric) => metric.key === metricKey)?.key ?? defaultSelectedMetricKey
+  );
 }
 
 export type MetricsOverviewController = {

@@ -87,6 +87,8 @@ describe("AppShell", () => {
     expect(within(navigation).getByRole("button", { name: /模型与工具/ })).toBeTruthy();
     expect(within(navigation).getByRole("button", { name: /观测/ })).toBeTruthy();
     expect(within(navigation).queryByRole("button", { name: /工作区/ })).toBeNull();
+    expect(screen.queryByText("能力说明")).toBeNull();
+    expect(screen.queryByText("技术对接")).toBeNull();
   });
 
   it("switches the static workspace selector and shows simulated refresh feedback", async () => {
@@ -104,7 +106,6 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: /East Retail Demo/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /当前工作区/ })).toBeNull();
     expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
-    expect(screen.getByText("当前工作区: East Retail Demo")).toBeTruthy();
   });
 
   it("enters analysis session navigation mode and filters the static session list locally", () => {
@@ -125,8 +126,8 @@ describe("AppShell", () => {
     expect(within(analysisNavigation).getByText("分析")).toBeTruthy();
     expect(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" })).toBeTruthy();
     expect(within(analysisNavigation).getByRole("button", { name: /新聊天/ })).toBeTruthy();
-    expect(within(analysisNavigation).getByText("Q2 收入异常追问")).toBeTruthy();
-    expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
+    expect(within(analysisNavigation).getByText("收入增速异常")).toBeTruthy();
+    expect(within(analysisNavigation).getByText("毛利率波动分析")).toBeTruthy();
     expect(within(analysisNavigation).getByText("库存异常定位")).toBeTruthy();
     expect(within(analysisNavigation).queryByText("刚刚更新")).toBeNull();
     expect(within(analysisNavigation).queryByText("成功")).toBeNull();
@@ -138,8 +139,8 @@ describe("AppShell", () => {
       target: { value: "毛利率" }
     });
 
-    expect(within(analysisNavigation).queryByText("Q2 收入异常追问")).toBeNull();
-    expect(within(analysisNavigation).getByText("毛利率波动复盘")).toBeTruthy();
+    expect(within(analysisNavigation).queryByText("收入增速异常")).toBeNull();
+    expect(within(analysisNavigation).getByText("毛利率波动分析")).toBeTruthy();
     expect(within(analysisNavigation).queryByText("库存异常定位")).toBeNull();
   });
 
@@ -158,7 +159,7 @@ describe("AppShell", () => {
       name: "Analysis session navigation"
     });
 
-    fireEvent.click(within(analysisNavigation).getByText("毛利率波动复盘"));
+    fireEvent.click(within(analysisNavigation).getByText("毛利率波动分析"));
 
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
@@ -166,12 +167,12 @@ describe("AppShell", () => {
     expect(within(main).queryByRole("button", { name: "查看报告" })).toBeNull();
     expect(within(main).queryByRole("button", { name: "查看观测" })).toBeNull();
     expect(
-      within(main).getAllByText("来自 Reports / Margin · 毛利率复盘 · This quarter")
+      within(main).getAllByText("来自 Metrics / Margin · 毛利率波动 · Current quarter")
     ).toHaveLength(2);
+    expect(within(main).getByText("继续分析毛利率波动背后的主要驱动因素。")).toBeTruthy();
     expect(
-      within(main).getByText("复盘本季度毛利率波动，重点解释促销投放和商品结构变化。")
+      within(main).getByText("当前正在拆分品类与区域差异，初步判断促销结构变化对毛利率影响较大。")
     ).toBeTruthy();
-    expect(within(main).getByText(/当前阶段判断倾向于促销档期重叠导致毛利率波动/)).toBeTruthy();
     expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
     expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
     expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
@@ -179,9 +180,9 @@ describe("AppShell", () => {
 
     expect(screen.getByText("Run Trace")).toBeTruthy();
     expect(screen.getByText("runId: analysis-margin-follow-up")).toBeTruthy();
-    expect(screen.getByText("1. 接收用户问题")).toBeTruthy();
-    expect(screen.getByText("6. 召回 Evidence / RAG 来源")).toBeTruthy();
-    expect(screen.getByText("8. 等待用户追问 / 反馈")).toBeTruthy();
+    expect(screen.getByText("1. run.created")).toBeTruthy();
+    expect(screen.getByText("3. tool_call.completed")).toBeTruthy();
+    expect(screen.getByText("4. synthesis.started")).toBeTruthy();
     expect(screen.queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(screen.queryByText("Feedback / 采纳入口")).toBeNull();
     expect(screen.queryByText("报告补充入口")).toBeNull();
@@ -204,15 +205,15 @@ describe("AppShell", () => {
     });
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "查看 Trace 事件详情：1. 接收用户问题" })
-    );
+    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. run.created" }));
 
     const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
-    expect(within(dialog).getByText("1. 接收用户问题")).toBeTruthy();
-    expect(within(dialog).getByText("user_input")).toBeTruthy();
+    expect(within(dialog).getByText("1. run.created")).toBeTruthy();
+    expect(within(dialog).getByText("run.created", { selector: "code" })).toBeTruthy();
     expect(
-      within(dialog).getByText("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。")
+      within(dialog).getByText("记录当前用户问题，并为后续运行绑定上下文。", {
+        selector: "div.ant-typography"
+      })
     ).toBeTruthy();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭详情" }));
@@ -256,10 +257,14 @@ describe("AppShell", () => {
     fireEvent.click(within(reportsNavigation).getByText("库存异常跟踪报告"));
 
     expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("reportId: report-inventory-exception-tracking").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(0);
-    expect(screen.getByText("evidence: 2")).toBeTruthy();
-    expect(screen.getByText("sections: 2")).toBeTruthy();
+    expect(
+      screen.getAllByText("reportId: report-inventory-exception-tracking").length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("runId: run-inventory-exception-tracking").length).toBeGreaterThan(
+      0
+    );
+    expect(screen.getByText("证据引用")).toBeTruthy();
+    expect(screen.getByText("决策建议")).toBeTruthy();
     expect(screen.queryByText("能力说明")).toBeNull();
     expect(screen.queryByText("技术对接")).toBeNull();
     expect(screen.queryByText("Run Trace")).toBeNull();
@@ -285,7 +290,9 @@ describe("AppShell", () => {
     expect(within(metricsNavigation).getByText("获客成本")).toBeTruthy();
     expect(within(metricsNavigation).queryByText("¥12.8M")).toBeNull();
     expect(within(metricsNavigation).queryByText("最近 30 天环比 -3.2%")).toBeNull();
-    expect(within(metricsNavigation).queryByRole("button", { name: "带上下文进入 Analysis" })).toBeNull();
+    expect(
+      within(metricsNavigation).queryByRole("button", { name: "带上下文进入 Analysis" })
+    ).toBeNull();
 
     expect(screen.getByText("指标总览")).toBeTruthy();
     expect(screen.getByText("当前指标详情：确认收入")).toBeTruthy();
@@ -340,7 +347,9 @@ describe("AppShell", () => {
     expect(within(dataKnowledgeNavigation).queryByText("low")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByText("medium")).toBeNull();
     expect(within(dataKnowledgeNavigation).queryByText("sales_order")).toBeNull();
-    expect(within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })).toBeNull();
+    expect(
+      within(dataKnowledgeNavigation).queryByRole("button", { name: "查看 RAG Strategy" })
+    ).toBeNull();
 
     expect(screen.queryByText("Data & Knowledge 总览")).toBeNull();
     expect(screen.getByText("当前资产")).toBeTruthy();
