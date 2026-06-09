@@ -106,6 +106,12 @@ Migration 命名建议：
 
 本节只定义路线，不实现真实 SQL 表。
 
+当前 `#154` 只收口数据库对象路线和命名边界，不创建真实 migration、repository 或 persistence 实现。
+
+后续真实落库、migration、repository 和查询实现由 `#155 runtime: AnalysisRun 真实业务接入与企业级运行硬化` 承接。
+
+但从本节开始列出的对象路线，已经视为当前正式 runtime / reports / feedback / evaluation 的目标落库路线；后续实现不应再回头讨论这些对象“是否应该落库”。
+
 ### Workspace / IAM
 
 表：
@@ -183,23 +189,98 @@ metric n - n data_fields / data_tables，通过 metric_lineage 关联
 ```text
 analysis_tasks
 analysis_runs
+conversations
+messages
+message_streams
 run_events
 tool_calls
 model_calls
+source_evidence
+execution_attempts
+approval_requests
+reports
+report_sections
+decisions
+action_suggestions
+feedback
+evaluation_runs
+evaluation_scores
+bad_cases
 ```
 
 关系：
 
 ```text
 workspace 1 - n analysis_tasks
+workspace 1 - n conversations
 analysis_task 1 - n analysis_runs
+analysis_task 1 - n conversations
+conversation 1 - n messages
+conversation.current_run_id -> analysis_runs.run_id
+message 1 - n message_streams
 analysis_run 1 - n run_events
 analysis_run 1 - n tool_calls
 analysis_run 1 - n model_calls
 analysis_run 1 - n source_evidence
+analysis_run 1 - n execution_attempts
+analysis_run 1 - n approval_requests
+analysis_run 1 - n reports
+analysis_run 1 - n decisions
+analysis_run 1 - n feedback
+analysis_run 1 - n evaluation_runs
+analysis_run 1 - n bad_cases
+report 1 - n report_sections
+decision 1 - n action_suggestions
+evaluation_run 1 - n evaluation_scores
+feedback 0..n bad_cases
 ```
 
-`run_id` 是一次 Agent 执行链路的核心业务 ID。`event_id` 是 run 内部事件 ID。`tool_call_id` / `model_call_id` 都必须绑定 `run_id`。
+关键业务 ID 路线至少包括：
+
+```text
+analysis_runs.run_id
+conversations.conversation_id
+conversations.current_run_id
+messages.message_id
+messages.conversation_id
+messages.turn_id
+messages.run_id
+message_streams.message_stream_id
+message_streams.message_id
+message_streams.run_id
+run_events.event_id
+run_events.run_id
+execution_attempts.attempt_id
+execution_attempts.run_id
+approval_requests.approval_id
+approval_requests.run_id
+reports.report_id
+reports.run_id
+report_sections.report_id
+decisions.decision_id
+decisions.run_id
+decisions.report_id
+action_suggestions.action_suggestion_id
+action_suggestions.decision_id
+feedback.feedback_id
+feedback.run_id
+feedback.report_id
+evaluation_runs.evaluation_run_id
+evaluation_runs.run_id
+evaluation_scores.evaluation_score_id
+evaluation_scores.evaluation_run_id
+bad_cases.bad_case_id
+bad_cases.run_id
+```
+
+说明：
+
+- `run_id` 是一次 runtime 执行链路的核心业务 ID。
+- `conversation_id` 是 Analysis 工作区会话主线的核心业务 ID。
+- `message_id / turn_id / message_stream_id` 承接会话消息和流式输出链路，不替代 `run_id`。
+- `event_id` 是 run 内部事件 ID。
+- `tool_call_id` / `model_call_id` / `attempt_id` / `approval_id` 都必须围绕 `run_id` 归属。
+- 当前 PR 不创建这些表；这里只冻结目标落库路线，供后续 migration / repository 实现直接对齐 contracts。
 
 ### Memory
 
@@ -228,7 +309,8 @@ feedback
 
 ```text
 analysis_run 1 - n feedback
-feedback 可关联 report / source_evidence / action_suggestion
+feedback.report_id -> reports.report_id
+feedback 可关联 source_evidence / action_suggestion
 ```
 
 ### Evaluation
@@ -249,6 +331,7 @@ evaluation_dataset 1 - n evaluation_runs
 evaluation_run 1 - n evaluation_scores
 analysis_run 1 - n evaluation_runs
 feedback 0..n bad_cases
+bad_case.run_id -> analysis_runs.run_id
 ```
 
 Memory 不等于 Feedback，Feedback 不等于 Evaluation，BadCase 是 Feedback / Evaluation 后沉淀出来的问题样本。
@@ -311,9 +394,11 @@ action_suggestions
 ```text
 analysis_run 1 - 1 report
 report 1 - n report_sections
-report 1 - n action_suggestions
+analysis_run 1 - n decisions
 report 0..n decisions
-decision 可反向追踪 action_suggestion
+decision 1 - n action_suggestions
+decision.report_id -> reports.report_id
+decision.run_id -> analysis_runs.run_id
 ```
 
 ### Platform Operations

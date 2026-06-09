@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Insight Agent Platform · 产品体验事实源</title>
+    <title>Insight Agent Platform · 产品体验原型 / Reference Only</title>
     <style>
       :root {
         --bg: #f4ede3;
@@ -66,6 +66,25 @@
       input,
       textarea {
         font: inherit;
+      }
+
+      .prototype-notice {
+        margin: 18px 18px 0;
+        padding: 14px 18px;
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        border-radius: 18px;
+        background: rgba(255, 247, 239, 0.94);
+        box-shadow: 0 12px 32px rgba(58, 38, 18, 0.08);
+        color: var(--ink);
+      }
+
+      .prototype-notice strong {
+        color: var(--accent-deep);
+      }
+
+      .prototype-notice code {
+        font-family: "SFMono-Regular", ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+        font-size: 12px;
       }
 
       .app-shell {
@@ -877,6 +896,11 @@
     </style>
   </head>
   <body>
+    <div class="prototype-notice">
+      <strong>Product Experience Prototype / Reference Only</strong>
+      <div>本文件仅作为产品体验原型、用户流程参考和可点击验证稿，不是正式事实源。</div>
+      <div>正式事实源以 <code>AGENTS.md</code>、<code>docs/**</code>、<code>packages/contracts/**</code> 为准。</div>
+    </div>
     <div class="app-shell">
       <aside class="sidebar panel" id="sidebar-root"></aside>
       <main class="content panel" id="page-root"></main>
