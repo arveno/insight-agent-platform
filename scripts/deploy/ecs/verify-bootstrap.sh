@@ -15,6 +15,7 @@ readonly PROJECT_DIRS=(
   "/opt/insight-agent-platform/shared/data/milvus-lite"
   "/opt/insight-agent-platform/shared/frontend"
 )
+readonly PROC_SWAPS_FILE="${PROC_SWAPS_FILE:-/proc/swaps}"
 
 failures=0
 run_hello_world=0
@@ -89,16 +90,35 @@ print_host_summary() {
 }
 
 print_swap_status() {
-  local swap_summary
+  local proc_swaps_summary swapon_summary
 
-  swap_summary="$(swapon --show --bytes --noheadings --output=NAME,SIZE,USED,PRIO 2>/dev/null || true)"
-  if [[ -n "${swap_summary}" ]]; then
-    log "Swap:"
-    printf '%s\n' "${swap_summary}" | sed 's/^/[ecs-verify]   /'
-    pass "Swap is active."
-  else
-    fail "No active swap detected."
+  if [[ ! -r "${PROC_SWAPS_FILE}" ]]; then
+    fail "Cannot read ${PROC_SWAPS_FILE}; unable to determine swap status."
+    return
   fi
+
+  proc_swaps_summary="$(awk 'NR > 1 { print }' "${PROC_SWAPS_FILE}")"
+  swapon_summary="$(swapon --show 2>/dev/null || true)"
+
+  if [[ -n "${proc_swaps_summary}" ]]; then
+    log "Active swap from ${PROC_SWAPS_FILE}:"
+    printf '%s\n' "${proc_swaps_summary}" | sed 's/^/[ecs-verify]   /'
+
+    if [[ -n "${swapon_summary}" ]]; then
+      log "swapon --show:"
+      printf '%s\n' "${swapon_summary}" | sed 's/^/[ecs-verify]   /'
+    fi
+
+    pass "Swap is active."
+    return
+  fi
+
+  if [[ -n "${swapon_summary}" ]]; then
+    log "swapon --show:"
+    printf '%s\n' "${swapon_summary}" | sed 's/^/[ecs-verify]   /'
+  fi
+
+  fail "No active swap detected."
 }
 
 check_docker_group_session() {
