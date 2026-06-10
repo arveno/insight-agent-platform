@@ -14,6 +14,8 @@
 
 当前主部署链路是 CloudBase Run + Docker。CloudBase Functions 不作为当前主部署链路，不建立 CloudBase Functions 与 CloudBase Run 双部署主线。
 
+`#155` 的云端 Preview 优先策略、可重置 preview 边界和本地基础设施压缩边界以 `docs/runtime-capability-coverage.md` 为准。
+
 前端部署方向是静态资源 / EdgeOne Pages 或腾讯云静态托管。
 
 ## 2. 环境变量
