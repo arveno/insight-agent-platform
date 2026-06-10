@@ -4,6 +4,9 @@ set -Eeuo pipefail
 readonly PROJECT_ROOT="/opt/insight-agent-platform"
 readonly ENV_DIR="${PROJECT_ROOT}/env"
 readonly ENV_FILE="${ENV_DIR}/ecs-preview.env"
+readonly DEFAULT_MYSQL_IMAGE="mysql:8"
+readonly DEFAULT_REDIS_IMAGE="redis:7"
+readonly DEFAULT_CADDY_IMAGE="caddy:2"
 
 force_overwrite=0
 tmpfile=""
@@ -57,13 +60,20 @@ ensure_project_root() {
 
 write_env_file() {
   local mysql_root_password mysql_password
+  local mysql_image redis_image caddy_image
 
   mysql_root_password="$(generate_secret)"
   mysql_password="$(generate_secret)"
+  mysql_image="${MYSQL_IMAGE:-${DEFAULT_MYSQL_IMAGE}}"
+  redis_image="${REDIS_IMAGE:-${DEFAULT_REDIS_IMAGE}}"
+  caddy_image="${CADDY_IMAGE:-${DEFAULT_CADDY_IMAGE}}"
   tmpfile="$(mktemp)"
 
   cat >"${tmpfile}" <<EOF
 COMPOSE_PROJECT_NAME=iap-ecs-preview
+MYSQL_IMAGE=${mysql_image}
+REDIS_IMAGE=${redis_image}
+CADDY_IMAGE=${caddy_image}
 MYSQL_ROOT_PASSWORD=${mysql_root_password}
 MYSQL_PASSWORD=${mysql_password}
 MYSQL_DATABASE=insight_agent_platform
