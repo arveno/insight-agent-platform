@@ -14,6 +14,29 @@ RouteCase = tuple[str, str, Mapping[str, object] | None, Mapping[str, str] | Non
 ROUTE_CASES: list[RouteCase] = [
     (
         "post",
+        "/analysis-tasks",
+        {
+            "workspaceId": "workspace-northstar-retail-china",
+            "userId": "user-zoe",
+            "businessDomainId": "business-domain-revenue-quality",
+            "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+            "contextPack": {
+                "metricId": "metric-recognized-revenue",
+                "timeRange": "2026 Q2",
+                "threshold": "收入增速 < -2%",
+                "trend": "华东区域收入增速低于阈值",
+                "tableIds": ["table-sales-order", "table-refund-order"],
+                "knowledgeDocumentIds": [
+                    "knowledge-document-channel-weekly-17",
+                    "knowledge-document-inventory-east-04",
+                ],
+            },
+            "title": "收入增速异常",
+        },
+        None,
+    ),
+    (
+        "post",
         "/conversations",
         {
             "workspaceId": "workspace-northstar-retail-china",

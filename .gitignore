@@ -24,4 +24,5 @@ coverage/
 
 # local data
 .local/
+.tmp/
 *.sqlite

@@ -2,22 +2,50 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/analysis-task.schema.json",
   "title": "AnalysisTask",
+  "description": "用户在 Analysis 草稿态发送问题后形成的正式输入任务对象，是 Conversation 与 AnalysisRun 的共享起点。",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "analysisTaskId",
+    "workspaceId",
+    "userId",
+    "businessDomainId",
+    "question",
+    "contextPack",
+    "createdAt",
+    "updatedAt"
+  ],
   "properties": {
     "analysisTaskId": {
+      "description": "Analysis 输入任务的 canonical 标识。",
       "type": "string"
     },
     "workspaceId": {
+      "description": "任务所属工作区标识。",
       "type": "string"
     },
     "userId": {
+      "description": "发送该问题的用户标识。",
+      "type": "string"
+    },
+    "businessDomainId": {
+      "description": "引用既有 BusinessDomain contract 语义的 canonical businessDomainId。",
       "type": "string"
     },
     "question": {
+      "description": "用户正式发送的问题文本；草稿态 context 不能替代 question。",
       "type": "string"
     },
+    "contextPack": {
+      "$ref": "./analysis-task-context-pack.schema.json"
+    },
     "createdAt": {
+      "description": "AnalysisTask 创建时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "description": "AnalysisTask 最近更新时间。",
       "type": "string",
       "format": "date-time"
     }

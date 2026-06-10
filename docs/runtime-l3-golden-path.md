@@ -394,6 +394,7 @@ follow-up 规则：
 
 从 #157 到 #164，所有实现 PR 都必须显式引用本文，并说明自己补齐的是哪一段链路：
 
+- #157-1：`AnalysisTask` input contract + `AnalysisTask / Conversation / AnalysisRun` persistence foundation；seed / query verify 只允许停在 `run.status = created`、`run.phase = intake`
 - #157：`AnalysisTask / Conversation / AnalysisRun` 持久化和输入地基
 - #158：Conversation / AnalysisRun API 真实成功
 - #159：真实 lifecycle / Worker / Queue / Dispatch

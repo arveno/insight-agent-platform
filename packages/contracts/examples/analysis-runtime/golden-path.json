@@ -1,4 +1,24 @@
 {
+  "analysisTask": {
+    "analysisTaskId": "analysis-task-revenue-gap-q2",
+    "workspaceId": "workspace-northstar-retail-china",
+    "userId": "user-zoe",
+    "businessDomainId": "business-domain-revenue-quality",
+    "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+    "contextPack": {
+      "metricId": "metric-recognized-revenue",
+      "timeRange": "2026 Q2",
+      "threshold": "收入增速 < -2%",
+      "trend": "华东区域收入增速低于阈值",
+      "tableIds": ["table-sales-order", "table-refund-order"],
+      "knowledgeDocumentIds": [
+        "knowledge-document-channel-weekly-17",
+        "knowledge-document-inventory-east-04"
+      ]
+    },
+    "createdAt": "2026-06-05T11:08:12+08:00",
+    "updatedAt": "2026-06-05T11:08:12+08:00"
+  },
   "analysisRun": {
     "analysisTaskId": "analysis-task-revenue-gap-q2",
     "cancelRequestedAt": null,
