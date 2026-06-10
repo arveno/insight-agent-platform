@@ -127,6 +127,45 @@ check_mysql_ping() {
   fi
 }
 
+check_mysql_localhost_bind() {
+  local expected_port="${MYSQL_HOST_PORT:-3306}"
+  local port_output
+  local binding_count=0
+
+  if port_output="$(compose_cmd port mysql 3306 2>&1)"; then
+    while IFS= read -r binding; do
+      [[ -n "${binding}" ]] || continue
+      binding_count=$((binding_count + 1))
+
+      if [[ "${binding}" == "127.0.0.1:${expected_port}" ]]; then
+        continue
+      fi
+
+      fail "MySQL compose port binding must be 127.0.0.1:${expected_port}, got: ${binding}"
+      return
+    done <<< "${port_output}"
+  else
+    fail "Unable to inspect MySQL compose port binding: ${port_output}"
+    return
+  fi
+
+  if ((binding_count == 0)); then
+    fail "MySQL compose port binding is missing."
+  else
+    pass "MySQL compose port binding is localhost-only on 127.0.0.1:${expected_port}."
+  fi
+}
+
+check_mysql_localhost_access() {
+  local host_port="${MYSQL_HOST_PORT:-3306}"
+
+  if timeout 3 bash -c "exec 3<>/dev/tcp/127.0.0.1/${host_port}" >/dev/null 2>&1; then
+    pass "MySQL is reachable via ECS localhost 127.0.0.1:${host_port}."
+  else
+    fail "MySQL is not reachable via ECS localhost 127.0.0.1:${host_port}."
+  fi
+}
+
 check_redis_ping() {
   local output
 
@@ -188,6 +227,8 @@ report_result() {
 }
 
 main() {
+  local mysql_host_port
+
   require_deploy_user
   require_docker_group_session
   if ! check_required_files; then
@@ -196,6 +237,7 @@ main() {
   fi
 
   load_env_file
+  mysql_host_port="${MYSQL_HOST_PORT:-3306}"
   if ! check_required_env_vars; then
     report_result
     return
@@ -207,9 +249,14 @@ main() {
   check_service_running redis
   check_service_running caddy
   check_mysql_ping
+  check_mysql_localhost_bind
+  check_mysql_localhost_access
   check_redis_ping
   check_caddy_health
   check_no_public_listener 3306
+  if [[ "${mysql_host_port}" != "3306" ]]; then
+    check_no_public_listener "${mysql_host_port}"
+  fi
   check_no_public_listener 6379
   report_result
 }
