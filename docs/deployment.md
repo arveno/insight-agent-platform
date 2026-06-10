@@ -97,15 +97,31 @@ Agent Runtime 必须可以通过 Docker 启动。
 当前 ECS compose infra foundation 入口：
 
 - `deploy/docker/compose.ecs.preview.yml`：ECS preview 基础 compose 栈，只承载 `mysql / redis / caddy`。
-- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE` 镜像来源配置。
+- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE` 镜像来源配置，以及 `MYSQL_HOST_PORT` 的 ECS 本机 loopback 绑定端口配置。
 - `scripts/deploy/ecs/init-compose-env.sh`：在 ECS 上生成 `/opt/insight-agent-platform/env/ecs-preview.env`；默认不覆盖已有 env，显式传 `--force` 才覆盖；支持通过环境变量覆盖默认镜像来源。
 - `scripts/deploy/ecs/configure-compose-images.sh`：在 ECS 上只更新已有 `ecs-preview.env` 的 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE`，不重置 MySQL 密码，不启动 compose。
 - `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
 - `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`。
-- `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL / Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
+- `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL localhost-only bind / ping、Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
 - `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
 
 ECS compose infra 的基础镜像来源通过 compose env 配置，不应再依赖 ECS 手工 `docker tag redis:7` 作为正式流程。Preview 环境可以把 `REDIS_IMAGE` 指向 ACR VPC registry，例如 `<registry-vpc>/<namespace>/redis:7`；`ACR Personal Edition` 仅作为 preview 镜像来源，不作为 production registry。Production 后续应切换到 `ACR Enterprise Edition` 或等价生产级 registry。
+
+Preview MySQL inspection 只允许 ECS 本机 loopback 暴露。`compose.ecs.preview.yml` 中的 MySQL host bind 必须固定为 `127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306`，不得绑定 `0.0.0.0`，不得把 `3306` 作为公网开放端口。
+
+用户可以通过 `VS Code SQLTools`、`Navicat`、`DBeaver` 等客户端，配合 SSH Tunnel 查看 preview MySQL。推荐本机命令：
+
+```bash
+ssh -N -L 13306:127.0.0.1:3306 iap-ecs
+```
+
+本机客户端连接参数：
+
+- `Host: 127.0.0.1`
+- `Port: 13306`
+- `Database / User / Password`：使用 ECS `/opt/insight-agent-platform/env/ecs-preview.env` 中的 MySQL 配置。
+
+`Navicat`、`VS Code SQLTools`、`DBeaver` 只作为查看工具，不是数据库事实源。禁止手工建表、手工加字段、手工改数据，禁止执行未入库、未审查 SQL。
 
 以上入口只完成 compose infra foundation 承载位，不代表完整 `#164` 完成，也不代表 runtime / worker / frontend build deployment / migration / seed / query verify / full smoke / rollback versioning 已完成。
 
