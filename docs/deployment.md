@@ -87,6 +87,11 @@ Agent Runtime 必须可以通过 Docker 启动。
 - Preview reset：必须通过 `migration -> seed -> query verify`，不能通过控制台手工改表或散操作恢复。
 - CloudBase：`CloudBase Run / CloudBase Pages / CloudBase SQL` 保留为历史验证资源或后续可选平台，不作为当前 preview 主线；`CloudBase Functions` 仍不作为主部署链路。
 
+当前 ECS host foundation 入口：
+
+- `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin 和 `/opt/insight-agent-platform/**` 目录布局。
+- `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`。
+
 如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
 
 CloudBase 历史部署配置如存在，放在：
