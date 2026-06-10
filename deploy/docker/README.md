@@ -1,4 +1,5 @@
 # Docker
 
-Docker 打包配置放在这里，用于承载 Agent Runtime 和部署期资产。
-当前阶段只固定目录职责，不实现真实镜像构建流程。
+`Single ECS Docker Runtime` 的 Docker / Docker Compose 部署资产放在这里。
+
+本 PR 只补 ECS bootstrap foundation，不在这里补完整 compose、runtime 部署、smoke 或 rollback 流程。
