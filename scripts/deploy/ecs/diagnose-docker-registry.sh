@@ -7,6 +7,7 @@ readonly AUTH_URL="https://auth.docker.io/"
 
 failures=0
 pull_hello_world=0
+effective_registry_mirror_configured=0
 
 log() {
   printf '[ecs-registry-diagnose] %s\n' "$*"
@@ -14,6 +15,10 @@ log() {
 
 pass() {
   printf '[ecs-registry-diagnose] PASS: %s\n' "$*"
+}
+
+warn() {
+  printf '[ecs-registry-diagnose] WARN: %s\n' "$*" >&2
 }
 
 fail() {
@@ -93,6 +98,13 @@ print_registry_mirror_config() {
   if effective_mirrors="$(docker info --format '{{json .RegistryConfig.Mirrors}}' 2>&1)"; then
     log "effective Docker registry mirrors: ${effective_mirrors}"
     pass "Effective Docker registry mirror configuration is readable."
+
+    if [[ "${effective_mirrors}" != "[]" && "${effective_mirrors}" != "null" ]]; then
+      effective_registry_mirror_configured=1
+      pass "Registry mirror is configured in the active Docker daemon."
+    else
+      log "Registry mirror configured status: none"
+    fi
   else
     fail "Failed to read effective Docker registry mirror configuration: ${effective_mirrors}"
   fi
@@ -129,25 +141,51 @@ check_https_endpoint() {
   )"; then
     log "${name}: HTTP ${http_code} from ${url}"
     pass "${name} is reachable."
+    return 0
   else
-    fail "${name} check failed for ${url}: ${http_code}"
+    warn "${name} direct connectivity check failed for ${url}: ${http_code}"
+    return 1
   fi
+}
+
+check_direct_docker_hub_connectivity() {
+  local direct_failures=0
+
+  if ! check_https_endpoint "Docker Hub registry API" "${REGISTRY_URL}"; then
+    direct_failures=$((direct_failures + 1))
+  fi
+
+  if ! check_https_endpoint "Docker Hub auth service" "${AUTH_URL}"; then
+    direct_failures=$((direct_failures + 1))
+  fi
+
+  if ((direct_failures == 0)); then
+    pass "Direct Docker Hub HTTPS connectivity is available."
+    return
+  fi
+
+  if ((effective_registry_mirror_configured == 1)); then
+    warn "Docker Hub direct HTTPS failed, but registry mirror is configured; continue to image pull validation."
+    return
+  fi
+
+  fail "Docker Hub direct HTTPS failed for ${direct_failures} endpoint(s) and no effective registry mirror is configured."
 }
 
 maybe_pull_hello_world() {
   local output
 
   if ((pull_hello_world == 0)); then
-    log "Skipping hello-world pull. Use --pull-hello-world to test Docker image pull capability explicitly."
+    log "Image pull status: not tested. Use --pull-hello-world to test Docker image pull capability explicitly."
     return
   fi
 
   if output="$(docker pull hello-world 2>&1)"; then
     log "docker pull hello-world output:"
     printf '%s\n' "${output}" | sed 's/^/[ecs-registry-diagnose]   /'
-    pass "docker pull hello-world succeeded."
+    pass "Docker image pull capability verified with hello-world."
   else
-    fail "docker pull hello-world failed: ${output}"
+    fail "Docker image pull capability check failed: ${output}"
   fi
 }
 
@@ -167,8 +205,7 @@ main() {
   print_registry_mirror_config
   check_dns_resolution "registry-1.docker.io"
   check_dns_resolution "auth.docker.io"
-  check_https_endpoint "Docker Hub registry API" "${REGISTRY_URL}"
-  check_https_endpoint "Docker Hub auth service" "${AUTH_URL}"
+  check_direct_docker_hub_connectivity
   maybe_pull_hello_world
   report_result
 }
