@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:8
+    image: ${MYSQL_IMAGE:-mysql:8}
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -25,7 +25,7 @@ services:
       - preview
 
   redis:
-    image: redis:7
+    image: ${REDIS_IMAGE:-redis:7}
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -42,7 +42,7 @@ services:
       - preview
 
   caddy:
-    image: caddy:2
+    image: ${CADDY_IMAGE:-caddy:2}
     restart: unless-stopped
     ports:
       - "80:80"

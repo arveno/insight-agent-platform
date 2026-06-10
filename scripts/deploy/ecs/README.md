@@ -143,11 +143,14 @@ bash scripts/deploy/ecs/verify-bootstrap.sh --hello-world
 - `redis`
 - `caddy`
 
+镜像来源通过 compose env 配置，不再把 `redis:7` 的 ECS 手工 `docker tag` 视为正式流程。Preview 如需使用 ACR，应通过 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE` 配置镜像地址；`ACR Personal Edition` 只作为 preview 镜像来源，不作为 production registry。
+
 仓库入口：
 
 - `deploy/docker/compose.ecs.preview.yml`
 - `deploy/docker/env.ecs.preview.example`
 - `scripts/deploy/ecs/init-compose-env.sh`
+- `scripts/deploy/ecs/configure-compose-images.sh`
 - `scripts/deploy/ecs/sync-compose-assets.sh`
 - `scripts/deploy/ecs/up-compose-infra.sh`
 - `scripts/deploy/ecs/verify-compose-infra.sh`
@@ -167,7 +170,25 @@ bash scripts/deploy/ecs/init-compose-env.sh
 bash scripts/deploy/ecs/init-compose-env.sh --force
 ```
 
+如需覆盖默认镜像来源，可在执行时传入环境变量：
+
+```bash
+REDIS_IMAGE="crpi-xxxx-vpc.cn-beijing.personal.cr.aliyuncs.com/iap-preview/redis:7" \
+bash scripts/deploy/ecs/init-compose-env.sh --force
+```
+
 该脚本只生成 compose preview env，不会打印密码，也不会启动容器。
+
+### 更新 compose 镜像来源
+
+在 ECS 上更新已有 `/opt/insight-agent-platform/env/ecs-preview.env` 的镜像变量：
+
+```bash
+REDIS_IMAGE="crpi-xxxx-vpc.cn-beijing.personal.cr.aliyuncs.com/iap-preview/redis:7" \
+bash scripts/deploy/ecs/configure-compose-images.sh
+```
+
+该脚本只更新 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE`，会先备份 env 文件，不重置 MySQL 密码，不启动容器，不执行 compose，不部署业务。
 
 ### 同步 compose 资产
 
