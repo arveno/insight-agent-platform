@@ -172,11 +172,11 @@ exec_sql_stdin() {
   case "${migration_target}" in
     ecs)
       ecs_compose_cmd exec -T -e IAP_RUNTIME_SQL="${sql}" mysql sh -lc \
-        'exec mysql -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
+        'exec mysql --default-character-set=utf8mb4 -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
       ;;
     local)
       local_compose_cmd exec -T -e IAP_RUNTIME_SQL="${sql}" mysql sh -lc \
-        'exec mysql -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
+        'exec mysql --default-character-set=utf8mb4 -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
       ;;
   esac
 }
@@ -189,11 +189,11 @@ query_json_stdin() {
   case "${migration_target}" in
     ecs)
       ecs_compose_cmd exec -T -e IAP_RUNTIME_SQL="${sql}" mysql sh -lc \
-        'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
+        'exec mysql --default-character-set=utf8mb4 --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
       ;;
     local)
       local_compose_cmd exec -T -e IAP_RUNTIME_SQL="${sql}" mysql sh -lc \
-        'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
+        'exec mysql --default-character-set=utf8mb4 --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}" -e "$IAP_RUNTIME_SQL"'
       ;;
   esac
 }
@@ -205,12 +205,12 @@ run_file() {
   case "${migration_target}" in
     ecs)
       ecs_compose_cmd exec -T mysql sh -lc \
-        'exec mysql -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+        'exec mysql --default-character-set=utf8mb4 -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
         <"${sql_file}"
       ;;
     local)
       local_compose_cmd exec -T mysql sh -lc \
-        'exec mysql -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+        'exec mysql --default-character-set=utf8mb4 -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
         <"${sql_file}"
       ;;
   esac
@@ -224,14 +224,14 @@ run_verify() {
     ecs)
       verify_output="$(
         ecs_compose_cmd exec -T mysql sh -lc \
-          'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+          'exec mysql --default-character-set=utf8mb4 --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
           <"${VERIFY_SQL}"
       )"
       ;;
     local)
       verify_output="$(
         local_compose_cmd exec -T mysql sh -lc \
-          'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+          'exec mysql --default-character-set=utf8mb4 --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
           <"${VERIFY_SQL}"
       )"
       ;;
