@@ -1,0 +1,12 @@
+:80 {
+  encode gzip zstd
+
+  @health path /health
+  handle @health {
+    header Content-Type "text/plain; charset=utf-8"
+    respond "ok" 200
+  }
+
+  root * /srv
+  file_server
+}

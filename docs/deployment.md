@@ -94,6 +94,18 @@ Agent Runtime 必须可以通过 Docker 启动。
 - `scripts/deploy/ecs/diagnose-docker-registry.sh`：Docker registry diagnostics 脚本，负责检查 Docker daemon 状态、registry mirror 配置、Docker Hub DNS/HTTPS 连通性，并可选测试 `hello-world` 拉取能力。
 - `scripts/deploy/ecs/configure-docker-registry.sh`：Docker registry mirror configuration 脚本，负责通过 `DOCKER_REGISTRY_MIRROR` 标准化写入 `/etc/docker/daemon.json` 并重启 Docker；该脚本不代表业务部署完成。
 
+当前 ECS compose infra foundation 入口：
+
+- `deploy/docker/compose.ecs.preview.yml`：ECS preview 基础 compose 栈，只承载 `mysql / redis / caddy`。
+- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码。
+- `scripts/deploy/ecs/init-compose-env.sh`：在 ECS 上生成 `/opt/insight-agent-platform/env/ecs-preview.env`；默认不覆盖已有 env，显式传 `--force` 才覆盖。
+- `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
+- `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`。
+- `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL / Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
+- `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
+
+以上入口只完成 compose infra foundation 承载位，不代表完整 `#164` 完成，也不代表 runtime / worker / frontend build deployment / migration / seed / query verify / full smoke / rollback versioning 已完成。
+
 如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
 
 CloudBase 历史部署配置如存在，放在：
