@@ -1,17 +1,13 @@
-# ECS Bootstrap Foundation
+# ECS Bootstrap And Compose Foundation
 
 ## 用途
 
-本目录承载 `Single ECS Docker Runtime` 的第一阶段基础脚本，只负责 ECS 主机 bootstrap foundation：
+本目录承载 `Single ECS Docker Runtime` 的基础脚本，目前覆盖两段承载位：
 
-- 基础依赖安装
-- Docker Engine / Docker Compose plugin 安装
-- Docker registry diagnostics / mirror configuration
-- swap 配置
-- 项目目录布局初始化
-- 基础校验
+- ECS host bootstrap foundation
+- ECS preview compose infra foundation
 
-本目录不负责完整 deploy，不负责 smoke / rollback，不负责启动业务容器。
+当前仍不负责完整 deploy，不负责完整 smoke / rollback，不负责启动 runtime / worker 业务容器。
 
 ## 前置条件
 
@@ -139,8 +135,102 @@ bash scripts/deploy/ecs/verify-bootstrap.sh --hello-world
 
 该步骤只处理镜像拉取能力，不部署业务。
 
+## Compose Infra Foundation
+
+当前 compose infra foundation 只覆盖：
+
+- `mysql`
+- `redis`
+- `caddy`
+
+仓库入口：
+
+- `deploy/docker/compose.ecs.preview.yml`
+- `deploy/docker/env.ecs.preview.example`
+- `scripts/deploy/ecs/init-compose-env.sh`
+- `scripts/deploy/ecs/sync-compose-assets.sh`
+- `scripts/deploy/ecs/up-compose-infra.sh`
+- `scripts/deploy/ecs/verify-compose-infra.sh`
+- `scripts/rollback/ecs-compose-infra.sh`
+
+### 初始化 compose env
+
+在 ECS 上创建 `/opt/insight-agent-platform/env/ecs-preview.env`：
+
+```bash
+bash scripts/deploy/ecs/init-compose-env.sh
+```
+
+默认不覆盖已有 env；显式覆盖：
+
+```bash
+bash scripts/deploy/ecs/init-compose-env.sh --force
+```
+
+该脚本只生成 compose preview env，不会打印密码，也不会启动容器。
+
+### 同步 compose 资产
+
+在本地执行，把 `deploy/docker/**` 同步到 ECS：
+
+```bash
+bash scripts/deploy/ecs/sync-compose-assets.sh
+```
+
+该脚本只同步 compose 资产，不修改 env，不启动容器，不部署业务。
+
+### 启动 compose infra
+
+在 ECS 上执行：
+
+```bash
+bash scripts/deploy/ecs/up-compose-infra.sh
+```
+
+该脚本只启动：
+
+- `mysql`
+- `redis`
+- `caddy`
+
+不启动 `agent-runtime`、`agent-worker`，也不部署 frontend build output。
+
+### 校验 compose infra
+
+在 ECS 上执行：
+
+```bash
+bash scripts/deploy/ecs/verify-compose-infra.sh
+```
+
+该脚本会检查：
+
+- compose 文件存在
+- env 文件存在
+- `mysql / redis / caddy` 容器运行
+- MySQL ping
+- Redis ping
+- `http://127.0.0.1/health`
+- `3306 / 6379` 不监听非 loopback 公网接口
+
+### 回滚 compose infra
+
+默认只停止基础栈并保留数据：
+
+```bash
+bash scripts/rollback/ecs-compose-infra.sh
+```
+
+显式清空 `MySQL / Redis` 数据目录：
+
+```bash
+bash scripts/rollback/ecs-compose-infra.sh --reset-data
+```
+
 ## 边界
 
-- 本 PR 只完成 bootstrap foundation，不完成完整 deploy / smoke / rollback。
+- 当前新增的是 compose infra foundation，不代表完整 `#164` 完成。
+- 当前不代表 runtime / worker / frontend build deployment / migration / seed / query verify / full smoke / rollback versioning 已完成。
+- 后续仍需接入 runtime container、worker container、frontend build output、migration、seed、query verify、full smoke 和 rollback versioning。
 - 不允许手工改数据库；后续 preview reset 仍必须回到 `migration -> seed -> query verify`。
 - 不允许把 `MySQL 3306`、`Redis 6379`、`FastAPI 8000` 直接暴露到公网。
