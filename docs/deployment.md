@@ -91,6 +91,8 @@ Agent Runtime 必须可以通过 Docker 启动。
 
 - `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin 和 `/opt/insight-agent-platform/**` 目录布局。
 - `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`。
+- `scripts/deploy/ecs/diagnose-docker-registry.sh`：Docker registry diagnostics 脚本，负责检查 Docker daemon 状态、registry mirror 配置、Docker Hub DNS/HTTPS 连通性，并可选测试 `hello-world` 拉取能力。
+- `scripts/deploy/ecs/configure-docker-registry.sh`：Docker registry mirror configuration 脚本，负责通过 `DOCKER_REGISTRY_MIRROR` 标准化写入 `/etc/docker/daemon.json` 并重启 Docker；该脚本不代表业务部署完成。
 
 如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
 
