@@ -690,6 +690,15 @@ delivery 前不得持久化最终 artifact
 AnalysisRun 有 runId、workspaceId、userId、analysisTaskId。
 ```
 
+`#157-1` frozen foundation 的补充规则：
+
+```text
+Metrics finding context 先进入 Analysis 草稿态
+草稿态只绑定 AnalysisTask.contextPack，不立即创建 conversationId，不立即创建 runId
+用户发送 question 后，才进入 AnalysisTask -> Conversation -> AnalysisRun 的正式持久化链路
+本轮 seed / query verify 只覆盖 AnalysisTask、Conversation、AnalysisRun 三个对象
+```
+
 目标模型：
 
 ```text

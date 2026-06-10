@@ -34,13 +34,26 @@ export interface AnalysisRun {
   originalRunId?: string | null;
 }
 
+/** Generated from packages/contracts/schemas/analysis/analysis-task-context-pack.schema.json */
+export interface AnalysisTaskContextPack {
+  metricId: string;
+  timeRange: string;
+  threshold: string;
+  trend: string;
+  tableIds: Array<string>;
+  knowledgeDocumentIds: Array<string>;
+}
+
 /** Generated from packages/contracts/schemas/analysis/analysis-task.schema.json */
 export interface AnalysisTask {
-  analysisTaskId?: string;
-  workspaceId?: string;
-  userId?: string;
-  question?: string;
-  createdAt?: string;
+  analysisTaskId: string;
+  workspaceId: string;
+  userId: string;
+  businessDomainId: string;
+  question: string;
+  contextPack: AnalysisTaskContextPack;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Generated from packages/contracts/schemas/analysis/approval-request.schema.json */

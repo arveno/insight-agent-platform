@@ -15,6 +15,32 @@ class RuntimeRouteStubErrorResponse(BaseModel):
     message: str
 
 
+class AnalysisTaskContextPackModel(BaseModel):
+    """Typed context pack carried by the first L3 golden-path AnalysisTask."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metricId: str
+    timeRange: str
+    threshold: str
+    trend: str
+    tableIds: list[str]
+    knowledgeDocumentIds: list[str]
+
+
+class CreateAnalysisTaskRequest(BaseModel):
+    """POST /analysis-tasks request contract for route registration and validation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspaceId: str
+    userId: str
+    businessDomainId: str
+    question: str
+    contextPack: AnalysisTaskContextPackModel
+    title: str | None = None
+
+
 class CreateConversationRequest(BaseModel):
     """POST /conversations request contract for route registration and validation."""
 

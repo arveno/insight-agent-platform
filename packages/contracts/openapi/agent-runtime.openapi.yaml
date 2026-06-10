@@ -18,6 +18,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /analysis-tasks:
+    post:
+      summary: 创建分析输入任务
+      description: >
+        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 frozen context pack。
+        当前 route stub 只保证路径、请求体和错误格式稳定，不返回 fake success 业务结果。
+      operationId: createAnalysisTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnalysisTaskRequest"
+            example:
+              workspaceId: workspace-northstar-retail-china
+              userId: user-zoe
+              businessDomainId: business-domain-revenue-quality
+              question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+              contextPack:
+                metricId: metric-recognized-revenue
+                timeRange: 2026 Q2
+                threshold: 收入增速 < -2%
+                trend: 华东区域收入增速低于阈值
+                tableIds:
+                  - table-sales-order
+                  - table-refund-order
+                knowledgeDocumentIds:
+                  - knowledge-document-channel-weekly-17
+                  - knowledge-document-inventory-east-04
+              title: 收入增速异常
+      responses:
+        "201":
+          description: AnalysisTask 创建成功后的正式契约响应示例。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisTask"
+              example:
+                analysisTaskId: analysis-task-revenue-gap-q2
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                businessDomainId: business-domain-revenue-quality
+                question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+                contextPack:
+                  metricId: metric-recognized-revenue
+                  timeRange: 2026 Q2
+                  threshold: 收入增速 < -2%
+                  trend: 华东区域收入增速低于阈值
+                  tableIds:
+                    - table-sales-order
+                    - table-refund-order
+                  knowledgeDocumentIds:
+                    - knowledge-document-channel-weekly-17
+                    - knowledge-document-inventory-east-04
+                createdAt: "2026-06-05T11:08:12+08:00"
+                updatedAt: "2026-06-05T11:08:12+08:00"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations:
     post:
       summary: 创建会话
@@ -619,6 +677,29 @@ components:
             - NOT_IMPLEMENTED
         message:
           type: string
+    CreateAnalysisTaskRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - userId
+        - businessDomainId
+        - question
+        - contextPack
+      properties:
+        workspaceId:
+          type: string
+        userId:
+          type: string
+        businessDomainId:
+          type: string
+        question:
+          type: string
+        contextPack:
+          $ref: "#/components/schemas/AnalysisTaskContextPack"
+        title:
+          description: Analysis 草稿态的建议标题输入，不替代正式 Conversation.title。
+          type: string
     CreateConversationRequest:
       type: object
       additionalProperties: false
@@ -669,6 +750,10 @@ components:
           type:
             - string
             - "null"
+    AnalysisTask:
+      $ref: "../schemas/analysis/analysis-task.schema.json"
+    AnalysisTaskContextPack:
+      $ref: "../schemas/analysis/analysis-task-context-pack.schema.json"
     AnalysisRun:
       $ref: "../schemas/analysis/analysis-run.schema.json"
     Conversation:

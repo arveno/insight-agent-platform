@@ -200,6 +200,8 @@ export const formalRuntimeEnumDocs = [
 ];
 
 export const runtimeSchemaPaths = [
+  "analysis/analysis-task-context-pack.schema.json",
+  "analysis/analysis-task.schema.json",
   "analysis/analysis-run.schema.json",
   "analysis/conversation.schema.json",
   "analysis/message.schema.json",
@@ -221,6 +223,24 @@ export const runtimeSchemaPaths = [
 ];
 
 export const requiredFieldsBySchema = {
+  "analysis/analysis-task-context-pack.schema.json": [
+    "metricId",
+    "timeRange",
+    "threshold",
+    "trend",
+    "tableIds",
+    "knowledgeDocumentIds"
+  ],
+  "analysis/analysis-task.schema.json": [
+    "analysisTaskId",
+    "workspaceId",
+    "userId",
+    "businessDomainId",
+    "question",
+    "contextPack",
+    "createdAt",
+    "updatedAt"
+  ],
   "analysis/analysis-run.schema.json": [
     "runId",
     "workspaceId",
@@ -398,6 +418,7 @@ export const requiredFieldsBySchema = {
 
 export const minimumOpenApiPaths = [
   "/health",
+  "/analysis-tasks",
   "/conversations",
   "/analysis-runs",
   "/analysis-runs/{runId}",

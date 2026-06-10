@@ -467,7 +467,69 @@ Conversation / Message / MessageStream 的边界固定如下：
 - `Message` 可以引用 `runId`，但不得用 `message status` 替代 `run status`。
 - `stream.completed` 不能替代 `run.completed`。
 
-## 5. AnalysisRun 生命周期
+## 5. AnalysisTask 输入任务
+
+`AnalysisTask` 是用户在 Analysis 草稿态真正发送问题后形成的正式输入任务对象。
+
+固定规则：
+
+```text
+Open in Analysis with context
+-> 进入草稿态
+-> 只绑定 context pack
+-> 不立即创建 conversationId
+-> 不立即创建 runId
+-> user sends question
+-> 创建 AnalysisTask
+-> 创建 Conversation
+-> 创建 AnalysisRun
+```
+
+当前 `AnalysisTask` 的正式最小字段为：
+
+```text
+analysisTaskId
+workspaceId
+userId
+businessDomainId
+question
+contextPack
+createdAt
+updatedAt
+```
+
+`contextPack` 必须是 typed object，不得退回无类型 metadata。
+
+当前 `AnalysisTask.contextPack` 的正式最小字段为：
+
+```text
+metricId
+timeRange
+threshold
+trend
+tableIds
+knowledgeDocumentIds
+```
+
+字段语义固定如下：
+
+- `businessDomainId`：引用既有 `BusinessDomain` contract 的 canonical id。
+- `metricId`：引用既有 `Metric` contract 的 canonical id。
+- `tableIds`：引用既有 `DataTable` contract 的 canonical ids。
+- `knowledgeDocumentIds`：引用既有 `KnowledgeDocument` contract 的 canonical ids。
+- `question`：用户正式发送的问题文本，不得被 `trend`、`threshold` 或任意草稿态 context 替代。
+
+禁止：
+
+```text
+metadata.contextPack
+inputJson
+randomContextJson
+question || draftPrompt
+businessDomainId || metadata.businessDomainId
+```
+
+## 6. AnalysisRun 生命周期
 
 ```text
 created

@@ -212,7 +212,13 @@ const contractsCoreObjects = new Set(
     .filter(Boolean)
 );
 
+const nonCoreSchemaTitles = new Set(["AnalysisTaskContextPack"]);
+
 for (const schema of schemaEntries.map((entry) => entry.schema)) {
+  if (nonCoreSchemaTitles.has(schema.title)) {
+    continue;
+  }
+
   if (!contractsCoreObjects.has(schema.title)) {
     fail(`docs/contracts.md is missing core object ${schema.title}.`);
   }
@@ -246,6 +252,10 @@ if (!openApiSource.includes("text/event-stream")) {
 
 if (!openApiSource.includes("CreateConversationRequest")) {
   fail("OpenAPI must declare CreateConversationRequest.");
+}
+
+if (!openApiSource.includes("CreateAnalysisTaskRequest")) {
+  fail("OpenAPI must declare CreateAnalysisTaskRequest.");
 }
 
 if (!openApiSource.includes("conversationId")) {
@@ -347,6 +357,7 @@ for (const [index, item] of messageStreamSequence.items.entries()) {
 
 const goldenPath = readExampleFile("golden-path.json");
 const goldenPathSchemaPairs = [
+  ["analysisTask", "AnalysisTask"],
   ["conversation", "Conversation"],
   ["analysisRun", "AnalysisRun"]
 ];
