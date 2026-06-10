@@ -176,3 +176,15 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "metric-recognized-revenue" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
+
+
+def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_env: None) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    verify_result = run_runtime_foundation_command("query-verify", check=False)
+    assert verify_result.returncode != 0
+    assert (
+        "Missing expected query verify line: analysis_tasks.row_count=1"
+        in verify_result.stderr
+    )

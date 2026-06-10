@@ -9,6 +9,24 @@ readonly ECS_ENV_FILE="/opt/insight-agent-platform/env/ecs-preview.env"
 readonly MIGRATION_SQL="${REPO_ROOT}/database/mysql/migrations/004_create_analysis_runtime_foundation_tables.sql"
 readonly SEED_SQL="${REPO_ROOT}/database/mysql/seeds/004_analysis_runtime_foundation_seed.sql"
 readonly VERIFY_SQL="${REPO_ROOT}/database/mysql/queries/004_analysis_runtime_foundation_verify.sql"
+readonly EXPECTED_VERIFY_LINES=(
+  "tables=3"
+  "analysis_tasks.row_count=1"
+  "conversations.row_count=1"
+  "analysis_runs.row_count=1"
+  "analysisTaskId=analysis-task-revenue-gap-q2"
+  "conversationId=conversation-revenue-gap-q2"
+  "runId=analysis-q2-revenue-gap"
+  "conversation.analysisTaskId=analysis-task-revenue-gap-q2"
+  "conversation.currentRunId=analysis-q2-revenue-gap"
+  "analysisRun.analysisTaskId=analysis-task-revenue-gap-q2"
+  "analysisTask.businessDomainId=business-domain-revenue-quality"
+  "analysisTask.contextPack.metricId=metric-recognized-revenue"
+  "analysisTask.contextPack.tableIds=table-sales-order,table-refund-order"
+  "analysisTask.contextPack.knowledgeDocumentIds=knowledge-document-channel-weekly-17,knowledge-document-inventory-east-04"
+  "analysisRun.status=created"
+  "analysisRun.phase=intake"
+)
 
 migration_target="${IAP_MIGRATION_TARGET:-ecs}"
 ecs_host_alias="${IAP_MIGRATION_ECS_HOST_ALIAS:-iap-ecs}"
@@ -200,19 +218,39 @@ run_file() {
 
 run_verify() {
   ensure_mysql_up
+  local verify_output
 
   case "${migration_target}" in
     ecs)
-      ecs_compose_cmd exec -T mysql sh -lc \
-        'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
-        <"${VERIFY_SQL}"
+      verify_output="$(
+        ecs_compose_cmd exec -T mysql sh -lc \
+          'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+          <"${VERIFY_SQL}"
+      )"
       ;;
     local)
-      local_compose_cmd exec -T mysql sh -lc \
-        'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
-        <"${VERIFY_SQL}"
+      verify_output="$(
+        local_compose_cmd exec -T mysql sh -lc \
+          'exec mysql --batch --raw --skip-column-names -uroot "--password=${MYSQL_ROOT_PASSWORD}" "${MYSQL_DATABASE}"' \
+          <"${VERIFY_SQL}"
+      )"
       ;;
   esac
+
+  printf '%s\n' "${verify_output}"
+
+  local expected_line
+  local missing_line=0
+  for expected_line in "${EXPECTED_VERIFY_LINES[@]}"; do
+    if ! grep -Fqx -- "${expected_line}" <<<"${verify_output}"; then
+      printf 'Missing expected query verify line: %s\n' "${expected_line}" >&2
+      missing_line=1
+    fi
+  done
+
+  if [[ "${missing_line}" -ne 0 ]]; then
+    return 1
+  fi
 }
 
 tear_down() {
