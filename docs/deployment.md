@@ -6,17 +6,29 @@
 
 项目采用：
 
-- Frontend：静态资源部署。
-- Agent Runtime：Python / FastAPI / LangGraph，Docker 化后部署到 CloudBase Run。
-- Database：MySQL 8.x，通过 repository 层隔离。
-- Vector Store：Milvus。
-- Cache / Queue：Redis。
+- Frontend：`apps/web` 的 `Vite build output` 由 ECS 上的 `Caddy / Nginx` 托管。
+- Agent Runtime：`Python / FastAPI / LangGraph`，与 `agent-worker` 一起由 ECS 上的 Docker Compose 承载。
+- Database：`MySQL 8.x` container，作为当前 preview 主数据库。
+- Vector Store：`Milvus Lite` file-backed preview mode，作为当前 preview 的向量检索承载。
+- Cache / Queue：`Redis` container，作为当前 preview 的 cache / queue 承载。
 
-当前主部署链路是 CloudBase Run + Docker。CloudBase Functions 不作为当前主部署链路，不建立 CloudBase Functions 与 CloudBase Run 双部署主线。
+当前 preview 主部署链路是 `Single ECS Docker Runtime`。
 
-`#155` 的云端 Preview 优先策略、可重置 preview 边界和本地基础设施压缩边界以 `docs/runtime-capability-coverage.md` 为准。
+一台 ECS 承载以下 preview 责任：
 
-前端部署方向是静态资源 / EdgeOne Pages 或腾讯云静态托管。
+- `caddy` 或 `nginx`
+- frontend static files
+- `agent-runtime` FastAPI
+- `agent-worker`
+- `mysql 8.x`
+- `redis`
+- `Milvus Lite` file-backed data
+
+`CloudBase Run / CloudBase Pages / CloudBase SQL` 仅保留为历史验证资源或后续可选平台，不作为当前 preview 主线。`CloudBase Functions` 仍不作为当前主部署链路。
+
+`#155` 的 preview 部署优先策略、可重置 preview 边界和本地基础设施压缩边界以 `docs/runtime-capability-coverage.md` 为准。
+
+当前 preview 前端主线不是 `CloudBase Pages`、`EdgeOne Pages` 或 `OSS` 静态托管。
 
 ## 2. 环境变量
 
@@ -59,17 +71,31 @@ deploy/docker/
 
 Agent Runtime 必须可以通过 Docker 启动。
 
-## 5. CloudBase Run
+当前 preview 目标是通过 Docker Compose 承载前端静态资源、后端服务和基础设施，而不是只构建单个 runtime 容器。
 
-CloudBase Run 部署配置放在：
+## 5. Single ECS Docker Runtime
+
+当前 preview 部署要求如下：
+
+- Frontend：`apps/web` 的 build output 由 ECS 上的 `Caddy / Nginx` 托管。
+- Runtime：ECS 通过 Docker Compose 承载 `agent-runtime` FastAPI 与 `agent-worker`。
+- Database：`MySQL 8.x` container 作为当前 preview 主数据库；`CloudBase SQL` 不作为当前 preview 主数据库。
+- Vector Store：`Milvus Lite` 是当前 preview 的向量检索承载；完整 `Milvus Standalone / Distributed` 不是当前 preview 目标。
+- Cache / Queue：`Redis` container 作为当前 preview cache / queue；不依赖 `CloudBase` 标准版、腾讯云 `Redis` 或 VPC 内网互联。
+- Security：公网只开放 `22 / 80 / 443`；`MySQL 3306`、`Redis 6379`、`FastAPI` 内部端口不得公网开放。
+- Deployment automation：必须逐步落到 `scripts/build`、`scripts/package`、`scripts/deploy`、`scripts/smoke`、`scripts/rollback`。
+- Preview reset：必须通过 `migration -> seed -> query verify`，不能通过控制台手工改表或散操作恢复。
+- CloudBase：`CloudBase Run / CloudBase Pages / CloudBase SQL` 保留为历史验证资源或后续可选平台，不作为当前 preview 主线；`CloudBase Functions` 仍不作为主部署链路。
+
+如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
+
+CloudBase 历史部署配置如存在，放在：
 
 ```text
 deploy/cloudbase-run/
 ```
 
-CloudBase 仅作为部署平台 / 云资源选项，不作为 Agent Runtime 架构核心。
-
-CloudBase Functions 不作为当前主部署链路。
+这些目录当前不作为 preview 主线事实源。
 
 ## 6. 数据库迁移
 

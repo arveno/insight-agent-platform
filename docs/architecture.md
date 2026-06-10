@@ -90,7 +90,8 @@ V1 可以是最小实现，但一级模块、目录、数据模型、API 边界�
 ### Infrastructure
 
 - Docker：后端服务容器化基础，保证 Agent Runtime 可构建、可部署、可回滚。
-- CloudBase Run：当前后端主部署平台，承载 Docker 化后的 FastAPI / LangGraph Agent Runtime。
+- Single ECS Docker Runtime：当前 preview 主部署平台，承载 Docker Compose 下的 frontend static hosting、FastAPI / LangGraph runtime、worker、MySQL、Redis、Milvus Lite 和 reverse proxy。
+- CloudBase Run：后续可选部署平台，不作为当前 preview 主线。
 - MySQL 8.x：当前主数据库，负责持久化 Workspace、Analysis Run、Memory、Feedback、Evaluation、Report 等业务数据。
 - Redis：缓存与队列基础设施预留，后续承载缓存、异步任务状态、限流和任务队列。
 - SQL migration：数据库结构事实源，所有表结构变更必须通过仓库内 SQL migration 演进。
@@ -160,7 +161,7 @@ insight-agent-platform/
 ├─ docs/                  # 项目事实源文档
 ├─ database/              # MySQL migration / seed / query / diagram 事实源
 │  └─ mysql/              # MySQL 数据库事实源
-├─ deploy/                # Docker / CloudBase Run 部署配置
+├─ deploy/                # Docker / preview 部署配置
 ├─ scripts/               # 自动化脚本承载位
 ├─ .github/               # Issue / PR / CI 模板和工作流
 ├─ AGENTS.md              # Codex / AI Agent / 人类开发者执行硬规则
