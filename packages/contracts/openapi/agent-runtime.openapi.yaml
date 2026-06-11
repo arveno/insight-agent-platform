@@ -379,6 +379,53 @@ paths:
                 originalRunId: null
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
+  /analysis-runs/{runId}/dispatch:
+    post:
+      summary: 推进分析运行进入最小 dispatch foundation
+      description: >
+        把 `created/intake` 的 AnalysisRun 推进到 `queued/queueing`，
+        并创建一条真实 ExecutionAttempt，为后续 #159 Worker / Queue / Dispatch 承接。
+      operationId: dispatchAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "202":
+          description: 已完成最小 lifecycle 推进和 ExecutionAttempt 创建后的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+              example:
+                runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                workspaceId: workspace-northstar-retail-china
+                userId: user-zoe
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                status: queued
+                phase: queueing
+                outcome: null
+                waitingFor: null
+                createdAt: "2026-06-05T03:08:30Z"
+                validatingAt: "2026-06-05T03:08:35Z"
+                queuedAt: "2026-06-05T03:08:35Z"
+                startedAt: null
+                waitingSince: null
+                timeoutAt: null
+                cancelRequestedAt: null
+                cancellingAt: null
+                completedAt: null
+                failedAt: null
+                cancelledAt: null
+                expiredAt: null
+                rejectedAt: null
+                terminalReason: null
+                failureCode: null
+                retryable: true
+                retryOfRunId: null
+                originalRunId: null
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
   /analysis-runs/{runId}/conversation:
     get:
       summary: 获取运行关联会话
@@ -533,8 +580,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExecutionAttemptList"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+              example:
+                items:
+                  - attemptId: attempt-7d60f811c53d447bb1c7e2c1d6445dd5
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                    attemptNumber: 1
+                    workerId: worker-runtime-dispatch-foundation
+                    leaseId: lease-f307d2263a264e3593f394c8b9bb7887
+                    status: leased
+                    leaseAcquiredAt: "2026-06-05T03:08:35Z"
+                    leaseExpiresAt: "2026-06-05T03:28:35Z"
+                    heartbeatAt: null
+                    releasedAt: null
+                    failureCode: null
+                    failureMessage: null
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/approvals:
     get:
       summary: 获取审批请求列表
@@ -634,6 +695,15 @@ components:
           example:
             errorCode: MISMATCH
             message: Conversation.analysisTaskId does not match request.analysisTaskId
+    RuntimeInvalidState:
+      description: Requested lifecycle transition is not allowed for the persisted AnalysisRun state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuntimeErrorResponse"
+          example:
+            errorCode: INVALID_STATE
+            message: AnalysisRun must be created/intake before dispatch.
   parameters:
     RunId:
       name: runId
@@ -709,6 +779,7 @@ components:
           enum:
             - NOT_FOUND
             - MISMATCH
+            - INVALID_STATE
         message:
           type: string
     CreateAnalysisTaskRequest:

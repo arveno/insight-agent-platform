@@ -7,7 +7,6 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRecord,
     AnalysisRunRepository,
@@ -16,6 +15,7 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    ExecutionAttemptRepository,
     GoldenPathFoundationRepository,
     RuntimeFoundationMysqlCli,
 )
@@ -137,6 +137,7 @@ def test_runtime_foundation_repositories_round_trip_frozen_chain(
     analysis_task_repository = AnalysisTaskRepository(database)
     conversation_repository = ConversationRepository(database)
     analysis_run_repository = AnalysisRunRepository(database)
+    execution_attempt_repository = ExecutionAttemptRepository(database)
     foundation_repository = GoldenPathFoundationRepository(
         analysis_task_repository=analysis_task_repository,
         conversation_repository=conversation_repository,
@@ -154,6 +155,7 @@ def test_runtime_foundation_repositories_round_trip_frozen_chain(
     assert analysis_task_repository.get_by_analysis_task_id(ANALYSIS_TASK_ID) == analysis_task
     assert conversation_repository.get_by_conversation_id(CONVERSATION_ID) == conversation
     assert analysis_run_repository.get_by_run_id(RUN_ID) == analysis_run
+    assert execution_attempt_repository.list_by_run_id(RUN_ID) == []
 
     foundation = foundation_repository.get_by_analysis_task_id(ANALYSIS_TASK_ID)
 
@@ -176,8 +178,12 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
     assert "metric-recognized-revenue" in verify_result.stdout
+    assert "tables=4" in verify_result.stdout
+    assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
+    execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())
+    assert execution_attempt_repository.list_by_run_id(RUN_ID) == []
 
 
 def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_env: None) -> None:

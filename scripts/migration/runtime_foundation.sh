@@ -6,14 +6,15 @@ readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 readonly LOCAL_COMPOSE_FILE="${REPO_ROOT}/deploy/docker/compose.ecs.preview.yml"
 readonly ECS_COMPOSE_FILE="/opt/insight-agent-platform/deploy/docker/compose.ecs.preview.yml"
 readonly ECS_ENV_FILE="/opt/insight-agent-platform/env/ecs-preview.env"
-readonly MIGRATION_SQL="${REPO_ROOT}/database/mysql/migrations/004_create_analysis_runtime_foundation_tables.sql"
+readonly MIGRATION_DIR="${REPO_ROOT}/database/mysql/migrations"
 readonly SEED_SQL="${REPO_ROOT}/database/mysql/seeds/004_analysis_runtime_foundation_seed.sql"
 readonly VERIFY_SQL="${REPO_ROOT}/database/mysql/queries/004_analysis_runtime_foundation_verify.sql"
 readonly EXPECTED_VERIFY_LINES=(
-  "tables=3"
+  "tables=4"
   "analysis_tasks.row_count=1"
   "conversations.row_count=1"
   "analysis_runs.row_count=1"
+  "execution_attempts.row_count=0"
   "analysisTaskId=analysis-task-revenue-gap-q2"
   "conversationId=conversation-revenue-gap-q2"
   "runId=analysis-q2-revenue-gap"
@@ -216,6 +217,19 @@ run_file() {
   esac
 }
 
+run_migrations() {
+  local migration_files=()
+  local sql_file
+  local old_ifs="${IFS}"
+
+  IFS=$'\n' migration_files=($(find "${MIGRATION_DIR}" -maxdepth 1 -type f -name '*.sql' | sort))
+  IFS="${old_ifs}"
+
+  for sql_file in "${migration_files[@]}"; do
+    run_file "${sql_file}"
+  done
+}
+
 run_verify() {
   ensure_mysql_up
   local verify_output
@@ -270,7 +284,7 @@ main() {
 
   case "${command}" in
     migrate)
-      run_file "${MIGRATION_SQL}"
+      run_migrations
       ;;
     seed)
       run_file "${SEED_SQL}"

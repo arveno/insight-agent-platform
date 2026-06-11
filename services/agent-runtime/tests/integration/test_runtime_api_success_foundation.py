@@ -10,13 +10,13 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRepository,
     AnalysisTaskRepository,
     ConversationRepository,
+    ExecutionAttemptRepository,
     RuntimeFoundationMysqlCli,
 )
 
@@ -196,6 +196,165 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
 
     list_events_response = client.get(f"/analysis-runs/{analysis_run['runId']}/events")
     assert list_events_response.status_code == 501
+
+
+def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_records(
+    client: TestClient,
+) -> None:
+    analysis_task = create_analysis_task(client)
+    create_conversation_response = client.post(
+        "/conversations",
+        json={
+            "workspaceId": analysis_task["workspaceId"],
+            "userId": analysis_task["userId"],
+            "analysisTaskId": analysis_task["analysisTaskId"],
+            "title": TASK_PAYLOAD["title"],
+        },
+    )
+    assert create_conversation_response.status_code == 201
+    conversation = create_conversation_response.json()
+
+    create_run_response = client.post(
+        "/analysis-runs",
+        json={
+            "workspaceId": analysis_task["workspaceId"],
+            "userId": analysis_task["userId"],
+            "analysisTaskId": analysis_task["analysisTaskId"],
+            "conversationId": conversation["conversationId"],
+        },
+    )
+    assert create_run_response.status_code == 201
+    analysis_run = create_run_response.json()
+
+    list_attempts_before_dispatch_response = client.get(
+        f"/analysis-runs/{analysis_run['runId']}/execution-attempts"
+    )
+    assert list_attempts_before_dispatch_response.status_code == 200
+    assert list_attempts_before_dispatch_response.json() == {"items": []}
+
+    dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
+    assert dispatch_response.status_code == 202
+    dispatched_run = dispatch_response.json()
+    assert dispatched_run["runId"] == analysis_run["runId"]
+    assert dispatched_run["status"] == "queued"
+    assert dispatched_run["phase"] == "queueing"
+    assert dispatched_run["createdAt"] == analysis_run["createdAt"]
+    assert dispatched_run["validatingAt"] is not None
+    assert dispatched_run["queuedAt"] is not None
+    assert dispatched_run["startedAt"] is None
+    assert dispatched_run["completedAt"] is None
+    assert dispatched_run["failedAt"] is None
+
+    get_run_response = client.get(f"/analysis-runs/{analysis_run['runId']}")
+    assert get_run_response.status_code == 200
+    assert get_run_response.json() == dispatched_run
+
+    list_attempts_response = client.get(
+        f"/analysis-runs/{analysis_run['runId']}/execution-attempts"
+    )
+    assert list_attempts_response.status_code == 200
+    attempts_payload = list_attempts_response.json()
+    assert len(attempts_payload["items"]) == 1
+    execution_attempt = attempts_payload["items"][0]
+    assert execution_attempt["attemptId"].startswith("attempt-")
+    assert execution_attempt["runId"] == analysis_run["runId"]
+    assert execution_attempt["attemptNumber"] == 1
+    assert execution_attempt["workerId"].startswith("worker-")
+    assert execution_attempt["leaseId"].startswith("lease-")
+    assert execution_attempt["status"] == "leased"
+    assert execution_attempt["leaseAcquiredAt"] == dispatched_run["queuedAt"]
+    assert execution_attempt["leaseExpiresAt"] is not None
+    assert execution_attempt["heartbeatAt"] is None
+    assert execution_attempt["releasedAt"] is None
+    assert execution_attempt["failureCode"] is None
+    assert execution_attempt["failureMessage"] is None
+
+    get_run_conversation_response = client.get(
+        f"/analysis-runs/{analysis_run['runId']}/conversation"
+    )
+    assert get_run_conversation_response.status_code == 200
+    run_conversation = get_run_conversation_response.json()
+    assert run_conversation["conversationId"] == conversation["conversationId"]
+    assert run_conversation["currentRunId"] == analysis_run["runId"]
+
+    get_conversation_response = client.get(f"/conversations/{conversation['conversationId']}")
+    assert get_conversation_response.status_code == 200
+    assert get_conversation_response.json() == run_conversation
+
+    database = RuntimeFoundationMysqlCli()
+    analysis_run_repository = AnalysisRunRepository(database)
+    execution_attempt_repository = ExecutionAttemptRepository(database)
+
+    assert analysis_run_repository.get_by_run_id(analysis_run["runId"]) == dispatched_run
+    assert (
+        execution_attempt_repository.list_by_run_id(analysis_run["runId"])
+        == attempts_payload["items"]
+    )
+
+    list_messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
+    assert list_messages_response.status_code == 501
+
+    list_events_response = client.get(f"/analysis-runs/{analysis_run['runId']}/events")
+    assert list_events_response.status_code == 501
+
+
+def test_dispatch_analysis_run_returns_not_found_for_unknown_run(client: TestClient) -> None:
+    response = client.post("/analysis-runs/analysis-run-missing/dispatch")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "AnalysisRun not found: analysis-run-missing",
+    }
+
+
+def test_list_execution_attempts_returns_not_found_for_unknown_run(client: TestClient) -> None:
+    response = client.get("/analysis-runs/analysis-run-missing/execution-attempts")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "AnalysisRun not found: analysis-run-missing",
+    }
+
+
+def test_dispatch_analysis_run_rejects_repeat_dispatch_for_non_created_run(
+    client: TestClient,
+) -> None:
+    analysis_task = create_analysis_task(client)
+    create_conversation_response = client.post(
+        "/conversations",
+        json={
+            "workspaceId": analysis_task["workspaceId"],
+            "userId": analysis_task["userId"],
+            "analysisTaskId": analysis_task["analysisTaskId"],
+            "title": TASK_PAYLOAD["title"],
+        },
+    )
+    assert create_conversation_response.status_code == 201
+    conversation = create_conversation_response.json()
+
+    create_run_response = client.post(
+        "/analysis-runs",
+        json={
+            "workspaceId": analysis_task["workspaceId"],
+            "userId": analysis_task["userId"],
+            "analysisTaskId": analysis_task["analysisTaskId"],
+            "conversationId": conversation["conversationId"],
+        },
+    )
+    assert create_run_response.status_code == 201
+    analysis_run = create_run_response.json()
+
+    first_dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
+    assert first_dispatch_response.status_code == 202
+
+    second_dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
+    assert second_dispatch_response.status_code == 409
+    assert second_dispatch_response.json() == {
+        "errorCode": "INVALID_STATE",
+        "message": "AnalysisRun must be created/intake before dispatch.",
+    }
 
 
 def test_create_conversation_returns_not_found_when_analysis_task_missing(

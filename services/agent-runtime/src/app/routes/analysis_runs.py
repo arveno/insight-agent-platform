@@ -11,6 +11,7 @@ from src.app.routes.runtime_contracts import (
     ApprovalDecisionRequest,
     ConversationResponse,
     CreateAnalysisRunRequest,
+    ExecutionAttemptListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     generate_canonical_id,
@@ -19,12 +20,18 @@ from src.app.routes.runtime_contracts import (
     utc_timestamp,
 )
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunLifecycleRepository,
     AnalysisRunRecord,
     AnalysisRunRepository,
     AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    ExecutionAttemptRepository,
     RuntimeFoundationPyMySqlDatabase,
+)
+from src.modules.analysis_runs.lifecycle_service import (
+    AnalysisRunInvalidStateError,
+    AnalysisRunLifecycleService,
 )
 
 router = APIRouter(prefix="/analysis-runs", tags=["analysis-runs"])
@@ -42,7 +49,10 @@ FOUNDATION_ERROR_RESPONSE: dict[int | str, dict[str, Any]] = {
         "model": RuntimeRequestErrorResponse,
     },
     409: {
-        "description": "Request chain mismatched the persisted runtime foundation objects.",
+        "description": (
+            "Request chain mismatched persisted objects or attempted "
+            "an invalid lifecycle transition."
+        ),
         "model": RuntimeRequestErrorResponse,
     },
 }
@@ -69,6 +79,15 @@ def _conversation_repository() -> ConversationRepository:
 
 def _analysis_run_repository() -> AnalysisRunRepository:
     return AnalysisRunRepository(_runtime_foundation_database())
+
+
+def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
+    database = _runtime_foundation_database()
+    return AnalysisRunLifecycleService(
+        analysis_run_repository=AnalysisRunRepository(database),
+        execution_attempt_repository=ExecutionAttemptRepository(database),
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+    )
 
 
 def _validate_conversation_chain(
@@ -198,6 +217,33 @@ def get_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | J
         )
 
 
+@router.post(
+    "/{runId}/dispatch",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def dispatch_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+    """Advance a created/intake AnalysisRun to queued/queueing and create an ExecutionAttempt."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.dispatch(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
 @router.get("/{runId}/events", responses=NOT_IMPLEMENTED_RESPONSE)
 def list_analysis_run_events(run_id: str = Path(alias="runId")) -> JSONResponse:
     """Register the RunEvent collection boundary without emitting synthetic event data."""
@@ -238,12 +284,24 @@ def list_analysis_run_reports(run_id: str = Path(alias="runId")) -> JSONResponse
     return not_implemented_route_stub_response()
 
 
-@router.get("/{runId}/execution-attempts", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_execution_attempts(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Reserve the ExecutionAttempt read boundary while worker ownership remains unimplemented."""
+@router.get(
+    "/{runId}/execution-attempts",
+    response_model=ExecutionAttemptListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_execution_attempts(run_id: str = Path(alias="runId")) -> dict[str, object] | JSONResponse:
+    """Return persisted ExecutionAttempts for a real AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return {"items": lifecycle_service.list_execution_attempts(run_id)}
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
 
 
 @router.get("/{runId}/approvals", responses=NOT_IMPLEMENTED_RESPONSE)

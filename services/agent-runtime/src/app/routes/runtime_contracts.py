@@ -1,6 +1,6 @@
 """Shared request, response, and error models for runtime routes."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import uuid4
 
@@ -22,7 +22,7 @@ class RuntimeRequestErrorResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    errorCode: Literal["NOT_FOUND", "MISMATCH"]
+    errorCode: Literal["NOT_FOUND", "MISMATCH", "INVALID_STATE"]
     message: str
 
 
@@ -165,6 +165,33 @@ class AnalysisRunResponse(BaseModel):
     originalRunId: str | None = None
 
 
+class ExecutionAttemptResponse(BaseModel):
+    """ExecutionAttempt contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    attemptId: str
+    runId: str
+    attemptNumber: int
+    workerId: str
+    leaseId: str
+    status: Literal["leased", "running", "lost", "released", "failed", "completed"]
+    leaseAcquiredAt: str
+    leaseExpiresAt: str
+    heartbeatAt: str | None = None
+    releasedAt: str | None = None
+    failureCode: str | None = None
+    failureMessage: str | None = None
+
+
+class ExecutionAttemptListResponse(BaseModel):
+    """ExecutionAttempt list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ExecutionAttemptResponse]
+
+
 class ApprovalDecisionRequest(BaseModel):
     """POST /analysis-runs/{runId}/approvals/{approvalId}/decision request contract."""
 
@@ -183,7 +210,7 @@ ROUTE_STUB_ERROR = RuntimeRouteStubErrorResponse(
 def runtime_error_response(
     *,
     status_code: int,
-    error_code: Literal["NOT_IMPLEMENTED", "NOT_FOUND", "MISMATCH"],
+    error_code: Literal["NOT_IMPLEMENTED", "NOT_FOUND", "MISMATCH", "INVALID_STATE"],
     message: str,
 ) -> JSONResponse:
     """Return the canonical structured runtime error payload."""
@@ -212,4 +239,4 @@ def generate_canonical_id(prefix: str) -> str:
 def utc_timestamp() -> str:
     """Generate the canonical timestamp string used by runtime foundation persistence."""
 
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")

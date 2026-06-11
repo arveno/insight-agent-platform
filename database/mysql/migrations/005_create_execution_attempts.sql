@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS execution_attempts (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  attempt_id VARCHAR(128) NOT NULL,
+  run_id VARCHAR(128) NOT NULL,
+  attempt_number INT NOT NULL,
+  worker_id VARCHAR(128) NOT NULL,
+  lease_id VARCHAR(128) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  lease_acquired_at VARCHAR(40) NOT NULL,
+  lease_expires_at VARCHAR(40) NOT NULL,
+  heartbeat_at VARCHAR(40) NULL,
+  released_at VARCHAR(40) NULL,
+  failure_code VARCHAR(128) NULL,
+  failure_message TEXT NULL,
+  UNIQUE KEY uq_execution_attempts_attempt_id (attempt_id),
+  UNIQUE KEY uq_execution_attempts_run_attempt_number (run_id, attempt_number),
+  KEY idx_execution_attempts_run_id (run_id),
+  KEY idx_execution_attempts_worker_id (worker_id),
+  KEY idx_execution_attempts_lease_id (lease_id)
+);
