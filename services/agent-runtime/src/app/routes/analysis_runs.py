@@ -1,15 +1,30 @@
-"""AnalysisRun HTTP boundary for lifecycle-owned route stubs."""
+"""AnalysisRun HTTP boundary for lifecycle-owned foundation APIs."""
 
 from typing import Any
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, status
 from fastapi.responses import JSONResponse
 
+from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
+    AnalysisRunResponse,
     ApprovalDecisionRequest,
+    ConversationResponse,
     CreateAnalysisRunRequest,
+    RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
+    generate_canonical_id,
     not_implemented_route_stub_response,
+    runtime_error_response,
+    utc_timestamp,
+)
+from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunRecord,
+    AnalysisRunRepository,
+    AnalysisTaskRepository,
+    ConversationRecord,
+    ConversationRepository,
+    RuntimeFoundationPyMySqlDatabase,
 )
 
 router = APIRouter(prefix="/analysis-runs", tags=["analysis-runs"])
@@ -21,20 +36,166 @@ NOT_IMPLEMENTED_RESPONSE: dict[int | str, dict[str, Any]] = {
     }
 }
 
+FOUNDATION_ERROR_RESPONSE: dict[int | str, dict[str, Any]] = {
+    404: {
+        "description": "Requested AnalysisTask, Conversation, or AnalysisRun was not found.",
+        "model": RuntimeRequestErrorResponse,
+    },
+    409: {
+        "description": "Request chain mismatched the persisted runtime foundation objects.",
+        "model": RuntimeRequestErrorResponse,
+    },
+}
 
-@router.post("", responses=NOT_IMPLEMENTED_RESPONSE)
-def create_analysis_run(_request: CreateAnalysisRunRequest) -> JSONResponse:
-    """Register the AnalysisRun create boundary without starting real runtime execution."""
 
-    return not_implemented_route_stub_response()
+def _runtime_foundation_database() -> RuntimeFoundationPyMySqlDatabase:
+    settings = get_settings()
+    return RuntimeFoundationPyMySqlDatabase(
+        host=settings.mysql_host,
+        port=settings.mysql_port,
+        database=settings.mysql_database,
+        user=settings.mysql_user,
+        password=settings.mysql_password,
+    )
 
 
-@router.get("/{runId}", responses=NOT_IMPLEMENTED_RESPONSE)
-def get_analysis_run(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Reserve the AnalysisRun read boundary for the analysis_runs owner module."""
+def _analysis_task_repository() -> AnalysisTaskRepository:
+    return AnalysisTaskRepository(_runtime_foundation_database())
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+
+def _conversation_repository() -> ConversationRepository:
+    return ConversationRepository(_runtime_foundation_database())
+
+
+def _analysis_run_repository() -> AnalysisRunRepository:
+    return AnalysisRunRepository(_runtime_foundation_database())
+
+
+def _validate_conversation_chain(
+    *,
+    request: CreateAnalysisRunRequest,
+    conversation: ConversationRecord,
+) -> JSONResponse | None:
+    if conversation["analysisTaskId"] != request.analysisTaskId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="Conversation.analysisTaskId does not match request.analysisTaskId",
+        )
+    if conversation["workspaceId"] != request.workspaceId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="Conversation.workspaceId does not match request.workspaceId",
+        )
+    if conversation["userId"] != request.userId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="Conversation.userId does not match request.userId",
+        )
+    return None
+
+
+@router.post(
+    "",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord | JSONResponse:
+    """Create a real AnalysisRun and attach it to the current Conversation."""
+
+    try:
+        conversation = _conversation_repository().get_by_conversation_id(request.conversationId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {request.conversationId}",
+        )
+
+    conversation_chain_error = _validate_conversation_chain(
+        request=request,
+        conversation=conversation,
+    )
+    if conversation_chain_error is not None:
+        return conversation_chain_error
+
+    try:
+        analysis_task = _analysis_task_repository().get_by_analysis_task_id(request.analysisTaskId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisTask not found: {request.analysisTaskId}",
+        )
+
+    if analysis_task["workspaceId"] != request.workspaceId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="AnalysisTask.workspaceId does not match request.workspaceId",
+        )
+    if analysis_task["userId"] != request.userId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="AnalysisTask.userId does not match request.userId",
+        )
+
+    now = utc_timestamp()
+    analysis_run: AnalysisRunRecord = {
+        "runId": generate_canonical_id("analysis-run"),
+        "workspaceId": request.workspaceId,
+        "userId": request.userId,
+        "analysisTaskId": request.analysisTaskId,
+        "status": "created",
+        "phase": "intake",
+        "outcome": None,
+        "waitingFor": None,
+        "createdAt": now,
+        "validatingAt": None,
+        "queuedAt": None,
+        "startedAt": None,
+        "waitingSince": None,
+        "timeoutAt": None,
+        "cancelRequestedAt": None,
+        "cancellingAt": None,
+        "completedAt": None,
+        "failedAt": None,
+        "cancelledAt": None,
+        "expiredAt": None,
+        "rejectedAt": None,
+        "terminalReason": None,
+        "failureCode": None,
+        "retryable": True,
+        "retryOfRunId": None,
+        "originalRunId": None,
+    }
+    _analysis_run_repository().create(analysis_run)
+
+    updated_conversation: ConversationRecord = {
+        **conversation,
+        "currentRunId": analysis_run["runId"],
+        "updatedAt": now,
+    }
+    _conversation_repository().create(updated_conversation)
+    return analysis_run
+
+
+@router.get("/{runId}", response_model=AnalysisRunResponse, responses=FOUNDATION_ERROR_RESPONSE)
+def get_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+    """Load a persisted AnalysisRun by canonical runId."""
+
+    try:
+        return _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
 
 
 @router.get("/{runId}/events", responses=NOT_IMPLEMENTED_RESPONSE)
@@ -93,12 +254,33 @@ def list_approval_requests(run_id: str = Path(alias="runId")) -> JSONResponse:
     return not_implemented_route_stub_response()
 
 
-@router.get("/{runId}/conversation", responses=NOT_IMPLEMENTED_RESPONSE)
-def get_analysis_run_conversation(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Expose the run-to-conversation boundary without persisting cross-object joins."""
+@router.get(
+    "/{runId}/conversation",
+    response_model=ConversationResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def get_analysis_run_conversation(
+    run_id: str = Path(alias="runId"),
+) -> ConversationRecord | JSONResponse:
+    """Resolve the current Conversation bound to a persisted AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    try:
+        return _conversation_repository().get_by_current_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found for AnalysisRun: {run_id}",
+        )
 
 
 @router.post("/{runId}/cancel", responses=NOT_IMPLEMENTED_RESPONSE)

@@ -1,21 +1,27 @@
-"""#157-1 runtime foundation 的 MySQL CLI repository 边界。
-
-当前仓库尚未引入经审查的 Python MySQL driver。
-为保持 contracts-first 与真实 MySQL foundation，本模块通过
-`scripts/migration/runtime_foundation.sh` 访问 preview compose 的 mysql service，
-只承接 `AnalysisTask / Conversation / AnalysisRun` 三个对象的最小持久化能力。
-"""
+"""#157-1 / #158-1 runtime foundation 的 repository 与数据库适配器边界。"""
 
 from __future__ import annotations
 
 import json
 import subprocess
 from pathlib import Path
-from typing import Literal, TypedDict, cast
+from typing import Literal, Protocol, TypedDict, cast
+
+import pymysql
 
 
 class RuntimeFoundationError(RuntimeError):
     """Runtime foundation MySQL CLI gateway error."""
+
+
+class RuntimeFoundationDatabase(Protocol):
+    """Runtime foundation database boundary shared by CLI and PyMySQL adapters."""
+
+    def execute_sql(self, sql: str) -> None:
+        """Execute a mutating SQL statement."""
+
+    def query_json_object(self, sql: str) -> dict[str, object] | None:
+        """Execute a JSON_OBJECT query and return the decoded payload."""
 
 
 class AnalysisTaskContextPack(TypedDict):
@@ -188,10 +194,80 @@ class RuntimeFoundationMysqlCli:
         return _require_mapping(parsed, "query-json")
 
 
+class RuntimeFoundationPyMySqlDatabase:
+    """Direct MySQL adapter for FastAPI success paths."""
+
+    def __init__(
+        self,
+        *,
+        host: str,
+        port: int,
+        database: str,
+        user: str,
+        password: str,
+        connect_timeout_seconds: int = 5,
+    ) -> None:
+        self._host = host
+        self._port = port
+        self._database = database
+        self._user = user
+        self._password = password
+        self._connect_timeout_seconds = connect_timeout_seconds
+
+    def _connect(self) -> pymysql.connections.Connection:
+        return pymysql.connect(
+            host=self._host,
+            port=self._port,
+            user=self._user,
+            password=self._password,
+            database=self._database,
+            charset="utf8mb4",
+            autocommit=False,
+            connect_timeout=self._connect_timeout_seconds,
+        )
+
+    def execute_sql(self, sql: str) -> None:
+        connection = self._connect()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+            connection.commit()
+        except Exception as exc:
+            connection.rollback()
+            raise RuntimeFoundationError(str(exc)) from exc
+        finally:
+            connection.close()
+
+    def query_json_object(self, sql: str) -> dict[str, object] | None:
+        connection = self._connect()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                row = cursor.fetchone()
+        except Exception as exc:
+            raise RuntimeFoundationError(str(exc)) from exc
+        finally:
+            connection.close()
+
+        if row is None:
+            return None
+
+        raw_payload = row[0]
+        if raw_payload is None:
+            return None
+        if isinstance(raw_payload, (bytes, bytearray)):
+            raw_payload = raw_payload.decode("utf-8")
+        if not isinstance(raw_payload, str):
+            raise RuntimeFoundationError("query-json did not return a string payload.")
+
+        parsed = json.loads(raw_payload)
+        return _require_mapping(parsed, "query-json")
+
+
 class AnalysisTaskRepository:
     """Repository boundary for AnalysisTask foundation persistence."""
 
-    def __init__(self, database: RuntimeFoundationMysqlCli) -> None:
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
 
     def create(self, analysis_task: AnalysisTaskRecord) -> None:
@@ -251,7 +327,7 @@ LIMIT 1;
 class ConversationRepository:
     """Repository boundary for Conversation foundation persistence."""
 
-    def __init__(self, database: RuntimeFoundationMysqlCli) -> None:
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
 
     def create(self, conversation: ConversationRecord) -> None:
@@ -334,11 +410,34 @@ LIMIT 1;
             raise KeyError(analysis_task_id)
         return cast(ConversationRecord, payload)
 
+    def get_by_current_run_id(self, run_id: str) -> ConversationRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'conversationId', conversation_id,
+  'workspaceId', workspace_id,
+  'userId', user_id,
+  'analysisTaskId', analysis_task_id,
+  'currentRunId', current_run_id,
+  'title', title,
+  'status', status,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM conversations
+WHERE current_run_id = {_sql_literal(run_id)}
+ORDER BY id DESC
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(run_id)
+        return cast(ConversationRecord, payload)
+
 
 class AnalysisRunRepository:
     """Repository boundary for AnalysisRun foundation persistence."""
 
-    def __init__(self, database: RuntimeFoundationMysqlCli) -> None:
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
 
     def create(self, analysis_run: AnalysisRunRecord) -> None:

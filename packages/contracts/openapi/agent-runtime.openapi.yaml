@@ -22,8 +22,8 @@ paths:
     post:
       summary: 创建分析输入任务
       description: >
-        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 frozen context pack。
-        当前 route stub 只保证路径、请求体和错误格式稳定，不返回 fake success 业务结果。
+        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 context pack。
+        成功时由服务端生成 canonical analysisTaskId，并写入真实 MySQL foundation repository。
       operationId: createAnalysisTask
       requestBody:
         required: true
@@ -50,13 +50,13 @@ paths:
               title: 收入增速异常
       responses:
         "201":
-          description: AnalysisTask 创建成功后的正式契约响应示例。
+          description: AnalysisTask 创建成功后的正式契约响应。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisTask"
               example:
-                analysisTaskId: analysis-task-revenue-gap-q2
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
                 businessDomainId: business-domain-revenue-quality
@@ -72,16 +72,14 @@ paths:
                   knowledgeDocumentIds:
                     - knowledge-document-channel-weekly-17
                     - knowledge-document-inventory-east-04
-                createdAt: "2026-06-05T11:08:12+08:00"
-                updatedAt: "2026-06-05T11:08:12+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+                createdAt: "2026-06-05T03:08:12Z"
+                updatedAt: "2026-06-05T03:08:12Z"
   /conversations:
     post:
       summary: 创建会话
       description: >
-        创建一个新的 Conversation 主线对象。当前 route stub 只保证路径、请求体和错误格式稳定，
-        不返回 fake success 业务结果。
+        创建一个新的 Conversation 主线对象。
+        只有在 AnalysisTask 已存在且 workspaceId / userId 链路一致时才返回成功。
       operationId: createConversation
       requestBody:
         required: true
@@ -92,27 +90,29 @@ paths:
             example:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
-              analysisTaskId: analysis-task-revenue-gap-q2
+              analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
               title: 收入增速异常
       responses:
         "201":
-          description: Conversation 创建成功后的正式契约响应示例。
+          description: Conversation 创建成功后的正式契约响应。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Conversation"
               example:
-                conversationId: conversation-revenue-gap-q2
+                conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-revenue-gap-q2
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: null
                 title: 收入增速异常
                 status: active
-                createdAt: "2026-06-05T11:08:00+08:00"
-                updatedAt: "2026-06-05T11:08:00+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+                createdAt: "2026-06-05T03:08:20Z"
+                updatedAt: "2026-06-05T03:08:20Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeMismatch"
   /conversations/{conversationId}:
     get:
       summary: 获取会话详情
@@ -127,17 +127,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Conversation"
               example:
-                conversationId: conversation-revenue-gap-q2
+                conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-revenue-gap-q2
-                currentRunId: analysis-q2-revenue-gap
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
-                createdAt: "2026-06-05T11:08:00+08:00"
-                updatedAt: "2026-06-05T11:24:00+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+                createdAt: "2026-06-05T03:08:20Z"
+                updatedAt: "2026-06-05T03:08:30Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /conversations/{conversationId}/messages:
     get:
       summary: 获取会话消息列表
@@ -286,7 +286,7 @@ paths:
       summary: 创建分析运行
       description: >
         创建一次新的 AnalysisRun 契约对象，并把 run 绑定到既有 conversationId。
-        当前 route stub 只保证路径、请求体和错误格式稳定，不代表真实执行已实现。
+        该接口只创建 `created / intake` foundation run，不写 Message、RunEvent 或报告对象。
       operationId: createAnalysisRun
       requestBody:
         required: true
@@ -297,25 +297,25 @@ paths:
             example:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
-              analysisTaskId: analysis-task-revenue-gap-q2
-              conversationId: conversation-revenue-gap-q2
+              analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+              conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
       responses:
         "201":
-          description: AnalysisRun 创建成功后的正式契约响应示例。
+          description: AnalysisRun 创建成功后的正式契约响应。
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
               example:
-                runId: analysis-q2-revenue-gap
+                runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-revenue-gap-q2
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 status: created
                 phase: intake
                 outcome: null
                 waitingFor: null
-                createdAt: "2026-06-05T11:08:00+08:00"
+                createdAt: "2026-06-05T03:08:30Z"
                 validatingAt: null
                 queuedAt: null
                 startedAt: null
@@ -333,8 +333,10 @@ paths:
                 retryable: true
                 retryOfRunId: null
                 originalRunId: null
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeMismatch"
   /analysis-runs/{runId}:
     get:
       summary: 获取分析运行详情
@@ -349,23 +351,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
               example:
-                runId: analysis-q2-revenue-gap
+                runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-revenue-gap-q2
-                status: completed
-                phase: delivery
-                outcome: success
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                status: created
+                phase: intake
+                outcome: null
                 waitingFor: null
-                createdAt: "2026-06-05T11:08:00+08:00"
-                validatingAt: "2026-06-05T11:08:00+08:00"
-                queuedAt: "2026-06-05T11:08:00+08:00"
-                startedAt: "2026-06-05T11:08:30+08:00"
+                createdAt: "2026-06-05T03:08:30Z"
+                validatingAt: null
+                queuedAt: null
+                startedAt: null
                 waitingSince: null
                 timeoutAt: null
                 cancelRequestedAt: null
                 cancellingAt: null
-                completedAt: "2026-06-05T11:24:00+08:00"
+                completedAt: null
                 failedAt: null
                 cancelledAt: null
                 expiredAt: null
@@ -375,8 +377,8 @@ paths:
                 retryable: true
                 retryOfRunId: null
                 originalRunId: null
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/conversation:
     get:
       summary: 获取运行关联会话
@@ -392,17 +394,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Conversation"
               example:
-                conversationId: conversation-revenue-gap-q2
+                conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-revenue-gap-q2
-                currentRunId: analysis-q2-revenue-gap
+                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
-                createdAt: "2026-06-05T11:08:00+08:00"
-                updatedAt: "2026-06-05T11:24:00+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+                createdAt: "2026-06-05T03:08:20Z"
+                updatedAt: "2026-06-05T03:08:30Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/events:
     get:
       summary: 获取运行事件列表
@@ -614,6 +616,24 @@ components:
           example:
             errorCode: NOT_IMPLEMENTED
             message: Runtime route stub is registered; real implementation is pending.
+    RuntimeNotFound:
+      description: Requested runtime foundation object was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuntimeErrorResponse"
+          example:
+            errorCode: NOT_FOUND
+            message: "AnalysisTask not found: analysis-task-missing"
+    RuntimeMismatch:
+      description: Request chain mismatched the persisted runtime foundation objects.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuntimeErrorResponse"
+          example:
+            errorCode: MISMATCH
+            message: Conversation.analysisTaskId does not match request.analysisTaskId
   parameters:
     RunId:
       name: runId
@@ -675,6 +695,20 @@ components:
           type: string
           enum:
             - NOT_IMPLEMENTED
+        message:
+          type: string
+    RuntimeErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - errorCode
+        - message
+      properties:
+        errorCode:
+          type: string
+          enum:
+            - NOT_FOUND
+            - MISMATCH
         message:
           type: string
     CreateAnalysisTaskRequest:

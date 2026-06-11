@@ -28,7 +28,9 @@ CONVERSATION_ID = "conversation-revenue-gap-q2"
 RUN_ID = "analysis-q2-revenue-gap"
 
 
-def run_runtime_foundation_command(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+def run_runtime_foundation_command(
+    *args: str, check: bool = True
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(RUNTIME_FOUNDATION_SCRIPT), *args],
         cwd=REPO_ROOT,
@@ -184,7 +186,4 @@ def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_e
 
     verify_result = run_runtime_foundation_command("query-verify", check=False)
     assert verify_result.returncode != 0
-    assert (
-        "Missing expected query verify line: analysis_tasks.row_count=1"
-        in verify_result.stderr
-    )
+    assert "Missing expected query verify line: analysis_tasks.row_count=1" in verify_result.stderr
