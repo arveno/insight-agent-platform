@@ -31,6 +31,27 @@ else:
 PY
 }
 
+json_list_length() {
+  local file_path="$1"
+  local field_name="$2"
+  python3 - "$file_path" "$field_name" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+value = payload
+for segment in sys.argv[2].split("."):
+    value = value[segment]
+
+if not isinstance(value, list):
+    raise SystemExit(f"{sys.argv[2]} is not a list")
+
+print(len(value))
+PY
+}
+
 if [[ -z "${BASE_URL}" ]]; then
   die "Missing runtime base URL. Set IAP_RUNTIME_BASE_URL or pass the base URL as the first argument."
 fi
@@ -42,7 +63,9 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 readonly ANALYSIS_TASK_RESPONSE="${TMP_DIR}/analysis-task.json"
 readonly CONVERSATION_RESPONSE="${TMP_DIR}/conversation.json"
 readonly ANALYSIS_RUN_RESPONSE="${TMP_DIR}/analysis-run.json"
+readonly DISPATCH_RUN_RESPONSE="${TMP_DIR}/dispatch-run.json"
 readonly GET_RUN_RESPONSE="${TMP_DIR}/get-run.json"
+readonly GET_EXECUTION_ATTEMPTS_RESPONSE="${TMP_DIR}/get-execution-attempts.json"
 readonly GET_RUN_CONVERSATION_RESPONSE="${TMP_DIR}/get-run-conversation.json"
 readonly GET_CONVERSATION_RESPONSE="${TMP_DIR}/get-conversation.json"
 
@@ -109,8 +132,18 @@ curl -fsS \
 readonly RUN_ID="$(json_field "${ANALYSIS_RUN_RESPONSE}" "runId")"
 printf 'runId=%s\n' "${RUN_ID}"
 
+printf 'POST %s/analysis-runs/%s/dispatch\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS \
+  -X POST \
+  "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/dispatch" \
+  >"${DISPATCH_RUN_RESPONSE}"
+
 printf 'GET %s/analysis-runs/%s\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}" >"${GET_RUN_RESPONSE}"
+
+printf 'GET %s/analysis-runs/%s/execution-attempts\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/execution-attempts" \
+  >"${GET_EXECUTION_ATTEMPTS_RESPONSE}"
 
 printf 'GET %s/analysis-runs/%s/conversation\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/conversation" \
@@ -122,4 +155,7 @@ curl -fsS "${NORMALIZED_BASE_URL}/conversations/${CONVERSATION_ID}" \
 
 printf 'analysisRun.status=%s\n' "$(json_field "${GET_RUN_RESPONSE}" "status")"
 printf 'analysisRun.phase=%s\n' "$(json_field "${GET_RUN_RESPONSE}" "phase")"
+printf 'dispatch.analysisRun.status=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE}" "status")"
+printf 'dispatch.analysisRun.phase=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE}" "phase")"
+printf 'executionAttempt.count=%s\n' "$(json_list_length "${GET_EXECUTION_ATTEMPTS_RESPONSE}" "items")"
 printf 'conversation.currentRunId=%s\n' "$(json_field "${GET_CONVERSATION_RESPONSE}" "currentRunId")"

@@ -4,7 +4,12 @@ SELECT CONCAT(
     SELECT COUNT(*)
     FROM information_schema.tables
     WHERE table_schema = DATABASE()
-      AND table_name IN ('analysis_tasks', 'conversations', 'analysis_runs')
+      AND table_name IN (
+        'analysis_tasks',
+        'conversations',
+        'analysis_runs',
+        'execution_attempts'
+      )
   )
 ) AS check_line;
 
@@ -16,6 +21,9 @@ FROM conversations;
 
 SELECT CONCAT('analysis_runs.row_count=', COUNT(*)) AS check_line
 FROM analysis_runs;
+
+SELECT CONCAT('execution_attempts.row_count=', COUNT(*)) AS check_line
+FROM execution_attempts;
 
 SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks

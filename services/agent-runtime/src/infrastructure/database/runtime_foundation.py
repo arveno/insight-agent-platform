@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, Protocol, TypedDict, cast
 
@@ -19,6 +20,9 @@ class RuntimeFoundationDatabase(Protocol):
 
     def execute_sql(self, sql: str) -> None:
         """Execute a mutating SQL statement."""
+
+    def execute_transaction(self, statements: Sequence[str]) -> None:
+        """Execute multiple mutating SQL statements in one transaction."""
 
     def query_json_object(self, sql: str) -> dict[str, object] | None:
         """Execute a JSON_OBJECT query and return the decoded payload."""
@@ -120,6 +124,23 @@ class AnalysisRunRecord(TypedDict):
     originalRunId: str | None
 
 
+class ExecutionAttemptRecord(TypedDict):
+    """ExecutionAttempt contract-shaped persistence record."""
+
+    attemptId: str
+    runId: str
+    attemptNumber: int
+    workerId: str
+    leaseId: str
+    status: Literal["leased", "running", "lost", "released", "failed", "completed"]
+    leaseAcquiredAt: str
+    leaseExpiresAt: str
+    heartbeatAt: str | None
+    releasedAt: str | None
+    failureCode: str | None
+    failureMessage: str | None
+
+
 class GoldenPathFoundationRecord(TypedDict):
     """Golden path foundation query result."""
 
@@ -150,11 +171,147 @@ def _require_mapping(raw: object, field_name: str) -> dict[str, object]:
     return cast(dict[str, object], raw)
 
 
+def _require_array(raw: object, field_name: str) -> list[object]:
+    if not isinstance(raw, list):
+        raise RuntimeFoundationError(f"{field_name} query did not return a JSON array.")
+    return cast(list[object], raw)
+
+
 def _coerce_analysis_run_retryable(payload: dict[str, object]) -> AnalysisRunRecord:
     retryable = payload.get("retryable")
     if isinstance(retryable, int):
         payload["retryable"] = bool(retryable)
     return cast(AnalysisRunRecord, payload)
+
+
+def _analysis_run_upsert_sql(analysis_run: AnalysisRunRecord) -> str:
+    return f"""
+INSERT INTO analysis_runs (
+  run_id,
+  workspace_id,
+  user_id,
+  analysis_task_id,
+  status,
+  phase,
+  outcome,
+  waiting_for,
+  created_at,
+  validating_at,
+  queued_at,
+  started_at,
+  waiting_since,
+  timeout_at,
+  cancel_requested_at,
+  cancelling_at,
+  completed_at,
+  failed_at,
+  cancelled_at,
+  expired_at,
+  rejected_at,
+  terminal_reason,
+  failure_code,
+  retryable,
+  retry_of_run_id,
+  original_run_id
+) VALUES (
+  {_sql_literal(analysis_run["runId"])},
+  {_sql_literal(analysis_run["workspaceId"])},
+  {_sql_literal(analysis_run["userId"])},
+  {_sql_literal(analysis_run["analysisTaskId"])},
+  {_sql_literal(analysis_run["status"])},
+  {_sql_literal(analysis_run["phase"])},
+  {_sql_literal(analysis_run["outcome"])},
+  {_sql_literal(analysis_run["waitingFor"])},
+  {_sql_literal(analysis_run["createdAt"])},
+  {_sql_literal(analysis_run["validatingAt"])},
+  {_sql_literal(analysis_run["queuedAt"])},
+  {_sql_literal(analysis_run["startedAt"])},
+  {_sql_literal(analysis_run["waitingSince"])},
+  {_sql_literal(analysis_run["timeoutAt"])},
+  {_sql_literal(analysis_run["cancelRequestedAt"])},
+  {_sql_literal(analysis_run["cancellingAt"])},
+  {_sql_literal(analysis_run["completedAt"])},
+  {_sql_literal(analysis_run["failedAt"])},
+  {_sql_literal(analysis_run["cancelledAt"])},
+  {_sql_literal(analysis_run["expiredAt"])},
+  {_sql_literal(analysis_run["rejectedAt"])},
+  {_sql_literal(analysis_run["terminalReason"])},
+  {_sql_literal(analysis_run["failureCode"])},
+  {1 if analysis_run["retryable"] is True else 0 if analysis_run["retryable"] is False else "NULL"},
+  {_sql_literal(analysis_run["retryOfRunId"])},
+  {_sql_literal(analysis_run["originalRunId"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  analysis_task_id = VALUES(analysis_task_id),
+  status = VALUES(status),
+  phase = VALUES(phase),
+  outcome = VALUES(outcome),
+  waiting_for = VALUES(waiting_for),
+  created_at = VALUES(created_at),
+  validating_at = VALUES(validating_at),
+  queued_at = VALUES(queued_at),
+  started_at = VALUES(started_at),
+  waiting_since = VALUES(waiting_since),
+  timeout_at = VALUES(timeout_at),
+  cancel_requested_at = VALUES(cancel_requested_at),
+  cancelling_at = VALUES(cancelling_at),
+  completed_at = VALUES(completed_at),
+  failed_at = VALUES(failed_at),
+  cancelled_at = VALUES(cancelled_at),
+  expired_at = VALUES(expired_at),
+  rejected_at = VALUES(rejected_at),
+  terminal_reason = VALUES(terminal_reason),
+  failure_code = VALUES(failure_code),
+  retryable = VALUES(retryable),
+  retry_of_run_id = VALUES(retry_of_run_id),
+  original_run_id = VALUES(original_run_id);
+"""
+
+
+def _execution_attempt_upsert_sql(execution_attempt: ExecutionAttemptRecord) -> str:
+    return f"""
+INSERT INTO execution_attempts (
+  attempt_id,
+  run_id,
+  attempt_number,
+  worker_id,
+  lease_id,
+  status,
+  lease_acquired_at,
+  lease_expires_at,
+  heartbeat_at,
+  released_at,
+  failure_code,
+  failure_message
+) VALUES (
+  {_sql_literal(execution_attempt["attemptId"])},
+  {_sql_literal(execution_attempt["runId"])},
+  {execution_attempt["attemptNumber"]},
+  {_sql_literal(execution_attempt["workerId"])},
+  {_sql_literal(execution_attempt["leaseId"])},
+  {_sql_literal(execution_attempt["status"])},
+  {_sql_literal(execution_attempt["leaseAcquiredAt"])},
+  {_sql_literal(execution_attempt["leaseExpiresAt"])},
+  {_sql_literal(execution_attempt["heartbeatAt"])},
+  {_sql_literal(execution_attempt["releasedAt"])},
+  {_sql_literal(execution_attempt["failureCode"])},
+  {_sql_literal(execution_attempt["failureMessage"])}
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  attempt_number = VALUES(attempt_number),
+  worker_id = VALUES(worker_id),
+  lease_id = VALUES(lease_id),
+  status = VALUES(status),
+  lease_acquired_at = VALUES(lease_acquired_at),
+  lease_expires_at = VALUES(lease_expires_at),
+  heartbeat_at = VALUES(heartbeat_at),
+  released_at = VALUES(released_at),
+  failure_code = VALUES(failure_code),
+  failure_message = VALUES(failure_message);
+"""
 
 
 class RuntimeFoundationMysqlCli:
@@ -185,6 +342,10 @@ class RuntimeFoundationMysqlCli:
 
     def execute_sql(self, sql: str) -> None:
         self._run("exec-sql", input_text=sql)
+
+    def execute_transaction(self, statements: Sequence[str]) -> None:
+        transaction_sql = "START TRANSACTION;\n" + "\n".join(statements) + "\nCOMMIT;\n"
+        self.execute_sql(transaction_sql)
 
     def query_json_object(self, sql: str) -> dict[str, object] | None:
         output = self._run("query-json", input_text=sql).strip()
@@ -231,6 +392,19 @@ class RuntimeFoundationPyMySqlDatabase:
         try:
             with connection.cursor() as cursor:
                 cursor.execute(sql)
+            connection.commit()
+        except Exception as exc:
+            connection.rollback()
+            raise RuntimeFoundationError(str(exc)) from exc
+        finally:
+            connection.close()
+
+    def execute_transaction(self, statements: Sequence[str]) -> None:
+        connection = self._connect()
+        try:
+            with connection.cursor() as cursor:
+                for statement in statements:
+                    cursor.execute(statement)
             connection.commit()
         except Exception as exc:
             connection.rollback()
@@ -441,90 +615,7 @@ class AnalysisRunRepository:
         self._database = database
 
     def create(self, analysis_run: AnalysisRunRecord) -> None:
-        sql = f"""
-INSERT INTO analysis_runs (
-  run_id,
-  workspace_id,
-  user_id,
-  analysis_task_id,
-  status,
-  phase,
-  outcome,
-  waiting_for,
-  created_at,
-  validating_at,
-  queued_at,
-  started_at,
-  waiting_since,
-  timeout_at,
-  cancel_requested_at,
-  cancelling_at,
-  completed_at,
-  failed_at,
-  cancelled_at,
-  expired_at,
-  rejected_at,
-  terminal_reason,
-  failure_code,
-  retryable,
-  retry_of_run_id,
-  original_run_id
-) VALUES (
-  {_sql_literal(analysis_run["runId"])},
-  {_sql_literal(analysis_run["workspaceId"])},
-  {_sql_literal(analysis_run["userId"])},
-  {_sql_literal(analysis_run["analysisTaskId"])},
-  {_sql_literal(analysis_run["status"])},
-  {_sql_literal(analysis_run["phase"])},
-  {_sql_literal(analysis_run["outcome"])},
-  {_sql_literal(analysis_run["waitingFor"])},
-  {_sql_literal(analysis_run["createdAt"])},
-  {_sql_literal(analysis_run["validatingAt"])},
-  {_sql_literal(analysis_run["queuedAt"])},
-  {_sql_literal(analysis_run["startedAt"])},
-  {_sql_literal(analysis_run["waitingSince"])},
-  {_sql_literal(analysis_run["timeoutAt"])},
-  {_sql_literal(analysis_run["cancelRequestedAt"])},
-  {_sql_literal(analysis_run["cancellingAt"])},
-  {_sql_literal(analysis_run["completedAt"])},
-  {_sql_literal(analysis_run["failedAt"])},
-  {_sql_literal(analysis_run["cancelledAt"])},
-  {_sql_literal(analysis_run["expiredAt"])},
-  {_sql_literal(analysis_run["rejectedAt"])},
-  {_sql_literal(analysis_run["terminalReason"])},
-  {_sql_literal(analysis_run["failureCode"])},
-  {1 if analysis_run["retryable"] is True else 0 if analysis_run["retryable"] is False else "NULL"},
-  {_sql_literal(analysis_run["retryOfRunId"])},
-  {_sql_literal(analysis_run["originalRunId"])}
-)
-ON DUPLICATE KEY UPDATE
-  workspace_id = VALUES(workspace_id),
-  user_id = VALUES(user_id),
-  analysis_task_id = VALUES(analysis_task_id),
-  status = VALUES(status),
-  phase = VALUES(phase),
-  outcome = VALUES(outcome),
-  waiting_for = VALUES(waiting_for),
-  created_at = VALUES(created_at),
-  validating_at = VALUES(validating_at),
-  queued_at = VALUES(queued_at),
-  started_at = VALUES(started_at),
-  waiting_since = VALUES(waiting_since),
-  timeout_at = VALUES(timeout_at),
-  cancel_requested_at = VALUES(cancel_requested_at),
-  cancelling_at = VALUES(cancelling_at),
-  completed_at = VALUES(completed_at),
-  failed_at = VALUES(failed_at),
-  cancelled_at = VALUES(cancelled_at),
-  expired_at = VALUES(expired_at),
-  rejected_at = VALUES(rejected_at),
-  terminal_reason = VALUES(terminal_reason),
-  failure_code = VALUES(failure_code),
-  retryable = VALUES(retryable),
-  retry_of_run_id = VALUES(retry_of_run_id),
-  original_run_id = VALUES(original_run_id);
-"""
-        self._database.execute_sql(sql)
+        self._database.execute_sql(_analysis_run_upsert_sql(analysis_run))
 
     def get_by_run_id(self, run_id: str) -> AnalysisRunRecord:
         sql = f"""
@@ -604,6 +695,87 @@ LIMIT 1;
         if payload is None:
             raise KeyError(analysis_task_id)
         return _coerce_analysis_run_retryable(payload)
+
+
+class ExecutionAttemptRepository:
+    """Repository boundary for ExecutionAttempt persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, execution_attempt: ExecutionAttemptRecord) -> None:
+        self._database.execute_sql(_execution_attempt_upsert_sql(execution_attempt))
+
+    def list_by_run_id(self, run_id: str) -> list[ExecutionAttemptRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'attemptId', attempt_id,
+          'runId', run_id,
+          'attemptNumber', attempt_number,
+          'workerId', worker_id,
+          'leaseId', lease_id,
+          'status', status,
+          'leaseAcquiredAt', lease_acquired_at,
+          'leaseExpiresAt', lease_expires_at,
+          'heartbeatAt', heartbeat_at,
+          'releasedAt', released_at,
+          'failureCode', failure_code,
+          'failureMessage', failure_message
+        )
+      )
+      FROM (
+        SELECT
+          attempt_id,
+          run_id,
+          attempt_number,
+          worker_id,
+          lease_id,
+          status,
+          lease_acquired_at,
+          lease_expires_at,
+          heartbeat_at,
+          released_at,
+          failure_code,
+          failure_message
+        FROM execution_attempts
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY attempt_number ASC, id ASC
+      ) ordered_execution_attempts
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "ExecutionAttempt.items")
+        return cast(list[ExecutionAttemptRecord], items)
+
+
+class AnalysisRunLifecycleRepository:
+    """Repository boundary for transactional lifecycle transitions."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def dispatch(
+        self,
+        analysis_run: AnalysisRunRecord,
+        execution_attempt: ExecutionAttemptRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _analysis_run_upsert_sql(analysis_run),
+                _execution_attempt_upsert_sql(execution_attempt),
+            ]
+        )
 
 
 class GoldenPathFoundationRepository:
