@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
+import prettier from "prettier";
 import {
   analysisRunOutcomes,
   analysisRunPhases,
@@ -37,6 +38,13 @@ const schemaByPath = new Map(schemaEntries.map((entry) => [entry.relativePath, e
 const schemaByTitle = new Map(schemaEntries.map((entry) => [entry.schema.title, entry.schema]));
 const contractsDocs = readContractsDocs();
 const openApiSource = readFileSync(openApiPath, "utf8");
+
+try {
+  await prettier.format(openApiSource, { filepath: openApiPath });
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  fail(`OpenAPI YAML is invalid at ${openApiPath}: ${message}`);
+}
 
 for (const entry of schemaEntries) {
   const { relativePath, schema } = entry;

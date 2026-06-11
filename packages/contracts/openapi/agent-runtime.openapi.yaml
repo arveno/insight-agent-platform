@@ -68,7 +68,7 @@ paths:
                   trend: 华东区域收入增速低于阈值
                   tableIds:
                     - table-sales-order
-                  - table-refund-order
+                    - table-refund-order
                   knowledgeDocumentIds:
                     - knowledge-document-channel-weekly-17
                     - knowledge-document-inventory-east-04
@@ -624,7 +624,7 @@ components:
             $ref: "#/components/schemas/RuntimeErrorResponse"
           example:
             errorCode: NOT_FOUND
-            message: AnalysisTask not found: analysis-task-missing
+            message: "AnalysisTask not found: analysis-task-missing"
     RuntimeMismatch:
       description: Request chain mismatched the persisted runtime foundation objects.
       content:
