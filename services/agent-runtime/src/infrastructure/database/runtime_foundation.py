@@ -180,6 +180,63 @@ class ExecutionAttemptRecord(TypedDict):
     failureMessage: str | None
 
 
+class SourceEvidenceRecord(TypedDict):
+    """SourceEvidence contract-shaped persistence record."""
+
+    sourceEvidenceId: str
+    runId: str
+    sourceType: Literal[
+        "data_table",
+        "metric",
+        "knowledge_document",
+        "knowledge_chunk",
+        "sql_query",
+        "analysis_memory",
+        "decision_memory",
+    ]
+    sourceId: str
+    title: str
+    snippet: str
+    metadata: dict[str, object] | None
+    confidence: float
+    createdAt: str
+
+
+class ReportSectionRecord(TypedDict):
+    """ReportSection contract-shaped persistence record."""
+
+    reportSectionId: str
+    reportId: str
+    title: str
+    content: str
+    createdAt: str
+
+
+class ReportRecord(TypedDict):
+    """Report contract-shaped persistence record."""
+
+    reportId: str
+    runId: str
+    workspaceId: str
+    title: str
+    summary: str
+    sections: list[ReportSectionRecord]
+    sourceEvidence: list[str]
+    createdAt: str
+
+
+class DecisionRecord(TypedDict):
+    """Decision contract-shaped persistence record."""
+
+    decisionId: str
+    workspaceId: str
+    runId: str
+    reportId: str
+    title: str
+    status: Literal["proposed", "accepted", "rejected", "in_progress", "completed"]
+    createdAt: str
+
+
 class GoldenPathFoundationRecord(TypedDict):
     """Golden path foundation query result."""
 
@@ -202,6 +259,12 @@ def _sql_literal(value: str | None) -> str:
 def _json_literal(value: object) -> str:
     payload = json.dumps(value, ensure_ascii=False)
     return f"CAST({_sql_literal(payload)} AS JSON)"
+
+
+def _nullable_json_literal(value: object | None) -> str:
+    if value is None:
+        return "NULL"
+    return _json_literal(value)
 
 
 def _require_mapping(raw: object, field_name: str) -> dict[str, object]:
@@ -431,6 +494,122 @@ ON DUPLICATE KEY UPDATE
   released_at = VALUES(released_at),
   failure_code = VALUES(failure_code),
   failure_message = VALUES(failure_message);
+"""
+
+
+def _source_evidence_upsert_sql(source_evidence: SourceEvidenceRecord) -> str:
+    return f"""
+INSERT INTO source_evidence (
+  source_evidence_id,
+  run_id,
+  source_type,
+  source_id,
+  title,
+  snippet,
+  metadata_json,
+  confidence,
+  created_at
+) VALUES (
+  {_sql_literal(source_evidence["sourceEvidenceId"])},
+  {_sql_literal(source_evidence["runId"])},
+  {_sql_literal(source_evidence["sourceType"])},
+  {_sql_literal(source_evidence["sourceId"])},
+  {_sql_literal(source_evidence["title"])},
+  {_sql_literal(source_evidence["snippet"])},
+  {_nullable_json_literal(source_evidence["metadata"])},
+  {source_evidence["confidence"]},
+  {_sql_literal(source_evidence["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  source_type = VALUES(source_type),
+  source_id = VALUES(source_id),
+  title = VALUES(title),
+  snippet = VALUES(snippet),
+  metadata_json = VALUES(metadata_json),
+  confidence = VALUES(confidence),
+  created_at = VALUES(created_at);
+"""
+
+
+def _report_upsert_sql(report: ReportRecord) -> str:
+    return f"""
+INSERT INTO reports (
+  report_id,
+  run_id,
+  workspace_id,
+  title,
+  summary,
+  source_evidence_json,
+  created_at
+) VALUES (
+  {_sql_literal(report["reportId"])},
+  {_sql_literal(report["runId"])},
+  {_sql_literal(report["workspaceId"])},
+  {_sql_literal(report["title"])},
+  {_sql_literal(report["summary"])},
+  {_json_literal(report["sourceEvidence"])},
+  {_sql_literal(report["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  workspace_id = VALUES(workspace_id),
+  title = VALUES(title),
+  summary = VALUES(summary),
+  source_evidence_json = VALUES(source_evidence_json),
+  created_at = VALUES(created_at);
+"""
+
+
+def _report_section_upsert_sql(report_section: ReportSectionRecord) -> str:
+    return f"""
+INSERT INTO report_sections (
+  report_section_id,
+  report_id,
+  title,
+  content,
+  created_at
+) VALUES (
+  {_sql_literal(report_section["reportSectionId"])},
+  {_sql_literal(report_section["reportId"])},
+  {_sql_literal(report_section["title"])},
+  {_sql_literal(report_section["content"])},
+  {_sql_literal(report_section["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  report_id = VALUES(report_id),
+  title = VALUES(title),
+  content = VALUES(content),
+  created_at = VALUES(created_at);
+"""
+
+
+def _decision_upsert_sql(decision: DecisionRecord) -> str:
+    return f"""
+INSERT INTO decisions (
+  decision_id,
+  workspace_id,
+  run_id,
+  report_id,
+  title,
+  status,
+  created_at
+) VALUES (
+  {_sql_literal(decision["decisionId"])},
+  {_sql_literal(decision["workspaceId"])},
+  {_sql_literal(decision["runId"])},
+  {_sql_literal(decision["reportId"])},
+  {_sql_literal(decision["title"])},
+  {_sql_literal(decision["status"])},
+  {_sql_literal(decision["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  run_id = VALUES(run_id),
+  report_id = VALUES(report_id),
+  title = VALUES(title),
+  status = VALUES(status),
+  created_at = VALUES(created_at);
 """
 
 
@@ -921,6 +1100,194 @@ SELECT JSON_OBJECT(
 
         items = _require_array(payload.get("items"), "RunEvent.items")
         return cast(list[RunEventRecord], items)
+
+
+class SourceEvidenceRepository:
+    """Repository boundary for SourceEvidence persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, source_evidence: SourceEvidenceRecord) -> None:
+        self._database.execute_sql(_source_evidence_upsert_sql(source_evidence))
+
+    def list_by_run_id(self, run_id: str) -> list[SourceEvidenceRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'sourceEvidenceId', source_evidence_id,
+          'runId', run_id,
+          'sourceType', source_type,
+          'sourceId', source_id,
+          'title', title,
+          'snippet', snippet,
+          'metadata', metadata_json,
+          'confidence', confidence,
+          'createdAt', created_at
+        )
+      )
+      FROM (
+        SELECT
+          source_evidence_id,
+          run_id,
+          source_type,
+          source_id,
+          title,
+          snippet,
+          metadata_json,
+          confidence,
+          created_at
+        FROM source_evidence
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_source_evidence
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "SourceEvidence.items")
+        return cast(list[SourceEvidenceRecord], items)
+
+
+class ReportRepository:
+    """Repository boundary for Report / ReportSection persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, report: ReportRecord) -> None:
+        statements = [_report_upsert_sql(report)]
+        statements.extend(_report_section_upsert_sql(section) for section in report["sections"])
+        self._database.execute_transaction(statements)
+
+    def list_by_run_id(self, run_id: str) -> list[ReportRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'reportId', report_id,
+          'runId', run_id,
+          'workspaceId', workspace_id,
+          'title', title,
+          'summary', summary,
+          'sections',
+            COALESCE(
+              (
+                SELECT JSON_ARRAYAGG(
+                  JSON_OBJECT(
+                    'reportSectionId', report_section_id,
+                    'reportId', report_id,
+                    'title', title,
+                    'content', content,
+                    'createdAt', created_at
+                  )
+                )
+                FROM (
+                  SELECT
+                    report_section_id,
+                    report_id,
+                    title,
+                    content,
+                    created_at
+                  FROM report_sections
+                  WHERE report_id = ordered_reports.report_id
+                  ORDER BY created_at ASC, id ASC
+                ) ordered_report_sections
+              ),
+              JSON_ARRAY()
+            ),
+          'sourceEvidence', source_evidence_json,
+          'createdAt', created_at
+        )
+      )
+      FROM (
+        SELECT
+          report_id,
+          run_id,
+          workspace_id,
+          title,
+          summary,
+          source_evidence_json,
+          created_at
+        FROM reports
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_reports
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Report.items")
+        return cast(list[ReportRecord], items)
+
+
+class DecisionRepository:
+    """Repository boundary for Decision persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, decision: DecisionRecord) -> None:
+        self._database.execute_sql(_decision_upsert_sql(decision))
+
+    def list_by_run_id(self, run_id: str) -> list[DecisionRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'decisionId', decision_id,
+          'workspaceId', workspace_id,
+          'runId', run_id,
+          'reportId', report_id,
+          'title', title,
+          'status', status,
+          'createdAt', created_at
+        )
+      )
+      FROM (
+        SELECT
+          decision_id,
+          workspace_id,
+          run_id,
+          report_id,
+          title,
+          status,
+          created_at
+        FROM decisions
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_decisions
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Decision.items")
+        return cast(list[DecisionRecord], items)
 
 
 class AnalysisRunLifecycleRepository:

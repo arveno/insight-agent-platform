@@ -11,10 +11,13 @@ from src.app.routes.runtime_contracts import (
     ApprovalDecisionRequest,
     ConversationResponse,
     CreateAnalysisRunRequest,
+    DecisionListResponse,
     ExecutionAttemptListResponse,
+    ReportListResponse,
     RunEventListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
+    SourceEvidenceListResponse,
     generate_canonical_id,
     not_implemented_route_stub_response,
     runtime_error_response,
@@ -27,9 +30,12 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    DecisionRepository,
     ExecutionAttemptRepository,
+    ReportRepository,
     RunEventRepository,
     RuntimeFoundationPyMySqlDatabase,
+    SourceEvidenceRepository,
 )
 from src.modules.analysis_runs.lifecycle_service import (
     AnalysisRunInvalidStateError,
@@ -86,6 +92,18 @@ def _analysis_run_repository() -> AnalysisRunRepository:
 
 def _run_event_repository() -> RunEventRepository:
     return RunEventRepository(_runtime_foundation_database())
+
+
+def _source_evidence_repository() -> SourceEvidenceRepository:
+    return SourceEvidenceRepository(_runtime_foundation_database())
+
+
+def _report_repository() -> ReportRepository:
+    return ReportRepository(_runtime_foundation_database())
+
+
+def _decision_repository() -> DecisionRepository:
+    return DecisionRepository(_runtime_foundation_database())
 
 
 def _analysis_run_lifecycle_repository() -> AnalysisRunLifecycleRepository:
@@ -295,20 +313,70 @@ def list_analysis_run_model_calls(run_id: str = Path(alias="runId")) -> JSONResp
     return not_implemented_route_stub_response()
 
 
-@router.get("/{runId}/source-evidence", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_analysis_run_source_evidence(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Register the SourceEvidence collection boundary without retrieving evidence."""
+@router.get(
+    "/{runId}/source-evidence",
+    response_model=SourceEvidenceListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_source_evidence(
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted SourceEvidence records for a real AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _source_evidence_repository().list_by_run_id(run_id)}
 
 
-@router.get("/{runId}/reports", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_analysis_run_reports(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Register the Report collection boundary without generating or persisting reports."""
+@router.get(
+    "/{runId}/reports",
+    response_model=ReportListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_reports(
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted Report records for a real AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _report_repository().list_by_run_id(run_id)}
+
+
+@router.get(
+    "/{runId}/decisions",
+    response_model=DecisionListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_decisions(
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted Decision records for a real AnalysisRun."""
+
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _decision_repository().list_by_run_id(run_id)}
 
 
 @router.get(

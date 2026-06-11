@@ -68,6 +68,11 @@ readonly DISPATCH_RUN_RESPONSE="${TMP_DIR}/dispatch-run.json"
 readonly GET_RUN_RESPONSE="${TMP_DIR}/get-run.json"
 readonly GET_RUN_EVENTS_AFTER_DISPATCH_RESPONSE="${TMP_DIR}/get-run-events-after-dispatch.json"
 readonly GET_EXECUTION_ATTEMPTS_RESPONSE="${TMP_DIR}/get-execution-attempts.json"
+readonly GET_SOURCE_EVIDENCE_RESPONSE="${TMP_DIR}/get-source-evidence.json"
+readonly GET_REPORTS_RESPONSE="${TMP_DIR}/get-reports.json"
+readonly GET_DECISIONS_RESPONSE="${TMP_DIR}/get-decisions.json"
+readonly GET_TOOL_CALLS_RESPONSE="${TMP_DIR}/get-tool-calls.json"
+readonly GET_MODEL_CALLS_RESPONSE="${TMP_DIR}/get-model-calls.json"
 readonly GET_RUN_CONVERSATION_RESPONSE="${TMP_DIR}/get-run-conversation.json"
 readonly GET_CONVERSATION_RESPONSE="${TMP_DIR}/get-conversation.json"
 
@@ -155,6 +160,26 @@ printf 'GET %s/analysis-runs/%s/execution-attempts\n' "${NORMALIZED_BASE_URL}" "
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/execution-attempts" \
   >"${GET_EXECUTION_ATTEMPTS_RESPONSE}"
 
+printf 'GET %s/analysis-runs/%s/source-evidence\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/source-evidence" \
+  >"${GET_SOURCE_EVIDENCE_RESPONSE}"
+
+printf 'GET %s/analysis-runs/%s/reports\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/reports" \
+  >"${GET_REPORTS_RESPONSE}"
+
+printf 'GET %s/analysis-runs/%s/decisions\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/decisions" \
+  >"${GET_DECISIONS_RESPONSE}"
+
+printf 'GET %s/analysis-runs/%s/tool-calls\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+readonly TOOL_CALLS_STATUS="$(curl -sS -o "${GET_TOOL_CALLS_RESPONSE}" -w '%{http_code}' "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/tool-calls")"
+[[ "${TOOL_CALLS_STATUS}" == "501" ]] || die "Expected tool-calls to remain 501, got ${TOOL_CALLS_STATUS}"
+
+printf 'GET %s/analysis-runs/%s/model-calls\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+readonly MODEL_CALLS_STATUS="$(curl -sS -o "${GET_MODEL_CALLS_RESPONSE}" -w '%{http_code}' "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/model-calls")"
+[[ "${MODEL_CALLS_STATUS}" == "501" ]] || die "Expected model-calls to remain 501, got ${MODEL_CALLS_STATUS}"
+
 printf 'GET %s/analysis-runs/%s/conversation\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/conversation" \
   >"${GET_RUN_CONVERSATION_RESPONSE}"
@@ -170,4 +195,9 @@ printf 'dispatch.analysisRun.status=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE
 printf 'dispatch.analysisRun.phase=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE}" "phase")"
 printf 'runEvents.afterDispatch.count=%s\n' "$(json_list_length "${GET_RUN_EVENTS_AFTER_DISPATCH_RESPONSE}" "items")"
 printf 'executionAttempt.count=%s\n' "$(json_list_length "${GET_EXECUTION_ATTEMPTS_RESPONSE}" "items")"
+printf 'sourceEvidence.count=%s\n' "$(json_list_length "${GET_SOURCE_EVIDENCE_RESPONSE}" "items")"
+printf 'reports.count=%s\n' "$(json_list_length "${GET_REPORTS_RESPONSE}" "items")"
+printf 'decisions.count=%s\n' "$(json_list_length "${GET_DECISIONS_RESPONSE}" "items")"
+printf 'toolCalls.httpStatus=%s\n' "${TOOL_CALLS_STATUS}"
+printf 'modelCalls.httpStatus=%s\n' "${MODEL_CALLS_STATUS}"
 printf 'conversation.currentRunId=%s\n' "$(json_field "${GET_CONVERSATION_RESPONSE}" "currentRunId")"

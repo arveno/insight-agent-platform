@@ -17,9 +17,16 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRepository,
     AnalysisTaskRepository,
     ConversationRepository,
+    DecisionRecord,
+    DecisionRepository,
     ExecutionAttemptRepository,
+    ReportRecord,
+    ReportRepository,
+    ReportSectionRecord,
     RunEventRepository,
     RuntimeFoundationMysqlCli,
+    SourceEvidenceRecord,
+    SourceEvidenceRepository,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -54,6 +61,13 @@ EXPECTED_DISPATCH_EVENTS = [
     ("plan.created", "planning"),
     ("run.queued", "queueing"),
 ]
+
+SOURCE_EVIDENCE_IDS = [
+    "source-evidence-channel-weekly-17",
+    "source-evidence-inventory-note-east-04",
+]
+REPORT_ID = "report-revenue-gap-q2"
+DECISION_ID = "decision-revenue-gap-q2"
 
 
 def run_runtime_foundation_command(
@@ -100,6 +114,132 @@ def get_run_events(client: TestClient, run_id: str) -> dict[str, Any]:
     response = client.get(f"/analysis-runs/{run_id}/events")
     assert response.status_code == 200
     return response_json_dict(response.json())
+
+
+def create_conversation(
+    client: TestClient,
+    *,
+    workspace_id: str,
+    user_id: str,
+    analysis_task_id: str,
+) -> dict[str, Any]:
+    response = client.post(
+        "/conversations",
+        json={
+            "workspaceId": workspace_id,
+            "userId": user_id,
+            "analysisTaskId": analysis_task_id,
+            "title": TASK_PAYLOAD["title"],
+        },
+    )
+    assert response.status_code == 201
+    return response_json_dict(response.json())
+
+
+def create_analysis_run(
+    client: TestClient,
+    *,
+    workspace_id: str,
+    user_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+) -> dict[str, Any]:
+    response = client.post(
+        "/analysis-runs",
+        json={
+            "workspaceId": workspace_id,
+            "userId": user_id,
+            "analysisTaskId": analysis_task_id,
+            "conversationId": conversation_id,
+        },
+    )
+    assert response.status_code == 201
+    return response_json_dict(response.json())
+
+
+def create_dispatched_run(client: TestClient) -> dict[str, Any]:
+    analysis_task = create_analysis_task(client)
+    conversation = create_conversation(
+        client,
+        workspace_id=analysis_task["workspaceId"],
+        user_id=analysis_task["userId"],
+        analysis_task_id=analysis_task["analysisTaskId"],
+    )
+    analysis_run = create_analysis_run(
+        client,
+        workspace_id=analysis_task["workspaceId"],
+        user_id=analysis_task["userId"],
+        analysis_task_id=analysis_task["analysisTaskId"],
+        conversation_id=conversation["conversationId"],
+    )
+    dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
+    assert dispatch_response.status_code == 202
+    dispatched_run = response_json_dict(dispatch_response.json())
+
+    return {
+        "analysisTask": analysis_task,
+        "conversation": conversation,
+        "analysisRun": dispatched_run,
+    }
+
+
+def build_source_evidence_records(run_id: str) -> list[SourceEvidenceRecord]:
+    return [
+        {
+            "sourceEvidenceId": SOURCE_EVIDENCE_IDS[0],
+            "runId": run_id,
+            "sourceType": "knowledge_document",
+            "sourceId": "knowledge-document-channel-weekly-17",
+            "title": "渠道周报第 17 期",
+            "snippet": "华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。",
+            "metadata": {"displayCategory": "weekly_digest"},
+            "confidence": 0.86,
+            "createdAt": "2026-06-05T03:23:00Z",
+        },
+        {
+            "sourceEvidenceId": SOURCE_EVIDENCE_IDS[1],
+            "runId": run_id,
+            "sourceType": "knowledge_document",
+            "sourceId": "knowledge-document-inventory-east-04",
+            "title": "华东库存复核记录",
+            "snippet": "促销期间部分 SKU 库存错配，影响渠道交付与确认节奏。",
+            "metadata": {"displayCategory": "inventory_note"},
+            "confidence": 0.82,
+            "createdAt": "2026-06-05T03:24:00Z",
+        },
+    ]
+
+
+def build_report_record(run_id: str, workspace_id: str) -> ReportRecord:
+    report_section: ReportSectionRecord = {
+        "reportSectionId": "report-revenue-gap-q2-section-next-step",
+        "reportId": REPORT_ID,
+        "title": "下一步动作",
+        "content": "先核对渠道确认周期，再复核促销库存错配。",
+        "createdAt": "2026-06-05T03:25:00Z",
+    }
+    return {
+        "reportId": REPORT_ID,
+        "runId": run_id,
+        "workspaceId": workspace_id,
+        "title": "收入异常分析摘要",
+        "summary": "形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作。",
+        "sections": [report_section],
+        "sourceEvidence": SOURCE_EVIDENCE_IDS,
+        "createdAt": "2026-06-05T03:25:00Z",
+    }
+
+
+def build_decision_record(run_id: str, workspace_id: str) -> DecisionRecord:
+    return {
+        "decisionId": DECISION_ID,
+        "workspaceId": workspace_id,
+        "runId": run_id,
+        "reportId": REPORT_ID,
+        "title": "复核华东渠道确认周期与促销库存错配",
+        "status": "proposed",
+        "createdAt": "2026-06-05T03:26:00Z",
+    }
 
 
 @pytest.fixture()
@@ -243,9 +383,9 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
     assert "delta" not in run_created_event
 
     run_event_repository = RunEventRepository(database)
-    assert run_event_repository.list_by_run_id(analysis_run["runId"]) == list_events_payload[
-        "items"
-    ]
+    assert (
+        run_event_repository.list_by_run_id(analysis_run["runId"]) == list_events_payload["items"]
+    )
 
 
 def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_records(
@@ -359,12 +499,10 @@ def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_record
         for item in list_events_after_dispatch_payload["items"]
     )
     assert all(
-        item["status"] == "succeeded"
-        for item in list_events_after_dispatch_payload["items"]
+        item["status"] == "succeeded" for item in list_events_after_dispatch_payload["items"]
     )
     assert all(
-        item["actor"] == "analysis_runtime"
-        for item in list_events_after_dispatch_payload["items"]
+        item["actor"] == "analysis_runtime" for item in list_events_after_dispatch_payload["items"]
     )
     assert all("delta" not in item for item in list_events_after_dispatch_payload["items"])
     assert "worker.lease_acquired" not in {
@@ -610,3 +748,104 @@ def test_get_endpoints_return_not_found_for_unknown_ids(client: TestClient) -> N
         "errorCode": "NOT_FOUND",
         "message": "Conversation not found: conversation-missing",
     }
+
+
+def test_artifact_endpoints_return_empty_items_when_run_exists(client: TestClient) -> None:
+    dispatched = create_dispatched_run(client)
+    run_id = dispatched["analysisRun"]["runId"]
+
+    source_evidence_response = client.get(f"/analysis-runs/{run_id}/source-evidence")
+    assert source_evidence_response.status_code == 200
+    assert source_evidence_response.json() == {"items": []}
+
+    reports_response = client.get(f"/analysis-runs/{run_id}/reports")
+    assert reports_response.status_code == 200
+    assert reports_response.json() == {"items": []}
+
+    decisions_response = client.get(f"/analysis-runs/{run_id}/decisions")
+    assert decisions_response.status_code == 200
+    assert decisions_response.json() == {"items": []}
+
+
+def test_artifact_endpoints_return_real_persisted_records(client: TestClient) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    analysis_task = dispatched["analysisTask"]
+
+    database = RuntimeFoundationMysqlCli()
+    source_evidence_repository = SourceEvidenceRepository(database)
+    report_repository = ReportRepository(database)
+    decision_repository = DecisionRepository(database)
+
+    source_evidence_records = build_source_evidence_records(analysis_run["runId"])
+    for source_evidence in source_evidence_records:
+        source_evidence_repository.create(source_evidence)
+
+    report_repository.create(
+        build_report_record(analysis_run["runId"], analysis_task["workspaceId"])
+    )
+    decision_repository.create(
+        build_decision_record(analysis_run["runId"], analysis_task["workspaceId"])
+    )
+
+    source_evidence_response = client.get(f"/analysis-runs/{analysis_run['runId']}/source-evidence")
+    assert source_evidence_response.status_code == 200
+    source_evidence_payload = response_json_dict(source_evidence_response.json())
+    assert len(source_evidence_payload["items"]) == 2
+    assert [
+        item["sourceEvidenceId"] for item in source_evidence_payload["items"]
+    ] == SOURCE_EVIDENCE_IDS
+    assert [item["sourceType"] for item in source_evidence_payload["items"]] == [
+        "knowledge_document",
+        "knowledge_document",
+    ]
+    for item in source_evidence_payload["items"]:
+        metadata = item["metadata"]
+        assert metadata is not None
+        assert "runId" not in metadata
+        assert "eventId" not in metadata
+        assert "rawProviderOutput" not in metadata
+        assert "traceId" not in metadata
+
+    reports_response = client.get(f"/analysis-runs/{analysis_run['runId']}/reports")
+    assert reports_response.status_code == 200
+    reports_payload = response_json_dict(reports_response.json())
+    assert len(reports_payload["items"]) == 1
+    report = reports_payload["items"][0]
+    assert report["reportId"] == REPORT_ID
+    assert report["runId"] == analysis_run["runId"]
+    assert report["workspaceId"] == analysis_task["workspaceId"]
+    assert report["sourceEvidence"] == SOURCE_EVIDENCE_IDS
+    assert len(report["sections"]) == 1
+    assert report["sections"][0]["title"] == "下一步动作"
+    assert report["sections"][0]["reportId"] == REPORT_ID
+    assert "rawMarkdown" not in report
+
+    decisions_response = client.get(f"/analysis-runs/{analysis_run['runId']}/decisions")
+    assert decisions_response.status_code == 200
+    decisions_payload = response_json_dict(decisions_response.json())
+    assert len(decisions_payload["items"]) == 1
+    decision = decisions_payload["items"][0]
+    assert decision["decisionId"] == DECISION_ID
+    assert decision["runId"] == analysis_run["runId"]
+    assert decision["reportId"] == REPORT_ID
+    assert decision["workspaceId"] == analysis_task["workspaceId"]
+    assert decision["status"] == "proposed"
+
+    get_run_response = client.get(f"/analysis-runs/{analysis_run['runId']}")
+    assert get_run_response.status_code == 200
+    assert get_run_response.json()["status"] == "queued"
+    assert get_run_response.json()["phase"] == "queueing"
+
+    assert client.get(f"/analysis-runs/{analysis_run['runId']}/tool-calls").status_code == 501
+    assert client.get(f"/analysis-runs/{analysis_run['runId']}/model-calls").status_code == 501
+
+
+def test_artifact_endpoints_return_not_found_for_unknown_run(client: TestClient) -> None:
+    for path in ("source-evidence", "reports", "decisions"):
+        response = client.get(f"/analysis-runs/analysis-run-missing/{path}")
+        assert response.status_code == 404
+        assert response.json() == {
+            "errorCode": "NOT_FOUND",
+            "message": "AnalysisRun not found: analysis-run-missing",
+        }

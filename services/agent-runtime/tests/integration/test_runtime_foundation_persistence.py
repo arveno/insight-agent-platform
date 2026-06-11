@@ -15,9 +15,16 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    DecisionRecord,
+    DecisionRepository,
     ExecutionAttemptRepository,
     GoldenPathFoundationRepository,
+    ReportRecord,
+    ReportRepository,
+    ReportSectionRecord,
     RuntimeFoundationMysqlCli,
+    SourceEvidenceRecord,
+    SourceEvidenceRepository,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -127,6 +134,68 @@ def build_analysis_run() -> AnalysisRunRecord:
     }
 
 
+def build_source_evidence_records() -> list[SourceEvidenceRecord]:
+    return [
+        {
+            "sourceEvidenceId": "source-evidence-channel-weekly-17",
+            "runId": RUN_ID,
+            "sourceType": "knowledge_document",
+            "sourceId": "knowledge-document-channel-weekly-17",
+            "title": "渠道周报第 17 期",
+            "snippet": "华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。",
+            "metadata": {"displayCategory": "weekly_digest"},
+            "confidence": 0.86,
+            "createdAt": "2026-06-05T11:23:00+08:00",
+        },
+        {
+            "sourceEvidenceId": "source-evidence-inventory-note-east-04",
+            "runId": RUN_ID,
+            "sourceType": "knowledge_document",
+            "sourceId": "knowledge-document-inventory-east-04",
+            "title": "华东库存复核记录",
+            "snippet": "促销期间部分 SKU 库存错配，影响渠道交付与确认节奏。",
+            "metadata": {"displayCategory": "inventory_note"},
+            "confidence": 0.82,
+            "createdAt": "2026-06-05T11:24:00+08:00",
+        },
+    ]
+
+
+def build_report_record() -> ReportRecord:
+    report_section: ReportSectionRecord = {
+        "reportSectionId": "report-revenue-gap-q2-section-next-step",
+        "reportId": "report-revenue-gap-q2",
+        "title": "下一步动作",
+        "content": "先核对渠道确认周期，再复核促销库存错配。",
+        "createdAt": "2026-06-05T11:25:00+08:00",
+    }
+    return {
+        "reportId": "report-revenue-gap-q2",
+        "runId": RUN_ID,
+        "workspaceId": "workspace-northstar-retail-china",
+        "title": "收入异常分析摘要",
+        "summary": "形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作。",
+        "sections": [report_section],
+        "sourceEvidence": [
+            "source-evidence-channel-weekly-17",
+            "source-evidence-inventory-note-east-04",
+        ],
+        "createdAt": "2026-06-05T11:25:00+08:00",
+    }
+
+
+def build_decision_record() -> DecisionRecord:
+    return {
+        "decisionId": "decision-revenue-gap-q2",
+        "workspaceId": "workspace-northstar-retail-china",
+        "runId": RUN_ID,
+        "reportId": "report-revenue-gap-q2",
+        "title": "复核华东渠道确认周期与促销库存错配",
+        "status": "proposed",
+        "createdAt": "2026-06-05T11:26:00+08:00",
+    }
+
+
 def test_runtime_foundation_repositories_round_trip_frozen_chain(
     runtime_foundation_env: None,
 ) -> None:
@@ -164,6 +233,36 @@ def test_runtime_foundation_repositories_round_trip_frozen_chain(
     assert foundation["analysisRun"] == analysis_run
 
 
+def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    analysis_task_repository = AnalysisTaskRepository(database)
+    conversation_repository = ConversationRepository(database)
+    analysis_run_repository = AnalysisRunRepository(database)
+    source_evidence_repository = SourceEvidenceRepository(database)
+    report_repository = ReportRepository(database)
+    decision_repository = DecisionRepository(database)
+
+    analysis_task_repository.create(build_analysis_task())
+    conversation_repository.create(build_conversation())
+    analysis_run_repository.create(build_analysis_run())
+
+    source_evidence_records = build_source_evidence_records()
+    for source_evidence in source_evidence_records:
+        source_evidence_repository.create(source_evidence)
+
+    report_record = build_report_record()
+    decision_record = build_decision_record()
+    report_repository.create(report_record)
+    decision_repository.create(decision_record)
+
+    assert source_evidence_repository.list_by_run_id(RUN_ID) == source_evidence_records
+    assert report_repository.list_by_run_id(RUN_ID) == [report_record]
+    assert decision_repository.list_by_run_id(RUN_ID) == [decision_record]
+
+
 def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) -> None:
     migrate_result = run_runtime_foundation_command("migrate")
     assert migrate_result.returncode == 0, migrate_result.stderr
@@ -178,9 +277,13 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
     assert "metric-recognized-revenue" in verify_result.stdout
-    assert "tables=5" in verify_result.stdout
+    assert "tables=9" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
+    assert "source_evidence.row_count=0" in verify_result.stdout
+    assert "reports.row_count=0" in verify_result.stdout
+    assert "report_sections.row_count=0" in verify_result.stdout
+    assert "decisions.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())

@@ -214,6 +214,73 @@ class RunEventListResponse(BaseModel):
     items: list[RunEventResponse]
 
 
+class SourceEvidenceResponse(BaseModel):
+    """SourceEvidence contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sourceEvidenceId: str
+    runId: str
+    sourceType: Literal[
+        "data_table",
+        "metric",
+        "knowledge_document",
+        "knowledge_chunk",
+        "sql_query",
+        "analysis_memory",
+        "decision_memory",
+    ]
+    sourceId: str
+    title: str
+    snippet: str
+    metadata: dict[str, object] | None = None
+    confidence: float
+    createdAt: str
+
+
+class SourceEvidenceListResponse(BaseModel):
+    """SourceEvidence list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[SourceEvidenceResponse]
+
+
+class ReportSectionResponse(BaseModel):
+    """ReportSection contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reportSectionId: str
+    reportId: str
+    title: str
+    content: str
+    createdAt: str
+
+
+class ReportResponse(BaseModel):
+    """Report contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reportId: str
+    runId: str
+    workspaceId: str
+    title: str
+    summary: str
+    sections: list[ReportSectionResponse]
+    sourceEvidence: list[str]
+    createdAt: str
+
+
+class ReportListResponse(BaseModel):
+    """Report list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ReportResponse]
+
+
 class ExecutionAttemptResponse(BaseModel):
     """ExecutionAttempt contract-shaped API response."""
 
@@ -239,6 +306,28 @@ class ExecutionAttemptListResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     items: list[ExecutionAttemptResponse]
+
+
+class DecisionResponse(BaseModel):
+    """Decision contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decisionId: str
+    workspaceId: str
+    runId: str
+    reportId: str
+    title: str
+    status: Literal["proposed", "accepted", "rejected", "in_progress", "completed"]
+    createdAt: str
+
+
+class DecisionListResponse(BaseModel):
+    """Decision list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[DecisionResponse]
 
 
 class ApprovalDecisionRequest(BaseModel):
