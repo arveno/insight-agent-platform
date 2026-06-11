@@ -1374,6 +1374,34 @@ class AnalysisRunLifecycleRepository:
             ]
         )
 
+    def record_worker_failure(
+        self,
+        analysis_run: AnalysisRunRecord,
+        execution_attempt: ExecutionAttemptRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _analysis_run_upsert_sql(analysis_run),
+                _execution_attempt_upsert_sql(execution_attempt),
+                _run_event_insert_sql(run_event),
+            ]
+        )
+
+    def mark_worker_lost(
+        self,
+        analysis_run: AnalysisRunRecord,
+        execution_attempt: ExecutionAttemptRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _analysis_run_upsert_sql(analysis_run),
+                _execution_attempt_upsert_sql(execution_attempt),
+                _run_event_insert_sql(run_event),
+            ]
+        )
+
 
 class GoldenPathFoundationRepository:
     """Query helper for the three-object frozen foundation chain."""
