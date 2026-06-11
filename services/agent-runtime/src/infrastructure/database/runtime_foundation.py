@@ -973,6 +973,31 @@ class ExecutionAttemptRepository:
     def create(self, execution_attempt: ExecutionAttemptRecord) -> None:
         self._database.execute_sql(_execution_attempt_upsert_sql(execution_attempt))
 
+    def get_by_attempt_id(self, attempt_id: str) -> ExecutionAttemptRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'attemptId', attempt_id,
+  'runId', run_id,
+  'attemptNumber', attempt_number,
+  'workerId', worker_id,
+  'leaseId', lease_id,
+  'status', status,
+  'leaseAcquiredAt', lease_acquired_at,
+  'leaseExpiresAt', lease_expires_at,
+  'heartbeatAt', heartbeat_at,
+  'releasedAt', released_at,
+  'failureCode', failure_code,
+  'failureMessage', failure_message
+)
+FROM execution_attempts
+WHERE attempt_id = {_sql_literal(attempt_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(attempt_id)
+        return cast(ExecutionAttemptRecord, payload)
+
     def list_by_run_id(self, run_id: str) -> list[ExecutionAttemptRecord]:
         sql = f"""
 SELECT JSON_OBJECT(
@@ -1322,6 +1347,32 @@ class AnalysisRunLifecycleRepository:
         ]
         statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
         self._database.execute_transaction(statements)
+
+    def claim_for_execution(
+        self,
+        analysis_run: AnalysisRunRecord,
+        execution_attempt: ExecutionAttemptRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _analysis_run_upsert_sql(analysis_run),
+                _execution_attempt_upsert_sql(execution_attempt),
+                _run_event_insert_sql(run_event),
+            ]
+        )
+
+    def heartbeat(
+        self,
+        execution_attempt: ExecutionAttemptRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _execution_attempt_upsert_sql(execution_attempt),
+                _run_event_insert_sql(run_event),
+            ]
+        )
 
 
 class GoldenPathFoundationRepository:
