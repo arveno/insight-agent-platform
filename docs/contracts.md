@@ -369,6 +369,8 @@ approval.denied
 approval.expired
 worker.lease_acquired
 worker.heartbeat
+worker.failed
+worker.lost
 worker.lease_released
 execution_attempt.created
 execution_attempt.lost

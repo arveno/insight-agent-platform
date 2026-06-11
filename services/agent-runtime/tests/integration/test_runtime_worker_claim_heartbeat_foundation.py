@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import uuid
@@ -32,11 +33,16 @@ from src.modules.analysis_runs.lifecycle_service import (
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts/migration/runtime_foundation.sh"
+RUN_EVENT_SCHEMA_PATH = REPO_ROOT / "packages/contracts/schemas/analysis/run-event.schema.json"
 
 WORKER_ID = "worker-claim-heartbeat-test"
 ANALYSIS_TASK_ID = "analysis-task-worker-claim-q2"
 CONVERSATION_ID = "conversation-worker-claim-q2"
 RUN_ID = "analysis-worker-claim-q2"
+
+RUN_EVENT_TYPE_ENUM = json.loads(RUN_EVENT_SCHEMA_PATH.read_text(encoding="utf-8"))["properties"][
+    "eventType"
+]["enum"]
 
 
 def run_runtime_foundation_command(
@@ -180,6 +186,11 @@ def assert_no_artifact_side_effects(database: RuntimeFoundationMysqlCli) -> None
     assert SourceEvidenceRepository(database).list_by_run_id(RUN_ID) == []
     assert ReportRepository(database).list_by_run_id(RUN_ID) == []
     assert DecisionRepository(database).list_by_run_id(RUN_ID) == []
+
+
+def test_run_event_contract_declares_worker_failure_and_lost_types() -> None:
+    assert "worker.failed" in RUN_EVENT_TYPE_ENUM
+    assert "worker.lost" in RUN_EVENT_TYPE_ENUM
 
 
 def test_worker_claim_transitions_queued_run_to_running_and_appends_event(
@@ -402,6 +413,7 @@ def test_record_worker_failure_transitions_running_run_to_failed_and_appends_eve
 
     assert len(events_after_failure) == len(events_before_failure) + 1
     assert latest_event["eventType"] == "worker.failed"
+    assert latest_event["eventType"] in RUN_EVENT_TYPE_ENUM
     assert latest_event["status"] == "failed"
     assert latest_event["phase"] == "execution"
     assert latest_event["actor"] == "agent_worker"
@@ -459,6 +471,7 @@ def test_mark_worker_lost_transitions_running_run_to_expired_and_appends_event(
 
     assert len(events_after_lost) == len(events_before_lost) + 1
     assert latest_event["eventType"] == "worker.lost"
+    assert latest_event["eventType"] in RUN_EVENT_TYPE_ENUM
     assert latest_event["status"] == "failed"
     assert latest_event["phase"] == "execution"
     assert latest_event["actor"] == "agent_worker"
