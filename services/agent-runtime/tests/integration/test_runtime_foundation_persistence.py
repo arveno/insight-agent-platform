@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import os
 import subprocess
-import uuid
-from collections.abc import Iterator
 from pathlib import Path
 
-import pytest
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRecord,
     AnalysisRunRepository,
@@ -46,22 +43,6 @@ def run_runtime_foundation_command(
         check=check,
         env=os.environ.copy(),
     )
-
-
-@pytest.fixture()
-def runtime_foundation_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    project_suffix = uuid.uuid4().hex[:8]
-
-    monkeypatch.setenv("IAP_MIGRATION_TARGET", "local")
-    monkeypatch.setenv(
-        "IAP_MIGRATION_COMPOSE_PROJECT_NAME", f"iap-runtime-foundation-{project_suffix}"
-    )
-    monkeypatch.setenv("IAP_MIGRATION_DATA_DIR", str(tmp_path / "mysql-data"))
-
-    try:
-        yield
-    finally:
-        run_runtime_foundation_command("down", check=False)
 
 
 def build_analysis_task() -> AnalysisTaskRecord:
@@ -196,12 +177,18 @@ def build_decision_record() -> DecisionRecord:
     }
 
 
+def test_runtime_foundation_env_provides_migrated_schema(runtime_foundation_env: None) -> None:
+    database = RuntimeFoundationMysqlCli()
+    analysis_task_count = database.query_json_object(
+        "SELECT JSON_OBJECT('count', COUNT(*)) FROM analysis_tasks;"
+    )
+
+    assert analysis_task_count == {"count": 0}
+
+
 def test_runtime_foundation_repositories_round_trip_frozen_chain(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     analysis_task_repository = AnalysisTaskRepository(database)
     conversation_repository = ConversationRepository(database)
@@ -234,9 +221,6 @@ def test_runtime_foundation_repositories_round_trip_frozen_chain(
 
 
 def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     analysis_task_repository = AnalysisTaskRepository(database)
     conversation_repository = ConversationRepository(database)
@@ -264,9 +248,6 @@ def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) 
 
 
 def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     seed_result = run_runtime_foundation_command("seed")
     assert seed_result.returncode == 0, seed_result.stderr
 
@@ -291,9 +272,6 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
 
 
 def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     verify_result = run_runtime_foundation_command("query-verify", check=False)
     assert verify_result.returncode != 0
     assert "Missing expected query verify line: analysis_tasks.row_count=1" in verify_result.stderr

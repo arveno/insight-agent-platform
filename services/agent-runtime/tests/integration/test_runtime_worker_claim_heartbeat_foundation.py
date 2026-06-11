@@ -1,10 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
-import uuid
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -32,7 +28,6 @@ from src.modules.analysis_runs.lifecycle_service import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts/migration/runtime_foundation.sh"
 RUN_EVENT_SCHEMA_PATH = REPO_ROOT / "packages/contracts/schemas/analysis/run-event.schema.json"
 
 WORKER_ID = "worker-claim-heartbeat-test"
@@ -43,33 +38,6 @@ RUN_ID = "analysis-worker-claim-q2"
 RUN_EVENT_TYPE_ENUM = json.loads(RUN_EVENT_SCHEMA_PATH.read_text(encoding="utf-8"))["properties"][
     "eventType"
 ]["enum"]
-
-
-def run_runtime_foundation_command(
-    *args: str, check: bool = True
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [str(RUNTIME_FOUNDATION_SCRIPT), *args],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=check,
-        env=os.environ.copy(),
-    )
-
-
-@pytest.fixture()
-def runtime_foundation_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    project_suffix = uuid.uuid4().hex[:8]
-
-    monkeypatch.setenv("IAP_MIGRATION_TARGET", "local")
-    monkeypatch.setenv("IAP_MIGRATION_COMPOSE_PROJECT_NAME", f"iap-runtime-worker-{project_suffix}")
-    monkeypatch.setenv("IAP_MIGRATION_DATA_DIR", str(tmp_path / "mysql-data"))
-
-    try:
-        yield
-    finally:
-        run_runtime_foundation_command("down", check=False)
 
 
 def build_analysis_task() -> AnalysisTaskRecord:
@@ -196,9 +164,6 @@ def test_run_event_contract_declares_worker_failure_and_lost_types() -> None:
 def test_worker_claim_transitions_queued_run_to_running_and_appends_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, dispatched_run = create_dispatched_run(database)
     attempts_before_claim = ExecutionAttemptRepository(database).list_by_run_id(RUN_ID)
@@ -243,9 +208,6 @@ def test_worker_claim_transitions_queued_run_to_running_and_appends_event(
 
 
 def test_worker_heartbeat_updates_attempt_and_appends_event(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _ = create_dispatched_run(database)
     lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
@@ -289,9 +251,6 @@ def test_worker_heartbeat_updates_attempt_and_appends_event(runtime_foundation_e
 
 
 def test_worker_claim_raises_not_found_for_unknown_run(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     with pytest.raises(KeyError):
         build_lifecycle_service(RuntimeFoundationMysqlCli()).claim_for_execution(
             "analysis-run-missing",
@@ -300,9 +259,6 @@ def test_worker_claim_raises_not_found_for_unknown_run(runtime_foundation_env: N
 
 
 def test_worker_claim_rejects_non_queued_run(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     AnalysisTaskRepository(database).create(build_analysis_task())
     ConversationRepository(database).create(build_conversation())
@@ -320,9 +276,6 @@ def test_worker_claim_rejects_non_queued_run(runtime_foundation_env: None) -> No
 
 
 def test_worker_heartbeat_rejects_non_running_attempt(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _ = create_dispatched_run(database)
     lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
@@ -346,9 +299,6 @@ def test_worker_heartbeat_rejects_non_running_attempt(runtime_foundation_env: No
 def test_worker_claim_rejects_duplicate_claim_without_second_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _ = create_dispatched_run(database)
     lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
@@ -370,9 +320,6 @@ def test_worker_claim_rejects_duplicate_claim_without_second_event(
 def test_record_worker_failure_transitions_running_run_to_failed_and_appends_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, running_run, running_attempt = create_running_run(database)
     run_event_repository = RunEventRepository(database)
@@ -429,9 +376,6 @@ def test_record_worker_failure_transitions_running_run_to_failed_and_appends_eve
 def test_mark_worker_lost_transitions_running_run_to_expired_and_appends_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, running_run, running_attempt = create_running_run(database)
     run_event_repository = RunEventRepository(database)
@@ -485,9 +429,6 @@ def test_mark_worker_lost_transitions_running_run_to_expired_and_appends_event(
 
 
 def test_worker_failure_rejects_mismatched_worker_id(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
 
@@ -505,9 +446,6 @@ def test_worker_failure_rejects_mismatched_worker_id(runtime_foundation_env: Non
 
 
 def test_worker_failure_rejects_unknown_run_or_attempt(runtime_foundation_env: None) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
 
@@ -532,9 +470,6 @@ def test_worker_failure_rejects_unknown_run_or_attempt(runtime_foundation_env: N
 def test_worker_failure_blocks_heartbeat_claim_and_duplicate_terminal_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
     lifecycle_service.record_worker_failure(
@@ -580,9 +515,6 @@ def test_worker_failure_blocks_heartbeat_claim_and_duplicate_terminal_event(
 def test_worker_lost_blocks_heartbeat_claim_and_duplicate_terminal_event(
     runtime_foundation_env: None,
 ) -> None:
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
     lifecycle_service.mark_worker_lost(
