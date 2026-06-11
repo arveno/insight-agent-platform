@@ -23,6 +23,8 @@ AGENT_WORKER_NAME = "agent-worker"
 RUN_CREATED_SUMMARY = "记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。"
 WORKER_LEASE_ACQUIRED_SUMMARY = "记录 Worker 已接管 AnalysisRun。"
 WORKER_HEARTBEAT_SUMMARY = "记录 Worker heartbeat。"
+WORKER_FAILED_SUMMARY = "记录 Worker 执行失败，AnalysisRun 进入 failed 终态。"
+WORKER_LOST_SUMMARY = "记录 Worker lease 丢失，AnalysisRun 进入 expired 终态。"
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -144,24 +146,15 @@ class AnalysisRunLifecycleService:
         attempt_id: str,
         worker_id: str,
     ) -> ExecutionAttemptRecord:
-        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
-
-        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
-            raise AnalysisRunInvalidStateError(
+        execution_attempt = self._require_running_attempt(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            worker_id=worker_id,
+            run_state_error_message=(
                 "AnalysisRun must be running/execution before worker heartbeat."
-            )
-
-        execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
-        if execution_attempt["runId"] != run_id:
-            raise AnalysisRunInvalidStateError("ExecutionAttempt.runId does not match run_id.")
-        if execution_attempt["status"] != "running":
-            raise AnalysisRunInvalidStateError(
-                "ExecutionAttempt must be running before worker heartbeat."
-            )
-        if execution_attempt["workerId"] != worker_id:
-            raise AnalysisRunInvalidStateError(
-                "ExecutionAttempt.workerId does not match worker_id."
-            )
+            ),
+            attempt_state_error_message="ExecutionAttempt must be running before worker heartbeat.",
+        )
 
         heartbeat_at = _utc_timestamp(datetime.now(UTC))
         updated_execution_attempt: ExecutionAttemptRecord = {
@@ -178,11 +171,152 @@ class AnalysisRunLifecycleService:
         self.lifecycle_repository.heartbeat(updated_execution_attempt, run_event)
         return updated_execution_attempt
 
+    def record_worker_failure(
+        self,
+        run_id: str,
+        attempt_id: str,
+        worker_id: str,
+        failure_code: str,
+        failure_message: str,
+    ) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be running/execution before worker failure."
+            )
+
+        execution_attempt = self._require_running_attempt(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            worker_id=worker_id,
+            run_state_error_message="AnalysisRun must be running/execution before worker failure.",
+            attempt_state_error_message="ExecutionAttempt must be running before worker failure.",
+        )
+
+        failed_at = _utc_timestamp(datetime.now(UTC))
+        failed_run: AnalysisRunRecord = {
+            **analysis_run,
+            "status": "failed",
+            "phase": "execution",
+            "outcome": "system_failure",
+            "failedAt": failed_at,
+            "completedAt": None,
+            "expiredAt": None,
+            "failureCode": failure_code,
+            "terminalReason": failure_message,
+            "retryable": True,
+        }
+        failed_execution_attempt: ExecutionAttemptRecord = {
+            **execution_attempt,
+            "status": "failed",
+            "releasedAt": failed_at,
+            "failureCode": failure_code,
+            "failureMessage": failure_message,
+        }
+        run_event = build_worker_failed_event(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            occurred_at=failed_at,
+            failure_code=failure_code,
+            failure_message=failure_message,
+            sequence=self._next_run_event_sequence(run_id),
+        )
+
+        self.lifecycle_repository.record_worker_failure(
+            failed_run,
+            failed_execution_attempt,
+            run_event,
+        )
+        return failed_run
+
+    def mark_worker_lost(
+        self,
+        run_id: str,
+        attempt_id: str,
+        worker_id: str,
+        lost_reason: str,
+    ) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be running/execution before worker lost."
+            )
+
+        execution_attempt = self._require_running_attempt(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            worker_id=worker_id,
+            run_state_error_message="AnalysisRun must be running/execution before worker lost.",
+            attempt_state_error_message="ExecutionAttempt must be running before worker lost.",
+        )
+
+        expired_at = _utc_timestamp(datetime.now(UTC))
+        expired_run: AnalysisRunRecord = {
+            **analysis_run,
+            "status": "expired",
+            "phase": "execution",
+            "outcome": "timeout",
+            "failedAt": None,
+            "completedAt": None,
+            "expiredAt": expired_at,
+            "failureCode": "WORKER_LOST",
+            "terminalReason": lost_reason,
+            "retryable": True,
+        }
+        lost_execution_attempt: ExecutionAttemptRecord = {
+            **execution_attempt,
+            "status": "lost",
+            "releasedAt": expired_at,
+            "failureCode": "WORKER_LOST",
+            "failureMessage": lost_reason,
+        }
+        run_event = build_worker_lost_event(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            occurred_at=expired_at,
+            lost_reason=lost_reason,
+            sequence=self._next_run_event_sequence(run_id),
+        )
+
+        self.lifecycle_repository.mark_worker_lost(
+            expired_run,
+            lost_execution_attempt,
+            run_event,
+        )
+        return expired_run
+
     def _next_run_event_sequence(self, run_id: str) -> int:
         run_events = self.run_event_repository.list_by_run_id(run_id)
         if not run_events:
             return 0
         return run_events[-1]["sequence"] + 1
+
+    def _require_running_attempt(
+        self,
+        *,
+        run_id: str,
+        attempt_id: str,
+        worker_id: str,
+        run_state_error_message: str,
+        attempt_state_error_message: str,
+    ) -> ExecutionAttemptRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
+            raise AnalysisRunInvalidStateError(run_state_error_message)
+
+        execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
+        if execution_attempt["runId"] != run_id:
+            raise AnalysisRunInvalidStateError("ExecutionAttempt.runId does not match run_id.")
+        if execution_attempt["status"] != "running":
+            raise AnalysisRunInvalidStateError(attempt_state_error_message)
+        if execution_attempt["workerId"] != worker_id:
+            raise AnalysisRunInvalidStateError(
+                "ExecutionAttempt.workerId does not match worker_id."
+            )
+        return execution_attempt
 
 
 def _generate_canonical_id(prefix: str) -> str:
@@ -307,6 +441,69 @@ def build_worker_heartbeat_event(
         "errorCode": None,
         "errorMessage": None,
         "nodeName": "worker.heartbeat",
+        "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_worker_failed_event(
+    *,
+    run_id: str,
+    attempt_id: str,
+    occurred_at: str,
+    failure_code: str,
+    failure_message: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "worker.failed",
+        "status": "failed",
+        "phase": "execution",
+        "sequence": sequence,
+        "actor": AGENT_WORKER_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": WORKER_FAILED_SUMMARY,
+        "parentEventId": None,
+        "refType": "execution_attempt",
+        "refId": attempt_id,
+        "errorCode": failure_code,
+        "errorMessage": failure_message,
+        "nodeName": "worker.failed",
+        "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_worker_lost_event(
+    *,
+    run_id: str,
+    attempt_id: str,
+    occurred_at: str,
+    lost_reason: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "worker.lost",
+        "status": "failed",
+        "phase": "execution",
+        "sequence": sequence,
+        "actor": AGENT_WORKER_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": WORKER_LOST_SUMMARY,
+        "parentEventId": None,
+        "refType": "execution_attempt",
+        "refId": attempt_id,
+        "errorCode": "WORKER_LOST",
+        "errorMessage": lost_reason,
+        "nodeName": "worker.lost",
         "agentName": AGENT_WORKER_NAME,
         "toolName": None,
         "startedAt": occurred_at,

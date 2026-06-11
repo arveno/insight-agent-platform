@@ -17,6 +17,7 @@ from src.infrastructure.database.runtime_foundation import (
     ConversationRecord,
     ConversationRepository,
     DecisionRepository,
+    ExecutionAttemptRecord,
     ExecutionAttemptRepository,
     ReportRepository,
     RunEventRepository,
@@ -164,6 +165,15 @@ def create_dispatched_run(
     lifecycle_service = build_lifecycle_service(database)
     dispatched_run = lifecycle_service.dispatch(RUN_ID)
     return lifecycle_service, dispatched_run
+
+
+def create_running_run(
+    database: RuntimeFoundationMysqlCli,
+) -> tuple[AnalysisRunLifecycleService, AnalysisRunRecord, ExecutionAttemptRecord]:
+    lifecycle_service, _ = create_dispatched_run(database)
+    running_run = lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
+    execution_attempt = ExecutionAttemptRepository(database).list_by_run_id(RUN_ID)[-1]
+    return lifecycle_service, running_run, execution_attempt
 
 
 def assert_no_artifact_side_effects(database: RuntimeFoundationMysqlCli) -> None:
@@ -343,4 +353,258 @@ def test_worker_claim_rejects_duplicate_claim_without_second_event(
     assert events_after_duplicate_claim == events_after_first_claim
     assert [event["eventType"] for event in events_after_duplicate_claim].count(
         "worker.lease_acquired"
+    ) == 1
+
+
+def test_record_worker_failure_transitions_running_run_to_failed_and_appends_event(
+    runtime_foundation_env: None,
+) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, running_run, running_attempt = create_running_run(database)
+    run_event_repository = RunEventRepository(database)
+    events_before_failure = run_event_repository.list_by_run_id(RUN_ID)
+    previous_max_sequence = events_before_failure[-1]["sequence"]
+
+    failed_run = lifecycle_service.record_worker_failure(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+        "WORKER_EXECUTION_ERROR",
+        "worker execution failed",
+    )
+
+    failed_attempt = ExecutionAttemptRepository(database).get_by_attempt_id(
+        str(running_attempt["attemptId"])
+    )
+    persisted_run = AnalysisRunRepository(database).get_by_run_id(RUN_ID)
+    events_after_failure = run_event_repository.list_by_run_id(RUN_ID)
+    latest_event = events_after_failure[-1]
+
+    assert running_run["status"] == "running"
+    assert failed_run["status"] == "failed"
+    assert failed_run["phase"] == "execution"
+    assert failed_run["outcome"] == "system_failure"
+    assert failed_run["failedAt"] is not None
+    assert failed_run["completedAt"] is None
+    assert failed_run["expiredAt"] is None
+    assert failed_run["failureCode"] == "WORKER_EXECUTION_ERROR"
+    assert failed_run["terminalReason"] == "worker execution failed"
+    assert failed_run["retryable"] is True
+    assert persisted_run == failed_run
+
+    assert failed_attempt["status"] == "failed"
+    assert failed_attempt["failureCode"] == "WORKER_EXECUTION_ERROR"
+    assert failed_attempt["failureMessage"] == "worker execution failed"
+    assert failed_attempt["releasedAt"] is not None
+
+    assert len(events_after_failure) == len(events_before_failure) + 1
+    assert latest_event["eventType"] == "worker.failed"
+    assert latest_event["status"] == "failed"
+    assert latest_event["phase"] == "execution"
+    assert latest_event["actor"] == "agent_worker"
+    assert latest_event["refType"] == "execution_attempt"
+    assert latest_event["refId"] == running_attempt["attemptId"]
+    assert latest_event["errorCode"] == "WORKER_EXECUTION_ERROR"
+    assert latest_event["errorMessage"] == "worker execution failed"
+    assert latest_event["sequence"] == previous_max_sequence + 1
+
+    assert_no_artifact_side_effects(database)
+
+
+def test_mark_worker_lost_transitions_running_run_to_expired_and_appends_event(
+    runtime_foundation_env: None,
+) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, running_run, running_attempt = create_running_run(database)
+    run_event_repository = RunEventRepository(database)
+    events_before_lost = run_event_repository.list_by_run_id(RUN_ID)
+    previous_max_sequence = events_before_lost[-1]["sequence"]
+
+    expired_run = lifecycle_service.mark_worker_lost(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+        "worker heartbeat timed out",
+    )
+
+    lost_attempt = ExecutionAttemptRepository(database).get_by_attempt_id(
+        str(running_attempt["attemptId"])
+    )
+    persisted_run = AnalysisRunRepository(database).get_by_run_id(RUN_ID)
+    events_after_lost = run_event_repository.list_by_run_id(RUN_ID)
+    latest_event = events_after_lost[-1]
+
+    assert running_run["status"] == "running"
+    assert expired_run["status"] == "expired"
+    assert expired_run["phase"] == "execution"
+    assert expired_run["outcome"] == "timeout"
+    assert expired_run["expiredAt"] is not None
+    assert expired_run["completedAt"] is None
+    assert expired_run["failedAt"] is None
+    assert expired_run["failureCode"] == "WORKER_LOST"
+    assert expired_run["terminalReason"] == "worker heartbeat timed out"
+    assert expired_run["retryable"] is True
+    assert persisted_run == expired_run
+
+    assert lost_attempt["status"] == "lost"
+    assert lost_attempt["failureCode"] == "WORKER_LOST"
+    assert lost_attempt["failureMessage"] == "worker heartbeat timed out"
+    assert lost_attempt["releasedAt"] is not None
+
+    assert len(events_after_lost) == len(events_before_lost) + 1
+    assert latest_event["eventType"] == "worker.lost"
+    assert latest_event["status"] == "failed"
+    assert latest_event["phase"] == "execution"
+    assert latest_event["actor"] == "agent_worker"
+    assert latest_event["refType"] == "execution_attempt"
+    assert latest_event["refId"] == running_attempt["attemptId"]
+    assert latest_event["errorCode"] == "WORKER_LOST"
+    assert latest_event["errorMessage"] == "worker heartbeat timed out"
+    assert latest_event["sequence"] == previous_max_sequence + 1
+
+    assert_no_artifact_side_effects(database)
+
+
+def test_worker_failure_rejects_mismatched_worker_id(runtime_foundation_env: None) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="ExecutionAttempt.workerId does not match worker_id.",
+    ):
+        lifecycle_service.record_worker_failure(
+            RUN_ID,
+            str(running_attempt["attemptId"]),
+            "worker-mismatch",
+            "WORKER_EXECUTION_ERROR",
+            "worker execution failed",
+        )
+
+
+def test_worker_failure_rejects_unknown_run_or_attempt(runtime_foundation_env: None) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+
+    with pytest.raises(KeyError):
+        lifecycle_service.record_worker_failure(
+            "analysis-run-missing",
+            str(running_attempt["attemptId"]),
+            WORKER_ID,
+            "WORKER_EXECUTION_ERROR",
+            "worker execution failed",
+        )
+
+    with pytest.raises(KeyError):
+        lifecycle_service.mark_worker_lost(
+            RUN_ID,
+            "attempt-missing",
+            WORKER_ID,
+            "worker heartbeat timed out",
+        )
+
+
+def test_worker_failure_blocks_heartbeat_claim_and_duplicate_terminal_event(
+    runtime_foundation_env: None,
+) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+    lifecycle_service.record_worker_failure(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+        "WORKER_EXECUTION_ERROR",
+        "worker execution failed",
+    )
+    events_after_failure = RunEventRepository(database).list_by_run_id(RUN_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be running/execution before worker heartbeat.",
+    ):
+        lifecycle_service.heartbeat(RUN_ID, str(running_attempt["attemptId"]), WORKER_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be queued/queueing before worker claim.",
+    ):
+        lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be running/execution before worker failure.",
+    ):
+        lifecycle_service.record_worker_failure(
+            RUN_ID,
+            str(running_attempt["attemptId"]),
+            WORKER_ID,
+            "WORKER_EXECUTION_ERROR",
+            "worker execution failed",
+        )
+
+    events_after_duplicate_failure = RunEventRepository(database).list_by_run_id(RUN_ID)
+    assert events_after_duplicate_failure == events_after_failure
+    assert [event["eventType"] for event in events_after_duplicate_failure].count(
+        "worker.failed"
+    ) == 1
+
+
+def test_worker_lost_blocks_heartbeat_claim_and_duplicate_terminal_event(
+    runtime_foundation_env: None,
+) -> None:
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+    lifecycle_service.mark_worker_lost(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+        "worker heartbeat timed out",
+    )
+    events_after_lost = RunEventRepository(database).list_by_run_id(RUN_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be running/execution before worker heartbeat.",
+    ):
+        lifecycle_service.heartbeat(RUN_ID, str(running_attempt["attemptId"]), WORKER_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be queued/queueing before worker claim.",
+    ):
+        lifecycle_service.claim_for_execution(RUN_ID, WORKER_ID)
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be running/execution before worker lost.",
+    ):
+        lifecycle_service.mark_worker_lost(
+            RUN_ID,
+            str(running_attempt["attemptId"]),
+            WORKER_ID,
+            "worker heartbeat timed out",
+        )
+
+    events_after_duplicate_lost = RunEventRepository(database).list_by_run_id(RUN_ID)
+    assert events_after_duplicate_lost == events_after_lost
+    assert [event["eventType"] for event in events_after_duplicate_lost].count(
+        "worker.lost"
     ) == 1
