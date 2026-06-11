@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import os
-import socket
-import subprocess
-import uuid
 from collections.abc import Iterator
 from copy import deepcopy
-from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -28,9 +23,6 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRecord,
     SourceEvidenceRepository,
 )
-
-REPO_ROOT = Path(__file__).resolve().parents[4]
-RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts/migration/runtime_foundation.sh"
 
 TASK_PAYLOAD = {
     "workspaceId": "workspace-northstar-retail-china",
@@ -68,25 +60,6 @@ SOURCE_EVIDENCE_IDS = [
 ]
 REPORT_ID = "report-revenue-gap-q2"
 DECISION_ID = "decision-revenue-gap-q2"
-
-
-def run_runtime_foundation_command(
-    *args: str, check: bool = True
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [str(RUNTIME_FOUNDATION_SCRIPT), *args],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=check,
-        env=os.environ.copy(),
-    )
-
-
-def pick_free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
 
 
 def response_json_dict(payload: object) -> dict[str, Any]:
@@ -240,36 +213,9 @@ def build_decision_record(run_id: str, workspace_id: str) -> DecisionRecord:
         "status": "proposed",
         "createdAt": "2026-06-05T03:26:00Z",
     }
-
-
 @pytest.fixture()
-def runtime_api_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    project_suffix = uuid.uuid4().hex[:8]
-    mysql_host_port = str(pick_free_port())
-
-    monkeypatch.setenv("IAP_MIGRATION_TARGET", "local")
-    monkeypatch.setenv("IAP_MIGRATION_COMPOSE_PROJECT_NAME", f"iap-runtime-api-{project_suffix}")
-    monkeypatch.setenv("IAP_MIGRATION_DATA_DIR", str(tmp_path / "mysql-data"))
-    monkeypatch.setenv("IAP_MIGRATION_MYSQL_HOST_PORT", mysql_host_port)
-    monkeypatch.setenv("MYSQL_HOST", "127.0.0.1")
-    monkeypatch.setenv("MYSQL_PORT", mysql_host_port)
-    monkeypatch.setenv("MYSQL_DATABASE", "insight_agent_platform")
-    monkeypatch.setenv("MYSQL_USER", "iap_preview")
-    monkeypatch.setenv("MYSQL_PASSWORD", "iap_preview_password")
+def client(runtime_foundation_env: None) -> Iterator[TestClient]:
     get_settings.cache_clear()
-
-    migrate_result = run_runtime_foundation_command("migrate")
-    assert migrate_result.returncode == 0, migrate_result.stderr
-
-    try:
-        yield
-    finally:
-        run_runtime_foundation_command("down", check=False)
-        get_settings.cache_clear()
-
-
-@pytest.fixture()
-def client(runtime_api_env: None) -> Iterator[TestClient]:
     with TestClient(create_app()) as test_client:
         yield test_client
 
