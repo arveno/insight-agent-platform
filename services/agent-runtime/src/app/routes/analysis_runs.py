@@ -203,7 +203,6 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
         "retryOfRunId": None,
         "originalRunId": None,
     }
-    _analysis_run_repository().create(analysis_run)
 
     updated_conversation: ConversationRecord = {
         **conversation,
