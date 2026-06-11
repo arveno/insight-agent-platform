@@ -552,8 +552,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SourceEvidenceList"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+              example:
+                items:
+                  - sourceEvidenceId: source-evidence-channel-weekly-17
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                    sourceType: knowledge_document
+                    sourceId: knowledge-document-channel-weekly-17
+                    title: 渠道周报第 17 期
+                    snippet: 华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。
+                    metadata:
+                      displayCategory: weekly_digest
+                    confidence: 0.86
+                    createdAt: "2026-06-05T03:23:00Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/reports:
     get:
       summary: 获取报告列表
@@ -567,8 +579,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportList"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+              example:
+                items:
+                  - reportId: report-revenue-gap-q2
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                    workspaceId: workspace-northstar-retail-china
+                    title: 收入异常分析摘要
+                    summary: 形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作。
+                    sections:
+                      - reportSectionId: report-revenue-gap-q2-section-next-step
+                        reportId: report-revenue-gap-q2
+                        title: 下一步动作
+                        content: 先核对渠道确认周期，再复核促销库存错配。
+                        createdAt: "2026-06-05T03:25:00Z"
+                    sourceEvidence:
+                      - source-evidence-channel-weekly-17
+                      - source-evidence-inventory-note-east-04
+                    createdAt: "2026-06-05T03:25:00Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+  /analysis-runs/{runId}/decisions:
+    get:
+      summary: 获取决策列表
+      operationId: listDecisions
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Decision 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionList"
+              example:
+                items:
+                  - decisionId: decision-revenue-gap-q2
+                    workspaceId: workspace-northstar-retail-china
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                    reportId: report-revenue-gap-q2
+                    title: 复核华东渠道确认周期与促销库存错配
+                    status: proposed
+                    createdAt: "2026-06-05T03:26:00Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/execution-attempts:
     get:
       summary: 获取执行尝试列表
@@ -879,6 +932,8 @@ components:
       $ref: "../schemas/analysis/source-evidence.schema.json"
     Report:
       $ref: "../schemas/reports/report.schema.json"
+    Decision:
+      $ref: "../schemas/reports/decision.schema.json"
     ExecutionAttempt:
       $ref: "../schemas/analysis/execution-attempt.schema.json"
     ApprovalRequest:
@@ -953,6 +1008,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Report"
+    DecisionList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Decision"
     ExecutionAttemptList:
       type: object
       additionalProperties: false
