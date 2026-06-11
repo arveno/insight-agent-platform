@@ -13,11 +13,16 @@ from src.infrastructure.database.runtime_foundation import (
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
     RunEventRecord,
+    RunEventRepository,
 )
 
 ANALYSIS_RUNTIME_ACTOR = "analysis_runtime"
 ANALYSIS_RUNTIME_AGENT = "analysis-runtime"
+AGENT_WORKER_ACTOR = "agent_worker"
+AGENT_WORKER_NAME = "agent-worker"
 RUN_CREATED_SUMMARY = "记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。"
+WORKER_LEASE_ACQUIRED_SUMMARY = "记录 Worker 已接管 AnalysisRun。"
+WORKER_HEARTBEAT_SUMMARY = "记录 Worker heartbeat。"
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -39,6 +44,7 @@ class AnalysisRunLifecycleService:
 
     analysis_run_repository: AnalysisRunRepository
     execution_attempt_repository: ExecutionAttemptRepository
+    run_event_repository: RunEventRepository
     lifecycle_repository: AnalysisRunLifecycleRepository
     worker_id: str = "worker-runtime-dispatch-foundation"
     lease_duration: timedelta = timedelta(minutes=20)
@@ -89,6 +95,94 @@ class AnalysisRunLifecycleService:
     def list_execution_attempts(self, run_id: str) -> list[ExecutionAttemptRecord]:
         self.analysis_run_repository.get_by_run_id(run_id)
         return self.execution_attempt_repository.list_by_run_id(run_id)
+
+    def claim_for_execution(self, run_id: str, worker_id: str) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "queued" or analysis_run["phase"] != "queueing":
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be queued/queueing before worker claim."
+            )
+
+        execution_attempts = self.execution_attempt_repository.list_by_run_id(run_id)
+        if not execution_attempts or execution_attempts[-1]["status"] != "leased":
+            raise AnalysisRunInvalidStateError(
+                "Latest ExecutionAttempt must be leased before worker claim."
+            )
+
+        claimed_at = _utc_timestamp(datetime.now(UTC))
+        latest_execution_attempt = execution_attempts[-1]
+        running_run: AnalysisRunRecord = {
+            **analysis_run,
+            "status": "running",
+            "phase": "execution",
+            "startedAt": analysis_run["startedAt"] or claimed_at,
+        }
+        running_execution_attempt: ExecutionAttemptRecord = {
+            **latest_execution_attempt,
+            "status": "running",
+            "workerId": worker_id,
+            "heartbeatAt": claimed_at,
+        }
+        run_event = build_worker_lease_acquired_event(
+            run_id=run_id,
+            attempt_id=running_execution_attempt["attemptId"],
+            occurred_at=claimed_at,
+            sequence=self._next_run_event_sequence(run_id),
+        )
+
+        self.lifecycle_repository.claim_for_execution(
+            running_run,
+            running_execution_attempt,
+            run_event,
+        )
+        return running_run
+
+    def heartbeat(
+        self,
+        run_id: str,
+        attempt_id: str,
+        worker_id: str,
+    ) -> ExecutionAttemptRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be running/execution before worker heartbeat."
+            )
+
+        execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
+        if execution_attempt["runId"] != run_id:
+            raise AnalysisRunInvalidStateError("ExecutionAttempt.runId does not match run_id.")
+        if execution_attempt["status"] != "running":
+            raise AnalysisRunInvalidStateError(
+                "ExecutionAttempt must be running before worker heartbeat."
+            )
+        if execution_attempt["workerId"] != worker_id:
+            raise AnalysisRunInvalidStateError(
+                "ExecutionAttempt.workerId does not match worker_id."
+            )
+
+        heartbeat_at = _utc_timestamp(datetime.now(UTC))
+        updated_execution_attempt: ExecutionAttemptRecord = {
+            **execution_attempt,
+            "heartbeatAt": heartbeat_at,
+        }
+        run_event = build_worker_heartbeat_event(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            occurred_at=heartbeat_at,
+            sequence=self._next_run_event_sequence(run_id),
+        )
+
+        self.lifecycle_repository.heartbeat(updated_execution_attempt, run_event)
+        return updated_execution_attempt
+
+    def _next_run_event_sequence(self, run_id: str) -> int:
+        run_events = self.run_event_repository.list_by_run_id(run_id)
+        if not run_events:
+            return 0
+        return run_events[-1]["sequence"] + 1
 
 
 def _generate_canonical_id(prefix: str) -> str:
@@ -158,3 +252,63 @@ def build_dispatch_run_events(
         )
 
     return run_events
+
+
+def build_worker_lease_acquired_event(
+    *,
+    run_id: str,
+    attempt_id: str,
+    occurred_at: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "worker.lease_acquired",
+        "status": "succeeded",
+        "phase": "execution",
+        "sequence": sequence,
+        "actor": AGENT_WORKER_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": WORKER_LEASE_ACQUIRED_SUMMARY,
+        "parentEventId": None,
+        "refType": "execution_attempt",
+        "refId": attempt_id,
+        "errorCode": None,
+        "errorMessage": None,
+        "nodeName": "worker.lease_acquired",
+        "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_worker_heartbeat_event(
+    *,
+    run_id: str,
+    attempt_id: str,
+    occurred_at: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "worker.heartbeat",
+        "status": "succeeded",
+        "phase": "execution",
+        "sequence": sequence,
+        "actor": AGENT_WORKER_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": WORKER_HEARTBEAT_SUMMARY,
+        "parentEventId": None,
+        "refType": "execution_attempt",
+        "refId": attempt_id,
+        "errorCode": None,
+        "errorMessage": None,
+        "nodeName": "worker.heartbeat",
+        "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }

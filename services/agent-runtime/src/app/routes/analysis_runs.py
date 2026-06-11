@@ -115,6 +115,7 @@ def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
     return AnalysisRunLifecycleService(
         analysis_run_repository=AnalysisRunRepository(database),
         execution_attempt_repository=ExecutionAttemptRepository(database),
+        run_event_repository=RunEventRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
     )
 
