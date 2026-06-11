@@ -113,6 +113,7 @@ def build_analysis_run() -> AnalysisRunRecord:
 def build_lifecycle_service(database: RuntimeFoundationMysqlCli) -> AnalysisRunLifecycleService:
     return AnalysisRunLifecycleService(
         analysis_run_repository=AnalysisRunRepository(database),
+        conversation_repository=ConversationRepository(database),
         execution_attempt_repository=ExecutionAttemptRepository(database),
         run_event_repository=RunEventRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),

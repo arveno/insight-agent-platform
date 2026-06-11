@@ -38,6 +38,7 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRepository,
 )
 from src.modules.analysis_runs.lifecycle_service import (
+    AnalysisRunConversationNotFoundError,
     AnalysisRunInvalidStateError,
     AnalysisRunLifecycleService,
     build_run_created_event,
@@ -114,6 +115,7 @@ def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
     database = _runtime_foundation_database()
     return AnalysisRunLifecycleService(
         analysis_run_repository=AnalysisRunRepository(database),
+        conversation_repository=ConversationRepository(database),
         execution_attempt_repository=ExecutionAttemptRepository(database),
         run_event_repository=RunEventRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
@@ -445,12 +447,37 @@ def cancel_analysis_run(run_id: str = Path(alias="runId")) -> JSONResponse:
     return not_implemented_route_stub_response()
 
 
-@router.post("/{runId}/retry", responses=NOT_IMPLEMENTED_RESPONSE)
-def retry_analysis_run(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Reserve the retry boundary without creating a synthetic follow-up run."""
+@router.post(
+    "/{runId}/retry",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def retry_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+    """Create a new retry AnalysisRun from an allowed terminal source run."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.retry_analysis_run(run_id)
+    except AnalysisRunConversationNotFoundError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found for AnalysisRun: {run_id}",
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
 
 
 @router.post("/{runId}/approvals/{approvalId}/decision", responses=NOT_IMPLEMENTED_RESPONSE)

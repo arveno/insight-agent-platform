@@ -1335,6 +1335,20 @@ class AnalysisRunLifecycleRepository:
             ]
         )
 
+    def retry_run(
+        self,
+        analysis_run: AnalysisRunRecord,
+        conversation: ConversationRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _analysis_run_upsert_sql(analysis_run),
+                _conversation_upsert_sql(conversation),
+                _run_event_insert_sql(run_event),
+            ]
+        )
+
     def dispatch(
         self,
         analysis_run: AnalysisRunRecord,
