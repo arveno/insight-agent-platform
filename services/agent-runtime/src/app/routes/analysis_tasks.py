@@ -1,5 +1,7 @@
 """AnalysisTask HTTP boundary for real runtime foundation success paths."""
 
+from typing import cast
+
 from fastapi import APIRouter, status
 
 from src.app.config import get_settings
@@ -10,6 +12,7 @@ from src.app.routes.runtime_contracts import (
     utc_timestamp,
 )
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisTaskContextPack,
     AnalysisTaskRecord,
     AnalysisTaskRepository,
     RuntimeFoundationPyMySqlDatabase,
@@ -41,7 +44,7 @@ def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskReco
         "userId": request.userId,
         "businessDomainId": request.businessDomainId,
         "question": request.question,
-        "contextPack": request.contextPack.model_dump(),
+        "contextPack": cast(AnalysisTaskContextPack, request.contextPack.model_dump()),
         "createdAt": now,
         "updatedAt": now,
     }

@@ -165,6 +165,55 @@ class AnalysisRunResponse(BaseModel):
     originalRunId: str | None = None
 
 
+class RunEventResponse(BaseModel):
+    """RunEvent contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    eventId: str
+    runId: str
+    eventType: str
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    phase: Literal[
+        "intake",
+        "preflight",
+        "governance",
+        "context_binding",
+        "planning",
+        "approval",
+        "queueing",
+        "execution",
+        "tool_execution",
+        "evidence_binding",
+        "synthesis",
+        "verification",
+        "delivery",
+        "post_run",
+    ]
+    sequence: int
+    actor: str
+    occurredAt: str
+    summary: str
+    parentEventId: str | None = None
+    refType: str | None = None
+    refId: str | None = None
+    errorCode: str | None = None
+    errorMessage: str | None = None
+    nodeName: str
+    agentName: str
+    toolName: str | None = None
+    startedAt: str | None = None
+    completedAt: str | None = None
+
+
+class RunEventListResponse(BaseModel):
+    """RunEvent list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[RunEventResponse]
+
+
 class ExecutionAttemptResponse(BaseModel):
     """ExecutionAttempt contract-shaped API response."""
 

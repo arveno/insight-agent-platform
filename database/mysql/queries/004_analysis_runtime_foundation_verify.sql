@@ -8,7 +8,8 @@ SELECT CONCAT(
         'analysis_tasks',
         'conversations',
         'analysis_runs',
-        'execution_attempts'
+        'execution_attempts',
+        'run_events'
       )
   )
 ) AS check_line;
@@ -24,6 +25,9 @@ FROM analysis_runs;
 
 SELECT CONCAT('execution_attempts.row_count=', COUNT(*)) AS check_line
 FROM execution_attempts;
+
+SELECT CONCAT('run_events.row_count=', COUNT(*)) AS check_line
+FROM run_events;
 
 SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks

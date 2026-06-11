@@ -12,6 +12,7 @@ from src.app.routes.runtime_contracts import (
     ConversationResponse,
     CreateAnalysisRunRequest,
     ExecutionAttemptListResponse,
+    RunEventListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     generate_canonical_id,
@@ -27,11 +28,13 @@ from src.infrastructure.database.runtime_foundation import (
     ConversationRecord,
     ConversationRepository,
     ExecutionAttemptRepository,
+    RunEventRepository,
     RuntimeFoundationPyMySqlDatabase,
 )
 from src.modules.analysis_runs.lifecycle_service import (
     AnalysisRunInvalidStateError,
     AnalysisRunLifecycleService,
+    build_run_created_event,
 )
 
 router = APIRouter(prefix="/analysis-runs", tags=["analysis-runs"])
@@ -79,6 +82,14 @@ def _conversation_repository() -> ConversationRepository:
 
 def _analysis_run_repository() -> AnalysisRunRepository:
     return AnalysisRunRepository(_runtime_foundation_database())
+
+
+def _run_event_repository() -> RunEventRepository:
+    return RunEventRepository(_runtime_foundation_database())
+
+
+def _analysis_run_lifecycle_repository() -> AnalysisRunLifecycleRepository:
+    return AnalysisRunLifecycleRepository(_runtime_foundation_database())
 
 
 def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
@@ -199,7 +210,12 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
         "currentRunId": analysis_run["runId"],
         "updatedAt": now,
     }
-    _conversation_repository().create(updated_conversation)
+    run_created_event = build_run_created_event(run_id=analysis_run["runId"], occurred_at=now)
+    _analysis_run_lifecycle_repository().create_run(
+        analysis_run,
+        updated_conversation,
+        run_created_event,
+    )
     return analysis_run
 
 
@@ -244,12 +260,24 @@ def dispatch_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecor
         )
 
 
-@router.get("/{runId}/events", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_analysis_run_events(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Register the RunEvent collection boundary without emitting synthetic event data."""
+@router.get(
+    "/{runId}/events",
+    response_model=RunEventListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_events(run_id: str = Path(alias="runId")) -> dict[str, object] | JSONResponse:
+    """Return persisted RunEvents for a real AnalysisRun ordered by sequence."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _run_event_repository().list_by_run_id(run_id)}
 
 
 @router.get("/{runId}/tool-calls", responses=NOT_IMPLEMENTED_RESPONSE)

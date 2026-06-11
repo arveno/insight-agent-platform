@@ -63,8 +63,10 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 readonly ANALYSIS_TASK_RESPONSE="${TMP_DIR}/analysis-task.json"
 readonly CONVERSATION_RESPONSE="${TMP_DIR}/conversation.json"
 readonly ANALYSIS_RUN_RESPONSE="${TMP_DIR}/analysis-run.json"
+readonly GET_RUN_EVENTS_BEFORE_DISPATCH_RESPONSE="${TMP_DIR}/get-run-events-before-dispatch.json"
 readonly DISPATCH_RUN_RESPONSE="${TMP_DIR}/dispatch-run.json"
 readonly GET_RUN_RESPONSE="${TMP_DIR}/get-run.json"
+readonly GET_RUN_EVENTS_AFTER_DISPATCH_RESPONSE="${TMP_DIR}/get-run-events-after-dispatch.json"
 readonly GET_EXECUTION_ATTEMPTS_RESPONSE="${TMP_DIR}/get-execution-attempts.json"
 readonly GET_RUN_CONVERSATION_RESPONSE="${TMP_DIR}/get-run-conversation.json"
 readonly GET_CONVERSATION_RESPONSE="${TMP_DIR}/get-conversation.json"
@@ -132,6 +134,10 @@ curl -fsS \
 readonly RUN_ID="$(json_field "${ANALYSIS_RUN_RESPONSE}" "runId")"
 printf 'runId=%s\n' "${RUN_ID}"
 
+printf 'GET %s/analysis-runs/%s/events\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/events" \
+  >"${GET_RUN_EVENTS_BEFORE_DISPATCH_RESPONSE}"
+
 printf 'POST %s/analysis-runs/%s/dispatch\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS \
   -X POST \
@@ -140,6 +146,10 @@ curl -fsS \
 
 printf 'GET %s/analysis-runs/%s\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}" >"${GET_RUN_RESPONSE}"
+
+printf 'GET %s/analysis-runs/%s/events\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
+curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/events" \
+  >"${GET_RUN_EVENTS_AFTER_DISPATCH_RESPONSE}"
 
 printf 'GET %s/analysis-runs/%s/execution-attempts\n' "${NORMALIZED_BASE_URL}" "${RUN_ID}"
 curl -fsS "${NORMALIZED_BASE_URL}/analysis-runs/${RUN_ID}/execution-attempts" \
@@ -155,7 +165,9 @@ curl -fsS "${NORMALIZED_BASE_URL}/conversations/${CONVERSATION_ID}" \
 
 printf 'analysisRun.status=%s\n' "$(json_field "${GET_RUN_RESPONSE}" "status")"
 printf 'analysisRun.phase=%s\n' "$(json_field "${GET_RUN_RESPONSE}" "phase")"
+printf 'runEvents.beforeDispatch.count=%s\n' "$(json_list_length "${GET_RUN_EVENTS_BEFORE_DISPATCH_RESPONSE}" "items")"
 printf 'dispatch.analysisRun.status=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE}" "status")"
 printf 'dispatch.analysisRun.phase=%s\n' "$(json_field "${DISPATCH_RUN_RESPONSE}" "phase")"
+printf 'runEvents.afterDispatch.count=%s\n' "$(json_list_length "${GET_RUN_EVENTS_AFTER_DISPATCH_RESPONSE}" "items")"
 printf 'executionAttempt.count=%s\n' "$(json_list_length "${GET_EXECUTION_ATTEMPTS_RESPONSE}" "items")"
 printf 'conversation.currentRunId=%s\n' "$(json_field "${GET_CONVERSATION_RESPONSE}" "currentRunId")"

@@ -3,8 +3,8 @@
 from fastapi import FastAPI
 
 from src.app.config import get_settings
-from src.app.routes.analysis_tasks import router as analysis_tasks_router
 from src.app.routes.analysis_runs import router as analysis_runs_router
+from src.app.routes.analysis_tasks import router as analysis_tasks_router
 from src.app.routes.conversations import router as conversations_router
 from src.app.routes.health import router as health_router
 
