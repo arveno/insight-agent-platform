@@ -285,8 +285,9 @@ paths:
     post:
       summary: 创建分析运行
       description: >
-        创建一次新的 AnalysisRun 契约对象，并把 run 绑定到既有 conversationId。
-        该接口只创建 `created / intake` foundation run，不写 Message、RunEvent 或报告对象。
+        创建一次新的 AnalysisRun 契约对象，把 run 绑定到既有 conversationId，
+        并 append 第一条 `run.created` 审计事件。
+        该接口不写 Message、Report、ToolCall、ModelCall 或 SourceEvidence。
       operationId: createAnalysisRun
       requestBody:
         required: true
@@ -384,7 +385,8 @@ paths:
       summary: 推进分析运行进入最小 dispatch foundation
       description: >
         把 `created/intake` 的 AnalysisRun 推进到 `queued/queueing`，
-        并创建一条真实 ExecutionAttempt，为后续 #159 Worker / Queue / Dispatch 承接。
+        创建一条真实 ExecutionAttempt，并 append 最小 lifecycle RunEvent 序列，
+        为后续 #159 Worker / Queue / Dispatch 承接。
       operationId: dispatchAnalysisRun
       parameters:
         - $ref: "#/components/parameters/RunId"
@@ -467,46 +469,46 @@ paths:
                 $ref: "#/components/schemas/RunEventList"
               example:
                 items:
-                  - eventId: event-analysis-q2-revenue-gap-user-input
-                    runId: analysis-q2-revenue-gap
+                  - eventId: event-0f8eb6428d7147eabcf45c7ca86b2188
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                     eventType: run.created
                     status: succeeded
                     phase: intake
                     sequence: 0
-                    actor: analysis_runtime_stub
-                    occurredAt: "2026-06-05T11:08:00+08:00"
-                    summary: 记录当前用户问题，并为后续运行绑定上下文。
+                    actor: analysis_runtime
+                    occurredAt: "2026-06-05T03:08:30Z"
+                    summary: 记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。
                     parentEventId: null
                     refType: null
                     refId: null
                     errorCode: null
                     errorMessage: null
                     nodeName: run.created
-                    agentName: analysis-agent
+                    agentName: analysis-runtime
                     toolName: null
-                    startedAt: "2026-06-05T11:08:00+08:00"
-                    completedAt: "2026-06-05T11:08:00+08:00"
-                  - eventId: event-analysis-q2-revenue-gap-feedback-waiting
-                    runId: analysis-q2-revenue-gap
-                    eventType: run.completed
+                    startedAt: "2026-06-05T03:08:30Z"
+                    completedAt: "2026-06-05T03:08:30Z"
+                  - eventId: event-a69961cf5c40410db6a42bd8d368df24
+                    runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                    eventType: run.queued
                     status: succeeded
-                    phase: delivery
-                    sequence: 7
-                    actor: analysis_runtime_stub
-                    occurredAt: "2026-06-05T11:15:00+08:00"
-                    summary: 当前运行完成，等待用户继续追问或进入报告入口。
+                    phase: queueing
+                    sequence: 6
+                    actor: analysis_runtime
+                    occurredAt: "2026-06-05T03:08:35Z"
+                    summary: 记录 AnalysisRun 已进入 dispatch 队列。
                     parentEventId: null
                     refType: null
                     refId: null
                     errorCode: null
                     errorMessage: null
-                    nodeName: run.completed
-                    agentName: analysis-agent
+                    nodeName: run.queued
+                    agentName: analysis-runtime
                     toolName: null
-                    startedAt: "2026-06-05T11:15:00+08:00"
-                    completedAt: "2026-06-05T11:15:00+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+                    startedAt: "2026-06-05T03:08:35Z"
+                    completedAt: "2026-06-05T03:08:35Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/tool-calls:
     get:
       summary: 获取工具调用列表

@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, Protocol, TypedDict, cast
 
-import pymysql
+import pymysql  # type: ignore[import-untyped]
 
 
 class RuntimeFoundationError(RuntimeError):
@@ -122,6 +122,45 @@ class AnalysisRunRecord(TypedDict):
     retryable: bool | None
     retryOfRunId: str | None
     originalRunId: str | None
+
+
+class RunEventRecord(TypedDict):
+    """RunEvent contract-shaped persistence record."""
+
+    eventId: str
+    runId: str
+    eventType: str
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    phase: Literal[
+        "intake",
+        "preflight",
+        "governance",
+        "context_binding",
+        "planning",
+        "approval",
+        "queueing",
+        "execution",
+        "tool_execution",
+        "evidence_binding",
+        "synthesis",
+        "verification",
+        "delivery",
+        "post_run",
+    ]
+    sequence: int
+    actor: str
+    occurredAt: str
+    summary: str
+    parentEventId: str | None
+    refType: str | None
+    refId: str | None
+    errorCode: str | None
+    errorMessage: str | None
+    nodeName: str
+    agentName: str
+    toolName: str | None
+    startedAt: str | None
+    completedAt: str | None
 
 
 class ExecutionAttemptRecord(TypedDict):
@@ -267,6 +306,87 @@ ON DUPLICATE KEY UPDATE
   retryable = VALUES(retryable),
   retry_of_run_id = VALUES(retry_of_run_id),
   original_run_id = VALUES(original_run_id);
+"""
+
+
+def _conversation_upsert_sql(conversation: ConversationRecord) -> str:
+    return f"""
+INSERT INTO conversations (
+  conversation_id,
+  workspace_id,
+  user_id,
+  analysis_task_id,
+  current_run_id,
+  title,
+  status,
+  created_at,
+  updated_at
+) VALUES (
+  {_sql_literal(conversation["conversationId"])},
+  {_sql_literal(conversation["workspaceId"])},
+  {_sql_literal(conversation["userId"])},
+  {_sql_literal(conversation["analysisTaskId"])},
+  {_sql_literal(conversation["currentRunId"])},
+  {_sql_literal(conversation["title"])},
+  {_sql_literal(conversation["status"])},
+  {_sql_literal(conversation["createdAt"])},
+  {_sql_literal(conversation["updatedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  analysis_task_id = VALUES(analysis_task_id),
+  current_run_id = VALUES(current_run_id),
+  title = VALUES(title),
+  status = VALUES(status),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+"""
+
+
+def _run_event_insert_sql(run_event: RunEventRecord) -> str:
+    return f"""
+INSERT INTO run_events (
+  event_id,
+  run_id,
+  event_type,
+  status,
+  phase,
+  sequence,
+  actor,
+  occurred_at,
+  summary,
+  parent_event_id,
+  ref_type,
+  ref_id,
+  error_code,
+  error_message,
+  node_name,
+  agent_name,
+  tool_name,
+  started_at,
+  completed_at
+) VALUES (
+  {_sql_literal(run_event["eventId"])},
+  {_sql_literal(run_event["runId"])},
+  {_sql_literal(run_event["eventType"])},
+  {_sql_literal(run_event["status"])},
+  {_sql_literal(run_event["phase"])},
+  {run_event["sequence"]},
+  {_sql_literal(run_event["actor"])},
+  {_sql_literal(run_event["occurredAt"])},
+  {_sql_literal(run_event["summary"])},
+  {_sql_literal(run_event["parentEventId"])},
+  {_sql_literal(run_event["refType"])},
+  {_sql_literal(run_event["refId"])},
+  {_sql_literal(run_event["errorCode"])},
+  {_sql_literal(run_event["errorMessage"])},
+  {_sql_literal(run_event["nodeName"])},
+  {_sql_literal(run_event["agentName"])},
+  {_sql_literal(run_event["toolName"])},
+  {_sql_literal(run_event["startedAt"])},
+  {_sql_literal(run_event["completedAt"])}
+);
 """
 
 
@@ -505,39 +625,7 @@ class ConversationRepository:
         self._database = database
 
     def create(self, conversation: ConversationRecord) -> None:
-        sql = f"""
-INSERT INTO conversations (
-  conversation_id,
-  workspace_id,
-  user_id,
-  analysis_task_id,
-  current_run_id,
-  title,
-  status,
-  created_at,
-  updated_at
-) VALUES (
-  {_sql_literal(conversation["conversationId"])},
-  {_sql_literal(conversation["workspaceId"])},
-  {_sql_literal(conversation["userId"])},
-  {_sql_literal(conversation["analysisTaskId"])},
-  {_sql_literal(conversation["currentRunId"])},
-  {_sql_literal(conversation["title"])},
-  {_sql_literal(conversation["status"])},
-  {_sql_literal(conversation["createdAt"])},
-  {_sql_literal(conversation["updatedAt"])}
-)
-ON DUPLICATE KEY UPDATE
-  workspace_id = VALUES(workspace_id),
-  user_id = VALUES(user_id),
-  analysis_task_id = VALUES(analysis_task_id),
-  current_run_id = VALUES(current_run_id),
-  title = VALUES(title),
-  status = VALUES(status),
-  created_at = VALUES(created_at),
-  updated_at = VALUES(updated_at);
-"""
-        self._database.execute_sql(sql)
+        self._database.execute_sql(_conversation_upsert_sql(conversation))
 
     def get_by_conversation_id(self, conversation_id: str) -> ConversationRecord:
         sql = f"""
@@ -759,23 +847,114 @@ SELECT JSON_OBJECT(
         return cast(list[ExecutionAttemptRecord], items)
 
 
+class RunEventRepository:
+    """Repository boundary for append-only RunEvent persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, run_event: RunEventRecord) -> None:
+        self._database.execute_sql(_run_event_insert_sql(run_event))
+
+    def list_by_run_id(self, run_id: str) -> list[RunEventRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'eventId', event_id,
+          'runId', run_id,
+          'eventType', event_type,
+          'status', status,
+          'phase', phase,
+          'sequence', sequence,
+          'actor', actor,
+          'occurredAt', occurred_at,
+          'summary', summary,
+          'parentEventId', parent_event_id,
+          'refType', ref_type,
+          'refId', ref_id,
+          'errorCode', error_code,
+          'errorMessage', error_message,
+          'nodeName', node_name,
+          'agentName', agent_name,
+          'toolName', tool_name,
+          'startedAt', started_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          event_id,
+          run_id,
+          event_type,
+          status,
+          phase,
+          sequence,
+          actor,
+          occurred_at,
+          summary,
+          parent_event_id,
+          ref_type,
+          ref_id,
+          error_code,
+          error_message,
+          node_name,
+          agent_name,
+          tool_name,
+          started_at,
+          completed_at
+        FROM run_events
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY sequence ASC, id ASC
+      ) ordered_run_events
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "RunEvent.items")
+        return cast(list[RunEventRecord], items)
+
+
 class AnalysisRunLifecycleRepository:
     """Repository boundary for transactional lifecycle transitions."""
 
     def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
 
-    def dispatch(
+    def create_run(
         self,
         analysis_run: AnalysisRunRecord,
-        execution_attempt: ExecutionAttemptRecord,
+        conversation: ConversationRecord,
+        run_event: RunEventRecord,
     ) -> None:
         self._database.execute_transaction(
             [
                 _analysis_run_upsert_sql(analysis_run),
-                _execution_attempt_upsert_sql(execution_attempt),
+                _conversation_upsert_sql(conversation),
+                _run_event_insert_sql(run_event),
             ]
         )
+
+    def dispatch(
+        self,
+        analysis_run: AnalysisRunRecord,
+        execution_attempt: ExecutionAttemptRecord,
+        run_events: Sequence[RunEventRecord],
+    ) -> None:
+        statements = [
+            _analysis_run_upsert_sql(analysis_run),
+            _execution_attempt_upsert_sql(execution_attempt),
+        ]
+        statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
+        self._database.execute_transaction(statements)
 
 
 class GoldenPathFoundationRepository:

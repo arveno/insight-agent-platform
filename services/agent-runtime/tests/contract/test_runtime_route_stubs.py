@@ -25,7 +25,6 @@ ROUTE_CASES: list[RouteCase] = [
         None,
         {"accept": "text/event-stream"},
     ),
-    ("get", "/analysis-runs/analysis-q2-revenue-gap/events", None, None),
     ("get", "/analysis-runs/analysis-q2-revenue-gap/tool-calls", None, None),
     ("get", "/analysis-runs/analysis-q2-revenue-gap/model-calls", None, None),
     ("get", "/analysis-runs/analysis-q2-revenue-gap/source-evidence", None, None),

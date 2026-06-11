@@ -178,8 +178,9 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
     assert "metric-recognized-revenue" in verify_result.stdout
-    assert "tables=4" in verify_result.stdout
+    assert "tables=5" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
+    assert "run_events.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())

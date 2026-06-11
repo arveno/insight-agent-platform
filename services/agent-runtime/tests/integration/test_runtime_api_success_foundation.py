@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,6 +18,7 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisTaskRepository,
     ConversationRepository,
     ExecutionAttemptRepository,
+    RunEventRepository,
     RuntimeFoundationMysqlCli,
 )
 
@@ -42,6 +44,17 @@ TASK_PAYLOAD = {
     "title": "收入增速异常",
 }
 
+RUN_CREATED_SUMMARY = "记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。"
+EXPECTED_DISPATCH_EVENTS = [
+    ("run.created", "intake"),
+    ("validation.started", "preflight"),
+    ("validation.passed", "preflight"),
+    ("policy.decision_recorded", "governance"),
+    ("context.bound", "context_binding"),
+    ("plan.created", "planning"),
+    ("run.queued", "queueing"),
+]
+
 
 def run_runtime_foundation_command(
     *args: str, check: bool = True
@@ -62,12 +75,16 @@ def pick_free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+def response_json_dict(payload: object) -> dict[str, Any]:
+    return cast(dict[str, Any], payload)
+
+
 def create_analysis_task(
     client: TestClient,
     *,
     workspace_id: str | None = None,
     user_id: str | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     payload = deepcopy(TASK_PAYLOAD)
     if workspace_id is not None:
         payload["workspaceId"] = workspace_id
@@ -76,7 +93,13 @@ def create_analysis_task(
 
     response = client.post("/analysis-tasks", json=payload)
     assert response.status_code == 201
-    return response.json()
+    return response_json_dict(response.json())
+
+
+def get_run_events(client: TestClient, run_id: str) -> dict[str, Any]:
+    response = client.get(f"/analysis-runs/{run_id}/events")
+    assert response.status_code == 200
+    return response_json_dict(response.json())
 
 
 @pytest.fixture()
@@ -194,8 +217,35 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
     list_messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
     assert list_messages_response.status_code == 501
 
-    list_events_response = client.get(f"/analysis-runs/{analysis_run['runId']}/events")
-    assert list_events_response.status_code == 501
+    list_events_payload = get_run_events(client, analysis_run["runId"])
+    assert len(list_events_payload["items"]) == 1
+
+    run_created_event = list_events_payload["items"][0]
+    assert run_created_event["eventId"].startswith("event-")
+    assert run_created_event["runId"] == analysis_run["runId"]
+    assert run_created_event["eventType"] == "run.created"
+    assert run_created_event["status"] == "succeeded"
+    assert run_created_event["phase"] == "intake"
+    assert run_created_event["sequence"] == 0
+    assert run_created_event["actor"] == "analysis_runtime"
+    assert run_created_event["summary"] == RUN_CREATED_SUMMARY
+    assert run_created_event["parentEventId"] is None
+    assert run_created_event["refType"] is None
+    assert run_created_event["refId"] is None
+    assert run_created_event["errorCode"] is None
+    assert run_created_event["errorMessage"] is None
+    assert run_created_event["nodeName"] == "run.created"
+    assert run_created_event["agentName"] == "analysis-runtime"
+    assert run_created_event["toolName"] is None
+    assert run_created_event["occurredAt"] is not None
+    assert run_created_event["startedAt"] == run_created_event["occurredAt"]
+    assert run_created_event["completedAt"] == run_created_event["occurredAt"]
+    assert "delta" not in run_created_event
+
+    run_event_repository = RunEventRepository(database)
+    assert run_event_repository.list_by_run_id(analysis_run["runId"]) == list_events_payload[
+        "items"
+    ]
 
 
 def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_records(
@@ -225,6 +275,11 @@ def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_record
     )
     assert create_run_response.status_code == 201
     analysis_run = create_run_response.json()
+
+    list_events_before_dispatch_payload = get_run_events(client, analysis_run["runId"])
+    assert [item["eventType"] for item in list_events_before_dispatch_payload["items"]] == [
+        "run.created"
+    ]
 
     list_attempts_before_dispatch_response = client.get(
         f"/analysis-runs/{analysis_run['runId']}/execution-attempts"
@@ -290,12 +345,48 @@ def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_record
         execution_attempt_repository.list_by_run_id(analysis_run["runId"])
         == attempts_payload["items"]
     )
+    run_event_repository = RunEventRepository(database)
+
+    list_events_after_dispatch_payload = get_run_events(client, analysis_run["runId"])
+    assert [item["sequence"] for item in list_events_after_dispatch_payload["items"]] == list(
+        range(7)
+    )
+    assert [
+        (item["eventType"], item["phase"]) for item in list_events_after_dispatch_payload["items"]
+    ] == EXPECTED_DISPATCH_EVENTS
+    assert all(
+        item["runId"] == analysis_run["runId"]
+        for item in list_events_after_dispatch_payload["items"]
+    )
+    assert all(
+        item["status"] == "succeeded"
+        for item in list_events_after_dispatch_payload["items"]
+    )
+    assert all(
+        item["actor"] == "analysis_runtime"
+        for item in list_events_after_dispatch_payload["items"]
+    )
+    assert all("delta" not in item for item in list_events_after_dispatch_payload["items"])
+    assert "worker.lease_acquired" not in {
+        item["eventType"] for item in list_events_after_dispatch_payload["items"]
+    }
+    assert (
+        run_event_repository.list_by_run_id(analysis_run["runId"])
+        == list_events_after_dispatch_payload["items"]
+    )
 
     list_messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
     assert list_messages_response.status_code == 501
 
-    list_events_response = client.get(f"/analysis-runs/{analysis_run['runId']}/events")
-    assert list_events_response.status_code == 501
+    duplicate_dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
+    assert duplicate_dispatch_response.status_code == 409
+    assert duplicate_dispatch_response.json() == {
+        "errorCode": "INVALID_STATE",
+        "message": "AnalysisRun must be created/intake before dispatch.",
+    }
+
+    duplicate_dispatch_events_payload = get_run_events(client, analysis_run["runId"])
+    assert duplicate_dispatch_events_payload == list_events_after_dispatch_payload
 
 
 def test_dispatch_analysis_run_returns_not_found_for_unknown_run(client: TestClient) -> None:
@@ -310,6 +401,16 @@ def test_dispatch_analysis_run_returns_not_found_for_unknown_run(client: TestCli
 
 def test_list_execution_attempts_returns_not_found_for_unknown_run(client: TestClient) -> None:
     response = client.get("/analysis-runs/analysis-run-missing/execution-attempts")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "AnalysisRun not found: analysis-run-missing",
+    }
+
+
+def test_list_run_events_returns_not_found_for_unknown_run(client: TestClient) -> None:
+    response = client.get("/analysis-runs/analysis-run-missing/events")
 
     assert response.status_code == 404
     assert response.json() == {
