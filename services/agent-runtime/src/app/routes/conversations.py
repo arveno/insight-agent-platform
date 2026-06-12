@@ -1,14 +1,18 @@
 """Conversation HTTP boundary for Analysis workspace foundation APIs."""
 
+import json
+from collections.abc import Iterator
 from typing import Any
 
-from fastapi import APIRouter, Path, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Header, Path, status
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     ConversationResponse,
     CreateConversationRequest,
+    MessageListResponse,
+    MessageStreamListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     generate_canonical_id,
@@ -20,6 +24,9 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    MessageRepository,
+    MessageStreamRecord,
+    MessageStreamRepository,
     RuntimeFoundationPyMySqlDatabase,
 )
 
@@ -61,6 +68,14 @@ def _analysis_task_repository() -> AnalysisTaskRepository:
 
 def _conversation_repository() -> ConversationRepository:
     return ConversationRepository(_runtime_foundation_database())
+
+
+def _message_repository() -> MessageRepository:
+    return MessageRepository(_runtime_foundation_database())
+
+
+def _message_stream_repository() -> MessageStreamRepository:
+    return MessageStreamRepository(_runtime_foundation_database())
 
 
 @router.post(
@@ -128,14 +143,26 @@ def get_conversation(
         )
 
 
-@router.get("/{conversationId}/messages", responses=NOT_IMPLEMENTED_RESPONSE)
+@router.get(
+    "/{conversationId}/messages",
+    response_model=MessageListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
 def list_conversation_messages(
     conversation_id: str = Path(alias="conversationId"),
-) -> JSONResponse:
-    """Expose the conversation message collection boundary without serving fake data."""
+) -> dict[str, object] | JSONResponse:
+    """Return persisted Message records for a real Conversation."""
 
-    _ = conversation_id
-    return not_implemented_route_stub_response()
+    try:
+        _conversation_repository().get_by_conversation_id(conversation_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {conversation_id}",
+        )
+
+    return {"items": _message_repository().list_by_conversation_id(conversation_id)}
 
 
 @router.get("/{conversationId}/messages/{messageId}", responses=NOT_IMPLEMENTED_RESPONSE)
@@ -149,12 +176,54 @@ def get_conversation_message(
     return not_implemented_route_stub_response()
 
 
-@router.get("/{conversationId}/messages/{messageId}/stream", responses=NOT_IMPLEMENTED_RESPONSE)
+@router.get(
+    "/{conversationId}/messages/{messageId}/stream",
+    response_model=MessageStreamListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
 def stream_conversation_message(
     conversation_id: str = Path(alias="conversationId"),
     message_id: str = Path(alias="messageId"),
-) -> JSONResponse:
-    """Reserve the live/replay MessageStream endpoint without implementing SSE transport."""
+    accept: str | None = Header(default=None),
+) -> dict[str, object] | JSONResponse | StreamingResponse:
+    """Serve MessageStream replay as JSON or SSE from the same persisted record chain."""
 
-    _ = (conversation_id, message_id)
-    return not_implemented_route_stub_response()
+    try:
+        _conversation_repository().get_by_conversation_id(conversation_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {conversation_id}",
+        )
+
+    try:
+        message = _message_repository().get_by_message_id(message_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found: {message_id}",
+        )
+    if message["conversationId"] != conversation_id:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found in Conversation: {message_id}",
+        )
+
+    message_streams = _message_stream_repository().list_by_message_id(message_id)
+    if accept is not None and "text/event-stream" in accept:
+        return StreamingResponse(
+            _encode_message_stream_sse(message_streams),
+            media_type="text/event-stream",
+        )
+    return {"items": message_streams}
+
+
+def _encode_message_stream_sse(
+    message_streams: list[MessageStreamRecord],
+) -> Iterator[str]:
+    for message_stream in message_streams:
+        payload = json.dumps(message_stream, ensure_ascii=False, separators=(",", ":"))
+        yield f"event: {message_stream['eventType']}\ndata: {payload}\n\n"

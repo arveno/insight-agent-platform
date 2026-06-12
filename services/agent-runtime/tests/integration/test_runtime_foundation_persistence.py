@@ -16,12 +16,20 @@ from src.infrastructure.database.runtime_foundation import (
     DecisionRepository,
     ExecutionAttemptRepository,
     GoldenPathFoundationRepository,
+    MessageRecord,
+    MessageRepository,
+    MessageStreamRecord,
+    MessageStreamRepository,
+    ModelCallRecord,
+    ModelCallRepository,
     ReportRecord,
     ReportRepository,
     ReportSectionRecord,
     RuntimeFoundationMysqlCli,
     SourceEvidenceRecord,
     SourceEvidenceRepository,
+    ToolCallRecord,
+    ToolCallRepository,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -177,6 +185,125 @@ def build_decision_record() -> DecisionRecord:
     }
 
 
+def build_tool_call_record() -> ToolCallRecord:
+    return {
+        "toolCallId": "tool-call-analysis-q2-revenue-gap-metrics",
+        "runId": RUN_ID,
+        "toolName": "metrics.summary.compare",
+        "input": {"request": "metrics.summary.compare"},
+        "output": {"conclusion": "华东渠道确认延迟明显。"},
+        "status": "succeeded",
+        "riskLevel": "medium",
+        "permission": "metrics.read",
+        "errorType": None,
+        "errorMessage": None,
+        "startedAt": "2026-06-05T11:14:00+08:00",
+        "completedAt": "2026-06-05T11:16:00+08:00",
+    }
+
+
+def build_model_call_record() -> ModelCallRecord:
+    return {
+        "modelCallId": "model-call-analysis-q2-revenue-gap-summary",
+        "runId": RUN_ID,
+        "provider": "openai",
+        "modelId": "gpt-4.1-static",
+        "promptVersionId": "prompt-revenue-gap-v1",
+        "inputTokens": 6120,
+        "outputTokens": 6360,
+        "cost": 0.86,
+        "latencyMs": 18200,
+        "status": "succeeded",
+        "errorType": None,
+        "errorMessage": None,
+        "startedAt": "2026-06-05T11:20:00+08:00",
+        "completedAt": "2026-06-05T11:22:00+08:00",
+    }
+
+
+def build_message_records() -> list[MessageRecord]:
+    return [
+        {
+            "messageId": "message-revenue-gap-q2-user",
+            "conversationId": CONVERSATION_ID,
+            "turnId": "turn-revenue-gap-q2-1",
+            "runId": RUN_ID,
+            "role": "user",
+            "content": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+            "status": "completed",
+            "sourceEvidenceIds": [],
+            "toolCallIds": [],
+            "reportId": None,
+            "createdAt": "2026-06-05T11:08:12+08:00",
+            "completedAt": "2026-06-05T11:08:12+08:00",
+        },
+        {
+            "messageId": "message-revenue-gap-q2-assistant",
+            "conversationId": CONVERSATION_ID,
+            "turnId": "turn-revenue-gap-q2-1",
+            "runId": RUN_ID,
+            "role": "assistant",
+            "content": (
+                "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，"
+                "而不是整体价格体系失效。"
+            ),
+            "status": "completed",
+            "sourceEvidenceIds": [
+                "source-evidence-channel-weekly-17",
+                "source-evidence-inventory-note-east-04",
+            ],
+            "toolCallIds": ["tool-call-analysis-q2-revenue-gap-metrics"],
+            "reportId": "report-revenue-gap-q2",
+            "createdAt": "2026-06-05T11:22:00+08:00",
+            "completedAt": "2026-06-05T11:22:00+08:00",
+        },
+    ]
+
+
+def build_message_stream_records() -> list[MessageStreamRecord]:
+    return [
+        {
+            "messageStreamId": "message-stream-revenue-gap-q2-0",
+            "conversationId": CONVERSATION_ID,
+            "messageId": "message-revenue-gap-q2-assistant",
+            "runId": RUN_ID,
+            "sequence": 0,
+            "eventType": "stream.started",
+            "delta": "",
+            "status": "created",
+            "occurredAt": "2026-06-05T11:22:00+08:00",
+            "errorCode": None,
+            "errorMessage": None,
+        },
+        {
+            "messageStreamId": "message-stream-revenue-gap-q2-1",
+            "conversationId": CONVERSATION_ID,
+            "messageId": "message-revenue-gap-q2-assistant",
+            "runId": RUN_ID,
+            "sequence": 1,
+            "eventType": "stream.delta",
+            "delta": "收入增速下滑主要来自华东核心渠道确认延迟",
+            "status": "streaming",
+            "occurredAt": "2026-06-05T11:23:00+08:00",
+            "errorCode": None,
+            "errorMessage": None,
+        },
+        {
+            "messageStreamId": "message-stream-revenue-gap-q2-2",
+            "conversationId": CONVERSATION_ID,
+            "messageId": "message-revenue-gap-q2-assistant",
+            "runId": RUN_ID,
+            "sequence": 2,
+            "eventType": "stream.completed",
+            "delta": "与促销库存错配。",
+            "status": "completed",
+            "occurredAt": "2026-06-05T11:24:00+08:00",
+            "errorCode": None,
+            "errorMessage": None,
+        },
+    ]
+
+
 def test_runtime_foundation_env_provides_migrated_schema(runtime_foundation_env: None) -> None:
     database = RuntimeFoundationMysqlCli()
     analysis_task_count = database.query_json_object(
@@ -225,9 +352,13 @@ def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) 
     analysis_task_repository = AnalysisTaskRepository(database)
     conversation_repository = ConversationRepository(database)
     analysis_run_repository = AnalysisRunRepository(database)
+    tool_call_repository = ToolCallRepository(database)
+    model_call_repository = ModelCallRepository(database)
     source_evidence_repository = SourceEvidenceRepository(database)
     report_repository = ReportRepository(database)
     decision_repository = DecisionRepository(database)
+    message_repository = MessageRepository(database)
+    message_stream_repository = MessageStreamRepository(database)
 
     analysis_task_repository.create(build_analysis_task())
     conversation_repository.create(build_conversation())
@@ -237,14 +368,31 @@ def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) 
     for source_evidence in source_evidence_records:
         source_evidence_repository.create(source_evidence)
 
+    tool_call_record = build_tool_call_record()
+    model_call_record = build_model_call_record()
     report_record = build_report_record()
     decision_record = build_decision_record()
+    message_records = build_message_records()
+    message_stream_records = build_message_stream_records()
+
+    tool_call_repository.create(tool_call_record)
+    model_call_repository.create(model_call_record)
     report_repository.create(report_record)
     decision_repository.create(decision_record)
+    for message in message_records:
+        message_repository.create(message)
+    for message_stream in message_stream_records:
+        message_stream_repository.create(message_stream)
 
+    assert tool_call_repository.list_by_run_id(RUN_ID) == [tool_call_record]
+    assert model_call_repository.list_by_run_id(RUN_ID) == [model_call_record]
     assert source_evidence_repository.list_by_run_id(RUN_ID) == source_evidence_records
     assert report_repository.list_by_run_id(RUN_ID) == [report_record]
     assert decision_repository.list_by_run_id(RUN_ID) == [decision_record]
+    assert message_repository.list_by_conversation_id(CONVERSATION_ID) == message_records
+    assert message_stream_repository.list_by_message_id("message-revenue-gap-q2-assistant") == (
+        message_stream_records
+    )
 
 
 def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) -> None:
@@ -258,13 +406,17 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
     assert "metric-recognized-revenue" in verify_result.stdout
-    assert "tables=9" in verify_result.stdout
+    assert "tables=13" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
+    assert "tool_calls.row_count=0" in verify_result.stdout
+    assert "model_calls.row_count=0" in verify_result.stdout
     assert "source_evidence.row_count=0" in verify_result.stdout
     assert "reports.row_count=0" in verify_result.stdout
     assert "report_sections.row_count=0" in verify_result.stdout
     assert "decisions.row_count=0" in verify_result.stdout
+    assert "messages.row_count=0" in verify_result.stdout
+    assert "message_streams.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())

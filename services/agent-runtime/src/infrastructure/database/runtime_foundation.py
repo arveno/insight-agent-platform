@@ -180,6 +180,42 @@ class ExecutionAttemptRecord(TypedDict):
     failureMessage: str | None
 
 
+class ToolCallRecord(TypedDict):
+    """ToolCall contract-shaped persistence record."""
+
+    toolCallId: str
+    runId: str
+    toolName: str
+    input: dict[str, object]
+    output: dict[str, object] | None
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    riskLevel: Literal["low", "medium", "high", "critical"]
+    permission: str
+    errorType: str | None
+    errorMessage: str | None
+    startedAt: str | None
+    completedAt: str | None
+
+
+class ModelCallRecord(TypedDict):
+    """ModelCall contract-shaped persistence record."""
+
+    modelCallId: str
+    runId: str
+    provider: str
+    modelId: str
+    promptVersionId: str
+    inputTokens: int
+    outputTokens: int
+    cost: float
+    latencyMs: int
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    errorType: str | None
+    errorMessage: str | None
+    startedAt: str | None
+    completedAt: str | None
+
+
 class SourceEvidenceRecord(TypedDict):
     """SourceEvidence contract-shaped persistence record."""
 
@@ -235,6 +271,45 @@ class DecisionRecord(TypedDict):
     title: str
     status: Literal["proposed", "accepted", "rejected", "in_progress", "completed"]
     createdAt: str
+
+
+class MessageRecord(TypedDict):
+    """Message contract-shaped persistence record."""
+
+    messageId: str
+    conversationId: str
+    turnId: str
+    runId: str | None
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    sourceEvidenceIds: list[str]
+    toolCallIds: list[str]
+    reportId: str | None
+    createdAt: str
+    completedAt: str | None
+
+
+class MessageStreamRecord(TypedDict):
+    """MessageStream contract-shaped persistence record."""
+
+    messageStreamId: str
+    conversationId: str
+    messageId: str
+    runId: str
+    sequence: int
+    eventType: Literal[
+        "stream.started",
+        "stream.delta",
+        "stream.completed",
+        "stream.failed",
+        "stream.cancelled",
+    ]
+    delta: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    occurredAt: str
+    errorCode: str | None
+    errorMessage: str | None
 
 
 class GoldenPathFoundationRecord(TypedDict):
@@ -494,6 +569,185 @@ ON DUPLICATE KEY UPDATE
   released_at = VALUES(released_at),
   failure_code = VALUES(failure_code),
   failure_message = VALUES(failure_message);
+"""
+
+
+def _tool_call_upsert_sql(tool_call: ToolCallRecord) -> str:
+    return f"""
+INSERT INTO tool_calls (
+  tool_call_id,
+  run_id,
+  tool_name,
+  input_json,
+  output_json,
+  status,
+  risk_level,
+  permission,
+  error_type,
+  error_message,
+  started_at,
+  completed_at
+) VALUES (
+  {_sql_literal(tool_call["toolCallId"])},
+  {_sql_literal(tool_call["runId"])},
+  {_sql_literal(tool_call["toolName"])},
+  {_json_literal(tool_call["input"])},
+  {_nullable_json_literal(tool_call["output"])},
+  {_sql_literal(tool_call["status"])},
+  {_sql_literal(tool_call["riskLevel"])},
+  {_sql_literal(tool_call["permission"])},
+  {_sql_literal(tool_call["errorType"])},
+  {_sql_literal(tool_call["errorMessage"])},
+  {_sql_literal(tool_call["startedAt"])},
+  {_sql_literal(tool_call["completedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  tool_name = VALUES(tool_name),
+  input_json = VALUES(input_json),
+  output_json = VALUES(output_json),
+  status = VALUES(status),
+  risk_level = VALUES(risk_level),
+  permission = VALUES(permission),
+  error_type = VALUES(error_type),
+  error_message = VALUES(error_message),
+  started_at = VALUES(started_at),
+  completed_at = VALUES(completed_at);
+"""
+
+
+def _model_call_upsert_sql(model_call: ModelCallRecord) -> str:
+    return f"""
+INSERT INTO model_calls (
+  model_call_id,
+  run_id,
+  provider,
+  model_id,
+  prompt_version_id,
+  input_tokens,
+  output_tokens,
+  cost,
+  latency_ms,
+  status,
+  error_type,
+  error_message,
+  started_at,
+  completed_at
+) VALUES (
+  {_sql_literal(model_call["modelCallId"])},
+  {_sql_literal(model_call["runId"])},
+  {_sql_literal(model_call["provider"])},
+  {_sql_literal(model_call["modelId"])},
+  {_sql_literal(model_call["promptVersionId"])},
+  {model_call["inputTokens"]},
+  {model_call["outputTokens"]},
+  {model_call["cost"]},
+  {model_call["latencyMs"]},
+  {_sql_literal(model_call["status"])},
+  {_sql_literal(model_call["errorType"])},
+  {_sql_literal(model_call["errorMessage"])},
+  {_sql_literal(model_call["startedAt"])},
+  {_sql_literal(model_call["completedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  provider = VALUES(provider),
+  model_id = VALUES(model_id),
+  prompt_version_id = VALUES(prompt_version_id),
+  input_tokens = VALUES(input_tokens),
+  output_tokens = VALUES(output_tokens),
+  cost = VALUES(cost),
+  latency_ms = VALUES(latency_ms),
+  status = VALUES(status),
+  error_type = VALUES(error_type),
+  error_message = VALUES(error_message),
+  started_at = VALUES(started_at),
+  completed_at = VALUES(completed_at);
+"""
+
+
+def _message_upsert_sql(message: MessageRecord) -> str:
+    return f"""
+INSERT INTO messages (
+  message_id,
+  conversation_id,
+  turn_id,
+  run_id,
+  role,
+  content,
+  status,
+  source_evidence_ids_json,
+  tool_call_ids_json,
+  report_id,
+  created_at,
+  completed_at
+) VALUES (
+  {_sql_literal(message["messageId"])},
+  {_sql_literal(message["conversationId"])},
+  {_sql_literal(message["turnId"])},
+  {_sql_literal(message["runId"])},
+  {_sql_literal(message["role"])},
+  {_sql_literal(message["content"])},
+  {_sql_literal(message["status"])},
+  {_json_literal(message["sourceEvidenceIds"])},
+  {_json_literal(message["toolCallIds"])},
+  {_sql_literal(message["reportId"])},
+  {_sql_literal(message["createdAt"])},
+  {_sql_literal(message["completedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  turn_id = VALUES(turn_id),
+  run_id = VALUES(run_id),
+  role = VALUES(role),
+  content = VALUES(content),
+  status = VALUES(status),
+  source_evidence_ids_json = VALUES(source_evidence_ids_json),
+  tool_call_ids_json = VALUES(tool_call_ids_json),
+  report_id = VALUES(report_id),
+  created_at = VALUES(created_at),
+  completed_at = VALUES(completed_at);
+"""
+
+
+def _message_stream_upsert_sql(message_stream: MessageStreamRecord) -> str:
+    return f"""
+INSERT INTO message_streams (
+  message_stream_id,
+  conversation_id,
+  message_id,
+  run_id,
+  sequence_number,
+  event_type,
+  delta,
+  status,
+  occurred_at,
+  error_code,
+  error_message
+) VALUES (
+  {_sql_literal(message_stream["messageStreamId"])},
+  {_sql_literal(message_stream["conversationId"])},
+  {_sql_literal(message_stream["messageId"])},
+  {_sql_literal(message_stream["runId"])},
+  {message_stream["sequence"]},
+  {_sql_literal(message_stream["eventType"])},
+  {_sql_literal(message_stream["delta"])},
+  {_sql_literal(message_stream["status"])},
+  {_sql_literal(message_stream["occurredAt"])},
+  {_sql_literal(message_stream["errorCode"])},
+  {_sql_literal(message_stream["errorMessage"])}
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  message_id = VALUES(message_id),
+  run_id = VALUES(run_id),
+  sequence_number = VALUES(sequence_number),
+  event_type = VALUES(event_type),
+  delta = VALUES(delta),
+  status = VALUES(status),
+  occurred_at = VALUES(occurred_at),
+  error_code = VALUES(error_code),
+  error_message = VALUES(error_message);
 """
 
 
@@ -1127,6 +1381,134 @@ SELECT JSON_OBJECT(
         return cast(list[RunEventRecord], items)
 
 
+class ToolCallRepository:
+    """Repository boundary for ToolCall persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, tool_call: ToolCallRecord) -> None:
+        self._database.execute_sql(_tool_call_upsert_sql(tool_call))
+
+    def list_by_run_id(self, run_id: str) -> list[ToolCallRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'toolCallId', tool_call_id,
+          'runId', run_id,
+          'toolName', tool_name,
+          'input', input_json,
+          'output', output_json,
+          'status', status,
+          'riskLevel', risk_level,
+          'permission', permission,
+          'errorType', error_type,
+          'errorMessage', error_message,
+          'startedAt', started_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          tool_call_id,
+          run_id,
+          tool_name,
+          input_json,
+          output_json,
+          status,
+          risk_level,
+          permission,
+          error_type,
+          error_message,
+          started_at,
+          completed_at
+        FROM tool_calls
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY started_at ASC, id ASC
+      ) ordered_tool_calls
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "ToolCall.items")
+        return cast(list[ToolCallRecord], items)
+
+
+class ModelCallRepository:
+    """Repository boundary for ModelCall persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, model_call: ModelCallRecord) -> None:
+        self._database.execute_sql(_model_call_upsert_sql(model_call))
+
+    def list_by_run_id(self, run_id: str) -> list[ModelCallRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'modelCallId', model_call_id,
+          'runId', run_id,
+          'provider', provider,
+          'modelId', model_id,
+          'promptVersionId', prompt_version_id,
+          'inputTokens', input_tokens,
+          'outputTokens', output_tokens,
+          'cost', cost,
+          'latencyMs', latency_ms,
+          'status', status,
+          'errorType', error_type,
+          'errorMessage', error_message,
+          'startedAt', started_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          model_call_id,
+          run_id,
+          provider,
+          model_id,
+          prompt_version_id,
+          input_tokens,
+          output_tokens,
+          cost,
+          latency_ms,
+          status,
+          error_type,
+          error_message,
+          started_at,
+          completed_at
+        FROM model_calls
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY started_at ASC, id ASC
+      ) ordered_model_calls
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "ModelCall.items")
+        return cast(list[ModelCallRecord], items)
+
+
 class SourceEvidenceRepository:
     """Repository boundary for SourceEvidence persistence and lookup."""
 
@@ -1315,6 +1697,153 @@ SELECT JSON_OBJECT(
         return cast(list[DecisionRecord], items)
 
 
+class MessageRepository:
+    """Repository boundary for Message persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, message: MessageRecord) -> None:
+        self._database.execute_sql(_message_upsert_sql(message))
+
+    def get_by_message_id(self, message_id: str) -> MessageRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'messageId', message_id,
+  'conversationId', conversation_id,
+  'turnId', turn_id,
+  'runId', run_id,
+  'role', role,
+  'content', content,
+  'status', status,
+  'sourceEvidenceIds', source_evidence_ids_json,
+  'toolCallIds', tool_call_ids_json,
+  'reportId', report_id,
+  'createdAt', created_at,
+  'completedAt', completed_at
+)
+FROM messages
+WHERE message_id = {_sql_literal(message_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(message_id)
+        return cast(MessageRecord, payload)
+
+    def list_by_conversation_id(self, conversation_id: str) -> list[MessageRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'messageId', message_id,
+          'conversationId', conversation_id,
+          'turnId', turn_id,
+          'runId', run_id,
+          'role', role,
+          'content', content,
+          'status', status,
+          'sourceEvidenceIds', source_evidence_ids_json,
+          'toolCallIds', tool_call_ids_json,
+          'reportId', report_id,
+          'createdAt', created_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          message_id,
+          conversation_id,
+          turn_id,
+          run_id,
+          role,
+          content,
+          status,
+          source_evidence_ids_json,
+          tool_call_ids_json,
+          report_id,
+          created_at,
+          completed_at
+        FROM messages
+        WHERE conversation_id = {_sql_literal(conversation_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_messages
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Message.items")
+        return cast(list[MessageRecord], items)
+
+
+class MessageStreamRepository:
+    """Repository boundary for MessageStream persistence and lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(self, message_stream: MessageStreamRecord) -> None:
+        self._database.execute_sql(_message_stream_upsert_sql(message_stream))
+
+    def list_by_message_id(self, message_id: str) -> list[MessageStreamRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'messageStreamId', message_stream_id,
+          'conversationId', conversation_id,
+          'messageId', message_id,
+          'runId', run_id,
+          'sequence', sequence_number,
+          'eventType', event_type,
+          'delta', delta,
+          'status', status,
+          'occurredAt', occurred_at,
+          'errorCode', error_code,
+          'errorMessage', error_message
+        )
+      )
+      FROM (
+        SELECT
+          message_stream_id,
+          conversation_id,
+          message_id,
+          run_id,
+          sequence_number,
+          event_type,
+          delta,
+          status,
+          occurred_at,
+          error_code,
+          error_message
+        FROM message_streams
+        WHERE message_id = {_sql_literal(message_id)}
+        ORDER BY sequence_number ASC, id ASC
+      ) ordered_message_streams
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "MessageStream.items")
+        return cast(list[MessageStreamRecord], items)
+
+
 class AnalysisRunLifecycleRepository:
     """Repository boundary for transactional lifecycle transitions."""
 
@@ -1429,6 +1958,32 @@ class AnalysisRunLifecycleRepository:
                 _run_event_insert_sql(run_event),
             ]
         )
+
+    def complete_delivery(
+        self,
+        analysis_run: AnalysisRunRecord,
+        tool_call: ToolCallRecord,
+        model_call: ModelCallRecord,
+        source_evidence: Sequence[SourceEvidenceRecord],
+        report: ReportRecord,
+        decision: DecisionRecord,
+        message: MessageRecord,
+        message_streams: Sequence[MessageStreamRecord],
+        run_events: Sequence[RunEventRecord],
+    ) -> None:
+        statements = [
+            _analysis_run_upsert_sql(analysis_run),
+            _tool_call_upsert_sql(tool_call),
+            _model_call_upsert_sql(model_call),
+        ]
+        statements.extend(_source_evidence_upsert_sql(item) for item in source_evidence)
+        statements.append(_report_upsert_sql(report))
+        statements.extend(_report_section_upsert_sql(section) for section in report["sections"])
+        statements.append(_decision_upsert_sql(decision))
+        statements.append(_message_upsert_sql(message))
+        statements.extend(_message_stream_upsert_sql(item) for item in message_streams)
+        statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
+        self._database.execute_transaction(statements)
 
     def cancel(
         self,

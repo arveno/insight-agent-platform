@@ -1,0 +1,80 @@
+CREATE TABLE IF NOT EXISTS tool_calls (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tool_call_id VARCHAR(128) NOT NULL,
+  run_id VARCHAR(128) NOT NULL,
+  tool_name VARCHAR(128) NOT NULL,
+  input_json JSON NOT NULL,
+  output_json JSON NULL,
+  status VARCHAR(32) NOT NULL,
+  risk_level VARCHAR(32) NOT NULL,
+  permission VARCHAR(128) NOT NULL,
+  error_type VARCHAR(128) NULL,
+  error_message TEXT NULL,
+  started_at VARCHAR(40) NOT NULL,
+  completed_at VARCHAR(40) NULL,
+  UNIQUE KEY uq_tool_calls_tool_call_id (tool_call_id),
+  KEY idx_tool_calls_run_id (run_id),
+  KEY idx_tool_calls_tool_name (tool_name)
+);
+
+CREATE TABLE IF NOT EXISTS model_calls (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  model_call_id VARCHAR(128) NOT NULL,
+  run_id VARCHAR(128) NOT NULL,
+  provider VARCHAR(128) NOT NULL,
+  model_id VARCHAR(128) NOT NULL,
+  prompt_version_id VARCHAR(128) NOT NULL,
+  input_tokens INT NOT NULL,
+  output_tokens INT NOT NULL,
+  cost DOUBLE NOT NULL,
+  latency_ms INT NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  error_type VARCHAR(128) NULL,
+  error_message TEXT NULL,
+  started_at VARCHAR(40) NOT NULL,
+  completed_at VARCHAR(40) NULL,
+  UNIQUE KEY uq_model_calls_model_call_id (model_call_id),
+  KEY idx_model_calls_run_id (run_id),
+  KEY idx_model_calls_provider_model (provider, model_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  message_id VARCHAR(128) NOT NULL,
+  conversation_id VARCHAR(128) NOT NULL,
+  turn_id VARCHAR(128) NOT NULL,
+  run_id VARCHAR(128) NULL,
+  role VARCHAR(32) NOT NULL,
+  content TEXT NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  source_evidence_ids_json JSON NOT NULL,
+  tool_call_ids_json JSON NOT NULL,
+  report_id VARCHAR(128) NULL,
+  created_at VARCHAR(40) NOT NULL,
+  completed_at VARCHAR(40) NULL,
+  UNIQUE KEY uq_messages_message_id (message_id),
+  KEY idx_messages_conversation_id (conversation_id),
+  KEY idx_messages_turn_id (turn_id),
+  KEY idx_messages_run_id (run_id),
+  KEY idx_messages_report_id (report_id)
+);
+
+CREATE TABLE IF NOT EXISTS message_streams (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  message_stream_id VARCHAR(128) NOT NULL,
+  conversation_id VARCHAR(128) NOT NULL,
+  message_id VARCHAR(128) NOT NULL,
+  run_id VARCHAR(128) NOT NULL,
+  sequence_number INT NOT NULL,
+  event_type VARCHAR(32) NOT NULL,
+  delta TEXT NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  occurred_at VARCHAR(40) NOT NULL,
+  error_code VARCHAR(128) NULL,
+  error_message TEXT NULL,
+  UNIQUE KEY uq_message_streams_message_stream_id (message_stream_id),
+  UNIQUE KEY uq_message_streams_message_sequence (message_id, sequence_number),
+  KEY idx_message_streams_conversation_id (conversation_id),
+  KEY idx_message_streams_message_id (message_id),
+  KEY idx_message_streams_run_id (run_id)
+);
