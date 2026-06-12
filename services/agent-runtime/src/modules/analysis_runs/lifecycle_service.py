@@ -33,6 +33,11 @@ RUN_CANCEL_REQUESTED_SUMMARY = "记录用户已请求取消当前 AnalysisRun。
 RUN_CANCELLING_SUMMARY = "记录 AnalysisRun 已进入 cancelling 过渡。"
 RUN_CANCELLED_SUMMARY = "记录 AnalysisRun 已进入 cancelled 终态。"
 ALLOWED_USER_RETRY_STATUSES = frozenset({"failed", "expired", "cancelled"})
+ALLOWED_CANCEL_WAITING_FOR = frozenset({"approval", "user_input", "external_dependency"})
+CANCEL_INVALID_STATE_MESSAGE = (
+    "AnalysisRun must be queued/queueing, running/execution, or waiting for "
+    "approval/user_input/external_dependency before cancellation."
+)
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -393,10 +398,8 @@ class AnalysisRunLifecycleService:
     ) -> AnalysisRunRecord:
         analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
 
-        if analysis_run["status"] not in {"queued", "running", "waiting"}:
-            raise AnalysisRunInvalidStateError(
-                "AnalysisRun must be queued/running/waiting before cancellation."
-            )
+        if not _is_cancellable_run(analysis_run):
+            raise AnalysisRunInvalidStateError(CANCEL_INVALID_STATE_MESSAGE)
 
         cancelled_at = _utc_timestamp(datetime.now(UTC))
         terminal_reason = reason or "User requested cancellation."
@@ -555,6 +558,16 @@ def _generate_canonical_id(prefix: str) -> str:
 
 def _utc_timestamp(value: datetime) -> str:
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _is_cancellable_run(analysis_run: AnalysisRunRecord) -> bool:
+    if analysis_run["status"] == "queued":
+        return analysis_run["phase"] == "queueing"
+    if analysis_run["status"] == "running":
+        return analysis_run["phase"] == "execution"
+    if analysis_run["status"] == "waiting":
+        return analysis_run["waitingFor"] in ALLOWED_CANCEL_WAITING_FOR
+    return False
 
 
 def build_run_created_event(*, run_id: str, occurred_at: str) -> RunEventRecord:

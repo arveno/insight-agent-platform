@@ -22,6 +22,7 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRepository,
 )
 from src.modules.analysis_runs.lifecycle_service import (
+    CANCEL_INVALID_STATE_MESSAGE,
     AnalysisRunInvalidStateError,
     AnalysisRunLifecycleService,
     build_run_created_event,
@@ -626,6 +627,25 @@ def test_worker_failure_rejects_unknown_run_or_attempt(runtime_foundation_env: N
         )
 
 
+def test_cancel_rejects_running_delivery_state(runtime_foundation_env: None) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+    lifecycle_service.release_worker(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+    )
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match=CANCEL_INVALID_STATE_MESSAGE,
+    ):
+        lifecycle_service.cancel_analysis_run(
+            RUN_ID,
+            "cancel after delivery gate",
+        )
+
+
 def test_worker_release_and_cancel_reject_invalid_states(runtime_foundation_env: None) -> None:
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
@@ -649,7 +669,7 @@ def test_worker_release_and_cancel_reject_invalid_states(runtime_foundation_env:
 
     with pytest.raises(
         AnalysisRunInvalidStateError,
-        match="AnalysisRun must be queued/running/waiting before cancellation.",
+        match=CANCEL_INVALID_STATE_MESSAGE,
     ):
         lifecycle_service.cancel_analysis_run(
             RUN_ID,

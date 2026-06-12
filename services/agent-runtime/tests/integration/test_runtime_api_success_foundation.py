@@ -1081,6 +1081,51 @@ def test_terminal_run_control_plane_routes_reject_claim_heartbeat_release_and_ca
     assert cancel_again_response.status_code == 409
 
 
+def test_cancel_route_rejects_running_delivery_state_without_appending_cancel_events(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    release_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-release",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert release_response.status_code == 202
+    released_run = response_json_dict(release_response.json())
+    assert released_run["status"] == "running"
+    assert released_run["phase"] == "delivery"
+
+    events_before_cancel = get_run_events(client, analysis_run["runId"])["items"]
+
+    cancel_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/cancel",
+        json={"reason": "cancel after delivery gate"},
+    )
+    assert cancel_response.status_code == 409
+    assert cancel_response.json()["errorCode"] == "INVALID_STATE"
+
+    persisted_run_response = client.get(f"/analysis-runs/{analysis_run['runId']}")
+    assert persisted_run_response.status_code == 200
+    assert persisted_run_response.json() == released_run
+
+    events_after_cancel = get_run_events(client, analysis_run["runId"])["items"]
+    assert events_after_cancel == events_before_cancel
+    assert "run.cancel_requested" not in [event["eventType"] for event in events_after_cancel]
+    assert "run.cancelling" not in [event["eventType"] for event in events_after_cancel]
+    assert "run.cancelled" not in [event["eventType"] for event in events_after_cancel]
+
+
 @pytest.mark.parametrize(
     ("status", "phase", "terminal_field"),
     [
