@@ -105,6 +105,61 @@ class CreateAnalysisRunRequest(BaseModel):
     conversationId: str
 
 
+class WorkerClaimRequest(BaseModel):
+    """POST /analysis-runs/{runId}/worker-claim request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workerId: str
+
+
+class WorkerHeartbeatRequest(BaseModel):
+    """POST /analysis-runs/{runId}/worker-heartbeat request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    attemptId: str
+    workerId: str
+
+
+class WorkerFailureRequest(BaseModel):
+    """POST /analysis-runs/{runId}/worker-failure request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    attemptId: str
+    workerId: str
+    failureCode: str
+    failureMessage: str
+
+
+class WorkerLostRequest(BaseModel):
+    """POST /analysis-runs/{runId}/worker-lost request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    attemptId: str
+    workerId: str
+    lostReason: str
+
+
+class WorkerReleaseRequest(BaseModel):
+    """POST /analysis-runs/{runId}/worker-release request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    attemptId: str
+    workerId: str
+
+
+class CancelAnalysisRunRequest(BaseModel):
+    """POST /analysis-runs/{runId}/cancel request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str | None
+
+
 class AnalysisRunResponse(BaseModel):
     """AnalysisRun contract-shaped API response."""
 

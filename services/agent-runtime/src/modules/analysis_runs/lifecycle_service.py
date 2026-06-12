@@ -25,9 +25,19 @@ AGENT_WORKER_NAME = "agent-worker"
 RUN_CREATED_SUMMARY = "记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。"
 WORKER_LEASE_ACQUIRED_SUMMARY = "记录 Worker 已接管 AnalysisRun。"
 WORKER_HEARTBEAT_SUMMARY = "记录 Worker heartbeat。"
+WORKER_LEASE_RELEASED_SUMMARY = "记录 Worker 已释放 AnalysisRun 的 lease，运行进入 delivery gate。"
+WORKER_LEASE_RELEASED_FOR_CANCEL_SUMMARY = "记录 AnalysisRun 取消时释放 Worker lease。"
 WORKER_FAILED_SUMMARY = "记录 Worker 执行失败，AnalysisRun 进入 failed 终态。"
 WORKER_LOST_SUMMARY = "记录 Worker lease 丢失，AnalysisRun 进入 expired 终态。"
+RUN_CANCEL_REQUESTED_SUMMARY = "记录用户已请求取消当前 AnalysisRun。"
+RUN_CANCELLING_SUMMARY = "记录 AnalysisRun 已进入 cancelling 过渡。"
+RUN_CANCELLED_SUMMARY = "记录 AnalysisRun 已进入 cancelled 终态。"
 ALLOWED_USER_RETRY_STATUSES = frozenset({"failed", "expired", "cancelled"})
+ALLOWED_CANCEL_WAITING_FOR = frozenset({"approval", "user_input", "external_dependency"})
+CANCEL_INVALID_STATE_MESSAGE = (
+    "AnalysisRun must be queued/queueing, running/execution, or waiting for "
+    "approval/user_input/external_dependency before cancellation."
+)
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -330,11 +340,151 @@ class AnalysisRunLifecycleService:
         )
         return expired_run
 
+    def release_worker(
+        self,
+        run_id: str,
+        attempt_id: str,
+        worker_id: str,
+    ) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be running/execution before worker release."
+            )
+
+        execution_attempt = self._require_running_attempt(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            worker_id=worker_id,
+            run_state_error_message="AnalysisRun must be running/execution before worker release.",
+            attempt_state_error_message="ExecutionAttempt must be running before worker release.",
+        )
+
+        released_at = _utc_timestamp(datetime.now(UTC))
+        released_run: AnalysisRunRecord = {
+            **analysis_run,
+            "status": "running",
+            "phase": "delivery",
+            "waitingFor": None,
+        }
+        released_execution_attempt: ExecutionAttemptRecord = {
+            **execution_attempt,
+            "status": "released",
+            "releasedAt": released_at,
+            "failureCode": None,
+            "failureMessage": None,
+        }
+        run_event = build_worker_lease_released_event(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            occurred_at=released_at,
+            phase="delivery",
+            summary=WORKER_LEASE_RELEASED_SUMMARY,
+            sequence=self._next_run_event_sequence(run_id),
+        )
+
+        self.lifecycle_repository.release_worker(
+            released_run,
+            released_execution_attempt,
+            run_event,
+        )
+        return released_run
+
+    def cancel_analysis_run(
+        self,
+        run_id: str,
+        reason: str | None,
+    ) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if not _is_cancellable_run(analysis_run):
+            raise AnalysisRunInvalidStateError(CANCEL_INVALID_STATE_MESSAGE)
+
+        cancelled_at = _utc_timestamp(datetime.now(UTC))
+        terminal_reason = reason or "User requested cancellation."
+        cancelled_run: AnalysisRunRecord = {
+            **analysis_run,
+            "status": "cancelled",
+            "outcome": "user_cancelled",
+            "waitingFor": None,
+            "cancelRequestedAt": cancelled_at,
+            "cancellingAt": cancelled_at,
+            "cancelledAt": cancelled_at,
+            "completedAt": None,
+            "failedAt": None,
+            "expiredAt": None,
+            "rejectedAt": None,
+            "failureCode": None,
+            "terminalReason": terminal_reason,
+            "retryable": True,
+        }
+
+        released_execution_attempt: ExecutionAttemptRecord | None = None
+        latest_attempt = self._latest_execution_attempt(run_id)
+        if latest_attempt is not None and latest_attempt["status"] in {"leased", "running"}:
+            released_execution_attempt = {
+                **latest_attempt,
+                "status": "released",
+                "releasedAt": cancelled_at,
+                "failureCode": None,
+                "failureMessage": None,
+            }
+
+        next_sequence = self._next_run_event_sequence(run_id)
+        run_events = [
+            build_run_cancel_requested_event(
+                run_id=run_id,
+                occurred_at=cancelled_at,
+                phase=analysis_run["phase"],
+                sequence=next_sequence,
+            ),
+            build_run_cancelling_event(
+                run_id=run_id,
+                occurred_at=cancelled_at,
+                phase=analysis_run["phase"],
+                sequence=next_sequence + 1,
+            ),
+        ]
+        if released_execution_attempt is not None:
+            run_events.append(
+                build_worker_lease_released_event(
+                    run_id=run_id,
+                    attempt_id=released_execution_attempt["attemptId"],
+                    occurred_at=cancelled_at,
+                    phase=analysis_run["phase"],
+                    summary=WORKER_LEASE_RELEASED_FOR_CANCEL_SUMMARY,
+                    sequence=next_sequence + len(run_events),
+                )
+            )
+        run_events.append(
+            build_run_cancelled_event(
+                run_id=run_id,
+                occurred_at=cancelled_at,
+                phase=analysis_run["phase"],
+                reason=terminal_reason,
+                sequence=next_sequence + len(run_events),
+            )
+        )
+
+        self.lifecycle_repository.cancel(
+            cancelled_run,
+            released_execution_attempt,
+            run_events,
+        )
+        return cancelled_run
+
     def _next_run_event_sequence(self, run_id: str) -> int:
         run_events = self.run_event_repository.list_by_run_id(run_id)
         if not run_events:
             return 0
         return run_events[-1]["sequence"] + 1
+
+    def _latest_execution_attempt(self, run_id: str) -> ExecutionAttemptRecord | None:
+        execution_attempts = self.execution_attempt_repository.list_by_run_id(run_id)
+        if not execution_attempts:
+            return None
+        return execution_attempts[-1]
 
     def _require_running_attempt(
         self,
@@ -350,7 +500,12 @@ class AnalysisRunLifecycleService:
         if analysis_run["status"] != "running" or analysis_run["phase"] != "execution":
             raise AnalysisRunInvalidStateError(run_state_error_message)
 
-        execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
+        try:
+            execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
+        except KeyError as exc:
+            raise AnalysisRunInvalidStateError(
+                f"ExecutionAttempt not found: {attempt_id}"
+            ) from exc
         if execution_attempt["runId"] != run_id:
             raise AnalysisRunInvalidStateError("ExecutionAttempt.runId does not match run_id.")
         if execution_attempt["status"] != "running":
@@ -403,6 +558,16 @@ def _generate_canonical_id(prefix: str) -> str:
 
 def _utc_timestamp(value: datetime) -> str:
     return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _is_cancellable_run(analysis_run: AnalysisRunRecord) -> bool:
+    if analysis_run["status"] == "queued":
+        return analysis_run["phase"] == "queueing"
+    if analysis_run["status"] == "running":
+        return analysis_run["phase"] == "execution"
+    if analysis_run["status"] == "waiting":
+        return analysis_run["waitingFor"] in ALLOWED_CANCEL_WAITING_FOR
+    return False
 
 
 def build_run_created_event(*, run_id: str, occurred_at: str) -> RunEventRecord:
@@ -526,6 +691,38 @@ def build_worker_heartbeat_event(
     }
 
 
+def build_worker_lease_released_event(
+    *,
+    run_id: str,
+    attempt_id: str,
+    occurred_at: str,
+    phase: str,
+    summary: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "worker.lease_released",
+        "status": "succeeded",
+        "phase": phase,  # type: ignore[typeddict-item]
+        "sequence": sequence,
+        "actor": AGENT_WORKER_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": summary,
+        "parentEventId": None,
+        "refType": "execution_attempt",
+        "refId": attempt_id,
+        "errorCode": None,
+        "errorMessage": None,
+        "nodeName": "worker.lease_released",
+        "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
 def build_worker_failed_event(
     *,
     run_id: str,
@@ -583,6 +780,97 @@ def build_worker_lost_event(
         "errorMessage": lost_reason,
         "nodeName": "worker.lost",
         "agentName": AGENT_WORKER_NAME,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_run_cancel_requested_event(
+    *,
+    run_id: str,
+    occurred_at: str,
+    phase: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "run.cancel_requested",
+        "status": "succeeded",
+        "phase": phase,  # type: ignore[typeddict-item]
+        "sequence": sequence,
+        "actor": ANALYSIS_RUNTIME_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": RUN_CANCEL_REQUESTED_SUMMARY,
+        "parentEventId": None,
+        "refType": None,
+        "refId": None,
+        "errorCode": None,
+        "errorMessage": None,
+        "nodeName": "run.cancel_requested",
+        "agentName": ANALYSIS_RUNTIME_AGENT,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_run_cancelling_event(
+    *,
+    run_id: str,
+    occurred_at: str,
+    phase: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "run.cancelling",
+        "status": "succeeded",
+        "phase": phase,  # type: ignore[typeddict-item]
+        "sequence": sequence,
+        "actor": ANALYSIS_RUNTIME_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": RUN_CANCELLING_SUMMARY,
+        "parentEventId": None,
+        "refType": None,
+        "refId": None,
+        "errorCode": None,
+        "errorMessage": None,
+        "nodeName": "run.cancelling",
+        "agentName": ANALYSIS_RUNTIME_AGENT,
+        "toolName": None,
+        "startedAt": occurred_at,
+        "completedAt": occurred_at,
+    }
+
+
+def build_run_cancelled_event(
+    *,
+    run_id: str,
+    occurred_at: str,
+    phase: str,
+    reason: str,
+    sequence: int,
+) -> RunEventRecord:
+    return {
+        "eventId": _generate_canonical_id("event"),
+        "runId": run_id,
+        "eventType": "run.cancelled",
+        "status": "cancelled",
+        "phase": phase,  # type: ignore[typeddict-item]
+        "sequence": sequence,
+        "actor": ANALYSIS_RUNTIME_ACTOR,
+        "occurredAt": occurred_at,
+        "summary": RUN_CANCELLED_SUMMARY,
+        "parentEventId": None,
+        "refType": None,
+        "refId": None,
+        "errorCode": None,
+        "errorMessage": reason,
+        "nodeName": "run.cancelled",
+        "agentName": ANALYSIS_RUNTIME_AGENT,
         "toolName": None,
         "startedAt": occurred_at,
         "completedAt": occurred_at,

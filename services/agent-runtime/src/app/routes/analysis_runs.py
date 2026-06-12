@@ -9,15 +9,22 @@ from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     AnalysisRunResponse,
     ApprovalDecisionRequest,
+    CancelAnalysisRunRequest,
     ConversationResponse,
     CreateAnalysisRunRequest,
     DecisionListResponse,
     ExecutionAttemptListResponse,
+    ExecutionAttemptResponse,
     ReportListResponse,
     RunEventListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     SourceEvidenceListResponse,
+    WorkerClaimRequest,
+    WorkerFailureRequest,
+    WorkerHeartbeatRequest,
+    WorkerLostRequest,
+    WorkerReleaseRequest,
     generate_canonical_id,
     not_implemented_route_stub_response,
     runtime_error_response,
@@ -31,6 +38,7 @@ from src.infrastructure.database.runtime_foundation import (
     ConversationRecord,
     ConversationRepository,
     DecisionRepository,
+    ExecutionAttemptRecord,
     ExecutionAttemptRepository,
     ReportRepository,
     RunEventRepository,
@@ -402,6 +410,166 @@ def list_execution_attempts(run_id: str = Path(alias="runId")) -> dict[str, obje
         )
 
 
+@router.post(
+    "/{runId}/worker-claim",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def claim_analysis_run(
+    request: WorkerClaimRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Advance a queued AnalysisRun into running/execution for the claimed worker."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.claim_for_execution(run_id, request.workerId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
+@router.post(
+    "/{runId}/worker-heartbeat",
+    response_model=ExecutionAttemptResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def heartbeat_analysis_run(
+    request: WorkerHeartbeatRequest,
+    run_id: str = Path(alias="runId"),
+) -> ExecutionAttemptRecord | JSONResponse:
+    """Update heartbeatAt for the current running ExecutionAttempt."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.heartbeat(run_id, request.attemptId, request.workerId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
+@router.post(
+    "/{runId}/worker-failure",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def fail_analysis_run(
+    request: WorkerFailureRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Record a worker execution failure and push the run into failed."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.record_worker_failure(
+            run_id,
+            request.attemptId,
+            request.workerId,
+            request.failureCode,
+            request.failureMessage,
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
+@router.post(
+    "/{runId}/worker-lost",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def mark_analysis_run_worker_lost(
+    request: WorkerLostRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Record worker lease loss and push the run into expired."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.mark_worker_lost(
+            run_id,
+            request.attemptId,
+            request.workerId,
+            request.lostReason,
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
+@router.post(
+    "/{runId}/worker-release",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def release_analysis_run_worker(
+    request: WorkerReleaseRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Release the current worker lease and move the run into delivery gate."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.release_worker(run_id, request.attemptId, request.workerId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
 @router.get("/{runId}/approvals", responses=NOT_IMPLEMENTED_RESPONSE)
 def list_approval_requests(run_id: str = Path(alias="runId")) -> JSONResponse:
     """Reserve the ApprovalRequest read boundary without faking approval state."""
@@ -439,12 +607,34 @@ def get_analysis_run_conversation(
         )
 
 
-@router.post("/{runId}/cancel", responses=NOT_IMPLEMENTED_RESPONSE)
-def cancel_analysis_run(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Reserve the cancellation boundary without altering runtime state."""
+@router.post(
+    "/{runId}/cancel",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def cancel_analysis_run(
+    request: CancelAnalysisRunRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Cancel a queued/running/waiting AnalysisRun without faking delivery side effects."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.cancel_analysis_run(run_id, request.reason)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
 
 
 @router.post(

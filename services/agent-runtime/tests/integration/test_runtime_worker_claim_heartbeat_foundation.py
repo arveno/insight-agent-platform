@@ -22,6 +22,7 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRepository,
 )
 from src.modules.analysis_runs.lifecycle_service import (
+    CANCEL_INVALID_STATE_MESSAGE,
     AnalysisRunInvalidStateError,
     AnalysisRunLifecycleService,
     build_run_created_event,
@@ -429,6 +430,161 @@ def test_mark_worker_lost_transitions_running_run_to_expired_and_appends_event(
     assert_no_artifact_side_effects(database)
 
 
+def test_worker_release_transitions_running_run_to_delivery_and_appends_event(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, running_run, running_attempt = create_running_run(database)
+    run_event_repository = RunEventRepository(database)
+    events_before_release = run_event_repository.list_by_run_id(RUN_ID)
+    previous_max_sequence = events_before_release[-1]["sequence"]
+
+    released_run = lifecycle_service.release_worker(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+    )
+
+    released_attempt = ExecutionAttemptRepository(database).get_by_attempt_id(
+        str(running_attempt["attemptId"])
+    )
+    persisted_run = AnalysisRunRepository(database).get_by_run_id(RUN_ID)
+    events_after_release = run_event_repository.list_by_run_id(RUN_ID)
+    latest_event = events_after_release[-1]
+
+    assert running_run["status"] == "running"
+    assert released_run["status"] == "running"
+    assert released_run["phase"] == "delivery"
+    assert released_run["completedAt"] is None
+    assert released_run["failedAt"] is None
+    assert released_run["cancelledAt"] is None
+    assert released_run["expiredAt"] is None
+    assert persisted_run == released_run
+
+    assert released_attempt["status"] == "released"
+    assert released_attempt["workerId"] == WORKER_ID
+    assert released_attempt["releasedAt"] is not None
+    assert released_attempt["failureCode"] is None
+    assert released_attempt["failureMessage"] is None
+
+    assert len(events_after_release) == len(events_before_release) + 1
+    assert latest_event["eventType"] == "worker.lease_released"
+    assert latest_event["status"] == "succeeded"
+    assert latest_event["phase"] == "delivery"
+    assert latest_event["actor"] == "agent_worker"
+    assert (
+        latest_event["summary"]
+        == "记录 Worker 已释放 AnalysisRun 的 lease，运行进入 delivery gate。"
+    )
+    assert latest_event["refType"] == "execution_attempt"
+    assert latest_event["refId"] == running_attempt["attemptId"]
+    assert latest_event["nodeName"] == "worker.lease_released"
+    assert latest_event["agentName"] == "agent-worker"
+    assert latest_event["sequence"] == previous_max_sequence + 1
+    assert "run.completed" not in [event["eventType"] for event in events_after_release]
+
+    assert_no_artifact_side_effects(database)
+
+
+def test_cancel_queued_run_transitions_to_cancelled_and_releases_leased_attempt(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, queued_run = create_dispatched_run(database)
+    leased_attempt = ExecutionAttemptRepository(database).list_by_run_id(RUN_ID)[-1]
+    run_event_repository = RunEventRepository(database)
+    events_before_cancel = run_event_repository.list_by_run_id(RUN_ID)
+
+    cancelled_run = lifecycle_service.cancel_analysis_run(
+        RUN_ID,
+        "user cancelled queued run",
+    )
+
+    released_attempt = ExecutionAttemptRepository(database).get_by_attempt_id(
+        str(leased_attempt["attemptId"])
+    )
+    persisted_run = AnalysisRunRepository(database).get_by_run_id(RUN_ID)
+    events_after_cancel = run_event_repository.list_by_run_id(RUN_ID)
+    new_events = events_after_cancel[len(events_before_cancel) :]
+
+    assert queued_run["status"] == "queued"
+    assert cancelled_run["status"] == "cancelled"
+    assert cancelled_run["phase"] == "queueing"
+    assert cancelled_run["outcome"] == "user_cancelled"
+    assert cancelled_run["cancelRequestedAt"] is not None
+    assert cancelled_run["cancellingAt"] is not None
+    assert cancelled_run["cancelledAt"] is not None
+    assert cancelled_run["completedAt"] is None
+    assert cancelled_run["failedAt"] is None
+    assert cancelled_run["expiredAt"] is None
+    assert cancelled_run["terminalReason"] == "user cancelled queued run"
+    assert persisted_run == cancelled_run
+
+    assert released_attempt["status"] == "released"
+    assert released_attempt["releasedAt"] is not None
+    assert released_attempt["failureCode"] is None
+    assert released_attempt["failureMessage"] is None
+
+    assert [event["eventType"] for event in new_events] == [
+        "run.cancel_requested",
+        "run.cancelling",
+        "worker.lease_released",
+        "run.cancelled",
+    ]
+    assert new_events[0]["status"] == "succeeded"
+    assert new_events[1]["status"] == "succeeded"
+    assert new_events[2]["status"] == "succeeded"
+    assert new_events[3]["status"] == "cancelled"
+    assert "run.completed" not in [event["eventType"] for event in events_after_cancel]
+
+    assert_no_artifact_side_effects(database)
+
+
+def test_cancel_running_run_transitions_to_cancelled_and_releases_running_attempt(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, running_run, running_attempt = create_running_run(database)
+    run_event_repository = RunEventRepository(database)
+    events_before_cancel = run_event_repository.list_by_run_id(RUN_ID)
+
+    cancelled_run = lifecycle_service.cancel_analysis_run(
+        RUN_ID,
+        "user cancelled running run",
+    )
+
+    released_attempt = ExecutionAttemptRepository(database).get_by_attempt_id(
+        str(running_attempt["attemptId"])
+    )
+    persisted_run = AnalysisRunRepository(database).get_by_run_id(RUN_ID)
+    events_after_cancel = run_event_repository.list_by_run_id(RUN_ID)
+    new_events = events_after_cancel[len(events_before_cancel) :]
+
+    assert running_run["status"] == "running"
+    assert cancelled_run["status"] == "cancelled"
+    assert cancelled_run["phase"] == "execution"
+    assert cancelled_run["outcome"] == "user_cancelled"
+    assert cancelled_run["cancelRequestedAt"] is not None
+    assert cancelled_run["cancellingAt"] is not None
+    assert cancelled_run["cancelledAt"] is not None
+    assert cancelled_run["terminalReason"] == "user cancelled running run"
+    assert persisted_run == cancelled_run
+
+    assert released_attempt["status"] == "released"
+    assert released_attempt["releasedAt"] is not None
+
+    assert [event["eventType"] for event in new_events] == [
+        "run.cancel_requested",
+        "run.cancelling",
+        "worker.lease_released",
+        "run.cancelled",
+    ]
+    assert new_events[-1]["status"] == "cancelled"
+    assert "run.completed" not in [event["eventType"] for event in events_after_cancel]
+
+    assert_no_artifact_side_effects(database)
+
+
 def test_worker_failure_rejects_mismatched_worker_id(runtime_foundation_env: None) -> None:
     database = RuntimeFoundationMysqlCli()
     lifecycle_service, _, running_attempt = create_running_run(database)
@@ -459,12 +615,65 @@ def test_worker_failure_rejects_unknown_run_or_attempt(runtime_foundation_env: N
             "worker execution failed",
         )
 
-    with pytest.raises(KeyError):
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="ExecutionAttempt not found: attempt-missing",
+    ):
         lifecycle_service.mark_worker_lost(
             RUN_ID,
             "attempt-missing",
             WORKER_ID,
             "worker heartbeat timed out",
+        )
+
+
+def test_cancel_rejects_running_delivery_state(runtime_foundation_env: None) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+    lifecycle_service.release_worker(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+    )
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match=CANCEL_INVALID_STATE_MESSAGE,
+    ):
+        lifecycle_service.cancel_analysis_run(
+            RUN_ID,
+            "cancel after delivery gate",
+        )
+
+
+def test_worker_release_and_cancel_reject_invalid_states(runtime_foundation_env: None) -> None:
+    database = RuntimeFoundationMysqlCli()
+    lifecycle_service, _, running_attempt = create_running_run(database)
+    lifecycle_service.record_worker_failure(
+        RUN_ID,
+        str(running_attempt["attemptId"]),
+        WORKER_ID,
+        "WORKER_EXECUTION_ERROR",
+        "worker execution failed",
+    )
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match="AnalysisRun must be running/execution before worker release.",
+    ):
+        lifecycle_service.release_worker(
+            RUN_ID,
+            str(running_attempt["attemptId"]),
+            WORKER_ID,
+        )
+
+    with pytest.raises(
+        AnalysisRunInvalidStateError,
+        match=CANCEL_INVALID_STATE_MESSAGE,
+    ):
+        lifecycle_service.cancel_analysis_run(
+            RUN_ID,
+            "cancel after terminal state",
         )
 
 

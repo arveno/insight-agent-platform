@@ -428,6 +428,138 @@ paths:
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
           $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/worker-claim:
+    post:
+      summary: Worker claim 分析运行
+      operationId: workerClaimAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerClaimRequest"
+            example:
+              workerId: worker-runtime-dispatch-foundation
+      responses:
+        "202":
+          description: Worker claim 成功后的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/worker-heartbeat:
+    post:
+      summary: Worker heartbeat 分析运行
+      operationId: workerHeartbeatAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerHeartbeatRequest"
+            example:
+              attemptId: attempt-7d60f811c53d447bb1c7e2c1d6445dd5
+              workerId: worker-runtime-dispatch-foundation
+      responses:
+        "200":
+          description: heartbeat 成功后的 ExecutionAttempt。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecutionAttempt"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/worker-failure:
+    post:
+      summary: 记录 worker failure
+      operationId: workerFailureAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerFailureRequest"
+            example:
+              attemptId: attempt-7d60f811c53d447bb1c7e2c1d6445dd5
+              workerId: worker-runtime-dispatch-foundation
+              failureCode: WORKER_EXECUTION_ERROR
+              failureMessage: worker execution failed
+      responses:
+        "202":
+          description: worker failure 成功后的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/worker-lost:
+    post:
+      summary: 记录 worker lost
+      operationId: workerLostAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerLostRequest"
+            example:
+              attemptId: attempt-7d60f811c53d447bb1c7e2c1d6445dd5
+              workerId: worker-runtime-dispatch-foundation
+              lostReason: worker heartbeat timed out
+      responses:
+        "202":
+          description: worker lost 成功后的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/worker-release:
+    post:
+      summary: 释放 worker 并推进到 delivery gate
+      operationId: workerReleaseAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkerReleaseRequest"
+            example:
+              attemptId: attempt-7d60f811c53d447bb1c7e2c1d6445dd5
+              workerId: worker-runtime-dispatch-foundation
+      responses:
+        "202":
+          description: worker release 成功后进入 running/delivery 的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
   /analysis-runs/{runId}/conversation:
     get:
       summary: 获取运行关联会话
@@ -672,6 +804,14 @@ paths:
       operationId: cancelAnalysisRun
       parameters:
         - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelAnalysisRunRequest"
+            example:
+              reason: 用户主动取消本次运行
       responses:
         "202":
           description: 已记录取消请求后的正式契约响应示例。
@@ -679,8 +819,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
   /analysis-runs/{runId}/retry:
     post:
       summary: 基于旧运行创建 retry
@@ -896,6 +1038,77 @@ components:
           type: string
         conversationId:
           type: string
+    WorkerClaimRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workerId
+      properties:
+        workerId:
+          type: string
+    WorkerHeartbeatRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - attemptId
+        - workerId
+      properties:
+        attemptId:
+          type: string
+        workerId:
+          type: string
+    WorkerFailureRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - attemptId
+        - workerId
+        - failureCode
+        - failureMessage
+      properties:
+        attemptId:
+          type: string
+        workerId:
+          type: string
+        failureCode:
+          type: string
+        failureMessage:
+          type: string
+    WorkerLostRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - attemptId
+        - workerId
+        - lostReason
+      properties:
+        attemptId:
+          type: string
+        workerId:
+          type: string
+        lostReason:
+          type: string
+    WorkerReleaseRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - attemptId
+        - workerId
+      properties:
+        attemptId:
+          type: string
+        workerId:
+          type: string
+    CancelAnalysisRunRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        reason:
+          type:
+            - string
+            - "null"
     ApprovalDecisionRequest:
       type: object
       additionalProperties: false
