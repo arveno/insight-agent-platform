@@ -56,6 +56,7 @@ export type AppShellStaticViewModel = {
   navigationGroups: AppShellNavigationGroupViewModel[];
   permissionSummary: StaticPermissionSummaryViewModel;
   readonlyState: StaticReadonlyStateViewModel;
+  selectedBusinessDomainId: string;
   shellState: StaticPageStateCoverageViewModel;
   themePreference: AppShellPreferenceViewModel;
   workspace: {

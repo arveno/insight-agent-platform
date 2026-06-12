@@ -209,10 +209,189 @@ describe("AnalysisPage", () => {
       )
     ).toBeNull();
 
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+  });
+
+  it("submits a draft through POST /analysis-tasks/submit and switches to the runtime conversation without fake artifacts", async () => {
+    const submitPayload = {
+      analysisRun: {
+        analysisTaskId: "analysis-task-201-submit",
+        cancelRequestedAt: null,
+        cancelledAt: null,
+        cancellingAt: null,
+        completedAt: null,
+        createdAt: "2026-06-12T10:30:00+08:00",
+        expiredAt: null,
+        failedAt: null,
+        failureCode: null,
+        originalRunId: null,
+        outcome: null,
+        phase: "intake",
+        queuedAt: null,
+        rejectedAt: null,
+        retryOfRunId: null,
+        retryable: true,
+        runId: "analysis-run-201-submit",
+        startedAt: null,
+        status: "created",
+        terminalReason: null,
+        timeoutAt: null,
+        userId: "user-zoe",
+        validatingAt: null,
+        waitingFor: null,
+        waitingSince: null,
+        workspaceId: "workspace-northstar-retail-china"
+      },
+      analysisTask: {
+        analysisTaskId: "analysis-task-201-submit",
+        businessDomainId: "business-domain-revenue-quality",
+        contextPack: null,
+        conversationId: "conversation-201-submit",
+        createdAt: "2026-06-12T10:30:00+08:00",
+        question: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+        updatedAt: "2026-06-12T10:30:00+08:00",
+        userId: "user-zoe",
+        workspaceId: "workspace-northstar-retail-china"
+      },
+      conversation: {
+        conversationId: "conversation-201-submit",
+        createdAt: "2026-06-12T10:30:00+08:00",
+        currentRunId: "analysis-run-201-submit",
+        status: "active",
+        title: "解释华东区域收入增速放缓的主要原因",
+        updatedAt: "2026-06-12T10:30:00+08:00",
+        userId: "user-zoe",
+        workspaceId: "workspace-northstar-retail-china"
+      },
+      userMessage: {
+        analysisTaskId: "analysis-task-201-submit",
+        completedAt: "2026-06-12T10:30:00+08:00",
+        content: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+        conversationId: "conversation-201-submit",
+        createdAt: "2026-06-12T10:30:00+08:00",
+        messageId: "message-201-submit",
+        reportId: null,
+        role: "user",
+        runId: "analysis-run-201-submit",
+        sourceEvidenceIds: [],
+        status: "completed",
+        toolCallIds: [],
+        turnId: "turn-201-submit"
+      }
+    };
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+
+      if (url.endsWith("/analysis-tasks/submit")) {
+        return Response.json(submitPayload);
+      }
+
+      if (url.endsWith("/conversations/conversation-201-submit")) {
+        return Response.json(submitPayload.conversation);
+      }
+
+      if (url.endsWith("/analysis-runs/analysis-run-201-submit")) {
+        return Response.json(submitPayload.analysisRun);
+      }
+
+      if (url.endsWith("/conversations/conversation-201-submit/messages")) {
+        return Response.json({ items: [submitPayload.userMessage] });
+      }
+
+      if (url.endsWith("/analysis-runs/analysis-run-201-submit/events")) {
+        return Response.json({
+          items: [
+            {
+              actor: "analysis_runtime_stub",
+              agentName: "analysis-agent",
+              completedAt: "2026-06-12T10:30:00+08:00",
+              errorCode: null,
+              errorMessage: null,
+              eventId: "event-201-submit",
+              eventType: "run.created",
+              nodeName: "run.created",
+              occurredAt: "2026-06-12T10:30:00+08:00",
+              parentEventId: null,
+              phase: "intake",
+              refId: null,
+              refType: null,
+              runId: "analysis-run-201-submit",
+              sequence: 0,
+              startedAt: "2026-06-12T10:30:00+08:00",
+              status: "succeeded",
+              summary: "记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。",
+              toolName: null
+            }
+          ]
+        });
+      }
+
+      if (
+        url.endsWith("/analysis-runs/analysis-run-201-submit/tool-calls") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/model-calls") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/source-evidence") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/reports") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/decisions")
+      ) {
+        return Response.json({ items: [] });
+      }
+
+      throw new Error(`Unhandled request: ${url} ${init?.method ?? "GET"}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestProviders>
+        {(
+          <AnalysisPage
+            routeState={{
+              draftContextPack: {
+                chips: ["Northstar Retail China", "Last 7 days"],
+                sourceId: "dashboard-overview",
+                sourceTitle: "Dashboard overview",
+                sourceType: "dashboard",
+                suggestedPrompt: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+              summary: "围绕最近 7 天的 Dashboard 总览继续分析。"
+            }
+          }}
+          submitIdentity={{
+            businessDomainId: "business-domain-revenue-quality",
+            userId: "user-zoe",
+            workspaceId: "workspace-northstar-retail-china"
+          }}
+          />
+        )}
+      </TestProviders>
+    );
+
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
 
-    expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
-    expect(screen.getAllByText(/read surfaces；Analysis write path 暂未实现/)).toHaveLength(2);
-    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(await screen.findByRole("log", { name: "Analysis message list" })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/analysis-tasks/submit", {
+      body: JSON.stringify({
+        businessDomainId: "business-domain-revenue-quality",
+        contextPack: {
+          chips: ["Northstar Retail China", "Last 7 days"],
+          sourceId: "dashboard-overview",
+          sourceTitle: "Dashboard overview",
+          sourceType: "dashboard",
+          suggestedPrompt: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+          summary: "围绕最近 7 天的 Dashboard 总览继续分析。"
+        },
+        question: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+        userId: "user-zoe",
+        workspaceId: "workspace-northstar-retail-china"
+      }),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      method: "POST"
+    });
+    expect(screen.getByText("User")).toBeTruthy();
+    expect(screen.getByText("解释华东区域收入增速放缓的主要原因，并给出下一步建议。")).toBeTruthy();
+    expect(screen.queryByText("Assistant")).toBeNull();
+    expect(screen.queryByText(/write path 暂未实现/)).toBeNull();
+    expect(screen.queryByText("结果摘要")).toBeTruthy();
   });
 });

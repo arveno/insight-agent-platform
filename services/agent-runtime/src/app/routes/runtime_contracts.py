@@ -31,12 +31,12 @@ class AnalysisTaskContextPackModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    metricId: str
-    timeRange: str
-    threshold: str
-    trend: str
-    tableIds: list[str]
-    knowledgeDocumentIds: list[str]
+    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
+    sourceId: str
+    sourceTitle: str
+    summary: str
+    chips: list[str]
+    suggestedPrompt: str
 
 
 class CreateAnalysisTaskRequest(BaseModel):
@@ -44,11 +44,12 @@ class CreateAnalysisTaskRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    conversationId: str
     workspaceId: str
     userId: str
     businessDomainId: str
     question: str
-    contextPack: AnalysisTaskContextPackModel
+    contextPack: AnalysisTaskContextPackModel | None
     title: str | None = None
 
 
@@ -58,11 +59,12 @@ class AnalysisTaskResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     analysisTaskId: str
+    conversationId: str
     workspaceId: str
     userId: str
     businessDomainId: str
     question: str
-    contextPack: AnalysisTaskContextPackModel
+    contextPack: AnalysisTaskContextPackModel | None
     createdAt: str
     updatedAt: str
 
@@ -74,7 +76,6 @@ class CreateConversationRequest(BaseModel):
 
     workspaceId: str
     userId: str
-    analysisTaskId: str
     title: str
 
 
@@ -86,7 +87,6 @@ class ConversationResponse(BaseModel):
     conversationId: str
     workspaceId: str
     userId: str
-    analysisTaskId: str
     currentRunId: str | None
     title: str
     status: Literal["active", "archived", "closed"]
@@ -102,7 +102,31 @@ class CreateAnalysisRunRequest(BaseModel):
     workspaceId: str
     userId: str
     analysisTaskId: str
-    conversationId: str
+
+
+class SubmitAnalysisDraftRequest(BaseModel):
+    """POST /analysis-tasks/submit request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversationId: str | None = None
+    workspaceId: str
+    userId: str
+    businessDomainId: str
+    question: str
+    contextPack: AnalysisTaskContextPackModel | None
+    title: str | None = None
+
+
+class SubmitAnalysisDraftResponse(BaseModel):
+    """POST /analysis-tasks/submit response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversation: ConversationResponse
+    analysisTask: AnalysisTaskResponse
+    analysisRun: "AnalysisRunResponse"
+    userMessage: "MessageResponse"
 
 
 class WorkerClaimRequest(BaseModel):
@@ -456,6 +480,7 @@ class MessageResponse(BaseModel):
 
     messageId: str
     conversationId: str
+    analysisTaskId: str | None
     turnId: str
     runId: str | None
     role: Literal["system", "user", "assistant", "tool"]
@@ -556,3 +581,6 @@ def utc_timestamp() -> str:
     """Generate the canonical timestamp string used by runtime foundation persistence."""
 
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+SubmitAnalysisDraftResponse.model_rebuild()

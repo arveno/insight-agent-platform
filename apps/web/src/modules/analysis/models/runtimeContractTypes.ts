@@ -1,5 +1,6 @@
 import type {
   AnalysisRun as AnalysisRunContract,
+  AnalysisTaskContextPack,
   Conversation as ConversationContract,
   Decision,
   Message as MessageContract,
@@ -8,10 +9,13 @@ import type {
   Report,
   RunEvent as RunEventContract,
   SourceEvidence,
+  SubmitAnalysisDraftRequest,
+  SubmitAnalysisDraftResponse,
   ToolCall
 } from "@insight-agent/contracts/generated/typescript";
 
 export type {
+  AnalysisTaskContextPack,
   AnalysisRunContract,
   ConversationContract,
   Decision,
@@ -21,6 +25,8 @@ export type {
   Report,
   RunEventContract,
   SourceEvidence,
+  SubmitAnalysisDraftRequest,
+  SubmitAnalysisDraftResponse,
   ToolCall
 };
 

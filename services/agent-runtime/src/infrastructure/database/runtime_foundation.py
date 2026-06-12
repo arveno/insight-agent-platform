@@ -31,23 +31,24 @@ class RuntimeFoundationDatabase(Protocol):
 class AnalysisTaskContextPack(TypedDict):
     """AnalysisTask.contextPack 的正式 typed object。"""
 
-    metricId: str
-    timeRange: str
-    threshold: str
-    trend: str
-    tableIds: list[str]
-    knowledgeDocumentIds: list[str]
+    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
+    sourceId: str
+    sourceTitle: str
+    summary: str
+    chips: list[str]
+    suggestedPrompt: str
 
 
 class AnalysisTaskRecord(TypedDict):
     """AnalysisTask contract-shaped persistence record."""
 
     analysisTaskId: str
+    conversationId: str
     workspaceId: str
     userId: str
     businessDomainId: str
     question: str
-    contextPack: AnalysisTaskContextPack
+    contextPack: AnalysisTaskContextPack | None
     createdAt: str
     updatedAt: str
 
@@ -58,7 +59,6 @@ class ConversationRecord(TypedDict):
     conversationId: str
     workspaceId: str
     userId: str
-    analysisTaskId: str
     currentRunId: str | None
     title: str
     status: Literal["active", "archived", "closed"]
@@ -278,6 +278,7 @@ class MessageRecord(TypedDict):
 
     messageId: str
     conversationId: str
+    analysisTaskId: str | None
     turnId: str
     runId: str | None
     role: Literal["system", "user", "assistant", "tool"]
@@ -453,7 +454,6 @@ INSERT INTO conversations (
   conversation_id,
   workspace_id,
   user_id,
-  analysis_task_id,
   current_run_id,
   title,
   status,
@@ -463,7 +463,6 @@ INSERT INTO conversations (
   {_sql_literal(conversation["conversationId"])},
   {_sql_literal(conversation["workspaceId"])},
   {_sql_literal(conversation["userId"])},
-  {_sql_literal(conversation["analysisTaskId"])},
   {_sql_literal(conversation["currentRunId"])},
   {_sql_literal(conversation["title"])},
   {_sql_literal(conversation["status"])},
@@ -473,7 +472,6 @@ INSERT INTO conversations (
 ON DUPLICATE KEY UPDATE
   workspace_id = VALUES(workspace_id),
   user_id = VALUES(user_id),
-  analysis_task_id = VALUES(analysis_task_id),
   current_run_id = VALUES(current_run_id),
   title = VALUES(title),
   status = VALUES(status),
@@ -671,6 +669,7 @@ def _message_upsert_sql(message: MessageRecord) -> str:
 INSERT INTO messages (
   message_id,
   conversation_id,
+  analysis_task_id,
   turn_id,
   run_id,
   role,
@@ -684,6 +683,7 @@ INSERT INTO messages (
 ) VALUES (
   {_sql_literal(message["messageId"])},
   {_sql_literal(message["conversationId"])},
+  {_sql_literal(message["analysisTaskId"])},
   {_sql_literal(message["turnId"])},
   {_sql_literal(message["runId"])},
   {_sql_literal(message["role"])},
@@ -697,6 +697,7 @@ INSERT INTO messages (
 )
 ON DUPLICATE KEY UPDATE
   conversation_id = VALUES(conversation_id),
+  analysis_task_id = VALUES(analysis_task_id),
   turn_id = VALUES(turn_id),
   run_id = VALUES(run_id),
   role = VALUES(role),
@@ -748,6 +749,41 @@ ON DUPLICATE KEY UPDATE
   occurred_at = VALUES(occurred_at),
   error_code = VALUES(error_code),
   error_message = VALUES(error_message);
+"""
+
+
+def _analysis_task_upsert_sql(analysis_task: AnalysisTaskRecord) -> str:
+    return f"""
+INSERT INTO analysis_tasks (
+  analysis_task_id,
+  conversation_id,
+  workspace_id,
+  user_id,
+  business_domain_id,
+  question,
+  context_pack_json,
+  created_at,
+  updated_at
+) VALUES (
+  {_sql_literal(analysis_task["analysisTaskId"])},
+  {_sql_literal(analysis_task["conversationId"])},
+  {_sql_literal(analysis_task["workspaceId"])},
+  {_sql_literal(analysis_task["userId"])},
+  {_sql_literal(analysis_task["businessDomainId"])},
+  {_sql_literal(analysis_task["question"])},
+  {_json_literal(analysis_task["contextPack"])},
+  {_sql_literal(analysis_task["createdAt"])},
+  {_sql_literal(analysis_task["updatedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  business_domain_id = VALUES(business_domain_id),
+  question = VALUES(question),
+  context_pack_json = VALUES(context_pack_json),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
 """
 
 
@@ -998,41 +1034,13 @@ class AnalysisTaskRepository:
         self._database = database
 
     def create(self, analysis_task: AnalysisTaskRecord) -> None:
-        sql = f"""
-INSERT INTO analysis_tasks (
-  analysis_task_id,
-  workspace_id,
-  user_id,
-  business_domain_id,
-  question,
-  context_pack_json,
-  created_at,
-  updated_at
-) VALUES (
-  {_sql_literal(analysis_task["analysisTaskId"])},
-  {_sql_literal(analysis_task["workspaceId"])},
-  {_sql_literal(analysis_task["userId"])},
-  {_sql_literal(analysis_task["businessDomainId"])},
-  {_sql_literal(analysis_task["question"])},
-  {_json_literal(analysis_task["contextPack"])},
-  {_sql_literal(analysis_task["createdAt"])},
-  {_sql_literal(analysis_task["updatedAt"])}
-)
-ON DUPLICATE KEY UPDATE
-  workspace_id = VALUES(workspace_id),
-  user_id = VALUES(user_id),
-  business_domain_id = VALUES(business_domain_id),
-  question = VALUES(question),
-  context_pack_json = VALUES(context_pack_json),
-  created_at = VALUES(created_at),
-  updated_at = VALUES(updated_at);
-"""
-        self._database.execute_sql(sql)
+        self._database.execute_sql(_analysis_task_upsert_sql(analysis_task))
 
     def get_by_analysis_task_id(self, analysis_task_id: str) -> AnalysisTaskRecord:
         sql = f"""
 SELECT JSON_OBJECT(
   'analysisTaskId', analysis_task_id,
+  'conversationId', conversation_id,
   'workspaceId', workspace_id,
   'userId', user_id,
   'businessDomainId', business_domain_id,
@@ -1066,7 +1074,6 @@ SELECT JSON_OBJECT(
   'conversationId', conversation_id,
   'workspaceId', workspace_id,
   'userId', user_id,
-  'analysisTaskId', analysis_task_id,
   'currentRunId', current_run_id,
   'title', title,
   'status', status,
@@ -1082,36 +1089,12 @@ LIMIT 1;
             raise KeyError(conversation_id)
         return cast(ConversationRecord, payload)
 
-    def get_by_analysis_task_id(self, analysis_task_id: str) -> ConversationRecord:
-        sql = f"""
-SELECT JSON_OBJECT(
-  'conversationId', conversation_id,
-  'workspaceId', workspace_id,
-  'userId', user_id,
-  'analysisTaskId', analysis_task_id,
-  'currentRunId', current_run_id,
-  'title', title,
-  'status', status,
-  'createdAt', created_at,
-  'updatedAt', updated_at
-)
-FROM conversations
-WHERE analysis_task_id = {_sql_literal(analysis_task_id)}
-ORDER BY id DESC
-LIMIT 1;
-"""
-        payload = self._database.query_json_object(sql)
-        if payload is None:
-            raise KeyError(analysis_task_id)
-        return cast(ConversationRecord, payload)
-
     def get_by_current_run_id(self, run_id: str) -> ConversationRecord:
         sql = f"""
 SELECT JSON_OBJECT(
   'conversationId', conversation_id,
   'workspaceId', workspace_id,
   'userId', user_id,
-  'analysisTaskId', analysis_task_id,
   'currentRunId', current_run_id,
   'title', title,
   'status', status,
@@ -1711,6 +1694,7 @@ class MessageRepository:
 SELECT JSON_OBJECT(
   'messageId', message_id,
   'conversationId', conversation_id,
+  'analysisTaskId', analysis_task_id,
   'turnId', turn_id,
   'runId', run_id,
   'role', role,
@@ -1741,6 +1725,7 @@ SELECT JSON_OBJECT(
         JSON_OBJECT(
           'messageId', message_id,
           'conversationId', conversation_id,
+          'analysisTaskId', analysis_task_id,
           'turnId', turn_id,
           'runId', run_id,
           'role', role,
@@ -1757,6 +1742,7 @@ SELECT JSON_OBJECT(
         SELECT
           message_id,
           conversation_id,
+          analysis_task_id,
           turn_id,
           run_id,
           role,
@@ -1860,6 +1846,24 @@ class AnalysisRunLifecycleRepository:
             [
                 _analysis_run_upsert_sql(analysis_run),
                 _conversation_upsert_sql(conversation),
+                _run_event_insert_sql(run_event),
+            ]
+        )
+
+    def submit_draft(
+        self,
+        conversation: ConversationRecord,
+        analysis_task: AnalysisTaskRecord,
+        analysis_run: AnalysisRunRecord,
+        user_message: MessageRecord,
+        run_event: RunEventRecord,
+    ) -> None:
+        self._database.execute_transaction(
+            [
+                _conversation_upsert_sql(conversation),
+                _analysis_task_upsert_sql(analysis_task),
+                _analysis_run_upsert_sql(analysis_run),
+                _message_upsert_sql(user_message),
                 _run_event_insert_sql(run_event),
             ]
         )
@@ -2013,7 +2017,9 @@ class GoldenPathFoundationRepository:
 
     def get_by_analysis_task_id(self, analysis_task_id: str) -> GoldenPathFoundationRecord:
         analysis_task = self._analysis_task_repository.get_by_analysis_task_id(analysis_task_id)
-        conversation = self._conversation_repository.get_by_analysis_task_id(analysis_task_id)
+        conversation = self._conversation_repository.get_by_conversation_id(
+            analysis_task["conversationId"]
+        )
         analysis_run = self._analysis_run_repository.get_by_analysis_task_id(analysis_task_id)
 
         return {

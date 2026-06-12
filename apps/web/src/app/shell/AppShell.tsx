@@ -213,6 +213,7 @@ export function AppShell() {
   return (
     <RouteShellOutlet
       activeRoute={activeRoute}
+      currentUserId={appShellStaticViewModel.currentUser.userId}
       routeState={activeRouteState}
       defaultMainContent={defaultMainContent}
       header={header}
@@ -221,6 +222,7 @@ export function AppShell() {
       onNavigate={handleNavigate}
       renderLeftNav={renderLeftNav}
       rootLeftNavContent={rootLeftNavContent}
+      selectedBusinessDomainId={appShellStaticViewModel.selectedBusinessDomainId}
       selectedWorkspace={selectedWorkspace}
     />
   );

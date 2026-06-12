@@ -157,7 +157,8 @@ currentRunId 初始为空
 创建 analysisTaskId
 绑定 conversationId / workspaceId / userId / businessDomainId
 写入 submitted question
-写入 DraftContextPack -> AnalysisTask.contextPack typed snapshot
+blank draft submit -> 写入 contextPack = null
+context draft submit -> 写入 DraftContextPack -> AnalysisTask.contextPack typed snapshot
 ```
 
 不负责：

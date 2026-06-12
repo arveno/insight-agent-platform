@@ -8,6 +8,8 @@ import type {
   Report,
   RunEvent,
   SourceEvidence,
+  SubmitAnalysisDraftRequest,
+  SubmitAnalysisDraftResponse,
   ToolCall
 } from "@insight-agent/contracts/generated/typescript";
 
@@ -16,10 +18,8 @@ type ListResponse<T> = {
 };
 
 type RuntimeErrorPayload = {
-  error?: {
-    code?: string;
-    message?: string;
-  };
+  errorCode?: string;
+  message?: string;
 };
 
 export class RuntimeApiError extends Error {
@@ -68,9 +68,9 @@ async function readError(response: Response): Promise<RuntimeApiError> {
   }
 
   return new RuntimeApiError(
-    payload?.error?.message ?? `Runtime API request failed with status ${response.status}.`,
+    payload?.message ?? `Runtime API request failed with status ${response.status}.`,
     response.status,
-    payload?.error?.code
+    payload?.errorCode
   );
 }
 
@@ -81,15 +81,29 @@ export class AgentRuntimeClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request(path: string, accept = "application/json"): Promise<Response> {
+  private async request(
+    path: string,
+    options: {
+      accept?: string;
+      body?: string;
+      contentType?: string;
+      method?: "GET" | "POST";
+    } = {}
+  ): Promise<Response> {
+    const { accept = "application/json", body, contentType, method = "GET" } = options;
     let response: Response;
 
     try {
+      const headers: Record<string, string> = {
+        Accept: accept
+      };
+      if (contentType) {
+        headers["Content-Type"] = contentType;
+      }
       response = await fetch(`${this.baseUrl}${path}`, {
-        headers: {
-          Accept: accept
-        },
-        method: "GET"
+        body,
+        headers,
+        method
       });
     } catch (error) {
       throw new RuntimeApiError(
@@ -106,9 +120,19 @@ export class AgentRuntimeClient {
   }
 
   private async get<T>(path: string, accept = "application/json"): Promise<T> {
-    const response = await this.request(path, accept);
+    const response = await this.request(path, { accept });
 
     return parseJsonResponse<T>(response);
+  }
+
+  private async post<TResponse, TRequest>(path: string, payload: TRequest): Promise<TResponse> {
+    const response = await this.request(path, {
+      body: JSON.stringify(payload),
+      contentType: "application/json",
+      method: "POST"
+    });
+
+    return parseJsonResponse<TResponse>(response);
   }
 
   getConversation(conversationId: string) {
@@ -134,9 +158,15 @@ export class AgentRuntimeClient {
   }
 
   streamMessageStream(conversationId: string, messageId: string) {
-    return this.request(
-      `/conversations/${conversationId}/messages/${messageId}/stream`,
-      "text/event-stream"
+    return this.request(`/conversations/${conversationId}/messages/${messageId}/stream`, {
+      accept: "text/event-stream"
+    });
+  }
+
+  submitAnalysisDraft(payload: SubmitAnalysisDraftRequest) {
+    return this.post<SubmitAnalysisDraftResponse, SubmitAnalysisDraftRequest>(
+      "/analysis-tasks/submit",
+      payload
     );
   }
 

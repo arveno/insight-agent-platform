@@ -220,7 +220,11 @@ const contractsCoreObjects = new Set(
     .filter(Boolean)
 );
 
-const nonCoreSchemaTitles = new Set(["AnalysisTaskContextPack"]);
+const nonCoreSchemaTitles = new Set([
+  "AnalysisTaskContextPack",
+  "SubmitAnalysisDraftRequest",
+  "SubmitAnalysisDraftResponse"
+]);
 
 for (const schema of schemaEntries.map((entry) => entry.schema)) {
   if (nonCoreSchemaTitles.has(schema.title)) {

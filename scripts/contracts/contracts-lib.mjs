@@ -226,12 +226,12 @@ export const runtimeSchemaPaths = [
 
 export const requiredFieldsBySchema = {
   "analysis/analysis-task-context-pack.schema.json": [
-    "metricId",
-    "timeRange",
-    "threshold",
-    "trend",
-    "tableIds",
-    "knowledgeDocumentIds"
+    "sourceType",
+    "sourceId",
+    "sourceTitle",
+    "summary",
+    "chips",
+    "suggestedPrompt"
   ],
   "analysis/analysis-task.schema.json": [
     "analysisTaskId",
@@ -243,6 +243,19 @@ export const requiredFieldsBySchema = {
     "contextPack",
     "createdAt",
     "updatedAt"
+  ],
+  "analysis/submit-analysis-draft-request.schema.json": [
+    "workspaceId",
+    "userId",
+    "businessDomainId",
+    "question",
+    "contextPack"
+  ],
+  "analysis/submit-analysis-draft-response.schema.json": [
+    "conversation",
+    "analysisTask",
+    "analysisRun",
+    "userMessage"
   ],
   "analysis/analysis-run.schema.json": [
     "runId",
@@ -422,6 +435,7 @@ export const requiredFieldsBySchema = {
 export const minimumOpenApiPaths = [
   "/health",
   "/analysis-tasks",
+  "/analysis-tasks/submit",
   "/conversations",
   "/analysis-runs",
   "/analysis-runs/{runId}",

@@ -2,49 +2,45 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/analysis-task-context-pack.schema.json",
   "title": "AnalysisTaskContextPack",
-  "description": "Metrics finding 进入 Analysis 草稿态后，在用户真正发送问题前就已绑定的 typed context pack。",
+  "description": "一次性 DraftContextPack 在用户真正发送问题时固化为 AnalysisTask.contextPack 的 typed snapshot。",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "metricId",
-    "timeRange",
-    "threshold",
-    "trend",
-    "tableIds",
-    "knowledgeDocumentIds"
+    "sourceType",
+    "sourceId",
+    "sourceTitle",
+    "summary",
+    "chips",
+    "suggestedPrompt"
   ],
   "properties": {
-    "metricId": {
-      "description": "引用既有 Metric contract 语义的 canonical metricId。",
+    "sourceType": {
+      "description": "一次性上下文来源类型；当前只允许已接通的 Analysis draft 入口。",
+      "type": "string",
+      "enum": ["dashboard", "metric", "report", "evidence", "runTrace"]
+    },
+    "sourceId": {
+      "description": "来源对象的 canonical 标识。",
       "type": "string"
     },
-    "timeRange": {
-      "description": "当前问题绑定的业务时间窗口，例如 2026 Q2。",
+    "sourceTitle": {
+      "description": "来源对象的产品标题。",
       "type": "string"
     },
-    "threshold": {
-      "description": "触发进入 Analysis 的指标阈值表达。",
+    "summary": {
+      "description": "草稿态展示和追问的结构化摘要，不替代正式 question。",
       "type": "string"
     },
-    "trend": {
-      "description": "当前 finding 的业务趋势摘要，不替代正式问题文本。",
-      "type": "string"
-    },
-    "tableIds": {
-      "description": "引用既有 DataTable contract 语义的 canonical tableIds。",
+    "chips": {
+      "description": "用于 Draft Context strip / inspector 的结构化 chip 列表。",
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "minItems": 1
+      }
     },
-    "knowledgeDocumentIds": {
-      "description": "引用既有 KnowledgeDocument contract 语义的 canonical knowledgeDocumentIds。",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1
+    "suggestedPrompt": {
+      "description": "进入 Analysis draft mode 时给 composer 的可编辑预填提示。",
+      "type": "string"
     }
   }
 }

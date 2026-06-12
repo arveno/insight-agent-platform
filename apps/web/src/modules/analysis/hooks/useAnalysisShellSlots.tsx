@@ -7,19 +7,30 @@ import { AnalysisInspectorPanel } from "../panels/AnalysisInspectorPanel";
 import { useAnalysisWorkspaceController } from "./useAnalysisWorkspaceController";
 
 export type UseAnalysisShellSlotsParams = {
+  businessDomainId: string;
   onBackToRoot: () => void;
   onNavigate?: NavigateToRoute;
   routeState?: AppRouteState;
+  userId: string;
+  workspaceId: string;
   workspaceName: string;
 };
 
 export function useAnalysisShellSlots({
+  businessDomainId,
   onBackToRoot,
   routeState,
+  userId,
+  workspaceId,
   workspaceName
 }: UseAnalysisShellSlotsParams): ShellRegionSlots {
   const controller = useAnalysisWorkspaceController({
-    draftContext: routeState?.draftContextPack
+    draftContext: routeState?.draftContextPack,
+    submitIdentity: {
+      businessDomainId,
+      userId,
+      workspaceId
+    }
   });
 
   return {

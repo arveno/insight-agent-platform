@@ -37,12 +37,12 @@ class AnalysisRun(TypedDict):
 
 # Generated from packages/contracts/schemas/analysis/analysis-task-context-pack.schema.json
 class AnalysisTaskContextPack(TypedDict):
-    metricId: str
-    timeRange: str
-    threshold: str
-    trend: str
-    tableIds: list[str]
-    knowledgeDocumentIds: list[str]
+    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
+    sourceId: str
+    sourceTitle: str
+    summary: str
+    chips: list[str]
+    suggestedPrompt: str
 
 # Generated from packages/contracts/schemas/analysis/analysis-task.schema.json
 class AnalysisTask(TypedDict):
@@ -52,7 +52,7 @@ class AnalysisTask(TypedDict):
     userId: str
     businessDomainId: str
     question: str
-    contextPack: AnalysisTaskContextPack
+    contextPack: AnalysisTaskContextPack | None
     createdAt: str
     updatedAt: str
 
@@ -178,6 +178,23 @@ class SourceEvidence(TypedDict):
     metadata: NotRequired[dict[str, Any]]
     confidence: float
     createdAt: str
+
+# Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json
+class SubmitAnalysisDraftRequest(TypedDict):
+    conversationId: NotRequired[str]
+    workspaceId: str
+    userId: str
+    businessDomainId: str
+    question: str
+    contextPack: AnalysisTaskContextPack | None
+    title: NotRequired[str]
+
+# Generated from packages/contracts/schemas/analysis/submit-analysis-draft-response.schema.json
+class SubmitAnalysisDraftResponse(TypedDict):
+    conversation: Conversation
+    analysisTask: AnalysisTask
+    analysisRun: AnalysisRun
+    userMessage: Message
 
 # Generated from packages/contracts/schemas/analysis/tool-call.schema.json
 class ToolCall(TypedDict):
@@ -464,4 +481,4 @@ class Workspace(TypedDict):
     name: NotRequired[str]
     createdAt: NotRequired[str]
 
-__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]

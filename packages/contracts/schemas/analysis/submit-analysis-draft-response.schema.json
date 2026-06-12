@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/submit-analysis-draft-response.schema.json",
+  "title": "SubmitAnalysisDraftResponse",
+  "description": "Analysis draft submit 成功后返回的正式持久化对象链路。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "conversation",
+    "analysisTask",
+    "analysisRun",
+    "userMessage"
+  ],
+  "properties": {
+    "conversation": {
+      "$ref": "./conversation.schema.json"
+    },
+    "analysisTask": {
+      "$ref": "./analysis-task.schema.json"
+    },
+    "analysisRun": {
+      "$ref": "./analysis-run.schema.json"
+    },
+    "userMessage": {
+      "$ref": "./message.schema.json"
+    }
+  }
+}

@@ -42,7 +42,14 @@
       "type": "string"
     },
     "contextPack": {
-      "$ref": "./analysis-task-context-pack.schema.json"
+      "anyOf": [
+        {
+          "$ref": "./analysis-task-context-pack.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "createdAt": {
       "description": "AnalysisTask 创建时间。",

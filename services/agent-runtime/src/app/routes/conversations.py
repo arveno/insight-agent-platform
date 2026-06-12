@@ -21,7 +21,6 @@ from src.app.routes.runtime_contracts import (
     utc_timestamp,
 )
 from src.infrastructure.database.runtime_foundation import (
-    AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
     MessageRepository,
@@ -61,11 +60,6 @@ def _runtime_foundation_database() -> RuntimeFoundationPyMySqlDatabase:
         password=settings.mysql_password,
     )
 
-
-def _analysis_task_repository() -> AnalysisTaskRepository:
-    return AnalysisTaskRepository(_runtime_foundation_database())
-
-
 def _conversation_repository() -> ConversationRepository:
     return ConversationRepository(_runtime_foundation_database())
 
@@ -85,36 +79,13 @@ def _message_stream_repository() -> MessageStreamRepository:
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def create_conversation(request: CreateConversationRequest) -> ConversationRecord | JSONResponse:
-    """Create a real Conversation after validating the AnalysisTask chain."""
-
-    try:
-        analysis_task = _analysis_task_repository().get_by_analysis_task_id(request.analysisTaskId)
-    except KeyError:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"AnalysisTask not found: {request.analysisTaskId}",
-        )
-
-    if analysis_task["workspaceId"] != request.workspaceId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="AnalysisTask.workspaceId does not match request.workspaceId",
-        )
-    if analysis_task["userId"] != request.userId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="AnalysisTask.userId does not match request.userId",
-        )
+    """Create a new Conversation thread container without prebinding a singular AnalysisTask."""
 
     now = utc_timestamp()
     conversation: ConversationRecord = {
         "conversationId": generate_canonical_id("conversation"),
         "workspaceId": request.workspaceId,
         "userId": request.userId,
-        "analysisTaskId": request.analysisTaskId,
         "currentRunId": None,
         "title": request.title,
         "status": "active",

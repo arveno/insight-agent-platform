@@ -5,6 +5,10 @@ import {
   type AnalysisRuntimeBootstrap,
   type AnalysisWorkspaceLoadResult
 } from "../../../api/adapters/loadAnalysisRuntimeWorkspace";
+import {
+  submitAnalysisDraft,
+  type SubmitAnalysisDraftInput
+} from "../../../api/adapters/submitAnalysisDraft";
 import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import type {
   AnalysisComposerMode,
@@ -16,6 +20,7 @@ import type {
 } from "../models/analysisViewModel";
 import type { AnalysisMessage } from "../models/analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
+import type { SubmitAnalysisDraftResponse } from "../models/runtimeContractTypes";
 
 type ComposerState = "idle" | "running";
 
@@ -39,10 +44,22 @@ export type AnalysisWorkspaceDataLoader = (
   bootstrap: AnalysisRuntimeBootstrap
 ) => Promise<AnalysisWorkspaceLoadResult>;
 
+export type AnalysisDraftSubmitIdentity = {
+  businessDomainId: string;
+  userId: string;
+  workspaceId: string;
+};
+
+export type AnalysisDraftSubmitter = (
+  input: SubmitAnalysisDraftInput
+) => Promise<SubmitAnalysisDraftResponse>;
+
 export type UseAnalysisWorkspaceControllerOptions = {
   bootstrap?: AnalysisRuntimeBootstrap;
   draftContext?: DraftContextPack;
   loader?: AnalysisWorkspaceDataLoader;
+  submitIdentity?: AnalysisDraftSubmitIdentity;
+  submitter?: AnalysisDraftSubmitter;
 };
 
 export type AnalysisWorkspaceController = {
@@ -193,6 +210,7 @@ export function useAnalysisWorkspaceController(
     [options.bootstrap?.conversationId, options.bootstrap?.runId]
   );
   const loader = options.loader ?? loadAnalysisRuntimeWorkspace;
+  const submitter = options.submitter ?? submitAnalysisDraft;
   const draftContextSignature = useMemo(
     () => getDraftContextSignature(options.draftContext),
     [
@@ -417,7 +435,7 @@ export function useAnalysisWorkspaceController(
       setIsRunTraceDetailOpen(false);
       setInteractionMessage(
         createInteractionMessage(
-          "已进入新聊天草稿态。当前 issue 只接 read surfaces；Analysis write path 需要后续 issue 接入。"
+          "已进入新聊天草稿态。发送前不会创建 Conversation 或 AnalysisRun；发送后才会进入正式 submit 链路。"
         )
       );
     },
@@ -463,14 +481,74 @@ export function useAnalysisWorkspaceController(
     },
     onSessionSearchChange: setSessionSearchQuery,
     onSubmitComposer: () => {
-      setComposerState("idle");
-      setInteractionMessage(
-        createInteractionMessage(
-          draftContext
-            ? "当前 issue 只接 read surfaces；DraftContextPack 只保留在前端草稿态，Analysis write path 暂未实现。"
-            : "当前 issue 只接 read surfaces；Analysis write path 暂未实现。"
-        )
-      );
+      const question = getActiveDraft(analysisDraft, composerModeRef.current, followUpDraft).trim();
+      const submitIdentity = options.submitIdentity;
+
+      if (question.length === 0) {
+        setComposerState("idle");
+        setInteractionMessage(createInteractionMessage("请输入要提交的 Analysis 问题。"));
+        return;
+      }
+
+      if (!submitIdentity) {
+        setComposerState("idle");
+        setInteractionMessage(
+          createInteractionMessage(
+            "当前页面未提供 workspaceId / userId / businessDomainId，无法发起 Analysis submit。"
+          )
+        );
+        return;
+      }
+
+      setComposerState("running");
+      setInteractionMessage("");
+
+      void (async () => {
+        try {
+          const submitResult = await submitter({
+            businessDomainId: submitIdentity.businessDomainId,
+            conversationId: selectedSession?.conversationId,
+            draftContext,
+            question,
+            userId: submitIdentity.userId,
+            workspaceId: submitIdentity.workspaceId
+          });
+          const loadResult = await loader({
+            conversationId: submitResult.conversation.conversationId,
+            runId: submitResult.analysisRun.runId
+          });
+
+          if (loadResult.kind !== "ready") {
+            setWorkspaceState(getWorkspaceStateFromLoadResult(loadResult));
+            setWorkspaceViewModel(null);
+            setComposerState("idle");
+            setInteractionMessage(
+              createInteractionMessage(loadResult.description ?? "Analysis submit succeeded, but runtime workspace could not be loaded.")
+            );
+            return;
+          }
+
+          composerModeRef.current = "follow_up";
+          setWorkspaceViewModel(loadResult.viewModel);
+          setWorkspaceState({ kind: "ready" });
+          setSelectedConversationId(submitResult.conversation.conversationId);
+          setDraftContext(undefined);
+          setAnalysisDraft("");
+          setFollowUpDraft("");
+          setComposerMode("follow_up");
+          setComposerState("idle");
+          setActiveInspectorPanel("run-trace");
+          setIsRunTraceDetailOpen(false);
+          setInteractionMessage("");
+        } catch (error) {
+          setComposerState("idle");
+          setInteractionMessage(
+            createInteractionMessage(
+              error instanceof Error ? error.message : "Analysis submit failed."
+            )
+          );
+        }
+      })();
     },
     runEvents: selectedSession?.runEvents ?? [],
     selectedModelKey,
