@@ -158,6 +158,25 @@ POST /analysis-runs/{runId}/retry
 POST /analysis-runs/{runId}/approvals/{approvalId}/decision
 ```
 
+worker control-plane endpoint 也归属于 `modules/analysis_runs`：
+
+```text
+POST /analysis-runs/{runId}/worker-claim
+POST /analysis-runs/{runId}/worker-heartbeat
+POST /analysis-runs/{runId}/worker-failure
+POST /analysis-runs/{runId}/worker-lost
+POST /analysis-runs/{runId}/worker-release
+```
+
+当前边界：
+
+```text
+本轮只把 worker lifecycle control-plane 从 route / service / repository / OpenAPI 层正式化。
+worker release != run.completed。
+cancel route 只完成 lifecycle foundation，不 fake Message / MessageStream / SourceEvidence / Report / Decision。
+Redis-backed queue / independent agent-worker process 由后续 issue 承接，本轮不宣称已完成。
+```
+
 `GET /analysis-runs/{runId}/conversation` 负责 run -> conversation join surface，但不改变 ownership：
 
 ```text

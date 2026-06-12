@@ -666,6 +666,14 @@ created
           -> cancelling
 ```
 
+补充硬规则：
+
+```text
+running/execution -> running/delivery 只是进入 delivery gate，不等于 completed。
+worker release 只释放 control-plane 上的 ExecutionAttempt，不得直接写 run.completed。
+run.completed 必须等 Message / MessageStream / SourceEvidence / Report / Decision 等 delivery artifacts 真实落地后再写。
+```
+
 目标硬规则：
 
 ```text
@@ -1000,6 +1008,17 @@ completed -> running
 系统恢复在同一个 run 下创建新的 ExecutionAttempt。
 ```
 
+### 9.3 Worker Release / Delivery Gate
+
+当前正式规则：
+
+```text
+worker release 只把 AnalysisRun 从 running/execution 推进到 running/delivery。
+worker release 只表示 execution control-plane 已释放 worker，尚未宣告 terminal success。
+worker release 不得写 run.completed。
+worker release 不得写 artifact.persisted。
+```
+
 ---
 
 ## 10. Cancellation 规则
@@ -1016,12 +1035,9 @@ queued/running/waiting
 
 ```text
 记录 cancel request
-停止 stream
-请求取消 model call
-请求取消 tool call
-记录已发生外部副作用
-释放 worker lease
-写 terminal event
+写 run.cancel_requested / run.cancelling / run.cancelled
+如存在 latest leased/running ExecutionAttempt，则释放 worker lease 并写 worker.lease_released
+后续真正的 stream / model / tool 停止动作由更完整的 runtime 承接，不在本轮 foundation 假实现
 ```
 
 硬规则：
@@ -1029,6 +1045,7 @@ queued/running/waiting
 ```text
 cancelled 不是 failed。
 cancelled 后不得创建 final assistant answer。
+cancel lifecycle 不得反向复活 terminal run。
 ```
 
 ---

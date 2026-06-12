@@ -91,6 +91,12 @@ def get_run_events(client: TestClient, run_id: str) -> dict[str, Any]:
     return response_json_dict(response.json())
 
 
+def get_execution_attempts(client: TestClient, run_id: str) -> dict[str, Any]:
+    response = client.get(f"/analysis-runs/{run_id}/execution-attempts")
+    assert response.status_code == 200
+    return response_json_dict(response.json())
+
+
 def create_conversation(
     client: TestClient,
     *,
@@ -285,6 +291,29 @@ def assert_retry_creates_no_downstream_side_effects(
 
     assert ExecutionAttemptRepository(database).list_by_run_id(run_id) == []
 
+    source_evidence_response = client.get(f"/analysis-runs/{run_id}/source-evidence")
+    assert source_evidence_response.status_code == 200
+    assert source_evidence_response.json() == {"items": []}
+
+    reports_response = client.get(f"/analysis-runs/{run_id}/reports")
+    assert reports_response.status_code == 200
+    assert reports_response.json() == {"items": []}
+
+    decisions_response = client.get(f"/analysis-runs/{run_id}/decisions")
+    assert decisions_response.status_code == 200
+    assert decisions_response.json() == {"items": []}
+
+    assert client.get(f"/analysis-runs/{run_id}/tool-calls").status_code == 501
+    assert client.get(f"/analysis-runs/{run_id}/model-calls").status_code == 501
+    assert client.get(f"/conversations/{conversation_id}/messages").status_code == 501
+
+
+def assert_no_delivery_side_effects(
+    client: TestClient,
+    *,
+    run_id: str,
+    conversation_id: str,
+) -> None:
     source_evidence_response = client.get(f"/analysis-runs/{run_id}/source-evidence")
     assert source_evidence_response.status_code == 200
     assert source_evidence_response.json() == {"items": []}
@@ -686,6 +715,370 @@ def test_dispatch_analysis_run_rejects_repeat_dispatch_for_non_created_run(
         "errorCode": "INVALID_STATE",
         "message": "AnalysisRun must be created/intake before dispatch.",
     }
+
+
+def test_worker_claim_heartbeat_and_release_routes_return_real_records(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    conversation = dispatched["conversation"]
+    attempts_before_claim = get_execution_attempts(client, analysis_run["runId"])["items"]
+    leased_attempt = attempts_before_claim[-1]
+
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    claimed_run = response_json_dict(claim_response.json())
+    assert claimed_run["status"] == "running"
+    assert claimed_run["phase"] == "execution"
+    assert claimed_run["startedAt"] is not None
+
+    heartbeat_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-heartbeat",
+        json={
+            "attemptId": leased_attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert heartbeat_response.status_code == 200
+    heartbeat_attempt = response_json_dict(heartbeat_response.json())
+    assert heartbeat_attempt["attemptId"] == leased_attempt["attemptId"]
+    assert heartbeat_attempt["status"] == "running"
+    assert heartbeat_attempt["heartbeatAt"] is not None
+    assert heartbeat_attempt["releasedAt"] is None
+
+    release_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-release",
+        json={
+            "attemptId": leased_attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert release_response.status_code == 202
+    released_run = response_json_dict(release_response.json())
+    assert released_run["status"] == "running"
+    assert released_run["phase"] == "delivery"
+    assert released_run["completedAt"] is None
+    assert released_run["failedAt"] is None
+    assert released_run["cancelledAt"] is None
+    assert released_run["expiredAt"] is None
+
+    attempts_after_release = get_execution_attempts(client, analysis_run["runId"])["items"]
+    released_attempt = attempts_after_release[-1]
+    assert released_attempt["status"] == "released"
+    assert released_attempt["releasedAt"] is not None
+    assert released_attempt["failureCode"] is None
+    assert released_attempt["failureMessage"] is None
+
+    events_after_release = get_run_events(client, analysis_run["runId"])["items"]
+    assert "worker.lease_acquired" in [event["eventType"] for event in events_after_release]
+    assert "worker.heartbeat" in [event["eventType"] for event in events_after_release]
+    assert "worker.lease_released" in [event["eventType"] for event in events_after_release]
+    assert "run.completed" not in [event["eventType"] for event in events_after_release]
+
+    database = RuntimeFoundationMysqlCli()
+    assert AnalysisRunRepository(database).get_by_run_id(analysis_run["runId"]) == released_run
+    assert_no_delivery_side_effects(
+        client,
+        run_id=analysis_run["runId"],
+        conversation_id=conversation["conversationId"],
+    )
+
+
+def test_worker_failure_route_returns_failed_run_and_no_delivery_side_effects(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    conversation = dispatched["conversation"]
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    failure_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-failure",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+            "failureCode": "WORKER_EXECUTION_ERROR",
+            "failureMessage": "worker execution failed",
+        },
+    )
+    assert failure_response.status_code == 202
+    failed_run = response_json_dict(failure_response.json())
+    assert failed_run["status"] == "failed"
+    assert failed_run["phase"] == "execution"
+    assert failed_run["outcome"] == "system_failure"
+    assert failed_run["failedAt"] is not None
+    assert failed_run["failureCode"] == "WORKER_EXECUTION_ERROR"
+
+    failed_attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+    assert failed_attempt["status"] == "failed"
+    assert failed_attempt["failureCode"] == "WORKER_EXECUTION_ERROR"
+    assert failed_attempt["failureMessage"] == "worker execution failed"
+
+    events_after_failure = get_run_events(client, analysis_run["runId"])["items"]
+    assert events_after_failure[-1]["eventType"] == "worker.failed"
+    assert "run.completed" not in [event["eventType"] for event in events_after_failure]
+    assert_no_delivery_side_effects(
+        client,
+        run_id=analysis_run["runId"],
+        conversation_id=conversation["conversationId"],
+    )
+
+
+def test_worker_lost_route_returns_expired_run_and_no_delivery_side_effects(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    conversation = dispatched["conversation"]
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    lost_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-lost",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+            "lostReason": "worker heartbeat timed out",
+        },
+    )
+    assert lost_response.status_code == 202
+    expired_run = response_json_dict(lost_response.json())
+    assert expired_run["status"] == "expired"
+    assert expired_run["phase"] == "execution"
+    assert expired_run["outcome"] == "timeout"
+    assert expired_run["expiredAt"] is not None
+    assert expired_run["failureCode"] == "WORKER_LOST"
+
+    lost_attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+    assert lost_attempt["status"] == "lost"
+    assert lost_attempt["failureCode"] == "WORKER_LOST"
+    assert lost_attempt["failureMessage"] == "worker heartbeat timed out"
+
+    events_after_lost = get_run_events(client, analysis_run["runId"])["items"]
+    assert events_after_lost[-1]["eventType"] == "worker.lost"
+    assert "run.completed" not in [event["eventType"] for event in events_after_lost]
+    assert_no_delivery_side_effects(
+        client,
+        run_id=analysis_run["runId"],
+        conversation_id=conversation["conversationId"],
+    )
+
+
+@pytest.mark.parametrize("start_state", ["queued", "running"])
+def test_cancel_route_cancels_run_and_releases_latest_attempt(
+    client: TestClient,
+    start_state: str,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    conversation = dispatched["conversation"]
+    if start_state == "running":
+        claim_response = client.post(
+            f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+            json={"workerId": "worker-runtime-dispatch-foundation"},
+        )
+        assert claim_response.status_code == 202
+
+    attempt_before_cancel = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    cancel_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/cancel",
+        json={"reason": f"user cancelled {start_state} run"},
+    )
+    assert cancel_response.status_code == 202
+    cancelled_run = response_json_dict(cancel_response.json())
+    assert cancelled_run["status"] == "cancelled"
+    assert cancelled_run["outcome"] == "user_cancelled"
+    assert cancelled_run["cancelRequestedAt"] is not None
+    assert cancelled_run["cancellingAt"] is not None
+    assert cancelled_run["cancelledAt"] is not None
+    assert cancelled_run["terminalReason"] == f"user cancelled {start_state} run"
+    assert cancelled_run["failedAt"] is None
+    assert cancelled_run["completedAt"] is None
+    assert cancelled_run["expiredAt"] is None
+
+    released_attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+    assert released_attempt["attemptId"] == attempt_before_cancel["attemptId"]
+    assert released_attempt["status"] == "released"
+    assert released_attempt["releasedAt"] is not None
+
+    events_after_cancel = get_run_events(client, analysis_run["runId"])["items"]
+    assert [event["eventType"] for event in events_after_cancel][-4:] == [
+        "run.cancel_requested",
+        "run.cancelling",
+        "worker.lease_released",
+        "run.cancelled",
+    ]
+    assert "run.completed" not in [event["eventType"] for event in events_after_cancel]
+    assert_no_delivery_side_effects(
+        client,
+        run_id=analysis_run["runId"],
+        conversation_id=conversation["conversationId"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("path", "payload"),
+    [
+        (
+            "/analysis-runs/analysis-run-missing/worker-claim",
+            {"workerId": "worker-runtime-dispatch-foundation"},
+        ),
+        (
+            "/analysis-runs/analysis-run-missing/worker-heartbeat",
+            {
+                "attemptId": "attempt-missing",
+                "workerId": "worker-runtime-dispatch-foundation",
+            },
+        ),
+        (
+            "/analysis-runs/analysis-run-missing/worker-failure",
+            {
+                "attemptId": "attempt-missing",
+                "workerId": "worker-runtime-dispatch-foundation",
+                "failureCode": "WORKER_EXECUTION_ERROR",
+                "failureMessage": "worker execution failed",
+            },
+        ),
+        (
+            "/analysis-runs/analysis-run-missing/worker-lost",
+            {
+                "attemptId": "attempt-missing",
+                "workerId": "worker-runtime-dispatch-foundation",
+                "lostReason": "worker heartbeat timed out",
+            },
+        ),
+        (
+            "/analysis-runs/analysis-run-missing/worker-release",
+            {
+                "attemptId": "attempt-missing",
+                "workerId": "worker-runtime-dispatch-foundation",
+            },
+        ),
+        (
+            "/analysis-runs/analysis-run-missing/cancel",
+            {"reason": "user cancelled missing run"},
+        ),
+    ],
+)
+def test_worker_control_plane_routes_return_not_found_for_unknown_run(
+    client: TestClient,
+    path: str,
+    payload: dict[str, Any],
+) -> None:
+    response = client.post(path, json=payload)
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "AnalysisRun not found: analysis-run-missing",
+    }
+
+
+def test_worker_control_plane_routes_return_invalid_state_for_wrong_attempt_or_worker(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    wrong_worker_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-heartbeat",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-mismatch",
+        },
+    )
+    assert wrong_worker_response.status_code == 409
+    assert wrong_worker_response.json() == {
+        "errorCode": "INVALID_STATE",
+        "message": "ExecutionAttempt.workerId does not match worker_id.",
+    }
+
+    wrong_attempt_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-release",
+        json={
+            "attemptId": "attempt-missing",
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert wrong_attempt_response.status_code == 409
+    assert wrong_attempt_response.json() == {
+        "errorCode": "INVALID_STATE",
+        "message": "ExecutionAttempt not found: attempt-missing",
+    }
+
+
+def test_terminal_run_control_plane_routes_reject_claim_heartbeat_release_and_cancel(
+    client: TestClient,
+) -> None:
+    dispatched = create_dispatched_run(client)
+    analysis_run = dispatched["analysisRun"]
+    claim_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_response.status_code == 202
+    attempt = get_execution_attempts(client, analysis_run["runId"])["items"][-1]
+
+    failure_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-failure",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+            "failureCode": "WORKER_EXECUTION_ERROR",
+            "failureMessage": "worker execution failed",
+        },
+    )
+    assert failure_response.status_code == 202
+
+    claim_again_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-claim",
+        json={"workerId": "worker-runtime-dispatch-foundation"},
+    )
+    assert claim_again_response.status_code == 409
+
+    heartbeat_again_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-heartbeat",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert heartbeat_again_response.status_code == 409
+
+    release_again_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/worker-release",
+        json={
+            "attemptId": attempt["attemptId"],
+            "workerId": "worker-runtime-dispatch-foundation",
+        },
+    )
+    assert release_again_response.status_code == 409
+
+    cancel_again_response = client.post(
+        f"/analysis-runs/{analysis_run['runId']}/cancel",
+        json={"reason": "cancel after terminal"},
+    )
+    assert cancel_again_response.status_code == 409
 
 
 @pytest.mark.parametrize(
