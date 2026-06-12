@@ -694,8 +694,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalysisRun"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
   /analysis-runs/{runId}/approvals/{approvalId}/decision:
     post:
       summary: 提交审批决定
