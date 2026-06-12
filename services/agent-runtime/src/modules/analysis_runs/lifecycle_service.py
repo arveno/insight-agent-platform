@@ -10,6 +10,8 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisRunLifecycleRepository,
     AnalysisRunRecord,
     AnalysisRunRepository,
+    ConversationRecord,
+    ConversationRepository,
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
     RunEventRecord,
@@ -25,6 +27,7 @@ WORKER_LEASE_ACQUIRED_SUMMARY = "记录 Worker 已接管 AnalysisRun。"
 WORKER_HEARTBEAT_SUMMARY = "记录 Worker heartbeat。"
 WORKER_FAILED_SUMMARY = "记录 Worker 执行失败，AnalysisRun 进入 failed 终态。"
 WORKER_LOST_SUMMARY = "记录 Worker lease 丢失，AnalysisRun 进入 expired 终态。"
+ALLOWED_USER_RETRY_STATUSES = frozenset({"failed", "expired", "cancelled"})
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -40,11 +43,16 @@ class AnalysisRunInvalidStateError(RuntimeError):
     """Raised when a lifecycle transition is requested from an unsupported state."""
 
 
+class AnalysisRunConversationNotFoundError(RuntimeError):
+    """Raised when the current Conversation cannot be resolved for the source AnalysisRun."""
+
+
 @dataclass(slots=True)
 class AnalysisRunLifecycleService:
     """Minimal lifecycle service for dispatching foundation AnalysisRun records."""
 
     analysis_run_repository: AnalysisRunRepository
+    conversation_repository: ConversationRepository
     execution_attempt_repository: ExecutionAttemptRepository
     run_event_repository: RunEventRepository
     lifecycle_repository: AnalysisRunLifecycleRepository
@@ -93,6 +101,41 @@ class AnalysisRunLifecycleService:
 
         self.lifecycle_repository.dispatch(queued_run, execution_attempt, dispatch_events)
         return queued_run
+
+    def retry_analysis_run(self, run_id: str) -> AnalysisRunRecord:
+        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
+
+        if analysis_run["status"] not in ALLOWED_USER_RETRY_STATUSES:
+            raise AnalysisRunInvalidStateError(
+                "AnalysisRun must be failed/expired/cancelled before user retry."
+            )
+
+        try:
+            conversation = self.conversation_repository.get_by_current_run_id(run_id)
+        except KeyError as exc:
+            raise AnalysisRunConversationNotFoundError(run_id) from exc
+
+        created_at = _utc_timestamp(datetime.now(UTC))
+        retried_run = self._build_retried_run(
+            analysis_run=analysis_run,
+            created_at=created_at,
+        )
+        updated_conversation: ConversationRecord = {
+            **conversation,
+            "currentRunId": retried_run["runId"],
+            "updatedAt": created_at,
+        }
+        run_created_event = build_run_created_event(
+            run_id=retried_run["runId"],
+            occurred_at=created_at,
+        )
+
+        self.lifecycle_repository.retry_run(
+            retried_run,
+            updated_conversation,
+            run_created_event,
+        )
+        return retried_run
 
     def list_execution_attempts(self, run_id: str) -> list[ExecutionAttemptRecord]:
         self.analysis_run_repository.get_by_run_id(run_id)
@@ -317,6 +360,41 @@ class AnalysisRunLifecycleService:
                 "ExecutionAttempt.workerId does not match worker_id."
             )
         return execution_attempt
+
+    def _build_retried_run(
+        self,
+        *,
+        analysis_run: AnalysisRunRecord,
+        created_at: str,
+    ) -> AnalysisRunRecord:
+        return {
+            "runId": _generate_canonical_id("analysis-run"),
+            "workspaceId": analysis_run["workspaceId"],
+            "userId": analysis_run["userId"],
+            "analysisTaskId": analysis_run["analysisTaskId"],
+            "status": "created",
+            "phase": "intake",
+            "outcome": None,
+            "waitingFor": None,
+            "createdAt": created_at,
+            "validatingAt": None,
+            "queuedAt": None,
+            "startedAt": None,
+            "waitingSince": None,
+            "timeoutAt": None,
+            "cancelRequestedAt": None,
+            "cancellingAt": None,
+            "completedAt": None,
+            "failedAt": None,
+            "cancelledAt": None,
+            "expiredAt": None,
+            "rejectedAt": None,
+            "terminalReason": None,
+            "failureCode": None,
+            "retryable": True,
+            "retryOfRunId": analysis_run["runId"],
+            "originalRunId": analysis_run["originalRunId"] or analysis_run["runId"],
+        }
 
 
 def _generate_canonical_id(prefix: str) -> str:

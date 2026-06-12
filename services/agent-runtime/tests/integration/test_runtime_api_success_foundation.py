@@ -9,8 +9,10 @@ from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunRecord,
     AnalysisRunRepository,
     AnalysisTaskRepository,
+    ConversationRecord,
     ConversationRepository,
     DecisionRecord,
     DecisionRepository,
@@ -154,6 +156,150 @@ def create_dispatched_run(client: TestClient) -> dict[str, Any]:
         "conversation": conversation,
         "analysisRun": dispatched_run,
     }
+
+
+def seed_analysis_run_state(
+    client: TestClient,
+    *,
+    status: str,
+    phase: str,
+    retry_of_run_id: str | None = None,
+    original_run_id: str | None = None,
+    attach_conversation: bool = True,
+) -> dict[str, Any]:
+    analysis_task = create_analysis_task(client)
+    conversation = create_conversation(
+        client,
+        workspace_id=analysis_task["workspaceId"],
+        user_id=analysis_task["userId"],
+        analysis_task_id=analysis_task["analysisTaskId"],
+    )
+    analysis_run = create_analysis_run(
+        client,
+        workspace_id=analysis_task["workspaceId"],
+        user_id=analysis_task["userId"],
+        analysis_task_id=analysis_task["analysisTaskId"],
+        conversation_id=conversation["conversationId"],
+    )
+
+    updated_run = build_analysis_run_state(
+        analysis_run,
+        status=status,
+        phase=phase,
+        retry_of_run_id=retry_of_run_id,
+        original_run_id=original_run_id,
+    )
+    database = RuntimeFoundationMysqlCli()
+    AnalysisRunRepository(database).create(updated_run)
+
+    if not attach_conversation:
+        current_conversation = ConversationRepository(database).get_by_conversation_id(
+            conversation["conversationId"]
+        )
+        detached_conversation: ConversationRecord = {
+            **current_conversation,
+            "currentRunId": None,
+        }
+        ConversationRepository(database).create(detached_conversation)
+
+    return {
+        "analysisTask": analysis_task,
+        "conversation": conversation,
+        "analysisRun": response_json_dict(updated_run),
+    }
+
+
+def build_analysis_run_state(
+    analysis_run: dict[str, Any],
+    *,
+    status: str,
+    phase: str,
+    retry_of_run_id: str | None = None,
+    original_run_id: str | None = None,
+) -> AnalysisRunRecord:
+    updated_run = cast(
+        AnalysisRunRecord,
+        {
+            **analysis_run,
+            "status": status,
+            "phase": phase,
+            "outcome": None,
+            "waitingFor": None,
+            "validatingAt": None,
+            "queuedAt": None,
+            "startedAt": None,
+            "waitingSince": None,
+            "timeoutAt": None,
+            "cancelRequestedAt": None,
+            "cancellingAt": None,
+            "completedAt": None,
+            "failedAt": None,
+            "cancelledAt": None,
+            "expiredAt": None,
+            "rejectedAt": None,
+            "terminalReason": None,
+            "failureCode": None,
+            "retryable": True,
+            "retryOfRunId": retry_of_run_id,
+            "originalRunId": original_run_id,
+        },
+    )
+
+    if status == "failed":
+        updated_run["outcome"] = "system_failure"
+        updated_run["failedAt"] = "2026-06-11T10:01:00Z"
+        updated_run["failureCode"] = "WORKER_FAILED"
+        updated_run["terminalReason"] = "Worker execution failed."
+    elif status == "expired":
+        updated_run["outcome"] = "timeout"
+        updated_run["expiredAt"] = "2026-06-11T10:02:00Z"
+        updated_run["failureCode"] = "WORKER_LOST"
+        updated_run["terminalReason"] = "Worker heartbeat timed out."
+    elif status == "cancelled":
+        updated_run["cancelledAt"] = "2026-06-11T10:03:00Z"
+        updated_run["terminalReason"] = "User requested cancellation."
+    elif status == "completed":
+        updated_run["outcome"] = "success"
+        updated_run["completedAt"] = "2026-06-11T10:04:00Z"
+        updated_run["terminalReason"] = "Run completed successfully."
+    elif status == "rejected":
+        updated_run["waitingFor"] = "approval"
+        updated_run["rejectedAt"] = "2026-06-11T10:05:00Z"
+        updated_run["terminalReason"] = "Approval request rejected."
+    elif status == "queued":
+        updated_run["validatingAt"] = "2026-06-11T09:56:00Z"
+        updated_run["queuedAt"] = "2026-06-11T09:57:00Z"
+    elif status == "running":
+        updated_run["startedAt"] = "2026-06-11T09:58:00Z"
+
+    return updated_run
+
+
+def assert_retry_creates_no_downstream_side_effects(
+    client: TestClient,
+    *,
+    run_id: str,
+    conversation_id: str,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+
+    assert ExecutionAttemptRepository(database).list_by_run_id(run_id) == []
+
+    source_evidence_response = client.get(f"/analysis-runs/{run_id}/source-evidence")
+    assert source_evidence_response.status_code == 200
+    assert source_evidence_response.json() == {"items": []}
+
+    reports_response = client.get(f"/analysis-runs/{run_id}/reports")
+    assert reports_response.status_code == 200
+    assert reports_response.json() == {"items": []}
+
+    decisions_response = client.get(f"/analysis-runs/{run_id}/decisions")
+    assert decisions_response.status_code == 200
+    assert decisions_response.json() == {"items": []}
+
+    assert client.get(f"/analysis-runs/{run_id}/tool-calls").status_code == 501
+    assert client.get(f"/analysis-runs/{run_id}/model-calls").status_code == 501
+    assert client.get(f"/conversations/{conversation_id}/messages").status_code == 501
 
 
 def build_source_evidence_records(run_id: str) -> list[SourceEvidenceRecord]:
@@ -540,6 +686,187 @@ def test_dispatch_analysis_run_rejects_repeat_dispatch_for_non_created_run(
         "errorCode": "INVALID_STATE",
         "message": "AnalysisRun must be created/intake before dispatch.",
     }
+
+
+@pytest.mark.parametrize(
+    ("status", "phase", "terminal_field"),
+    [
+        ("failed", "execution", "failedAt"),
+        ("expired", "execution", "expiredAt"),
+        ("cancelled", "execution", "cancelledAt"),
+    ],
+)
+def test_retry_analysis_run_creates_new_created_run_for_allowed_terminal_statuses(
+    client: TestClient,
+    status: str,
+    phase: str,
+    terminal_field: str,
+) -> None:
+    seeded = seed_analysis_run_state(client, status=status, phase=phase)
+    source_run = seeded["analysisRun"]
+    source_run_id = source_run["runId"]
+    conversation_id = seeded["conversation"]["conversationId"]
+    database = RuntimeFoundationMysqlCli()
+    analysis_run_repository = AnalysisRunRepository(database)
+    conversation_repository = ConversationRepository(database)
+    run_event_repository = RunEventRepository(database)
+
+    source_run_before_retry = analysis_run_repository.get_by_run_id(source_run_id)
+    source_events_before_retry = run_event_repository.list_by_run_id(source_run_id)
+
+    retry_response = client.post(f"/analysis-runs/{source_run_id}/retry")
+    assert retry_response.status_code == 202
+    retried_run = response_json_dict(retry_response.json())
+
+    assert retried_run["runId"].startswith("analysis-run-")
+    assert retried_run["runId"] != source_run_id
+    assert retried_run["workspaceId"] == source_run["workspaceId"]
+    assert retried_run["userId"] == source_run["userId"]
+    assert retried_run["analysisTaskId"] == source_run["analysisTaskId"]
+    assert retried_run["status"] == "created"
+    assert retried_run["phase"] == "intake"
+    assert retried_run["outcome"] is None
+    assert retried_run["waitingFor"] is None
+    assert retried_run["retryable"] is True
+    assert retried_run["retryOfRunId"] == source_run_id
+    assert retried_run["originalRunId"] == source_run_id
+    assert retried_run["validatingAt"] is None
+    assert retried_run["queuedAt"] is None
+    assert retried_run["startedAt"] is None
+    assert retried_run["completedAt"] is None
+    assert retried_run["failedAt"] is None
+    assert retried_run["cancelledAt"] is None
+    assert retried_run["expiredAt"] is None
+    assert retried_run["rejectedAt"] is None
+    assert retried_run["terminalReason"] is None
+    assert retried_run["failureCode"] is None
+
+    persisted_source_run = analysis_run_repository.get_by_run_id(source_run_id)
+    persisted_retried_run = analysis_run_repository.get_by_run_id(retried_run["runId"])
+    persisted_conversation = conversation_repository.get_by_conversation_id(conversation_id)
+    retried_run_events = run_event_repository.list_by_run_id(retried_run["runId"])
+    source_run_events = run_event_repository.list_by_run_id(source_run_id)
+
+    assert source_run_before_retry["status"] == status
+    assert source_run_before_retry["phase"] == phase
+    if terminal_field == "failedAt":
+        assert source_run_before_retry["failedAt"] is not None
+    elif terminal_field == "expiredAt":
+        assert source_run_before_retry["expiredAt"] is not None
+    else:
+        assert source_run_before_retry["cancelledAt"] is not None
+    assert persisted_source_run == source_run_before_retry
+    assert persisted_retried_run == retried_run
+    assert persisted_conversation["currentRunId"] == retried_run["runId"]
+    assert source_run_events == source_events_before_retry
+    assert len(retried_run_events) == 1
+    assert retried_run_events[0]["eventType"] == "run.created"
+    assert retried_run_events[0]["runId"] == retried_run["runId"]
+    assert retried_run_events[0]["phase"] == "intake"
+    assert retried_run_events[0]["sequence"] == 0
+
+    get_retry_run_conversation_response = client.get(
+        f"/analysis-runs/{retried_run['runId']}/conversation"
+    )
+    assert get_retry_run_conversation_response.status_code == 200
+    assert get_retry_run_conversation_response.json()["conversationId"] == conversation_id
+    assert get_retry_run_conversation_response.json()["currentRunId"] == retried_run["runId"]
+
+    assert_retry_creates_no_downstream_side_effects(
+        client,
+        run_id=retried_run["runId"],
+        conversation_id=conversation_id,
+    )
+
+
+def test_retry_analysis_run_preserves_original_run_id_chain(client: TestClient) -> None:
+    seeded = seed_analysis_run_state(
+        client,
+        status="failed",
+        phase="execution",
+        retry_of_run_id="analysis-run-retry-parent",
+        original_run_id="analysis-run-root-origin",
+    )
+    source_run_id = seeded["analysisRun"]["runId"]
+
+    retry_response = client.post(f"/analysis-runs/{source_run_id}/retry")
+    assert retry_response.status_code == 202
+    retried_run = response_json_dict(retry_response.json())
+
+    assert retried_run["retryOfRunId"] == source_run_id
+    assert retried_run["originalRunId"] == "analysis-run-root-origin"
+
+
+@pytest.mark.parametrize(
+    ("status", "phase"),
+    [
+        ("created", "intake"),
+        ("queued", "queueing"),
+        ("running", "execution"),
+        ("completed", "delivery"),
+        ("rejected", "approval"),
+    ],
+)
+def test_retry_analysis_run_rejects_unsupported_source_statuses(
+    client: TestClient,
+    status: str,
+    phase: str,
+) -> None:
+    seeded = seed_analysis_run_state(client, status=status, phase=phase)
+    source_run_id = seeded["analysisRun"]["runId"]
+    conversation_id = seeded["conversation"]["conversationId"]
+    database = RuntimeFoundationMysqlCli()
+    analysis_run_repository = AnalysisRunRepository(database)
+    conversation_repository = ConversationRepository(database)
+    source_run_before_retry = analysis_run_repository.get_by_run_id(source_run_id)
+    conversation_before_retry = conversation_repository.get_by_conversation_id(conversation_id)
+
+    retry_response = client.post(f"/analysis-runs/{source_run_id}/retry")
+    assert retry_response.status_code == 409
+    assert retry_response.json() == {
+        "errorCode": "INVALID_STATE",
+        "message": "AnalysisRun must be failed/expired/cancelled before user retry.",
+    }
+
+    assert analysis_run_repository.get_by_run_id(source_run_id) == source_run_before_retry
+    assert (
+        conversation_repository.get_by_conversation_id(conversation_id)
+        == conversation_before_retry
+    )
+
+
+def test_retry_analysis_run_returns_not_found_for_unknown_run(client: TestClient) -> None:
+    retry_response = client.post("/analysis-runs/analysis-run-missing/retry")
+
+    assert retry_response.status_code == 404
+    assert retry_response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "AnalysisRun not found: analysis-run-missing",
+    }
+
+
+def test_retry_analysis_run_returns_not_found_when_conversation_is_missing(
+    client: TestClient,
+) -> None:
+    seeded = seed_analysis_run_state(
+        client,
+        status="failed",
+        phase="execution",
+        attach_conversation=False,
+    )
+    source_run_id = seeded["analysisRun"]["runId"]
+    database = RuntimeFoundationMysqlCli()
+    analysis_run_repository = AnalysisRunRepository(database)
+    source_run_before_retry = analysis_run_repository.get_by_run_id(source_run_id)
+
+    retry_response = client.post(f"/analysis-runs/{source_run_id}/retry")
+
+    assert retry_response.status_code == 404
+    assert retry_response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": f"Conversation not found for AnalysisRun: {source_run_id}",
+    }
+    assert analysis_run_repository.get_by_run_id(source_run_id) == source_run_before_retry
 
 
 def test_create_conversation_returns_not_found_when_analysis_task_missing(

@@ -29,7 +29,6 @@ ROUTE_CASES: list[RouteCase] = [
     ("get", "/analysis-runs/analysis-q2-revenue-gap/model-calls", None, None),
     ("get", "/analysis-runs/analysis-q2-revenue-gap/approvals", None, None),
     ("post", "/analysis-runs/analysis-q2-revenue-gap/cancel", None, None),
-    ("post", "/analysis-runs/analysis-q2-revenue-gap/retry", None, None),
     (
         "post",
         "/analysis-runs/analysis-q2-revenue-gap/approvals/approval-revenue-gap-q2/decision",
