@@ -1,10 +1,97 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import type {
+  AnalysisRun,
+  Conversation,
+  Decision,
+  Message,
+  MessageStream,
+  ModelCall,
+  Report,
+  RunEvent,
+  SourceEvidence,
+  ToolCall
+} from "@insight-agent/contracts/generated/typescript";
+import goldenPathExample from "../../../../../packages/contracts/examples/analysis-runtime/golden-path.json";
+
 import { TestProviders } from "../../shared/test/TestProviders";
 import { AnalysisPage } from "./Page";
 
-afterEach(cleanup);
+type GoldenPathExample = {
+  analysisRun: AnalysisRun;
+  conversation: Conversation;
+  decisions: Decision[];
+  messageStream: MessageStream[];
+  messages: Message[];
+  modelCalls: ModelCall[];
+  reports: Report[];
+  runEvents: RunEvent[];
+  sourceEvidence: SourceEvidence[];
+  toolCalls: ToolCall[];
+};
+
+function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+
+    if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}`)) {
+      return Response.json(goldenPath.conversation);
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}`)) {
+      return Response.json(goldenPath.analysisRun);
+    }
+
+    if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}/messages`)) {
+      return Response.json({ items: goldenPath.messages });
+    }
+
+    if (
+      url.endsWith(
+        `/conversations/${goldenPath.conversation.conversationId}/messages/${goldenPath.messages[2]!.messageId}/stream`
+      )
+    ) {
+      return Response.json({ items: goldenPath.messageStream });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/events`)) {
+      return Response.json({ items: goldenPath.runEvents });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/tool-calls`)) {
+      return Response.json({ items: goldenPath.toolCalls });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/model-calls`)) {
+      return Response.json({ items: goldenPath.modelCalls });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/source-evidence`)) {
+      return Response.json({ items: goldenPath.sourceEvidence });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/reports`)) {
+      return Response.json({ items: goldenPath.reports });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/decisions`)) {
+      return Response.json({ items: goldenPath.decisions });
+    }
+
+    throw new Error(`Unhandled request: ${url}`);
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  return fetchMock;
+}
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  window.history.replaceState({}, "", "/");
+});
 
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
@@ -23,57 +110,64 @@ beforeAll(() => {
 });
 
 describe("AnalysisPage", () => {
-  it("renders a pure conversation shell without page header actions", () => {
+  it("renders an honest empty state without page header actions when no runtime bootstrap id is available", () => {
     render(
       <TestProviders>
         <AnalysisPage />
       </TestProviders>
     );
 
-    const main = screen.getByRole("region", { name: "Analysis conversation" });
+    expect(screen.queryByRole("region", { name: "Analysis conversation" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
+    expect(screen.getByText("No analysis runtime selected")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "当前没有 conversationId 或 runId。请从带上下文入口进入 Analysis，或通过 URL 提供 bootstrap id。"
+      )
+    ).toBeTruthy();
+  });
+
+  it("loads the runtime-backed conversation shell when a bootstrap conversationId is present", async () => {
+    const goldenPath = goldenPathExample as GoldenPathExample;
+    const fetchMock = installRuntimeFetchMock(goldenPath);
+    window.history.replaceState(
+      {},
+      "",
+      `/?conversationId=${encodeURIComponent(goldenPath.conversation.conversationId)}`
+    );
+
+    render(
+      <TestProviders>
+        <AnalysisPage />
+      </TestProviders>
+    );
+
+    const main = await screen.findByRole("region", { name: "Analysis conversation" });
 
     expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
     expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
     expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
-    expect(
-      within(main).getAllByText("来自 Dashboard / Revenue · 收入增速异常 · Last 30 days")
-    ).toHaveLength(2);
     expect(main.getAttribute("style")).toContain("height: 100%");
-    const messageList = within(main).getByRole("log", { name: "Analysis message list" });
-    const composer = within(main).getByRole("group", { name: "Analysis composer" });
-    expect(messageList).toBeTruthy();
-    expect(messageList.getAttribute("style")).toContain("overflow-y: auto");
-    expect(composer).toBeTruthy();
-    expect(composer.getAttribute("style")).toContain("flex: 0 0 auto");
     expect(
-      within(main).queryByText(
-        "当前展示静态 Analysis 会话。页面交互只更新 UI State，不创建真实 Agent Run。"
-      )
-    ).toBeNull();
-    expect(
-      within(main).queryByText("继续追问会沿用当前静态会话上下文，但不会发起真实多轮请求。")
-    ).toBeNull();
+      within(main).getAllByText("来自 Analysis conversation · 收入增速异常 · Current scope")
+    ).toHaveLength(2);
+    expect(within(main).getByRole("log", { name: "Analysis message list" })).toBeTruthy();
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
-    expect(within(main).queryByText("Draft")).toBeNull();
-    expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
+    expect(within(main).getByText("Message Stream Replay")).toBeTruthy();
     expect(within(main).getByRole("button", { name: "打开聊天工具入口" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "选择模型" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "发送消息" })).toBeTruthy();
-    expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
+    expect(within(main).getByRole("button", { name: "Run Trace" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "Tool / Model" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "Evidence" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "Report" })).toBeTruthy();
+    expect(within(main).getByRole("button", { name: "Decision" })).toBeTruthy();
     expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
     expect(within(main).queryByText("报告生成入口")).toBeNull();
-  });
-
-  it("keeps composer actions local to the page state", async () => {
-    const onNavigate = vi.fn();
-
-    render(
-      <TestProviders>
-        <AnalysisPage onNavigate={onNavigate} />
-      </TestProviders>
-    );
 
     fireEvent.click(screen.getByRole("button", { name: "选择模型" }));
     fireEvent.click(await screen.findByText("Reasoning"));
@@ -87,19 +181,11 @@ describe("AnalysisPage", () => {
         "继续追问华东渠道和最近 7 天的差异。"
       )
     ).toBeNull();
+
     fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
 
-    expect(screen.getByRole("button", { name: "停止生成" })).toBeTruthy();
-    expect(
-      within(screen.getByRole("log", { name: "Analysis message list" })).queryByText(
-        "继续追问华东渠道和最近 7 天的差异。"
-      )
-    ).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "停止生成" }));
-
     expect(screen.getByRole("button", { name: "发送消息" })).toBeTruthy();
-    expect(screen.getByText(/已停止本地模拟生成/)).toBeTruthy();
-    expect(onNavigate).not.toHaveBeenCalled();
+    expect(screen.getAllByText(/read surfaces；Analysis write path 暂未实现/)).toHaveLength(2);
+    expect(fetchMock).toHaveBeenCalledTimes(10);
   });
 });

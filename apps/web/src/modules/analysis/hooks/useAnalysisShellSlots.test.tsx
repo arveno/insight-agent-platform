@@ -47,7 +47,7 @@ function AnalysisShellSlotHarness() {
 }
 
 describe("useAnalysisShellSlots", () => {
-  it("exposes the module-owned Analysis session nav, workspace content, and inspector slots", () => {
+  it("exposes the module-owned Analysis session nav, empty-state workspace content, and inspector slots", () => {
     render(
       <TestProviders>
         <AnalysisShellSlotHarness />
@@ -55,8 +55,10 @@ describe("useAnalysisShellSlots", () => {
     );
 
     expect(screen.getByRole("navigation", { name: "Analysis session navigation" })).toBeTruthy();
-    expect(screen.getByRole("region", { name: "Analysis conversation" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Analysis conversation" })).toBeNull();
+    expect(screen.getByText("No analysis runtime selected")).toBeTruthy();
     expect(screen.getByLabelText("Analysis inspector")).toBeTruthy();
-    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getAllByText("Run Trace")).toHaveLength(2);
+    expect(screen.getByText("当前没有可展示的 run。")).toBeTruthy();
   });
 });

@@ -1,5 +1,8 @@
 import { theme } from "antd";
 
+import { EmptyState } from "../../../shared/ui/states/EmptyState";
+import { ErrorState } from "../../../shared/ui/states/ErrorState";
+import { LoadingState } from "../../../shared/ui/states/LoadingState";
 import type { AnalysisWorkspaceController } from "../hooks/useAnalysisWorkspaceController";
 
 import { AnalysisConversationPane } from "./AnalysisConversationPane";
@@ -10,6 +13,22 @@ export type AnalysisWorkspaceProps = {
 
 export function AnalysisWorkspace({ controller }: AnalysisWorkspaceProps) {
   const { token } = theme.useToken();
+  const content =
+    controller.workspaceState.kind === "loading" ? (
+      <LoadingState label={controller.workspaceState.title} />
+    ) : controller.workspaceState.kind === "error" ? (
+      <ErrorState
+        description={controller.workspaceState.description}
+        title={controller.workspaceState.title}
+      />
+    ) : controller.workspaceState.kind === "empty" ? (
+      <EmptyState
+        description={controller.workspaceState.description}
+        title={controller.workspaceState.title}
+      />
+    ) : (
+      <AnalysisConversationPane controller={controller} />
+    );
 
   return (
     <div
@@ -24,7 +43,7 @@ export function AnalysisWorkspace({ controller }: AnalysisWorkspaceProps) {
       }}
     >
       <div style={{ display: "flex", flex: "1 1 auto", minHeight: 0, minWidth: 0 }}>
-        <AnalysisConversationPane controller={controller} />
+        {content}
       </div>
     </div>
   );

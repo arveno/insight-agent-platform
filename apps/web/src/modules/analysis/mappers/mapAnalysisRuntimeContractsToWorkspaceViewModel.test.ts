@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type {
   AnalysisRun,
   Conversation,
+  Decision,
   Message,
   MessageStream,
   ModelCall,
@@ -18,6 +19,7 @@ import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "./mapAnalysisRu
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
   conversation: Conversation;
+  decisions: Decision[];
   messageStream: MessageStream[];
   messages: Message[];
   modelCalls: ModelCall[];
@@ -34,6 +36,7 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     const workspaceViewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
       conversation: goldenPath.conversation,
       currentRun: goldenPath.analysisRun,
+      decisions: goldenPath.decisions,
       messageStream: goldenPath.messageStream,
       messages: goldenPath.messages,
       modelCalls: goldenPath.modelCalls,
@@ -69,6 +72,14 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     expect(session.toolDetails.map((item) => item.toolCallId)).toEqual(
       goldenPath.toolCalls.map((item) => item.toolCallId)
     );
+    expect(session.modelDetails.map((item) => item.modelCallId)).toEqual(
+      goldenPath.modelCalls.map((item) => item.modelCallId)
+    );
+    expect(session.decisions.map((item) => item.decisionId)).toEqual(
+      goldenPath.decisions.map((item) => item.decisionId)
+    );
+    expect(session.messageStream?.messageId).toBe(goldenPath.messageStream.at(-1)?.messageId);
+    expect(session.messageStream?.status).toBe(goldenPath.messageStream.at(-1)?.status);
     expect(session.messages.find((message) => message.role === "assistant")?.content).toBe(
       assistantContractMessage?.content
     );
@@ -86,6 +97,7 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
         outcome: null,
         status: "running"
       },
+      decisions: goldenPath.decisions,
       messageStream: goldenPath.messageStream,
       messages: goldenPath.messages,
       modelCalls: goldenPath.modelCalls,

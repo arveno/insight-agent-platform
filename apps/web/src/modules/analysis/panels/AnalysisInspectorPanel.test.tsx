@@ -44,12 +44,25 @@ describe("AnalysisInspectorPanel", () => {
         <AnalysisInspectorPanel
           activeInspectorPanel="run-trace"
           currentRun={session.currentRun}
+          decisions={session.decisions}
+          decisionsState={session.decisionsState}
           isRunTraceDetailOpen={false}
+          messageStream={session.messageStream}
+          messageStreamState={session.messageStreamState}
+          modelDetails={session.modelDetails}
+          modelDetailsState={session.modelDetailsState}
           onCloseRunTraceDetail={onCloseRunTraceDetail}
+          onOpenInspectorPanel={() => undefined}
           onSelectRunEvent={onSelectRunEvent}
+          reportPreview={session.reportPreview}
+          reportPreviewState={session.reportPreviewState}
           runEvents={session.runEvents}
+          sourceEvidenceState={session.sourceEvidenceState}
+          sourceEvidence={session.sourceEvidence}
           selectedRunEvent={selectedRunEvent}
           selectedRunEventId={selectedRunEvent.eventId}
+          toolDetails={session.toolDetails}
+          toolDetailsState={session.toolDetailsState}
           workspaceName="Northstar Retail China"
         />
       </TestProviders>
@@ -65,12 +78,25 @@ describe("AnalysisInspectorPanel", () => {
         <AnalysisInspectorPanel
           activeInspectorPanel="run-trace"
           currentRun={session.currentRun}
+          decisions={session.decisions}
+          decisionsState={session.decisionsState}
           isRunTraceDetailOpen
+          messageStream={session.messageStream}
+          messageStreamState={session.messageStreamState}
+          modelDetails={session.modelDetails}
+          modelDetailsState={session.modelDetailsState}
           onCloseRunTraceDetail={onCloseRunTraceDetail}
+          onOpenInspectorPanel={() => undefined}
           onSelectRunEvent={onSelectRunEvent}
+          reportPreview={session.reportPreview}
+          reportPreviewState={session.reportPreviewState}
           runEvents={session.runEvents}
+          sourceEvidenceState={session.sourceEvidenceState}
+          sourceEvidence={session.sourceEvidence}
           selectedRunEvent={selectedRunEvent}
           selectedRunEventId={selectedRunEvent.eventId}
+          toolDetails={session.toolDetails}
+          toolDetailsState={session.toolDetailsState}
           workspaceName="Northstar Retail China"
         />
       </TestProviders>
@@ -81,5 +107,43 @@ describe("AnalysisInspectorPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "关闭详情" }));
 
     expect(onCloseRunTraceDetail).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders independent report and decision content instead of hiding them in assistant messages", () => {
+    const session = analysisStaticViewModel.sessions[0];
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          activeInspectorPanel="report-preview"
+          currentRun={session.currentRun}
+          decisions={session.decisions}
+          decisionsState={session.decisionsState}
+          isRunTraceDetailOpen={false}
+          messageStream={session.messageStream}
+          messageStreamState={session.messageStreamState}
+          modelDetails={session.modelDetails}
+          modelDetailsState={session.modelDetailsState}
+          onCloseRunTraceDetail={() => undefined}
+          onOpenInspectorPanel={() => undefined}
+          onSelectRunEvent={() => undefined}
+          reportPreview={session.reportPreview}
+          reportPreviewState={session.reportPreviewState}
+          runEvents={session.runEvents}
+          sourceEvidenceState={session.sourceEvidenceState}
+          sourceEvidence={session.sourceEvidence}
+          selectedRunEvent={session.runEvents[0]}
+          selectedRunEventId={session.runEvents[0]?.eventId ?? null}
+          toolDetails={session.toolDetails}
+          toolDetailsState={session.toolDetailsState}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getAllByText("Report Preview").length).toBeGreaterThan(0);
+    expect(screen.getByText(session.reportPreview?.title ?? "")).toBeTruthy();
+    expect(screen.getByText("Decision")).toBeTruthy();
+    expect(screen.getByText(session.decisions[0]?.title ?? "")).toBeTruthy();
   });
 });

@@ -1,5 +1,5 @@
 import { ArrowUpOutlined, DownOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
-import { Button, Dropdown, Segmented, Space, theme } from "antd";
+import { Button, Dropdown, Segmented, Space, Typography, theme } from "antd";
 
 import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
 import type { AnalysisComposerMode, AnalysisComposerViewModel } from "../models/analysisViewModel";
@@ -111,6 +111,13 @@ export function AnalysisComposer({
           }}
           value={composerDraft}
         />
+        <Space direction="vertical" size={2} style={{ marginBottom: token.marginSM, width: "100%" }}>
+          <Typography.Text type="secondary">{activeComposer.contextHint}</Typography.Text>
+          <Typography.Text type="secondary">{activeComposer.helperText}</Typography.Text>
+          {interactionMessage ? (
+            <Typography.Text type="secondary">{interactionMessage}</Typography.Text>
+          ) : null}
+        </Space>
         <div
           style={{
             alignItems: "center",

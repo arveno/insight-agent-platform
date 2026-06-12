@@ -53,6 +53,17 @@ export type AnalysisResultSummaryViewModel = {
   title: string;
 };
 
+export type AnalysisSurfaceState = "ready" | "empty" | "notImplemented" | "unavailable";
+
+export type AnalysisMessageStreamViewModel = {
+  eventCount: number;
+  messageId: string;
+  replayText: string;
+  runId: string;
+  status: string;
+  updatedAtText: string;
+};
+
 export type AnalysisToolDetailViewModel = {
   runId: string;
   statusViewModel: SharedStatusViewModel;
@@ -61,7 +72,19 @@ export type AnalysisToolDetailViewModel = {
   toolName: string;
 };
 
+export type AnalysisModelDetailViewModel = {
+  costText: string;
+  latencyText: string;
+  modelCallId: string;
+  modelId: string;
+  provider: string;
+  runId: string;
+  statusViewModel: SharedStatusViewModel;
+  tokenUsageText: string;
+};
+
 export type AnalysisSourceEvidenceViewModel = {
+  confidenceText: string;
   runId: string;
   sourceEvidenceId: string;
   sourceType: string;
@@ -72,7 +95,19 @@ export type AnalysisSourceEvidenceViewModel = {
 export type AnalysisReportPreviewViewModel = {
   reportId: string;
   runId: string;
+  sections: { key: string; title: string; content: string }[];
+  sourceEvidenceIds: string[];
   summary: string;
+  title: string;
+};
+
+export type AnalysisDecisionViewModel = {
+  createdAtText: string;
+  decisionId: string;
+  reportId: string;
+  runId: string;
+  status: string;
+  statusViewModel: SharedStatusViewModel;
   title: string;
 };
 
@@ -87,6 +122,7 @@ export type AnalysisInspectorPanelKey =
   | "tool-detail"
   | "source-evidence"
   | "report-preview"
+  | "decision-detail"
   | "memory-context";
 
 export type AnalysisComposerMode = "analysis" | "follow_up";
@@ -95,16 +131,25 @@ export type AnalysisSessionViewModel = {
   conversationId: string;
   currentRun: AnalysisRun;
   contextPack: AnalysisContextPackViewModel;
+  decisions: AnalysisDecisionViewModel[];
+  decisionsState: AnalysisSurfaceState;
   followUpComposer: AnalysisComposerViewModel;
   inputComposer: AnalysisComposerViewModel;
   memoryContext?: AnalysisMemoryContextViewModel;
+  messageStream?: AnalysisMessageStreamViewModel;
+  messageStreamState: AnalysisSurfaceState;
   messages: AnalysisMessage[];
+  modelDetails: AnalysisModelDetailViewModel[];
+  modelDetailsState: AnalysisSurfaceState;
   reportPreview?: AnalysisReportPreviewViewModel;
+  reportPreviewState: AnalysisSurfaceState;
   resultSummary: AnalysisResultSummaryViewModel;
   runEvents: AnalysisRunEvent[];
   sessionSummary: AnalysisSessionSummaryViewModel;
   sourceEvidence: AnalysisSourceEvidenceViewModel[];
+  sourceEvidenceState: AnalysisSurfaceState;
   toolDetails: AnalysisToolDetailViewModel[];
+  toolDetailsState: AnalysisSurfaceState;
 };
 
 export type AnalysisWorkspaceViewModel = {

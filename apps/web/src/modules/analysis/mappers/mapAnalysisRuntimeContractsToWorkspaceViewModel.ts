@@ -1,6 +1,7 @@
 import type {
   AnalysisRunContract,
   ConversationContract,
+  Decision,
   MessageContract,
   MessageStreamContract,
   ModelCall,
@@ -15,14 +16,19 @@ import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
 import type {
   AnalysisComposerViewModel,
   AnalysisContextPackViewModel,
+  AnalysisDecisionViewModel,
+  AnalysisModelDetailViewModel,
   AnalysisResultSummaryViewModel,
+  AnalysisSurfaceState,
   AnalysisSessionViewModel,
+  AnalysisMessageStreamViewModel,
   AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
 
 export type AnalysisRuntimeContractsWorkspaceInput = {
   conversation: ConversationContract;
   currentRun: AnalysisRunContract;
+  decisions: Decision[];
   messageStream: MessageStreamContract[];
   messages: MessageContract[];
   modelCalls: ModelCall[];
@@ -38,6 +44,14 @@ export type AnalysisRuntimeContractsWorkspaceOptions = {
   followUpComposerDraft?: string;
   inputComposerDraft?: string;
   modelOptions?: readonly { key: string; label: string }[];
+  surfaceStates?: Partial<{
+    decisions: AnalysisSurfaceState;
+    messageStream: AnalysisSurfaceState;
+    modelDetails: AnalysisSurfaceState;
+    reportPreview: AnalysisSurfaceState;
+    sourceEvidence: AnalysisSurfaceState;
+    toolDetails: AnalysisSurfaceState;
+  }>;
 };
 
 const defaultModelOptions = [
@@ -101,6 +115,17 @@ function sumTokens(modelCalls: ModelCall[]): string {
   return totalTokens.toLocaleString("en-US");
 }
 
+function resolveSurfaceState(
+  override: AnalysisSurfaceState | undefined,
+  itemCount: number
+): AnalysisSurfaceState {
+  if (override) {
+    return override;
+  }
+
+  return itemCount > 0 ? "ready" : "empty";
+}
+
 function mapRunStatusToViewModel(status: AnalysisRunContract["status"]): SharedStatusViewModel {
   switch (status) {
     case "completed":
@@ -119,6 +144,20 @@ function mapRunStatusToViewModel(status: AnalysisRunContract["status"]): SharedS
       return { labelKey: "state.risk.default.title", status: "risk" };
     case "created":
       return { labelKey: "state.ready.default.title", status: "ready" };
+  }
+}
+
+function mapDecisionStatusToViewModel(status: Decision["status"]): SharedStatusViewModel {
+  switch (status) {
+    case "completed":
+    case "accepted":
+      return { labelKey: "state.success.default.title", status: "success" };
+    case "in_progress":
+      return { labelKey: "state.loading.default.title", status: "loading" };
+    case "proposed":
+      return { labelKey: "state.ready.default.title", status: "ready" };
+    case "rejected":
+      return { labelKey: "state.risk.default.title", status: "risk" };
   }
 }
 
@@ -165,8 +204,8 @@ function createComposerViewModel(
 ): AnalysisComposerViewModel {
   return mode === "analysis"
     ? {
-        contextHint: "Conversation 是交互主线；后续真实实现由 POST /analysis-runs 接入运行链路。",
-        helperText: "当前展示 contract-backed 静态输入区，不发送真实请求。",
+        contextHint: "Conversation 是交互主线；真实 write path 需要后续 issue 接入。",
+        helperText: "当前 issue 只接 read surfaces；Analysis write path 暂未实现。",
         initialDraft: draft,
         key: "analysis-input",
         placeholder: "描述要分析的问题、约束和期望结果。",
@@ -179,7 +218,7 @@ function createComposerViewModel(
       }
     : {
         contextHint: "继续追问会复用当前 conversationId / runId 主线。",
-        helperText: "当前展示 contract-backed 静态追问区，不触发真实 streaming。",
+        helperText: "当前 issue 只接 read surfaces；Follow-up write path 暂未实现。",
         initialDraft: draft,
         key: "follow-up-input",
         placeholder: "继续追问当前结论，例如要求拆分渠道、时间范围或证据。",
@@ -232,6 +271,26 @@ function mapMessages(
     toolCallIds: message.toolCallIds,
     turnId: message.turnId
   }));
+}
+
+function mapMessageStream(
+  messageStream: MessageStreamContract[]
+): AnalysisMessageStreamViewModel | undefined {
+  if (messageStream.length === 0) {
+    return undefined;
+  }
+
+  const orderedStream = messageStream.slice().sort((left, right) => left.sequence - right.sequence);
+  const lastEvent = orderedStream.at(-1)!;
+
+  return {
+    eventCount: orderedStream.length,
+    messageId: lastEvent.messageId,
+    replayText: orderedStream.map((event) => event.delta).join(""),
+    runId: lastEvent.runId,
+    status: lastEvent.status,
+    updatedAtText: formatUpdatedAtText(lastEvent.occurredAt),
+  };
 }
 
 function mapRunEvents(runEvents: RunEventContract[]): AnalysisRunEvent[] {
@@ -293,6 +352,53 @@ function mapCurrentRun(
   };
 }
 
+function summarizeToolOutput(toolCall: ToolCall): string {
+  if (toolCall.errorMessage) {
+    return toolCall.errorMessage;
+  }
+
+  if (!toolCall.output || Object.keys(toolCall.output).length === 0) {
+    return `权限 ${toolCall.permission}，无结构化输出摘要。`;
+  }
+
+  const prioritizedKeys = ["conclusion", "summary", "result", "message"];
+
+  for (const key of prioritizedKeys) {
+    const value = toolCall.output[key];
+
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  return `输出字段：${Object.keys(toolCall.output).join(", ")}`;
+}
+
+function mapModelDetails(modelCalls: ModelCall[]): AnalysisModelDetailViewModel[] {
+  return modelCalls.map((modelCall) => ({
+    costText: `¥${modelCall.cost.toFixed(2)}`,
+    latencyText: `${modelCall.latencyMs} ms`,
+    modelCallId: modelCall.modelCallId,
+    modelId: modelCall.modelId,
+    provider: modelCall.provider,
+    runId: modelCall.runId,
+    statusViewModel: mapRunEventStatusToViewModel(modelCall.status),
+    tokenUsageText: (modelCall.inputTokens + modelCall.outputTokens).toLocaleString("en-US")
+  }));
+}
+
+function mapDecisions(decisions: Decision[]): AnalysisDecisionViewModel[] {
+  return decisions.map((decision) => ({
+    createdAtText: formatUpdatedAtText(decision.createdAt),
+    decisionId: decision.decisionId,
+    reportId: decision.reportId,
+    runId: decision.runId,
+    status: decision.status,
+    statusViewModel: mapDecisionStatusToViewModel(decision.status),
+    title: decision.title
+  }));
+}
+
 function createResultSummary(
   reports: Report[],
   sourceEvidence: SourceEvidence[],
@@ -327,11 +433,16 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   const assistantMessage = input.messages.find((message) => message.role === "assistant");
   const resultSummary = createResultSummary(input.reports, input.sourceEvidence, assistantMessage);
   const report = input.reports[0];
+  const messageStream = mapMessageStream(input.messageStream);
+  const modelDetails = mapModelDetails(input.modelCalls);
+  const decisions = mapDecisions(input.decisions);
 
   const session: AnalysisSessionViewModel = {
     contextPack,
     conversationId: input.conversation.conversationId,
     currentRun,
+    decisions,
+    decisionsState: resolveSurfaceState(options?.surfaceStates?.decisions, decisions.length),
     followUpComposer: createComposerViewModel(
       "follow_up",
       options?.followUpComposerDraft ?? "如果缩小时间窗口，这个结论是否仍然成立？"
@@ -341,14 +452,28 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
       options?.inputComposerDraft ?? assistantMessage?.content ?? input.conversation.title
     ),
     messages,
+    messageStream,
+    messageStreamState: resolveSurfaceState(
+      options?.surfaceStates?.messageStream,
+      input.messageStream.length
+    ),
+    modelDetails,
+    modelDetailsState: resolveSurfaceState(options?.surfaceStates?.modelDetails, modelDetails.length),
     reportPreview: report
       ? {
           reportId: report.reportId,
           runId: report.runId,
+          sections: report.sections.map((section) => ({
+            content: section.content,
+            key: section.reportSectionId,
+            title: section.title
+          })),
+          sourceEvidenceIds: report.sourceEvidence ?? [],
           summary: report.summary,
           title: report.title
         }
       : undefined,
+    reportPreviewState: resolveSurfaceState(options?.surfaceStates?.reportPreview, report ? 1 : 0),
     resultSummary,
     runEvents,
     sessionSummary: {
@@ -361,22 +486,25 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
       updatedAtText: formatUpdatedAtText(input.conversation.updatedAt)
     },
     sourceEvidence: input.sourceEvidence.map((item) => ({
+      confidenceText: `${Math.round(item.confidence * 100)}%`,
       runId: item.runId,
       sourceEvidenceId: item.sourceEvidenceId,
       sourceType: item.sourceType,
       summary: item.snippet,
       title: item.title
     })),
+    sourceEvidenceState: resolveSurfaceState(
+      options?.surfaceStates?.sourceEvidence,
+      input.sourceEvidence.length
+    ),
     toolDetails: input.toolCalls.map((toolCall) => ({
       runId: toolCall.runId,
       statusViewModel: mapRunEventStatusToViewModel(toolCall.status),
-      summary:
-        toolCall.output && Object.keys(toolCall.output).length > 0
-          ? JSON.stringify(toolCall.output)
-          : (toolCall.errorMessage ?? toolCall.permission),
+      summary: summarizeToolOutput(toolCall),
       toolCallId: toolCall.toolCallId,
       toolName: toolCall.toolName
-    }))
+    })),
+    toolDetailsState: resolveSurfaceState(options?.surfaceStates?.toolDetails, input.toolCalls.length)
   };
 
   return {
