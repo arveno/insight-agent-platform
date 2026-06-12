@@ -162,6 +162,12 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 - `DraftContextPack` 刷新页面后不需要恢复；刷新后回到普通新聊天草稿态。
 - `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
 - blank draft submit 时，`AnalysisTask.contextPack = null`；context draft submit 时，`DraftContextPack` 必须原样固化为 typed `AnalysisTask.contextPack` snapshot。
+- `Context Origin` 本身不是事实源；它只是说明本次 Analysis 输入从哪里来、能追溯到哪些 canonical source objects。
+- `DraftContextPack / AnalysisTask.contextPack` 中的 `summary / chips` 不能替代真实 evidence / report / metric / data / knowledge source。
+- `Context Origin` 必须暴露 traceability state：`none | summary_only | partial_refs | direct_refs`。
+- 如果只有 `summary / chips` 而没有稳定 canonical refs，traceability state 必须是 `summary_only`；不得为了 UI 完整性伪造 supporting refs。
+- `Analysis Inspector` 是 Analysis 页面内部的层级详情浏览器；点击卡片默认只在 Inspector 内进入下一层，不默认跳出 Analysis 页面。
+- 完整来源页面只能作为最终来源详情里的次级动作打开，不得替代 Inspector 内的主导航链路。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
@@ -240,6 +246,8 @@ Analysis
 - `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
 - `DraftContextPack` 刷新页面后不需要恢复，回到普通新聊天草稿态。
 - `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
+- `Dashboard / Metrics / Reports / Data & Knowledge / Run Trace / Evidence` 的 `Open in Analysis with context` 必须从 canonical contract objects 生成上下文；入口页面只是 origin surface，不自动升格为唯一事实源。
+- `Dashboard` 可以作为问题发现入口，但当 `metric / report / evidence / data / knowledge` refs 已存在时，不得把 `Dashboard` 视为唯一 source of truth。
 - `Data & Knowledge` 当前结构固定为：`LeftNav secondary list = grouped asset list`，其中 `数据资产 Data` 和 `知识文档 Docs` 只是页面内部二级列表分组，不是新的一级模块，不新增 `Data route / Knowledge route`，也不拆 `Data & Knowledge` 一级入口。
 - `Data & Knowledge` 的 `MainContent` 固定为：`SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，不再以全局总览卡片堆叠作为主线。
 - `Data & Knowledge` 的 `Inspector` 固定承接：`Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。

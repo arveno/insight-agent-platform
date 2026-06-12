@@ -202,6 +202,40 @@ localOnlyId
 - `StaticFeedbackEntranceViewModel.targetId / targetType` 可以作为 UI 本地表达。
 - 以上字段都不得替代 `runId`、`reportId`、`sourceEvidenceId`、`metricId` 等 canonical object id。
 
+### SourceRef / Context Origin ID Boundary
+
+`Context Origin` 与 `SourceRef` 是产品 / UI 可追溯性表达，不是新的正式 contract 对象，也不是 business identity 的替代品。
+
+Frontend 可以组合 Inspector UI routes、stack node keys 和本地选择态，但不得发明新的 business ID。
+
+如果 UI 暴露来源 ref，它的业务身份必须回到现有 contract ID：
+
+```text
+report ref -> reportId
+metric ref -> metricId
+evidence ref -> sourceEvidenceId
+run ref -> runId
+data table ref -> tableId
+knowledge document ref -> knowledgeDocumentId
+tool call ref -> toolCallId
+model call ref -> modelCallId
+job ref -> jobId
+```
+
+补充说明：
+
+- `DataTable` 当前 machine-checkable contract 的 canonical ID 是 `tableId`；不得在前端或文档共享链路里自造 `dataTableId` 别名。
+- 只有在 `packages/contracts` 正式变更并同步更新本文件后，才允许把上述映射切换到新的 canonical 字段名。
+
+以下值只允许作为内部 UI key，本身不得展示给用户，也不得作为业务跳转或事实追溯依据：
+
+```text
+source-1
+context-item-001
+fake-report-id
+origin-ref-x
+```
+
 当前已知风险：
 
 - `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
@@ -563,6 +597,23 @@ context draft submit -> sourceType / sourceId / sourceTitle / summary / chips / 
 - `chips`：用于 Draft Context strip / inspector 的结构化 chip 列表。
 - `suggestedPrompt`：进入草稿态时给 composer 的可编辑预填文本；发送后保留为 typed snapshot，不回写覆盖 `question`。
 - `question`：用户正式发送的问题文本，不得被 `summary`、`suggestedPrompt` 或任意草稿态 context 替代。
+- `Context Origin`：产品 / UI 用于说明 Analysis 输入从哪里来、可由哪些 canonical source objects 验证的表达层；它本身不是 source of truth，也不是新的持久化 contract 对象。
+- `summary / chips`：只能作为草稿态摘要和可读性辅助，不能替代真实 evidence / report / metric / data / knowledge source。
+
+`Context Origin` 的 traceability state 语义固定如下：
+
+```text
+none
+summary_only
+partial_refs
+direct_refs
+```
+
+补充规则：
+
+- 如果只有 `summary / chips`，没有稳定 canonical refs，traceability state 必须是 `summary_only`。
+- 不得为了 UI 完整性伪造 supporting refs。
+- `traceability state` 当前是产品 / UI 的共享语义，不代表已新增 `packages/contracts` schema 字段；如未来进入共享 API，必须先更新 `packages/contracts`。
 
 禁止：
 

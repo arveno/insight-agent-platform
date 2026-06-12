@@ -114,6 +114,14 @@ Code
 - 页面可以选择是否启用 Inspector。
 - 页面通过当前选中对象提供 `inspectorContext`。
 - Inspector 根据 `subjectType` 插入能力卡片。
+- `AnalysisInspectorPanel` 是 Analysis 页面内部的 layered detail browser，不是浏览器 back stack 的替身。
+- `Analysis Inspector` 点击卡片默认只在 Inspector stack 内进入下一层，不默认触发浏览器返回、同 tab 跳页或替换当前 Analysis 页面。
+- `Context Origin` 是 UI / product representation，不是 source of truth；它只说明本次 Analysis 输入从哪里来、能追溯到哪些 canonical source objects。
+- `Context Origin` 必须展示 traceability state：`none | summary_only | partial_refs | direct_refs`。
+- 如果当前只有 `summary / chips`，没有稳定 canonical refs，UI 必须展示 `summary_only`，不得为了视觉完整性伪造 supporting refs。
+- 最终来源详情层可以提供 `Open full source` 次级动作；在此之前，Inspector 内导航应优先停留在 Analysis 页面内部。
+- `Open full source` 必须依赖由 canonical contract ID 推导出的 stable href，在新浏览器 tab 打开，不得替换当前 Analysis 页面，也不得清空 `conversation / run / draft / inspector` 状态。
+- 如果没有 stable href，`Open full source` 必须禁用并给出诚实原因，不能伪造可打开入口。
 
 默认策略：
 
@@ -251,6 +259,9 @@ AppShell
 - helper 负责把 route key、variant、iconName、label、onNavigate 转成 `NavigationActionButton` 可消费的通用 action props。
 - 后续入口跳转不得在页面中随意散写。
 - `Open in Analysis with context` 等能力必须通过统一 navigation helper 承接上下文，不得页面临时拼按钮。
+- `Dashboard / Metrics / Reports / Data & Knowledge / Run Trace / Evidence` 进入 `Open in Analysis with context` 时，必须从 canonical contract objects 生成上下文；入口 surface 不是 source of truth。
+- `Dashboard` 可以是 origin surface，但当 `metric / report / evidence / data / knowledge` refs 已存在时，不得在前端把 `Dashboard` 当作唯一来源对象。
+- 前端可以组合 Inspector 内部 UI routes、stack node keys 和本地选择态，但不得发明新的 business ID；具体 canonical ID 映射以 `docs/contracts.md` 为准。
 - 页面入口只表达导航、Analysis 新聊天草稿态入口或只读摘要入口，不等于真实执行。
 
 ### Page Archetype
