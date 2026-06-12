@@ -212,8 +212,8 @@ paths:
                 reportId: report-revenue-gap-q2
                 createdAt: "2026-06-05T11:22:00+08:00"
                 completedAt: "2026-06-05T11:22:00+08:00"
-        "404":
-          $ref: "#/components/responses/RuntimeNotFound"
+        "501":
+          $ref: "#/components/responses/NotImplementedRuntimeRoute"
   /conversations/{conversationId}/messages/{messageId}/stream:
     get:
       summary: 获取消息流
