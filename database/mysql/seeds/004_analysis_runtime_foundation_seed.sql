@@ -1,5 +1,6 @@
 INSERT INTO analysis_tasks (
   analysis_task_id,
+  conversation_id,
   workspace_id,
   user_id,
   business_domain_id,
@@ -9,6 +10,7 @@ INSERT INTO analysis_tasks (
   updated_at
 ) VALUES (
   'analysis-task-revenue-gap-q2',
+  'conversation-revenue-gap-q2',
   'workspace-northstar-retail-china',
   'user-zoe',
   'business-domain-revenue-quality',
@@ -28,6 +30,7 @@ INSERT INTO analysis_tasks (
   '2026-06-05T11:08:12+08:00'
 )
 ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
   workspace_id = VALUES(workspace_id),
   user_id = VALUES(user_id),
   business_domain_id = VALUES(business_domain_id),
@@ -40,7 +43,6 @@ INSERT INTO conversations (
   conversation_id,
   workspace_id,
   user_id,
-  analysis_task_id,
   current_run_id,
   title,
   status,
@@ -50,7 +52,6 @@ INSERT INTO conversations (
   'conversation-revenue-gap-q2',
   'workspace-northstar-retail-china',
   'user-zoe',
-  'analysis-task-revenue-gap-q2',
   'analysis-q2-revenue-gap',
   '收入增速异常',
   'active',
@@ -60,7 +61,6 @@ INSERT INTO conversations (
 ON DUPLICATE KEY UPDATE
   workspace_id = VALUES(workspace_id),
   user_id = VALUES(user_id),
-  analysis_task_id = VALUES(analysis_task_id),
   current_run_id = VALUES(current_run_id),
   title = VALUES(title),
   status = VALUES(status),

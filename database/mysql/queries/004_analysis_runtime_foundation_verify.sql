@@ -65,6 +65,10 @@ SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks
 WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
 
+SELECT CONCAT('analysisTask.conversationId=', conversation_id) AS check_line
+FROM analysis_tasks
+WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
+
 SELECT CONCAT('conversationId=', conversation_id) AS check_line
 FROM conversations
 WHERE conversation_id = 'conversation-revenue-gap-q2';
@@ -72,10 +76,6 @@ WHERE conversation_id = 'conversation-revenue-gap-q2';
 SELECT CONCAT('runId=', run_id) AS check_line
 FROM analysis_runs
 WHERE run_id = 'analysis-q2-revenue-gap';
-
-SELECT CONCAT('conversation.analysisTaskId=', analysis_task_id) AS check_line
-FROM conversations
-WHERE conversation_id = 'conversation-revenue-gap-q2';
 
 SELECT CONCAT('conversation.currentRunId=', current_run_id) AS check_line
 FROM conversations

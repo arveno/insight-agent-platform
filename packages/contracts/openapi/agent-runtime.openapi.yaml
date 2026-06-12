@@ -22,7 +22,8 @@ paths:
     post:
       summary: 创建分析输入任务
       description: >
-        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 context pack。
+        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 context pack，
+        并绑定到既有 Conversation。
         成功时由服务端生成 canonical analysisTaskId，并写入真实 MySQL foundation repository。
       operationId: createAnalysisTask
       requestBody:
@@ -32,6 +33,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateAnalysisTaskRequest"
             example:
+              conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
               businessDomainId: business-domain-revenue-quality
@@ -57,6 +59,7 @@ paths:
                 $ref: "#/components/schemas/AnalysisTask"
               example:
                 analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
                 businessDomainId: business-domain-revenue-quality
@@ -74,12 +77,126 @@ paths:
                     - knowledge-document-inventory-east-04
                 createdAt: "2026-06-05T03:08:12Z"
                 updatedAt: "2026-06-05T03:08:12Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeMismatch"
+  /analysis-tasks/submit:
+    post:
+      summary: 提交 Analysis 草稿
+      description: >
+        标准化 Analysis draft submit write path。
+        服务端在单链路 orchestration 中 create or reuse Conversation、create User Message、
+        create AnalysisTask，并创建 initial AnalysisRun。
+        当前 #201-1 先在 OpenAPI formalize 该边界；真实 backend write-path implementation 由 #201-2 承接。
+      operationId: submitAnalysisDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAnalysisDraftRequest"
+            example:
+              workspaceId: workspace-northstar-retail-china
+              userId: user-zoe
+              businessDomainId: business-domain-revenue-quality
+              question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+              contextPack:
+                metricId: metric-recognized-revenue
+                timeRange: 2026 Q2
+                threshold: 收入增速 < -2%
+                trend: 华东区域收入增速低于阈值
+                tableIds:
+                  - table-sales-order
+                  - table-refund-order
+                knowledgeDocumentIds:
+                  - knowledge-document-channel-weekly-17
+                  - knowledge-document-inventory-east-04
+              title: 收入增速异常
+      responses:
+        "201":
+          description: Analysis draft submit 成功后的标准化 write-path 响应。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitAnalysisDraftResponse"
+              example:
+                conversation:
+                  conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
+                  workspaceId: workspace-northstar-retail-china
+                  userId: user-zoe
+                  currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                  title: 收入增速异常
+                  status: active
+                  createdAt: "2026-06-05T03:08:20Z"
+                  updatedAt: "2026-06-05T03:08:30Z"
+                userMessage:
+                  messageId: message-revenue-gap-q2-user
+                  conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
+                  analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                  turnId: turn-revenue-gap-q2-1
+                  runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                  role: user
+                  content: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+                  status: completed
+                  sourceEvidenceIds: []
+                  toolCallIds: []
+                  reportId: null
+                  createdAt: "2026-06-05T03:08:20Z"
+                  completedAt: "2026-06-05T03:08:20Z"
+                analysisTask:
+                  analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                  conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
+                  workspaceId: workspace-northstar-retail-china
+                  userId: user-zoe
+                  businessDomainId: business-domain-revenue-quality
+                  question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+                  contextPack:
+                    metricId: metric-recognized-revenue
+                    timeRange: 2026 Q2
+                    threshold: 收入增速 < -2%
+                    trend: 华东区域收入增速低于阈值
+                    tableIds:
+                      - table-sales-order
+                      - table-refund-order
+                    knowledgeDocumentIds:
+                      - knowledge-document-channel-weekly-17
+                      - knowledge-document-inventory-east-04
+                  createdAt: "2026-06-05T03:08:20Z"
+                  updatedAt: "2026-06-05T03:08:20Z"
+                analysisRun:
+                  runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                  workspaceId: workspace-northstar-retail-china
+                  userId: user-zoe
+                  analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                  status: created
+                  phase: intake
+                  outcome: null
+                  waitingFor: null
+                  createdAt: "2026-06-05T03:08:30Z"
+                  validatingAt: null
+                  queuedAt: null
+                  startedAt: null
+                  waitingSince: null
+                  timeoutAt: null
+                  cancelRequestedAt: null
+                  cancellingAt: null
+                  completedAt: null
+                  failedAt: null
+                  cancelledAt: null
+                  expiredAt: null
+                  rejectedAt: null
+                  terminalReason: null
+                  failureCode: null
+                  retryable: true
+                  retryOfRunId: null
+                  originalRunId: null
   /conversations:
     post:
       summary: 创建会话
       description: >
-        创建一个新的 Conversation 主线对象。
-        只有在 AnalysisTask 已存在且 workspaceId / userId 链路一致时才返回成功。
+        创建一个新的 Conversation thread container。
+        Conversation 不拥有 singular analysisTaskId；后续 AnalysisTask 在提交时反向绑定到 Conversation。
       operationId: createConversation
       requestBody:
         required: true
@@ -90,7 +207,6 @@ paths:
             example:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
-              analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
               title: 收入增速异常
       responses:
         "201":
@@ -103,7 +219,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: null
                 title: 收入增速异常
                 status: active
@@ -130,7 +245,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
@@ -155,6 +269,7 @@ paths:
                 items:
                   - messageId: message-revenue-gap-q2-user
                     conversationId: conversation-revenue-gap-q2
+                    analysisTaskId: analysis-task-revenue-gap-q2
                     turnId: turn-revenue-gap-q2-1
                     runId: analysis-q2-revenue-gap
                     role: user
@@ -167,6 +282,7 @@ paths:
                     completedAt: "2026-06-05T11:08:12+08:00"
                   - messageId: message-revenue-gap-q2-assistant
                     conversationId: conversation-revenue-gap-q2
+                    analysisTaskId: analysis-task-revenue-gap-q2
                     turnId: turn-revenue-gap-q2-1
                     runId: analysis-q2-revenue-gap
                     role: assistant
@@ -199,6 +315,7 @@ paths:
               example:
                 messageId: message-revenue-gap-q2-assistant
                 conversationId: conversation-revenue-gap-q2
+                analysisTaskId: analysis-task-revenue-gap-q2
                 turnId: turn-revenue-gap-q2-1
                 runId: analysis-q2-revenue-gap
                 role: assistant
@@ -285,7 +402,8 @@ paths:
     post:
       summary: 创建分析运行
       description: >
-        创建一次新的 AnalysisRun 契约对象，把 run 绑定到既有 conversationId，
+        创建一次新的 AnalysisRun 契约对象，把 run 绑定到既有 analysisTaskId，
+        并通过 AnalysisTask.conversationId 解析所属 Conversation，
         并 append 第一条 `run.created` 审计事件。
         该接口不写 Message、Report、ToolCall、ModelCall 或 SourceEvidence。
       operationId: createAnalysisRun
@@ -299,7 +417,6 @@ paths:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
               analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
-              conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
       responses:
         "201":
           description: AnalysisRun 创建成功后的正式契约响应。
@@ -608,7 +725,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
@@ -923,7 +1039,7 @@ components:
             $ref: "#/components/schemas/RuntimeErrorResponse"
           example:
             errorCode: MISMATCH
-            message: Conversation.analysisTaskId does not match request.analysisTaskId
+            message: Conversation.userId does not match request.userId
     RuntimeInvalidState:
       description: Requested lifecycle transition is not allowed for the persisted AnalysisRun state.
       content:
@@ -1015,12 +1131,15 @@ components:
       type: object
       additionalProperties: false
       required:
+        - conversationId
         - workspaceId
         - userId
         - businessDomainId
         - question
         - contextPack
       properties:
+        conversationId:
+          type: string
         workspaceId:
           type: string
         userId:
@@ -1040,14 +1159,11 @@ components:
       required:
         - workspaceId
         - userId
-        - analysisTaskId
         - title
       properties:
         workspaceId:
           type: string
         userId:
-          type: string
-        analysisTaskId:
           type: string
         title:
           type: string
@@ -1058,7 +1174,6 @@ components:
         - workspaceId
         - userId
         - analysisTaskId
-        - conversationId
       properties:
         workspaceId:
           type: string
@@ -1066,8 +1181,49 @@ components:
           type: string
         analysisTaskId:
           type: string
+    SubmitAnalysisDraftRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - userId
+        - businessDomainId
+        - question
+        - contextPack
+      properties:
         conversationId:
+          description: 复用既有 Conversation 时传入；省略时创建新 Conversation。
           type: string
+        workspaceId:
+          type: string
+        userId:
+          type: string
+        businessDomainId:
+          type: string
+        question:
+          type: string
+        contextPack:
+          $ref: "#/components/schemas/AnalysisTaskContextPack"
+        title:
+          description: 创建新 Conversation 时使用的标题输入。
+          type: string
+    SubmitAnalysisDraftResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - conversation
+        - userMessage
+        - analysisTask
+        - analysisRun
+      properties:
+        conversation:
+          $ref: "#/components/schemas/Conversation"
+        userMessage:
+          $ref: "#/components/schemas/Message"
+        analysisTask:
+          $ref: "#/components/schemas/AnalysisTask"
+        analysisRun:
+          $ref: "#/components/schemas/AnalysisRun"
     WorkerClaimRequest:
       type: object
       additionalProperties: false

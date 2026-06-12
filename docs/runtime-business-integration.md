@@ -36,6 +36,7 @@ MessageStream 怎么传
 
 ```text
 Conversation = 交互主线
+AnalysisTask = 正式提交后的 typed input snapshot
 AnalysisRun = 运行主线
 Message / MessageStream = 展示与流式传输主线
 RunEvent = 审计事实主线
@@ -55,6 +56,7 @@ services/agent-runtime/src/modules/conversations/analysis_service.py
 当前 route skeleton 已固定：
 
 ```text
+services/agent-runtime/src/app/routes/analysis_tasks.py
 services/agent-runtime/src/app/routes/conversations.py
 services/agent-runtime/src/app/routes/analysis_runs.py
 ```
@@ -74,19 +76,23 @@ apps/web/src/modules/analysis/mappers/mapAnalysisRuntimeContractsToWorkspaceView
 
 建议后续真实业务按下面顺序接入：
 
-1. 创建 Conversation
-2. 创建 AnalysisRun
-3. 拉取 AnalysisRun
-4. 拉取 RunEvent
-5. 拉取 Messages
-6. 订阅 MessageStream
-7. 拉取 SourceEvidence / Report / Decision 相关对象
-8. 前端通过 mapper 落到 AnalysisWorkspaceViewModel
+1. create or reuse Conversation
+2. create User Message
+3. 创建 AnalysisTask
+4. 创建 initial AnalysisRun
+5. 拉取 AnalysisRun
+6. 拉取 RunEvent
+7. 拉取 Messages
+8. 订阅 MessageStream
+9. 拉取 SourceEvidence / Report / Decision 相关对象
+10. 前端通过 mapper 落到 AnalysisWorkspaceViewModel
 
 对应当前最小 contract surface：
 
 ```text
+POST /analysis-tasks/submit
 POST /conversations
+POST /analysis-tasks
 POST /analysis-runs
 GET /analysis-runs/{runId}
 GET /analysis-runs/{runId}/events
@@ -100,9 +106,16 @@ GET /analysis-runs/{runId}/conversation
 说明：
 
 ```text
-当前最小 route skeleton 没有单独 formalize POST /messages。
-建议真实实现时把“用户输入写入 user Message”作为 POST /analysis-runs 的 server-side side effect，
-避免在业务接入阶段再发明第二条写消息主线。
+`POST /analysis-tasks/submit` 是标准化 draft submit write path：
+Conversation
+-> User Message
+-> AnalysisTask
+-> initial AnalysisRun
+
+`POST /conversations`、`POST /analysis-tasks`、`POST /analysis-runs` 仍可作为 lower-level foundation surface，
+但 UI 不应长期自行拼接多跳写入顺序来猜测 submit 语义。
+
+当前 `#201` phase 不实现 message-only chat turns。
 ```
 
 ---
@@ -115,7 +128,7 @@ GET /analysis-runs/{runId}/conversation
 
 ```text
 创建 conversationId
-绑定 workspaceId / userId / analysisTaskId
+绑定 workspaceId / userId
 初始化 title / status / timestamps
 ```
 
@@ -128,19 +141,42 @@ GET /analysis-runs/{runId}/conversation
 写入 fake success message
 ```
 
-### 4.2 AnalysisRun
+`Conversation` 是 thread container，不拥有 singular `analysisTaskId` 字段。
+
+### 4.2 AnalysisTask
+
+`POST /analysis-tasks` 或标准化 draft submit orchestration 负责：
+
+```text
+创建 analysisTaskId
+绑定 conversationId / workspaceId / userId / businessDomainId
+写入 submitted question
+写入 DraftContextPack -> AnalysisTask.contextPack typed snapshot
+```
+
+不负责：
+
+```text
+直接把 question/contextPack 塞进 AnalysisRun
+让 follow-up 复用旧 AnalysisTask
+让 retry 重新创建 AnalysisTask
+```
+
+### 4.3 AnalysisRun
 
 `POST /analysis-runs` 负责：
 
 ```text
 创建 runId
-绑定 conversationId
+绑定 analysisTaskId
+通过 AnalysisTask.conversationId 解析所属 Conversation
 写入 AnalysisRun(created)
 触发真实 runtime dispatch（后续实现阶段）
-按需要写入本轮 user Message
 ```
 
-### 4.3 Run-bound endpoints
+当前 `#201` phase 的 user Message 应由 draft submit orchestration 创建，而不是作为 `POST /analysis-runs` 的隐式 side effect。
+
+### 4.4 Run-bound endpoints
 
 以下查询都应从 `modules/analysis_runs` 落地：
 

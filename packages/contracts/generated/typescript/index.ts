@@ -47,6 +47,7 @@ export interface AnalysisTaskContextPack {
 /** Generated from packages/contracts/schemas/analysis/analysis-task.schema.json */
 export interface AnalysisTask {
   analysisTaskId: string;
+  conversationId: string;
   workspaceId: string;
   userId: string;
   businessDomainId: string;
@@ -78,7 +79,6 @@ export interface Conversation {
   conversationId: string;
   workspaceId: string;
   userId: string;
-  analysisTaskId: string;
   currentRunId: string | null;
   title: string;
   status: "active" | "archived" | "closed";
@@ -121,6 +121,7 @@ export interface MessageStream {
 export interface Message {
   messageId: string;
   conversationId: string;
+  analysisTaskId: string | null;
   turnId: string;
   runId: string | null;
   role: "system" | "user" | "assistant" | "tool";
