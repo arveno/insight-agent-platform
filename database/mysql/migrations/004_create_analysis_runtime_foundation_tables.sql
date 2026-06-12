@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS analysis_tasks (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   analysis_task_id VARCHAR(128) NOT NULL,
+  conversation_id VARCHAR(128) NOT NULL,
   workspace_id VARCHAR(128) NOT NULL,
   user_id VARCHAR(128) NOT NULL,
   business_domain_id VARCHAR(128) NOT NULL,
@@ -9,6 +10,7 @@ CREATE TABLE IF NOT EXISTS analysis_tasks (
   created_at VARCHAR(40) NOT NULL,
   updated_at VARCHAR(40) NOT NULL,
   UNIQUE KEY uq_analysis_tasks_analysis_task_id (analysis_task_id),
+  KEY idx_analysis_tasks_conversation_id (conversation_id),
   KEY idx_analysis_tasks_workspace_id (workspace_id),
   KEY idx_analysis_tasks_business_domain_id (business_domain_id)
 );
@@ -18,7 +20,6 @@ CREATE TABLE IF NOT EXISTS conversations (
   conversation_id VARCHAR(128) NOT NULL,
   workspace_id VARCHAR(128) NOT NULL,
   user_id VARCHAR(128) NOT NULL,
-  analysis_task_id VARCHAR(128) NOT NULL,
   current_run_id VARCHAR(128) NULL,
   title VARCHAR(255) NOT NULL,
   status VARCHAR(32) NOT NULL,
@@ -26,7 +27,6 @@ CREATE TABLE IF NOT EXISTS conversations (
   updated_at VARCHAR(40) NOT NULL,
   UNIQUE KEY uq_conversations_conversation_id (conversation_id),
   KEY idx_conversations_workspace_id (workspace_id),
-  KEY idx_conversations_analysis_task_id (analysis_task_id),
   KEY idx_conversations_current_run_id (current_run_id)
 );
 

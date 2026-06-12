@@ -2,14 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/conversation.schema.json",
   "title": "Conversation",
-  "description": "Analysis 工作区中的多轮会话契约对象，用于承接 conversation 主线和当前关联的 AnalysisRun。",
+  "description": "Analysis 工作区中的多轮会话契约对象，作为 user-facing chat thread / interaction container，可承接多个 AnalysisTask。",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "conversationId",
     "workspaceId",
     "userId",
-    "analysisTaskId",
     "currentRunId",
     "title",
     "status",
@@ -27,10 +26,6 @@
     },
     "userId": {
       "description": "会话所属用户标识。",
-      "type": "string"
-    },
-    "analysisTaskId": {
-      "description": "触发当前会话主问题的 AnalysisTask 标识。",
       "type": "string"
     },
     "currentRunId": {

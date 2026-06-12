@@ -235,6 +235,7 @@ export const requiredFieldsBySchema = {
   ],
   "analysis/analysis-task.schema.json": [
     "analysisTaskId",
+    "conversationId",
     "workspaceId",
     "userId",
     "businessDomainId",
@@ -256,7 +257,6 @@ export const requiredFieldsBySchema = {
     "conversationId",
     "workspaceId",
     "userId",
-    "analysisTaskId",
     "currentRunId",
     "title",
     "status",
@@ -266,6 +266,7 @@ export const requiredFieldsBySchema = {
   "analysis/message.schema.json": [
     "messageId",
     "conversationId",
+    "analysisTaskId",
     "turnId",
     "runId",
     "role",

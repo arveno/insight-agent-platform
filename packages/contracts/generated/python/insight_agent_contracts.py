@@ -47,6 +47,7 @@ class AnalysisTaskContextPack(TypedDict):
 # Generated from packages/contracts/schemas/analysis/analysis-task.schema.json
 class AnalysisTask(TypedDict):
     analysisTaskId: str
+    conversationId: str
     workspaceId: str
     userId: str
     businessDomainId: str
@@ -76,7 +77,6 @@ class Conversation(TypedDict):
     conversationId: str
     workspaceId: str
     userId: str
-    analysisTaskId: str
     currentRunId: str | None
     title: str
     status: Literal["active", "archived", "closed"]
@@ -116,6 +116,7 @@ class MessageStream(TypedDict):
 class Message(TypedDict):
     messageId: str
     conversationId: str
+    analysisTaskId: str | None
     turnId: str
     runId: str | None
     role: Literal["system", "user", "assistant", "tool"]

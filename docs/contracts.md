@@ -465,7 +465,11 @@ manual_correction
 
 Conversation / Message / MessageStream 的边界固定如下：
 
+- `Conversation` 是 user-facing chat thread / interaction container。
+- `AnalysisTask` 是同一 `Conversation` 内一次正式提交的分析请求，也是 typed input snapshot。
+- `AnalysisRun` 是一个 `AnalysisTask` 的 execution attempt。
 - `Message` / `MessageStream` 不拥有 `AnalysisRun` 生命周期。
+- `Message` 在同一 `Conversation` 内表达 turn record；在 `#201` phase 中，每次 composer submit 产生的持久化消息必须绑定 `analysisTaskId`。
 - `Message` 可以引用 `runId`，但不得用 `message status` 替代 `run status`。
 - `stream.completed` 不能替代 `run.completed`。
 
@@ -484,15 +488,27 @@ Open in Analysis with context
 -> 不立即创建 conversationId
 -> 不立即创建 runId
 -> user sends question
--> 创建 AnalysisTask
--> 创建 Conversation
--> 创建 AnalysisRun
+-> create or reuse Conversation
+-> create AnalysisTask with typed contextPack snapshot
+-> create initial AnalysisRun
+-> create User Message bound to conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
+```
+
+固定关系：
+
+```text
+Conversation 1 -> N AnalysisTask
+AnalysisTask 1 -> N AnalysisRun
+retry -> new AnalysisRun under same AnalysisTask
+follow-up -> new AnalysisTask under same Conversation
 ```
 
 当前 `AnalysisTask` 的正式最小字段为：
 
 ```text
 analysisTaskId
+conversationId
 workspaceId
 userId
 businessDomainId
@@ -506,9 +522,28 @@ updatedAt
 
 `AnalysisTask.contextPack` 是用户发送时形成的 typed input snapshot，不能被后续 conversation 变化反向覆盖。
 
+同一 submit transaction 内分配 `Conversation / AnalysisTask / AnalysisRun / User Message` canonical IDs；最终持久化的 user message 必须绑定 `conversationId / analysisTaskId / runId`，`Conversation.currentRunId` 必须更新为 initial `runId`。
+
 如后续追问改变上下文，应形成新的 `AnalysisTask / AnalysisRun` 边界。
 
 `AnalysisRun` 不拥有 context，只引用 / 消费 `AnalysisTask` 输入。
+
+`Conversation` 不拥有 singular `analysisTaskId` 字段；会话中的当前问题与 follow-up 边界必须通过 `AnalysisTask / AnalysisRun / Message` 链路表达。
+
+`Message` 的正式边界固定如下：
+
+```text
+conversationId
+analysisTaskId
+turnId
+runId
+```
+
+其中：
+
+- `analysisTaskId`：消息所属正式分析请求；当前 `#201` phase 的持久化 submit turn message 必须绑定正式 `analysisTaskId`。
+- `runId`：消息关联的执行实例；当前 `#201` phase 的持久化 submit turn user message 必须绑定 initial `runId`。schema-level nullable 只保留给后续 message-only turn 扩展，不代表当前 submit flow 可以省略 `runId`。
+- `message-only chat turns`：当前不在 `#201` 范围内实现；如后续扩展，允许 `analysisTaskId = null`，但必须先补齐 contracts 与产品规则。
 
 当前 `AnalysisTask.contextPack` 的正式最小字段为：
 

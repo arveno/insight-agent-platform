@@ -80,6 +80,13 @@ DB row / ORM model
 - 每个 migration 文件必须入库、可审查、可追踪。
 - Navicat 可以执行已审查 migration，但不能手工改表结构。
 
+### 当前 L3 runtime foundation reset/rebuild policy
+
+- 当前 L3 runtime foundation 阶段采用 reset/rebuild migration policy。
+- local / preview runtime foundation 数据允许清空重建。
+- canonical schema 以当前 `migration + seed + query verify` 链路为准。
+- 本阶段不承诺从旧 runtime foundation 表结构做 in-place upgrade。
+
 Migration 命名建议：
 
 ```text
@@ -213,8 +220,10 @@ bad_cases
 ```text
 workspace 1 - n analysis_tasks
 workspace 1 - n conversations
+conversation 1 - n analysis_tasks
 analysis_task 1 - n analysis_runs
-analysis_task 1 - n conversations
+analysis_task 1 - n messages
+analysis_run 1 - n messages
 conversation 1 - n messages
 conversation.current_run_id -> analysis_runs.run_id
 message 1 - n message_streams
@@ -238,11 +247,14 @@ feedback 0..n bad_cases
 关键业务 ID 路线至少包括：
 
 ```text
+analysis_tasks.analysis_task_id
+analysis_tasks.conversation_id
 analysis_runs.run_id
 conversations.conversation_id
 conversations.current_run_id
 messages.message_id
 messages.conversation_id
+messages.analysis_task_id
 messages.turn_id
 messages.run_id
 message_streams.message_stream_id

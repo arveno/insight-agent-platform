@@ -8,6 +8,7 @@
   "required": [
     "messageId",
     "conversationId",
+    "analysisTaskId",
     "turnId",
     "runId",
     "role",
@@ -27,6 +28,17 @@
     "conversationId": {
       "description": "消息所属会话标识。",
       "type": "string"
+    },
+    "analysisTaskId": {
+      "description": "消息所属 AnalysisTask 标识；当前 #201 phase 的正式 submit turn 必须绑定同一 task，未来 message-only turn 扩展时允许为 null。",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "turnId": {
       "description": "消息所属对话轮次标识，用于在 Conversation 内关联用户输入与系统输出。",

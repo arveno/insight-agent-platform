@@ -58,8 +58,11 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 用户主动进入 Analysis
 -> 进入新聊天草稿态 / 选择业务域 / 选择数据范围 / 选择知识上下文
 -> 用户发送问题
--> 创建 Conversation / AnalysisTask
--> 创建 AnalysisRun
+-> create or reuse Conversation
+-> create AnalysisTask with typed contextPack snapshot
+-> create initial AnalysisRun
+-> create User Message bound to conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
 -> 查看 Evidence / Trace / Report
 -> 继续追问
 ```
@@ -69,7 +72,7 @@ Insight Agent Platform 是企业经营分析与决策 Agent 平台。产品目�
 - `Analysis` 必须保留主动分析输入入口，不能只作为 Dashboard 异常的承接页。
 - `Analysis` 是 `Conversation-first` 页面；进入页面先落在新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
 - 主动分析问题必须能绑定 `workspaceId`、`userId`、`businessDomainId`、`analysisTaskId` 和后续 `runId` 链路。
-- 用户发送后才创建 conversation；创建 conversation 后才创建 run。
+- 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 数据范围和知识上下文只能引用 Data / Knowledge / Metrics / RAG 已有能力，不在 Analysis 中重新定义数据源或知识库。
 - Evidence、Trace、Report、Follow-up 追问是主动分析的核心产品闭环入口。
 
@@ -97,8 +100,11 @@ Dashboard / Metrics / Data Quality / Platform Operations / 单 run Trace 发现�
 -> 生成带来源对象的 context pack
 -> 带上下文进入 Analysis 新聊天草稿态
 -> 用户发送追问
--> 创建 Conversation / AnalysisTask
--> 创建 AnalysisRun
+-> create or reuse Conversation
+-> create AnalysisTask with typed contextPack snapshot
+-> create initial AnalysisRun
+-> create User Message bound to conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
 -> 生成 Report / Feedback / Evaluation 输入
 ```
 
@@ -108,7 +114,7 @@ Dashboard / Metrics / Data Quality / Platform Operations / 单 run Trace 发现�
 - Dashboard 必须支持 Dashboard-level / Finding-level / Metric-level context pack 进入 Analysis。
 - 带上下文进入 Analysis 只进入新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
 - 异常上下文必须表达来源对象，例如 Metric、MetricThreshold、DataQualityCheck、RunEvent、ToolCall、ModelCall、Job。
-- 用户发送后才创建 conversation；创建 conversation 后才创建 run。
+- 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 异常追问不是独立分析链路，仍然进入 AnalysisTask / AnalysisRun 主链路。
 - 异常追问不能让 UI 直接解析 raw API response、DB row、Tool 原始输出、模型原始输出或 LangGraph raw state。
 
@@ -139,8 +145,11 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 -> Open in Analysis with context
 -> 进入带上下文的新聊天草稿态
 -> 用户发送追问
--> 创建 Conversation / AnalysisTask
--> 生成新的 AnalysisRun
+-> create or reuse Conversation
+-> create AnalysisTask with typed contextPack snapshot
+-> create initial AnalysisRun
+-> create User Message bound to conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
 -> 查看新 Evidence / Trace / Report
 ```
 
@@ -153,6 +162,7 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 - `DraftContextPack` 刷新页面后不需要恢复；刷新后回到普通新聊天草稿态。
 - `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
+- 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
 
 关联 contracts：

@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS messages (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   message_id VARCHAR(128) NOT NULL,
   conversation_id VARCHAR(128) NOT NULL,
+  analysis_task_id VARCHAR(128) NULL,
   turn_id VARCHAR(128) NOT NULL,
   run_id VARCHAR(128) NULL,
   role VARCHAR(32) NOT NULL,
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS messages (
   completed_at VARCHAR(40) NULL,
   UNIQUE KEY uq_messages_message_id (message_id),
   KEY idx_messages_conversation_id (conversation_id),
+  KEY idx_messages_analysis_task_id (analysis_task_id),
   KEY idx_messages_turn_id (turn_id),
   KEY idx_messages_run_id (run_id),
   KEY idx_messages_report_id (report_id)

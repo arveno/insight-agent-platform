@@ -22,7 +22,8 @@ paths:
     post:
       summary: 创建分析输入任务
       description: >
-        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 context pack。
+        创建一个新的 AnalysisTask 正式输入对象，承接用户 question 与 context pack，
+        并绑定到既有 Conversation。
         成功时由服务端生成 canonical analysisTaskId，并写入真实 MySQL foundation repository。
       operationId: createAnalysisTask
       requestBody:
@@ -32,6 +33,7 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateAnalysisTaskRequest"
             example:
+              conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
               businessDomainId: business-domain-revenue-quality
@@ -57,6 +59,7 @@ paths:
                 $ref: "#/components/schemas/AnalysisTask"
               example:
                 analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
                 businessDomainId: business-domain-revenue-quality
@@ -74,12 +77,16 @@ paths:
                     - knowledge-document-inventory-east-04
                 createdAt: "2026-06-05T03:08:12Z"
                 updatedAt: "2026-06-05T03:08:12Z"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeMismatch"
   /conversations:
     post:
       summary: 创建会话
       description: >
-        创建一个新的 Conversation 主线对象。
-        只有在 AnalysisTask 已存在且 workspaceId / userId 链路一致时才返回成功。
+        创建一个新的 Conversation thread container。
+        Conversation 不拥有 singular analysisTaskId；后续 AnalysisTask 在提交时反向绑定到 Conversation。
       operationId: createConversation
       requestBody:
         required: true
@@ -90,7 +97,6 @@ paths:
             example:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
-              analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
               title: 收入增速异常
       responses:
         "201":
@@ -103,7 +109,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: null
                 title: 收入增速异常
                 status: active
@@ -130,7 +135,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
@@ -155,6 +159,7 @@ paths:
                 items:
                   - messageId: message-revenue-gap-q2-user
                     conversationId: conversation-revenue-gap-q2
+                    analysisTaskId: analysis-task-revenue-gap-q2
                     turnId: turn-revenue-gap-q2-1
                     runId: analysis-q2-revenue-gap
                     role: user
@@ -167,6 +172,7 @@ paths:
                     completedAt: "2026-06-05T11:08:12+08:00"
                   - messageId: message-revenue-gap-q2-assistant
                     conversationId: conversation-revenue-gap-q2
+                    analysisTaskId: analysis-task-revenue-gap-q2
                     turnId: turn-revenue-gap-q2-1
                     runId: analysis-q2-revenue-gap
                     role: assistant
@@ -199,6 +205,7 @@ paths:
               example:
                 messageId: message-revenue-gap-q2-assistant
                 conversationId: conversation-revenue-gap-q2
+                analysisTaskId: analysis-task-revenue-gap-q2
                 turnId: turn-revenue-gap-q2-1
                 runId: analysis-q2-revenue-gap
                 role: assistant
@@ -285,7 +292,8 @@ paths:
     post:
       summary: 创建分析运行
       description: >
-        创建一次新的 AnalysisRun 契约对象，把 run 绑定到既有 conversationId，
+        创建一次新的 AnalysisRun 契约对象，把 run 绑定到既有 analysisTaskId，
+        并通过 AnalysisTask.conversationId 解析所属 Conversation，
         并 append 第一条 `run.created` 审计事件。
         该接口不写 Message、Report、ToolCall、ModelCall 或 SourceEvidence。
       operationId: createAnalysisRun
@@ -299,7 +307,6 @@ paths:
               workspaceId: workspace-northstar-retail-china
               userId: user-zoe
               analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
-              conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
       responses:
         "201":
           description: AnalysisRun 创建成功后的正式契约响应。
@@ -608,7 +615,6 @@ paths:
                 conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
                 workspaceId: workspace-northstar-retail-china
                 userId: user-zoe
-                analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                 currentRunId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
                 title: 收入增速异常
                 status: active
@@ -923,7 +929,7 @@ components:
             $ref: "#/components/schemas/RuntimeErrorResponse"
           example:
             errorCode: MISMATCH
-            message: Conversation.analysisTaskId does not match request.analysisTaskId
+            message: Conversation.userId does not match request.userId
     RuntimeInvalidState:
       description: Requested lifecycle transition is not allowed for the persisted AnalysisRun state.
       content:
@@ -1015,12 +1021,15 @@ components:
       type: object
       additionalProperties: false
       required:
+        - conversationId
         - workspaceId
         - userId
         - businessDomainId
         - question
         - contextPack
       properties:
+        conversationId:
+          type: string
         workspaceId:
           type: string
         userId:
@@ -1040,14 +1049,11 @@ components:
       required:
         - workspaceId
         - userId
-        - analysisTaskId
         - title
       properties:
         workspaceId:
           type: string
         userId:
-          type: string
-        analysisTaskId:
           type: string
         title:
           type: string
@@ -1058,7 +1064,6 @@ components:
         - workspaceId
         - userId
         - analysisTaskId
-        - conversationId
       properties:
         workspaceId:
           type: string
@@ -1066,8 +1071,53 @@ components:
           type: string
         analysisTaskId:
           type: string
+    SubmitAnalysisDraftRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - userId
+        - businessDomainId
+        - question
+        - contextPack
+      properties:
         conversationId:
+          description: 复用既有 Conversation 时传入；省略时创建新 Conversation。
           type: string
+        workspaceId:
+          type: string
+        userId:
+          type: string
+        businessDomainId:
+          type: string
+        question:
+          type: string
+        contextPack:
+          $ref: "#/components/schemas/AnalysisTaskContextPack"
+        title:
+          description: 创建新 Conversation 时使用的标题输入。
+          type: string
+    SubmitAnalysisDraftResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - conversation
+        - analysisTask
+        - analysisRun
+        - userMessage
+      properties:
+        conversation:
+          description: 已完成 currentRunId 更新的 Conversation。
+          $ref: "#/components/schemas/Conversation"
+        analysisTask:
+          description: 本次 submit transaction 中创建的 typed input snapshot。
+          $ref: "#/components/schemas/AnalysisTask"
+        analysisRun:
+          description: 本次 submit transaction 中创建的 initial AnalysisRun。
+          $ref: "#/components/schemas/AnalysisRun"
+        userMessage:
+          description: 本次 submit transaction 中持久化的 user message，必须绑定 conversationId / analysisTaskId / runId。
+          $ref: "#/components/schemas/Message"
     WorkerClaimRequest:
       type: object
       additionalProperties: false
