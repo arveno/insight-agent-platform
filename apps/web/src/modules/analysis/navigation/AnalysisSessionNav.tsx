@@ -10,7 +10,7 @@ export type AnalysisSessionNavProps = {
   onSearchChange: (value: string) => void;
   onSelectSession: (conversationId: string) => void;
   searchValue: string;
-  selectedConversationId: string;
+  selectedConversationId: string | null;
   sessions: AnalysisSessionViewModel[];
 };
 
@@ -42,7 +42,7 @@ export function AnalysisSessionNav({
       searchLabel="搜索会话"
       searchPlaceholder="搜索会话"
       searchValue={searchValue}
-      selectedKey={selectedConversationId}
+      selectedKey={selectedConversationId ?? undefined}
       title="分析"
     />
   );

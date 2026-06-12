@@ -47,7 +47,7 @@ function AnalysisShellSlotHarness() {
 }
 
 describe("useAnalysisShellSlots", () => {
-  it("exposes the module-owned Analysis session nav, workspace content, and inspector slots", () => {
+  it("exposes the module-owned Analysis session nav, draft workspace content, and inspector slots", () => {
     render(
       <TestProviders>
         <AnalysisShellSlotHarness />
@@ -56,7 +56,9 @@ describe("useAnalysisShellSlots", () => {
 
     expect(screen.getByRole("navigation", { name: "Analysis session navigation" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Analysis conversation" })).toBeTruthy();
+    expect(screen.getByText("新聊天草稿")).toBeTruthy();
     expect(screen.getByLabelText("Analysis inspector")).toBeTruthy();
-    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("当前没有一次性 DraftContextPack。刷新页面后也不会恢复之前的前端草稿上下文。")).toBeTruthy();
   });
 });

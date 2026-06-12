@@ -473,6 +473,8 @@ Conversation / Message / MessageStream 的边界固定如下：
 
 `AnalysisTask` 是用户在 Analysis 草稿态真正发送问题后形成的正式输入任务对象。
 
+发送前的 `DraftContextPack` 只是一次性前端草稿上下文，不是持久化 contract 对象。
+
 固定规则：
 
 ```text
@@ -501,6 +503,12 @@ updatedAt
 ```
 
 `contextPack` 必须是 typed object，不得退回无类型 metadata。
+
+`AnalysisTask.contextPack` 是用户发送时形成的 typed input snapshot，不能被后续 conversation 变化反向覆盖。
+
+如后续追问改变上下文，应形成新的 `AnalysisTask / AnalysisRun` 边界。
+
+`AnalysisRun` 不拥有 context，只引用 / 消费 `AnalysisTask` 输入。
 
 当前 `AnalysisTask.contextPack` 的正式最小字段为：
 

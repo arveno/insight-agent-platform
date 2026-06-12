@@ -1,6 +1,7 @@
 import type {
   AnalysisRunContract,
   ConversationContract,
+  Decision,
   MessageContract,
   MessageStreamContract,
   ModelCall,
@@ -318,6 +319,34 @@ function createReport({
   };
 }
 
+function createDecision({
+  createdAt,
+  decisionId,
+  reportId,
+  runId,
+  status,
+  title,
+  workspaceId
+}: {
+  createdAt: string;
+  decisionId: string;
+  reportId: string;
+  runId: string;
+  status: Decision["status"];
+  title: string;
+  workspaceId: string;
+}): Decision {
+  return {
+    createdAt,
+    decisionId,
+    reportId,
+    runId,
+    status,
+    title,
+    workspaceId
+  };
+}
+
 function createMessageStream({
   delta,
   eventType,
@@ -555,6 +584,18 @@ const revenueReports = [
   })
 ];
 
+const revenueDecisions = [
+  createDecision({
+    createdAt: "2026-06-05T11:25:00+08:00",
+    decisionId: "decision-revenue-gap-q2",
+    reportId: revenueReportId,
+    runId: revenueRunId,
+    status: "proposed",
+    title: "复核华东渠道确认周期与促销库存节奏",
+    workspaceId
+  })
+];
+
 const revenueMessageStream = [
   createMessageStream({
     delta: "",
@@ -587,6 +628,7 @@ const revenueMessageStream = [
 
 const marginConversationId = "conversation-margin-follow-up";
 const marginRunId = "analysis-margin-follow-up";
+const marginDecisions: Decision[] = [];
 
 const marginConversation = createConversation({
   analysisTaskId: "analysis-task-margin-follow-up",
@@ -749,6 +791,7 @@ const marginMessageStream = [
 
 const stockoutConversationId = "conversation-stockout-risk";
 const stockoutRunId = "analysis-stockout-risk";
+const stockoutDecisions: Decision[] = [];
 
 const stockoutConversation = createConversation({
   analysisTaskId: "analysis-task-stockout-risk",
@@ -898,6 +941,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
     input: {
       conversation: revenueConversation,
       currentRun: revenueRun,
+      decisions: revenueDecisions,
       messageStream: revenueMessageStream,
       messages: revenueMessages,
       modelCalls: revenueModelCalls,
@@ -921,6 +965,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
     input: {
       conversation: marginConversation,
       currentRun: marginRun,
+      decisions: marginDecisions,
       messageStream: marginMessageStream,
       messages: marginMessages,
       modelCalls: marginModelCalls,
@@ -944,6 +989,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
     input: {
       conversation: stockoutConversation,
       currentRun: stockoutRun,
+      decisions: stockoutDecisions,
       messageStream: [],
       messages: stockoutMessages,
       modelCalls: stockoutModelCalls,

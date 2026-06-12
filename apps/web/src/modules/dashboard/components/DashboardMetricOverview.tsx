@@ -26,6 +26,20 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCar
             label: t("dashboard.action.analyzeAnomaly"),
             onNavigate,
             route: "analysis",
+            routeState: {
+              draftContextPack: {
+                chips: [
+                  metric.valueText,
+                  metric.trendText ?? "无趋势摘要",
+                  `${metric.evidenceCount ?? 0} 条相关证据`
+                ],
+                sourceId: metric.key,
+                sourceTitle: metric.label,
+                sourceType: "metric",
+                suggestedPrompt: `请分析 Dashboard 中指标 ${metric.label} 的异常表现，并结合相关证据给出下一步建议。`,
+                summary: `${metric.label} 当前值 ${metric.valueText}，趋势 ${metric.trendText ?? "暂无"}。`
+              }
+            },
             variant: "contextPrimary"
           })
         ]

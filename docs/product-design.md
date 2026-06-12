@@ -149,6 +149,9 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 - `Open in Analysis with context` 是产品能力，不是某个页面临时发明的按钮。
 - 上下文必须带明确业务 ID，例如 `reportId`、`sourceEvidenceId`、`runId`、`toolCallId`、`modelCallId`、`jobId`。
 - 带上下文进入 Analysis 时，不立即创建 conversation 或 run；只有用户发送后才进入新的分析链路。
+- `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
+- `DraftContextPack` 刷新页面后不需要恢复；刷新后回到普通新聊天草稿态。
+- `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
 
@@ -223,6 +226,9 @@ Analysis
 - `Metrics` 当前结构固定为：`LeftNav secondary list = 当前 Workspace 的 Metric list`，`MainContent = 指标总览 + 当前指标详情`，`Inspector = 当前阶段不强制启用`。
 - `Metrics` 左侧二级列表只负责选择当前指标，只显示指标名；不显示当前值、趋势、证据数、按钮或大段描述。
 - `Metrics` 的 `Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
+- `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
+- `DraftContextPack` 刷新页面后不需要恢复，回到普通新聊天草稿态。
+- `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
 - `Data & Knowledge` 当前结构固定为：`LeftNav secondary list = grouped asset list`，其中 `数据资产 Data` 和 `知识文档 Docs` 只是页面内部二级列表分组，不是新的一级模块，不新增 `Data route / Knowledge route`，也不拆 `Data & Knowledge` 一级入口。
 - `Data & Knowledge` 的 `MainContent` 固定为：`SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，不再以全局总览卡片堆叠作为主线。
 - `Data & Knowledge` 的 `Inspector` 固定承接：`Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。

@@ -50,6 +50,7 @@ describe("DashboardReportEvidenceCard", () => {
     expect(screen.getByText("指标 / 报告")).toBeTruthy();
     expect(screen.getByText("高可信度")).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看证据" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "带上下文分析" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看数据来源" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看运行轨迹" })).toBeTruthy();
   });

@@ -1,40 +1,71 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
+import {
+  loadAnalysisRuntimeWorkspace,
+  type AnalysisRuntimeBootstrap,
+  type AnalysisWorkspaceLoadResult
+} from "../../../api/adapters/loadAnalysisRuntimeWorkspace";
+import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import type {
   AnalysisComposerMode,
+  AnalysisComposerViewModel,
+  AnalysisDraftContextViewModel,
   AnalysisInspectorPanelKey,
-  AnalysisSessionViewModel
+  AnalysisSessionViewModel,
+  AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
 import type { AnalysisMessage } from "../models/analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
 
-const defaultSession = analysisStaticViewModel.sessions[0];
-
-function findSession(conversationId: string): AnalysisSessionViewModel {
-  return (
-    analysisStaticViewModel.sessions.find((session) => session.conversationId === conversationId) ??
-    defaultSession
-  );
-}
-
 type ComposerState = "idle" | "running";
+
+const defaultModelOptions = [
+  { key: "default", label: "Default" },
+  { key: "reasoning", label: "Reasoning" },
+  { key: "fast", label: "Fast" }
+] as const;
+
+export type AnalysisWorkspaceState =
+  | {
+      description: string;
+      kind: "empty" | "error" | "loading";
+      title: string;
+    }
+  | {
+      kind: "draft" | "ready";
+    };
+
+export type AnalysisWorkspaceDataLoader = (
+  bootstrap: AnalysisRuntimeBootstrap
+) => Promise<AnalysisWorkspaceLoadResult>;
+
+export type UseAnalysisWorkspaceControllerOptions = {
+  bootstrap?: AnalysisRuntimeBootstrap;
+  draftContext?: DraftContextPack;
+  loader?: AnalysisWorkspaceDataLoader;
+};
 
 export type AnalysisWorkspaceController = {
   activeInspectorPanel: AnalysisInspectorPanelKey;
   composerDraft: string;
   composerMode: AnalysisComposerMode;
   composerState: ComposerState;
-  currentRun: AnalysisRun;
+  composerViewModels: {
+    analysis: AnalysisComposerViewModel;
+    followUp: AnalysisComposerViewModel;
+  };
+  currentRun?: AnalysisRun;
+  draftContext?: AnalysisDraftContextViewModel;
   interactionMessage: string;
   isRunTraceDetailOpen: boolean;
   messages: AnalysisMessage[];
-  modelOptions: typeof analysisStaticViewModel.modelOptions;
+  modelOptions: readonly { key: string; label: string }[];
   onCloseRunTraceDetail: () => void;
   onComposerAccessoryClick: () => void;
   onComposerDraftChange: (value: string) => void;
   onComposerModeChange: (mode: AnalysisComposerMode) => void;
   onComposerStop: () => void;
+  onOpenInspectorPanel: (panel: AnalysisInspectorPanelKey) => void;
   onResetForNewAnalysis: () => void;
   onSelectModel: (key: string) => void;
   onSelectRunEvent: (eventId: string) => void;
@@ -47,17 +78,67 @@ export type AnalysisWorkspaceController = {
   selectedReportId: string | null;
   selectedRunEvent?: AnalysisRunEvent;
   selectedRunEventId: string | null;
-  selectedSession: AnalysisSessionViewModel;
-  selectedConversationId: string;
+  selectedSession?: AnalysisSessionViewModel;
+  selectedConversationId: string | null;
   selectedSourceEvidenceId: string | null;
   selectedToolCallId: string | null;
   sessionSearchQuery: string;
   sessions: AnalysisSessionViewModel[];
   visibleSessions: AnalysisSessionViewModel[];
+  workspaceState: AnalysisWorkspaceState;
 };
 
 function createInteractionMessage(text: string): string {
   return text;
+}
+
+function createDraftComposerViewModels(
+  draftContext?: DraftContextPack
+): AnalysisWorkspaceController["composerViewModels"] {
+  const contextHint = draftContext
+    ? `当前草稿上下文来自 ${draftContext.sourceType} · ${draftContext.sourceTitle}。`
+    : "当前处于新聊天草稿态，发送前不会创建 Conversation 或 AnalysisRun。";
+  const helperText = draftContext
+    ? "发送后才会把 DraftContextPack 固化为本次 AnalysisTask.contextPack snapshot。"
+    : "可以直接输入问题，或从 Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入。";
+
+  return {
+    analysis: {
+      contextHint,
+      helperText,
+      initialDraft: draftContext?.suggestedPrompt ?? "",
+      key: "draft-analysis",
+      placeholder: "例如：解释最近收入增速变化，并给出下一步建议。",
+      submitLabel: "发送消息",
+      suggestions: [],
+      title: "新聊天草稿"
+    },
+    followUp: {
+      contextHint,
+      helperText: "当前还没有已创建的会话；如需发送，仍会以新的 AnalysisTask 开始。",
+      initialDraft: draftContext?.suggestedPrompt ?? "",
+      key: "draft-follow-up",
+      placeholder: "补充你希望一起发送的约束、时间范围或证据线索。",
+      submitLabel: "发送消息",
+      suggestions: [],
+      title: "草稿补充"
+    }
+  };
+}
+
+function getDraftContextSignature(draftContext?: DraftContextPack): string {
+  if (!draftContext) {
+    return "";
+  }
+
+  return [
+    draftContext.sourceType,
+    draftContext.sourceId,
+    draftContext.sourceTitle,
+    draftContext.summary,
+    draftContext.suggestedPrompt,
+    draftContext.chips.join("|")
+  ].join("::");
 }
 
 function getActiveDraft(
@@ -68,77 +149,230 @@ function getActiveDraft(
   return composerMode === "analysis" ? analysisDraft : followUpDraft;
 }
 
-function getFirstRunEventId(session: AnalysisSessionViewModel): string | null {
-  return session.runEvents[0]?.eventId ?? null;
+function getFirstRunEventId(session: AnalysisSessionViewModel | undefined): string | null {
+  return session?.runEvents[0]?.eventId ?? null;
 }
 
-export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
-  const [selectedConversationId, setSelectedConversationId] = useState(
-    defaultSession.conversationId
+function parseBootstrapFromLocation(): AnalysisRuntimeBootstrap {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    conversationId: params.get("conversationId"),
+    runId: params.get("runId")
+  };
+}
+
+function getWorkspaceStateFromLoadResult(result: AnalysisWorkspaceLoadResult): AnalysisWorkspaceState {
+  switch (result.kind) {
+    case "empty":
+      return {
+        description: result.description,
+        kind: "empty",
+        title: result.title
+      };
+    case "error":
+      return {
+        description: result.description,
+        kind: "error",
+        title: result.title
+      };
+    case "ready":
+      return { kind: "ready" };
+  }
+}
+
+export function useAnalysisWorkspaceController(
+  options: UseAnalysisWorkspaceControllerOptions = {}
+): AnalysisWorkspaceController {
+  const bootstrap = useMemo(
+    () => options.bootstrap ?? parseBootstrapFromLocation(),
+    [options.bootstrap?.conversationId, options.bootstrap?.runId]
   );
+  const loader = options.loader ?? loadAnalysisRuntimeWorkspace;
+  const draftContextSignature = useMemo(
+    () => getDraftContextSignature(options.draftContext),
+    [
+      options.draftContext?.chips,
+      options.draftContext?.sourceId,
+      options.draftContext?.sourceTitle,
+      options.draftContext?.sourceType,
+      options.draftContext?.suggestedPrompt,
+      options.draftContext?.summary
+    ]
+  );
+  const [workspaceState, setWorkspaceState] = useState<AnalysisWorkspaceState>(() =>
+    bootstrap.conversationId || bootstrap.runId
+      ? {
+          description: "正在读取 Conversation / AnalysisRun / delivery surfaces。",
+          kind: "loading",
+          title: "Loading analysis runtime"
+        }
+      : { kind: "draft" }
+  );
+  const [workspaceViewModel, setWorkspaceViewModel] = useState<AnalysisWorkspaceViewModel | null>(null);
+  const [draftContext, setDraftContext] = useState<DraftContextPack | undefined>(options.draftContext);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
-  const [analysisDraft, setAnalysisDraft] = useState(defaultSession.inputComposer.initialDraft);
-  const [followUpDraft, setFollowUpDraft] = useState(defaultSession.followUpComposer.initialDraft);
-  const [composerMode, setComposerMode] = useState<AnalysisComposerMode>("follow_up");
-  const composerModeRef = useRef<AnalysisComposerMode>("follow_up");
+  const [analysisDraft, setAnalysisDraft] = useState(options.draftContext?.suggestedPrompt ?? "");
+  const [followUpDraft, setFollowUpDraft] = useState("");
+  const [composerMode, setComposerMode] = useState<AnalysisComposerMode>(
+    bootstrap.conversationId || bootstrap.runId ? "follow_up" : "analysis"
+  );
+  const composerModeRef = useRef<AnalysisComposerMode>(
+    bootstrap.conversationId || bootstrap.runId ? "follow_up" : "analysis"
+  );
   const [composerState, setComposerState] = useState<ComposerState>("idle");
-  const [selectedModelKey, setSelectedModelKey] = useState(
-    analysisStaticViewModel.modelOptions[0].key
-  );
+  const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelOptions[0].key);
   const [interactionMessage, setInteractionMessage] = useState("");
-  const [activeInspectorPanel, setActiveInspectorPanel] =
-    useState<AnalysisInspectorPanelKey>("run-trace");
-  const [selectedRunEventId, setSelectedRunEventId] = useState<string | null>(
-    getFirstRunEventId(defaultSession)
+  const [activeInspectorPanel, setActiveInspectorPanel] = useState<AnalysisInspectorPanelKey>(
+    bootstrap.conversationId || bootstrap.runId ? "run-trace" : "draft-context"
   );
+  const [selectedRunEventId, setSelectedRunEventId] = useState<string | null>(null);
   const [isRunTraceDetailOpen, setIsRunTraceDetailOpen] = useState(false);
-  const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(
-    defaultSession.toolDetails[0]?.toolCallId ?? null
-  );
-  const [selectedSourceEvidenceId, setSelectedSourceEvidenceId] = useState<string | null>(
-    defaultSession.sourceEvidence[0]?.sourceEvidenceId ?? null
-  );
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(
-    defaultSession.reportPreview?.reportId ?? null
-  );
-  const selectedSession = findSession(selectedConversationId);
+  const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
+  const [selectedSourceEvidenceId, setSelectedSourceEvidenceId] = useState<string | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDraftContext(options.draftContext);
+  }, [draftContextSignature]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      if (!bootstrap.conversationId && !bootstrap.runId) {
+        setWorkspaceState({ kind: "draft" });
+        setWorkspaceViewModel(null);
+        return;
+      }
+
+      const result = await loader(bootstrap);
+
+      if (cancelled) {
+        return;
+      }
+
+      setWorkspaceState(getWorkspaceStateFromLoadResult(result));
+      setWorkspaceViewModel(result.kind === "ready" ? result.viewModel : null);
+    }
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bootstrap, loader]);
+
+  const sessions = workspaceViewModel?.sessions ?? [];
+  const selectedSession = useMemo(() => {
+    if (selectedConversationId) {
+      return sessions.find((session) => session.conversationId === selectedConversationId);
+    }
+
+    if (workspaceState.kind === "ready") {
+      return sessions[0];
+    }
+
+    return undefined;
+  }, [selectedConversationId, sessions, workspaceState.kind]);
+
+  useEffect(() => {
+    if (sessions.length === 0 || workspaceState.kind !== "ready") {
+      setSelectedConversationId(null);
+      return;
+    }
+
+    setSelectedConversationId((currentConversationId) =>
+      currentConversationId &&
+      sessions.some((session) => session.conversationId === currentConversationId)
+        ? currentConversationId
+        : sessions[0]!.conversationId
+    );
+  }, [sessions, workspaceState.kind]);
+
+  useEffect(() => {
+    if (!selectedSession) {
+      setSelectedRunEventId(null);
+      setSelectedToolCallId(null);
+      setSelectedSourceEvidenceId(null);
+      setSelectedReportId(null);
+
+      if (workspaceState.kind === "draft") {
+        setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
+        setFollowUpDraft("");
+      } else {
+        setAnalysisDraft("");
+        setFollowUpDraft("");
+      }
+
+      return;
+    }
+
+    setAnalysisDraft(selectedSession.inputComposer.initialDraft);
+    setFollowUpDraft(selectedSession.followUpComposer.initialDraft);
+    setSelectedRunEventId(getFirstRunEventId(selectedSession));
+    setSelectedToolCallId(selectedSession.toolDetails[0]?.toolCallId ?? null);
+    setSelectedSourceEvidenceId(selectedSession.sourceEvidence[0]?.sourceEvidenceId ?? null);
+    setSelectedReportId(selectedSession.reportPreview?.reportId ?? null);
+  }, [draftContext, selectedSession, workspaceState.kind]);
+
   const visibleSessions = useMemo(() => {
     const normalizedQuery = sessionSearchQuery.trim().toLowerCase();
 
     if (normalizedQuery.length === 0) {
-      return analysisStaticViewModel.sessions;
+      return sessions;
     }
 
-    return analysisStaticViewModel.sessions.filter((session) =>
+    return sessions.filter((session) =>
       session.sessionSummary.title.toLowerCase().includes(normalizedQuery)
     );
-  }, [sessionSearchQuery]);
+  }, [sessionSearchQuery, sessions]);
+
   const selectedRunEvent = useMemo(
     () =>
-      selectedSession.runEvents.find((event) => event.eventId === selectedRunEventId) ??
-      selectedSession.runEvents[0],
-    [selectedRunEventId, selectedSession.runEvents]
+      selectedSession?.runEvents.find((event) => event.eventId === selectedRunEventId) ??
+      selectedSession?.runEvents[0],
+    [selectedRunEventId, selectedSession]
   );
+  const draftComposerViewModels = useMemo(
+    () => createDraftComposerViewModels(draftContext),
+    [draftContext]
+  );
+  const composerViewModels = selectedSession
+    ? {
+        analysis: selectedSession.inputComposer,
+        followUp: selectedSession.followUpComposer
+      }
+    : draftComposerViewModels;
+  const modelOptions = workspaceViewModel?.modelOptions ?? defaultModelOptions;
   const selectedModelLabel =
-    analysisStaticViewModel.modelOptions.find((model) => model.key === selectedModelKey)?.label ??
-    analysisStaticViewModel.modelOptions[0].label;
+    modelOptions.find((model) => model.key === selectedModelKey)?.label ??
+    modelOptions[0]?.label ??
+    "Default";
 
   return {
     activeInspectorPanel,
     composerDraft: getActiveDraft(analysisDraft, composerMode, followUpDraft),
     composerMode,
     composerState,
-    currentRun: selectedSession.currentRun,
+    composerViewModels,
+    currentRun: selectedSession?.currentRun,
+    draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
     interactionMessage,
     isRunTraceDetailOpen,
-    messages: selectedSession.messages,
-    modelOptions: analysisStaticViewModel.modelOptions,
+    messages: selectedSession?.messages ?? [],
+    modelOptions,
     onCloseRunTraceDetail: () => {
       setIsRunTraceDetailOpen(false);
     },
     onComposerAccessoryClick: () => {
       setInteractionMessage(
-        createInteractionMessage("工具与附件入口当前只做静态占位，不会打开真实上传或工具面板。")
+        createInteractionMessage("当前 issue 只接 read surfaces；附件和工具 write path 暂未实现。")
       );
     },
     onComposerDraftChange: (value) => {
@@ -157,31 +391,38 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
     onComposerStop: () => {
       setComposerState("idle");
       setInteractionMessage(
-        createInteractionMessage("已停止本地模拟生成，不会触发真实 streaming cancel 或后端中断。")
+        createInteractionMessage("当前页面未建立真实 streaming cancel，停止动作不可用。")
       );
     },
+    onOpenInspectorPanel: (panel) => {
+      if (workspaceState.kind === "draft") {
+        setActiveInspectorPanel("draft-context");
+        setIsRunTraceDetailOpen(false);
+        return;
+      }
+
+      setActiveInspectorPanel(panel);
+      setIsRunTraceDetailOpen(false);
+    },
     onResetForNewAnalysis: () => {
-      setSelectedConversationId(defaultSession.conversationId);
-      setSessionSearchQuery("");
-      setAnalysisDraft(defaultSession.inputComposer.initialDraft);
-      setFollowUpDraft("");
       composerModeRef.current = "analysis";
       setComposerMode("analysis");
       setComposerState("idle");
-      setActiveInspectorPanel("run-trace");
-      setSelectedRunEventId(getFirstRunEventId(defaultSession));
+      setWorkspaceState({ kind: "draft" });
+      setDraftContext(undefined);
+      setAnalysisDraft("");
+      setFollowUpDraft("");
+      setActiveInspectorPanel("draft-context");
+      setSelectedConversationId(null);
       setIsRunTraceDetailOpen(false);
-      setSelectedToolCallId(defaultSession.toolDetails[0]?.toolCallId ?? null);
-      setSelectedSourceEvidenceId(defaultSession.sourceEvidence[0]?.sourceEvidenceId ?? null);
-      setSelectedReportId(defaultSession.reportPreview?.reportId ?? null);
       setInteractionMessage(
         createInteractionMessage(
-          "已准备新的静态分析入口，仍只更新本地 UI State，不创建真实会话或触发 Agent。"
+          "已进入新聊天草稿态。当前 issue 只接 read surfaces；Analysis write path 需要后续 issue 接入。"
         )
       );
     },
     onSelectModel: (key) => {
-      const nextModel = analysisStaticViewModel.modelOptions.find((model) => model.key === key);
+      const nextModel = modelOptions.find((model) => model.key === key);
 
       if (!nextModel) {
         return;
@@ -189,45 +430,49 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
 
       setSelectedModelKey(nextModel.key);
       setInteractionMessage(
-        createInteractionMessage(
-          `已切换本地模型选项为 ${nextModel.label}，不触发真实 Model Gateway。`
-        )
+        createInteractionMessage(`已切换模型展示选项为 ${nextModel.label}。`)
       );
     },
     onSelectRunEvent: (eventId) => {
+      if (workspaceState.kind === "draft") {
+        return;
+      }
+
       setActiveInspectorPanel("run-trace");
       setSelectedRunEventId(eventId);
       setIsRunTraceDetailOpen(true);
     },
     onSelectSession: (conversationId) => {
-      const nextSession = findSession(conversationId);
+      const nextSession = sessions.find((session) => session.conversationId === conversationId);
 
-      setSelectedConversationId(nextSession.conversationId);
-      setAnalysisDraft(nextSession.inputComposer.initialDraft);
-      setFollowUpDraft(nextSession.followUpComposer.initialDraft);
+      if (!nextSession) {
+        return;
+      }
+
       composerModeRef.current = "follow_up";
       setComposerMode("follow_up");
+      setWorkspaceState({ kind: "ready" });
+      setDraftContext(undefined);
+      setSelectedConversationId(nextSession.conversationId);
       setComposerState("idle");
       setActiveInspectorPanel("run-trace");
-      setSelectedRunEventId(getFirstRunEventId(nextSession));
       setIsRunTraceDetailOpen(false);
-      setSelectedToolCallId(nextSession.toolDetails[0]?.toolCallId ?? null);
-      setSelectedSourceEvidenceId(nextSession.sourceEvidence[0]?.sourceEvidenceId ?? null);
-      setSelectedReportId(nextSession.reportPreview?.reportId ?? null);
       setInteractionMessage(
-        createInteractionMessage(
-          `已切换到「${nextSession.sessionSummary.title}」静态会话；仅更新 UI State，不加载真实会话或运行数据。`
-        )
+        createInteractionMessage(`已切换到真实会话 ${nextSession.conversationId}。`)
       );
     },
     onSessionSearchChange: setSessionSearchQuery,
     onSubmitComposer: () => {
-      setComposerState("running");
+      setComposerState("idle");
       setInteractionMessage(
-        createInteractionMessage("已切换到本地模拟生成中，不会创建真实 Agent Run 或发送真实请求。")
+        createInteractionMessage(
+          draftContext
+            ? "当前 issue 只接 read surfaces；DraftContextPack 只保留在前端草稿态，Analysis write path 暂未实现。"
+            : "当前 issue 只接 read surfaces；Analysis write path 暂未实现。"
+        )
       );
     },
-    runEvents: selectedSession.runEvents,
+    runEvents: selectedSession?.runEvents ?? [],
     selectedModelKey,
     selectedModelLabel,
     selectedReportId,
@@ -238,7 +483,8 @@ export function useAnalysisWorkspaceController(): AnalysisWorkspaceController {
     selectedSourceEvidenceId,
     selectedToolCallId,
     sessionSearchQuery,
-    sessions: analysisStaticViewModel.sessions,
-    visibleSessions
+    sessions,
+    visibleSessions,
+    workspaceState
   };
 }

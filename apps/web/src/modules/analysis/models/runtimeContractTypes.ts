@@ -1,6 +1,7 @@
 import type {
   AnalysisRun as AnalysisRunContract,
   Conversation as ConversationContract,
+  Decision,
   Message as MessageContract,
   MessageStream as MessageStreamContract,
   ModelCall,
@@ -13,6 +14,7 @@ import type {
 export type {
   AnalysisRunContract,
   ConversationContract,
+  Decision,
   MessageContract,
   MessageStreamContract,
   ModelCall,

@@ -23,6 +23,20 @@ export function DashboardHero({
       label: t("action.dashboardPrimaryAnalysis.label"),
       onNavigate,
       route: "analysis",
+      routeState: {
+        draftContextPack: {
+          chips: [
+            selectedTimeRange.label,
+            `${viewModel.businessStatCards.length} 个指标`,
+            `${viewModel.evidenceEntrances.length} 条证据`
+          ],
+          sourceId: "dashboard-overview",
+          sourceTitle: t("dashboard.hero.title"),
+          sourceType: "dashboard",
+          suggestedPrompt: `请基于 Dashboard 当前 ${selectedTimeRange.label} 的概览，解释最值得优先追问的经营问题。`,
+          summary: selectedTimeRange.description
+        }
+      },
       variant: "globalPrimary"
     }),
     createRouteAction({

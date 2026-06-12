@@ -7,13 +7,19 @@ import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { getStaticSectionProps } from "../../../shared/layout/sections/getStaticSectionProps";
-import { createNavigationActionsFromViewModel } from "../../../shared/navigation/createRouteAction";
+import {
+  createNavigationActionsFromViewModel,
+  createRouteAction
+} from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
+import type {
+  DraftContextPack,
+  PageRouteProps
+} from "../../../shared/navigation/navigationTypes";
 
 import { DecisionCard } from "../components/DecisionCard";
 import { ReportFeedbackPanel } from "../components/ReportFeedbackPanel";
@@ -23,18 +29,53 @@ export type ReportsSectionsProps = PageRouteProps & {
   viewModel: ReportsViewModel;
 };
 
+function createReportDraftContext(viewModel: ReportsViewModel): DraftContextPack {
+  return {
+    chips: [
+      `reportId ${viewModel.selectedReport.reportId}`,
+      `runId ${viewModel.selectedReport.runId}`,
+      `${viewModel.selectedReport.evidenceCount} 条证据`,
+      `${viewModel.selectedReport.sectionCount} 个章节`
+    ],
+    sourceId: viewModel.selectedReport.reportId,
+    sourceTitle: viewModel.selectedReport.title,
+    sourceType: "report",
+    suggestedPrompt: `请基于报告《${viewModel.selectedReport.title}》继续分析关键证据、风险判断和下一步动作。`,
+    summary: viewModel.selectedReport.summary
+  };
+}
+
 export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps) {
   const { t } = useI18n();
-  const followUpActions = createNavigationActionsFromViewModel(
-    [viewModel.followUpAction],
-    onNavigate,
-    t
-  );
+  const followUpActions = [
+    createRouteAction({
+      iconName: "analysis",
+      key: viewModel.followUpAction.key,
+      label: translateKey(t, viewModel.followUpAction.labelKey),
+      onNavigate,
+      route: "analysis",
+      routeState: {
+        draftContextPack: createReportDraftContext(viewModel)
+      },
+      variant: "contextPrimary"
+    })
+  ];
   const pageActions = createNavigationActionsFromViewModel(
-    [viewModel.primaryAction, ...viewModel.secondaryActions],
+    viewModel.secondaryActions,
     onNavigate,
     t
   );
+  const reportsAnalysisAction = createRouteAction({
+    iconName: "analysis",
+    key: viewModel.primaryAction.key,
+    label: translateKey(t, viewModel.primaryAction.labelKey),
+    onNavigate,
+    route: "analysis",
+    routeState: {
+      draftContextPack: createReportDraftContext(viewModel)
+    },
+    variant: "contextPrimary"
+  });
 
   return (
     <SectionStack>
@@ -42,13 +83,12 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
         description={viewModel.selectedReport.summary}
         eyebrow={translateKey(t, viewModel.pageTitleKey)}
         extra={
-          pageActions.length > 0 ? (
-            <Flex gap={shellThemeTokens.cardGridGap} wrap>
-              {pageActions.map((action) => (
-                <NavigationActionButton action={action} key={action.key} />
-              ))}
-            </Flex>
-          ) : undefined
+          <Flex gap={shellThemeTokens.cardGridGap} wrap>
+            <NavigationActionButton action={reportsAnalysisAction} />
+            {pageActions.map((action) => (
+              <NavigationActionButton action={action} key={action.key} />
+            ))}
+          </Flex>
         }
         supportingText={`${translateKey(t, "chrome.lastUpdated")}: ${viewModel.lastUpdatedAt}`}
         title={viewModel.selectedReport.title}
