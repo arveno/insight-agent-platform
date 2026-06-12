@@ -81,7 +81,7 @@ export class AgentRuntimeClient {
     this.baseUrl = baseUrl;
   }
 
-  private async get<T>(path: string, accept = "application/json"): Promise<T> {
+  private async request(path: string, accept = "application/json"): Promise<Response> {
     let response: Response;
 
     try {
@@ -101,6 +101,12 @@ export class AgentRuntimeClient {
     if (!response.ok) {
       throw await readError(response);
     }
+
+    return response;
+  }
+
+  private async get<T>(path: string, accept = "application/json"): Promise<T> {
+    const response = await this.request(path, accept);
 
     return parseJsonResponse<T>(response);
   }
@@ -124,6 +130,13 @@ export class AgentRuntimeClient {
   listMessageStream(conversationId: string, messageId: string) {
     return this.get<ListResponse<MessageStream>>(
       `/conversations/${conversationId}/messages/${messageId}/stream`
+    );
+  }
+
+  streamMessageStream(conversationId: string, messageId: string) {
+    return this.request(
+      `/conversations/${conversationId}/messages/${messageId}/stream`,
+      "text/event-stream"
     );
   }
 
