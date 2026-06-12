@@ -99,6 +99,7 @@ export const appShellStaticViewModel: AppShellStaticViewModel = {
   navigationGroups: webNavigationGroups,
   permissionSummary: defaultPermissionSummary,
   readonlyState: defaultReadonlyState,
+  selectedBusinessDomainId: "business-domain-revenue-quality",
   shellState: defaultStateCoverage,
   themePreference: {
     key: "theme",

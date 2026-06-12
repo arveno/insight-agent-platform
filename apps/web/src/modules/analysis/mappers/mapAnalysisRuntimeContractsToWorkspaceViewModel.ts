@@ -204,8 +204,9 @@ function createComposerViewModel(
 ): AnalysisComposerViewModel {
   return mode === "analysis"
     ? {
-        contextHint: "Conversation 是交互主线；真实 write path 需要后续 issue 接入。",
-        helperText: "当前 issue 只接 read surfaces；Analysis write path 暂未实现。",
+        contextHint: "正式 submit 会创建或复用 Conversation，并形成新的 AnalysisTask / AnalysisRun。",
+        helperText:
+          "发送后进入 runtime conversation；assistant / report / decision 仍由后续 runtime delivery 链路产生。",
         initialDraft: draft,
         key: "analysis-input",
         placeholder: "描述要分析的问题、约束和期望结果。",
@@ -217,8 +218,8 @@ function createComposerViewModel(
         title: "分析任务输入区"
       }
     : {
-        contextHint: "继续追问会复用当前 conversationId / runId 主线。",
-        helperText: "当前 issue 只接 read surfaces；Follow-up write path 暂未实现。",
+        contextHint: "继续追问会复用当前 Conversation，并创建新的 AnalysisTask / AnalysisRun。",
+        helperText: "当前页面通过 canonical POST /analysis-tasks/submit 进入正式 write path。",
         initialDraft: draft,
         key: "follow-up-input",
         placeholder: "继续追问当前结论，例如要求拆分渠道、时间范围或证据。",
@@ -445,7 +446,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     decisionsState: resolveSurfaceState(options?.surfaceStates?.decisions, decisions.length),
     followUpComposer: createComposerViewModel(
       "follow_up",
-      options?.followUpComposerDraft ?? "如果缩小时间窗口，这个结论是否仍然成立？"
+      options?.followUpComposerDraft ?? ""
     ),
     inputComposer: createComposerViewModel(
       "analysis",
@@ -510,7 +511,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   return {
     contextPanelNote:
       options?.contextPanelNote ??
-      "当前 Analysis 使用 contracts-backed 静态数据源；真实业务接入时只替换 API 数据来源，不改 UI 结构主线。",
+      "当前 Analysis 工作区通过 contracts-backed runtime read surfaces 驱动，UI 只消费 mapper 后的 ViewModel。",
     modelOptions: options?.modelOptions ?? defaultModelOptions,
     sessions: [session]
   };

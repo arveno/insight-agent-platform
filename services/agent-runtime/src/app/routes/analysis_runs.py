@@ -148,12 +148,6 @@ def _validate_conversation_chain(
     request: CreateAnalysisRunRequest,
     conversation: ConversationRecord,
 ) -> JSONResponse | None:
-    if conversation["analysisTaskId"] != request.analysisTaskId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="Conversation.analysisTaskId does not match request.analysisTaskId",
-        )
     if conversation["workspaceId"] != request.workspaceId:
         return runtime_error_response(
             status_code=409,
@@ -176,23 +170,7 @@ def _validate_conversation_chain(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord | JSONResponse:
-    """Create a real AnalysisRun and attach it to the current Conversation."""
-
-    try:
-        conversation = _conversation_repository().get_by_conversation_id(request.conversationId)
-    except KeyError:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"Conversation not found: {request.conversationId}",
-        )
-
-    conversation_chain_error = _validate_conversation_chain(
-        request=request,
-        conversation=conversation,
-    )
-    if conversation_chain_error is not None:
-        return conversation_chain_error
+    """Create a real AnalysisRun and attach it to the Conversation resolved from AnalysisTask."""
 
     try:
         analysis_task = _analysis_task_repository().get_by_analysis_task_id(request.analysisTaskId)
@@ -215,6 +193,22 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
             error_code="MISMATCH",
             message="AnalysisTask.userId does not match request.userId",
         )
+
+    try:
+        conversation = _conversation_repository().get_by_conversation_id(analysis_task["conversationId"])
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {analysis_task['conversationId']}",
+        )
+
+    conversation_chain_error = _validate_conversation_chain(
+        request=request,
+        conversation=conversation,
+    )
+    if conversation_chain_error is not None:
+        return conversation_chain_error
 
     now = utc_timestamp()
     analysis_run: AnalysisRunRecord = {

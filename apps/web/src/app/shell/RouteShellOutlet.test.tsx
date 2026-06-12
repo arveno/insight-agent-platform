@@ -41,6 +41,7 @@ describe("RouteShellOutlet", () => {
       <TestProviders>
         <RouteShellOutlet
           activeRoute="dashboard"
+          currentUserId="user-zoe"
           defaultMainContent={<div>default main</div>}
           header={<div>header</div>}
           leftNavMode="root"
@@ -48,6 +49,7 @@ describe("RouteShellOutlet", () => {
           onNavigate={vi.fn()}
           renderLeftNav={(content) => <div data-testid="left-nav">{content}</div>}
           rootLeftNavContent={<div>root nav</div>}
+          selectedBusinessDomainId="business-domain-revenue-quality"
           selectedWorkspace={{
             name: "Northstar Retail China",
             workspaceId: "workspace-northstar-retail-china"
@@ -74,6 +76,7 @@ describe("RouteShellOutlet", () => {
       <TestProviders>
         <RouteShellOutlet
           activeRoute="reports"
+          currentUserId="user-zoe"
           defaultMainContent={<div>default main</div>}
           header={<div>header</div>}
           leftNavMode="reports"
@@ -81,6 +84,7 @@ describe("RouteShellOutlet", () => {
           onNavigate={vi.fn()}
           renderLeftNav={(content) => <div data-testid="left-nav">{content}</div>}
           rootLeftNavContent={<div>root nav</div>}
+          selectedBusinessDomainId="business-domain-revenue-quality"
           selectedWorkspace={{
             name: "Northstar Retail China",
             workspaceId: "workspace-northstar-retail-china"

@@ -518,7 +518,7 @@ createdAt
 updatedAt
 ```
 
-`contextPack` 必须是 typed object，不得退回无类型 metadata。
+`contextPack` 字段必须显式出现：blank draft submit 时传 `null`，context draft submit 时传 typed object，不得退回无类型 metadata 或省略字段。
 
 `AnalysisTask.contextPack` 是用户发送时形成的 typed input snapshot，不能被后续 conversation 变化反向覆盖。
 
@@ -545,24 +545,24 @@ runId
 - `runId`：消息关联的执行实例；当前 `#201` phase 的持久化 submit turn user message 必须绑定 initial `runId`。schema-level nullable 只保留给后续 message-only turn 扩展，不代表当前 submit flow 可以省略 `runId`。
 - `message-only chat turns`：当前不在 `#201` 范围内实现；如后续扩展，允许 `analysisTaskId = null`，但必须先补齐 contracts 与产品规则。
 
-当前 `AnalysisTask.contextPack` 的正式最小字段为：
+当前 `AnalysisTask.contextPack` 的正式形态分两种：
 
 ```text
-metricId
-timeRange
-threshold
-trend
-tableIds
-knowledgeDocumentIds
+blank draft submit -> null
+context draft submit -> sourceType / sourceId / sourceTitle / summary / chips / suggestedPrompt
 ```
 
 字段语义固定如下：
 
 - `businessDomainId`：引用既有 `BusinessDomain` contract 的 canonical id。
-- `metricId`：引用既有 `Metric` contract 的 canonical id。
-- `tableIds`：引用既有 `DataTable` contract 的 canonical ids。
-- `knowledgeDocumentIds`：引用既有 `KnowledgeDocument` contract 的 canonical ids。
-- `question`：用户正式发送的问题文本，不得被 `trend`、`threshold` 或任意草稿态 context 替代。
+- `contextPack = null`：表示用户从 blank draft 直接发送，没有一次性来源上下文。
+- `sourceType`：当前一次性上下文来源类型；正式枚举只允许 `dashboard | metric | report | evidence | runTrace`。
+- `sourceId`：来源对象的 canonical id。
+- `sourceTitle`：来源对象在产品中的显示标题。
+- `summary`：来源上下文摘要，不替代正式 `question`。
+- `chips`：用于 Draft Context strip / inspector 的结构化 chip 列表。
+- `suggestedPrompt`：进入草稿态时给 composer 的可编辑预填文本；发送后保留为 typed snapshot，不回写覆盖 `question`。
+- `question`：用户正式发送的问题文本，不得被 `summary`、`suggestedPrompt` 或任意草稿态 context 替代。
 
 禁止：
 

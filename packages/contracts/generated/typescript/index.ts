@@ -36,12 +36,12 @@ export interface AnalysisRun {
 
 /** Generated from packages/contracts/schemas/analysis/analysis-task-context-pack.schema.json */
 export interface AnalysisTaskContextPack {
-  metricId: string;
-  timeRange: string;
-  threshold: string;
-  trend: string;
-  tableIds: Array<string>;
-  knowledgeDocumentIds: Array<string>;
+  sourceType: "dashboard" | "metric" | "report" | "evidence" | "runTrace";
+  sourceId: string;
+  sourceTitle: string;
+  summary: string;
+  chips: Array<string>;
+  suggestedPrompt: string;
 }
 
 /** Generated from packages/contracts/schemas/analysis/analysis-task.schema.json */
@@ -52,7 +52,7 @@ export interface AnalysisTask {
   userId: string;
   businessDomainId: string;
   question: string;
-  contextPack: AnalysisTaskContextPack;
+  contextPack: AnalysisTaskContextPack | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,6 +186,25 @@ export interface SourceEvidence {
   metadata?: Record<string, unknown>;
   confidence: number;
   createdAt: string;
+}
+
+/** Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json */
+export interface SubmitAnalysisDraftRequest {
+  conversationId?: string;
+  workspaceId: string;
+  userId: string;
+  businessDomainId: string;
+  question: string;
+  contextPack: AnalysisTaskContextPack | null;
+  title?: string;
+}
+
+/** Generated from packages/contracts/schemas/analysis/submit-analysis-draft-response.schema.json */
+export interface SubmitAnalysisDraftResponse {
+  conversation: Conversation;
+  analysisTask: AnalysisTask;
+  analysisRun: AnalysisRun;
+  userMessage: Message;
 }
 
 /** Generated from packages/contracts/schemas/analysis/tool-call.schema.json */

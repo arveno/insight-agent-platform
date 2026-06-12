@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/submit-analysis-draft-request.schema.json",
+  "title": "SubmitAnalysisDraftRequest",
+  "description": "Analysis draft submit 的唯一正式编排入口请求体。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workspaceId",
+    "userId",
+    "businessDomainId",
+    "question",
+    "contextPack"
+  ],
+  "properties": {
+    "conversationId": {
+      "description": "复用既有 Conversation 时传入；省略时由服务端创建新 Conversation。",
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "businessDomainId": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string"
+    },
+    "contextPack": {
+      "description": "blank draft submit 时必须显式传 null；context draft submit 时必须传 typed DraftContextPack snapshot。",
+      "anyOf": [
+        {
+          "$ref": "./analysis-task-context-pack.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "title": {
+      "description": "创建新 Conversation 时可选提供标题；省略时服务端基于 question 做确定性标题收敛。",
+      "type": "string"
+    }
+  }
+}

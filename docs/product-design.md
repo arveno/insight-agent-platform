@@ -161,6 +161,7 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 - `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
 - `DraftContextPack` 刷新页面后不需要恢复；刷新后回到普通新聊天草稿态。
 - `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
+- blank draft submit 时，`AnalysisTask.contextPack = null`；context draft submit 时，`DraftContextPack` 必须原样固化为 typed `AnalysisTask.contextPack` snapshot。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
