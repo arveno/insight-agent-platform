@@ -91,7 +91,6 @@ apps/web/src/modules/analysis/mappers/mapAnalysisRuntimeContractsToWorkspaceView
 对应当前最小 contract surface：
 
 ```text
-POST /analysis-tasks/submit
 POST /conversations
 POST /analysis-tasks
 POST /analysis-runs
@@ -107,15 +106,19 @@ GET /analysis-runs/{runId}/conversation
 说明：
 
 ```text
-`POST /analysis-tasks/submit` 是标准化 draft submit write path：
+`POST /conversations`、`POST /analysis-tasks`、`POST /analysis-runs` 仍可作为 lower-level foundation surface，
+但 UI 不应长期自行拼接多跳写入顺序来猜测 submit 语义。
+
+标准化 draft submit orchestration 规则固定为：
 Conversation
 -> AnalysisTask
 -> initial AnalysisRun
 -> User Message(bound to conversationId / analysisTaskId / runId)
 -> Conversation.currentRunId update
 
-`POST /conversations`、`POST /analysis-tasks`、`POST /analysis-runs` 仍可作为 lower-level foundation surface，
-但 UI 不应长期自行拼接多跳写入顺序来猜测 submit 语义。
+`POST /analysis-tasks/submit` working endpoint 由 `#201-2` 与 backend write path 一起落地；
+当前 `#201-1` 只在 docs / contracts / DB foundation 固定该 submit 规则，不在 OpenAPI `paths`
+中提前声明一个未实现 endpoint。
 
 当前 `#201` phase 不实现 message-only chat turns。
 ```
