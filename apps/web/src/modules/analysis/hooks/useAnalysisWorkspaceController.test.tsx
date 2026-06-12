@@ -56,7 +56,8 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.messages).toEqual([]);
     expect(result.current.runEvents).toEqual([]);
     expect(result.current.currentRun).toBeUndefined();
-    expect(result.current.activeInspectorPanel).toBe("draft-context");
+    expect(result.current.activeInspectorRoute.key).toBe("home");
+    expect(result.current.canGoBackInInspector).toBe(false);
     expect(result.current.composerMode).toBe("analysis");
   });
 
@@ -83,6 +84,7 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.draftContext?.sourceId).toBe("report-weekly-operations-review");
     expect(result.current.composerDraft).toBe("请继续分析华东收入增速放缓的主要原因。");
+    expect(result.current.activeInspectorRoute.key).toBe("context-origin");
 
     act(() => {
       result.current.onResetForNewAnalysis();
@@ -91,7 +93,7 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.workspaceState.kind).toBe("draft");
     expect(result.current.draftContext).toBeUndefined();
     expect(result.current.composerDraft).toBe("");
-    expect(result.current.activeInspectorPanel).toBe("draft-context");
+    expect(result.current.activeInspectorRoute.key).toBe("home");
   });
 
   it("submits a draft through the canonical submit endpoint and loads the created runtime workspace", async () => {
@@ -176,6 +178,7 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.selectedConversationId).toBe(goldenPath.conversation.conversationId);
     expect(result.current.messages).toEqual(viewModel.sessions[0]?.messages ?? []);
     expect(result.current.currentRun?.runId).toBe(goldenPath.analysisRun.runId);
+    expect(result.current.activeInspectorRoute.key).toBe("run-trace");
     expect(result.current.interactionMessage).toBe("");
   });
 
@@ -279,8 +282,8 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.runEvents).toHaveLength(goldenPath.runEvents.length);
     expect(result.current.selectedRunEventId).toBe(goldenPath.runEvents[0]?.eventId ?? null);
     expect(result.current.selectedRunEvent?.eventId).toBe(goldenPath.runEvents[0]?.eventId);
-    expect(result.current.isRunTraceDetailOpen).toBe(false);
-    expect(result.current.activeInspectorPanel).toBe("run-trace");
+    expect(result.current.activeInspectorRoute.key).toBe("run-trace");
+    expect(result.current.canGoBackInInspector).toBe(false);
 
     act(() => {
       result.current.onSelectRunEvent(goldenPath.runEvents[1]!.eventId);
@@ -288,16 +291,82 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.selectedRunEventId).toBe(goldenPath.runEvents[1]!.eventId);
     expect(result.current.selectedRunEvent?.eventId).toBe(goldenPath.runEvents[1]!.eventId);
-    expect(result.current.isRunTraceDetailOpen).toBe(true);
+    expect(result.current.activeInspectorRoute).toEqual({
+      eventId: goldenPath.runEvents[1]!.eventId,
+      key: "run-event"
+    });
+    expect(result.current.canGoBackInInspector).toBe(true);
 
     act(() => {
-      result.current.onCloseRunTraceDetail();
-      result.current.onOpenInspectorPanel("report-preview");
+      result.current.onBackInspector();
+      result.current.onNavigateInspectorRoute({ key: "report-preview" });
       result.current.onComposerDraftChange("继续分析收入异常。");
     });
 
-    expect(result.current.isRunTraceDetailOpen).toBe(false);
-    expect(result.current.activeInspectorPanel).toBe("report-preview");
+    expect(result.current.activeInspectorRoute.key).toBe("report-preview");
     expect(result.current.composerDraft).toBe("继续分析收入异常。");
+  });
+
+  it("does not let later run updates steal inspector focus after the user manually changes route", async () => {
+    const goldenPath = goldenPathExample as GoldenPathExample;
+    const viewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
+      conversation: goldenPath.conversation,
+      currentRun: goldenPath.analysisRun,
+      decisions: goldenPath.decisions,
+      messageStream: goldenPath.messageStream,
+      messages: goldenPath.messages,
+      modelCalls: goldenPath.modelCalls,
+      reports: goldenPath.reports,
+      runEvents: goldenPath.runEvents,
+      sourceEvidence: goldenPath.sourceEvidence,
+      toolCalls: goldenPath.toolCalls
+    });
+    const loader = vi.fn().mockResolvedValue({
+      kind: "ready",
+      viewModel
+    });
+    const submitter = vi.fn().mockResolvedValue({
+      analysisRun: { runId: goldenPath.analysisRun.runId },
+      conversation: { conversationId: goldenPath.conversation.conversationId }
+    });
+    const { result } = renderHook(() =>
+      useAnalysisWorkspaceController({
+        bootstrap: {
+          conversationId: goldenPath.conversation.conversationId,
+          runId: goldenPath.analysisRun.runId
+        },
+        loader,
+        submitIdentity: {
+          businessDomainId: "business-domain-revenue-quality",
+          userId: "user-zoe",
+          workspaceId: "workspace-northstar-retail-china"
+        },
+        submitter
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.workspaceState.kind).toBe("ready");
+    });
+
+    act(() => {
+      result.current.onNavigateInspectorRoute({ key: "report-preview" });
+      result.current.onComposerDraftChange("继续追问华东渠道。");
+    });
+
+    act(() => {
+      result.current.onSubmitComposer();
+    });
+
+    await waitFor(() => {
+      expect(submitter).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(result.current.workspaceState.kind).toBe("ready");
+    });
+
+    expect(result.current.activeInspectorRoute.key).toBe("report-preview");
+    expect(result.current.canGoBackInInspector).toBe(true);
   });
 });

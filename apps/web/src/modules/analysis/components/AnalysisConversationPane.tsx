@@ -17,7 +17,7 @@ export type AnalysisConversationPaneProps = {
     | "interactionMessage"
     | "messages"
     | "modelOptions"
-    | "onOpenInspectorPanel"
+    | "onNavigateInspectorRoute"
     | "onComposerAccessoryClick"
     | "onComposerDraftChange"
     | "onComposerModeChange"
@@ -105,26 +105,32 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
           description={session.resultSummary.evidenceSummary}
           footerActions={
             <Space wrap>
-              <Button onClick={() => controller.onOpenInspectorPanel("run-trace")} type="default">
+              <Button
+                onClick={() => controller.onNavigateInspectorRoute({ key: "run-trace" })}
+                type="default"
+              >
                 Run Trace
               </Button>
-              <Button onClick={() => controller.onOpenInspectorPanel("tool-detail")} type="default">
+              <Button
+                onClick={() => controller.onNavigateInspectorRoute({ key: "tool-call" })}
+                type="default"
+              >
                 Tool / Model
               </Button>
               <Button
-                onClick={() => controller.onOpenInspectorPanel("source-evidence")}
+                onClick={() => controller.onNavigateInspectorRoute({ key: "source-ref" })}
                 type="default"
               >
                 Evidence
               </Button>
               <Button
-                onClick={() => controller.onOpenInspectorPanel("report-preview")}
+                onClick={() => controller.onNavigateInspectorRoute({ key: "report-preview" })}
                 type="default"
               >
                 Report
               </Button>
               <Button
-                onClick={() => controller.onOpenInspectorPanel("decision-detail")}
+                onClick={() => controller.onNavigateInspectorRoute({ key: "decision" })}
                 type="default"
               >
                 Decision

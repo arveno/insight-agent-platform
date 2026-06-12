@@ -120,14 +120,27 @@ export type AnalysisMemoryContextViewModel = {
   title: string;
 };
 
-export type AnalysisInspectorPanelKey =
-  | "draft-context"
+export type AnalysisInspectorRouteKey =
+  | "home"
+  | "context-origin"
+  | "source-ref"
   | "run-trace"
-  | "tool-detail"
-  | "source-evidence"
+  | "run-event"
   | "report-preview"
-  | "decision-detail"
-  | "memory-context";
+  | "decision"
+  | "tool-call"
+  | "model-call";
+
+export type AnalysisInspectorRouteNode =
+  | { key: "home" }
+  | { key: "context-origin" }
+  | { key: "source-ref" }
+  | { key: "run-trace" }
+  | { eventId: string; key: "run-event" }
+  | { key: "report-preview" }
+  | { key: "decision" }
+  | { key: "tool-call" }
+  | { key: "model-call" };
 
 export type AnalysisComposerMode = "analysis" | "follow_up";
 

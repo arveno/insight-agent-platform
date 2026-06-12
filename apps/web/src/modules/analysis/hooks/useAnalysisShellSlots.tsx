@@ -48,18 +48,18 @@ export function useAnalysisShellSlots({
     mainContent: <AnalysisWorkspace controller={controller} />,
     rightAssistPanel: (
       <AnalysisInspectorPanel
-        activeInspectorPanel={controller.activeInspectorPanel}
+        activeInspectorRoute={controller.activeInspectorRoute}
+        canGoBackInInspector={controller.canGoBackInInspector}
         currentRun={controller.currentRun}
         decisions={controller.selectedSession?.decisions ?? []}
         decisionsState={controller.selectedSession?.decisionsState ?? "empty"}
         draftContext={controller.draftContext}
-        isRunTraceDetailOpen={controller.isRunTraceDetailOpen}
         messageStream={controller.selectedSession?.messageStream}
         messageStreamState={controller.selectedSession?.messageStreamState ?? "empty"}
         modelDetails={controller.selectedSession?.modelDetails ?? []}
         modelDetailsState={controller.selectedSession?.modelDetailsState ?? "empty"}
-        onCloseRunTraceDetail={controller.onCloseRunTraceDetail}
-        onOpenInspectorPanel={controller.onOpenInspectorPanel}
+        onBackInspector={controller.onBackInspector}
+        onNavigateInspectorRoute={controller.onNavigateInspectorRoute}
         onSelectRunEvent={controller.onSelectRunEvent}
         reportPreview={controller.selectedSession?.reportPreview}
         reportPreviewState={controller.selectedSession?.reportPreviewState ?? "empty"}

@@ -61,7 +61,9 @@ describe("useAnalysisShellSlots", () => {
     expect(screen.getByRole("region", { name: "Analysis conversation" })).toBeTruthy();
     expect(screen.getByText("新聊天草稿")).toBeTruthy();
     expect(screen.getByLabelText("Analysis inspector")).toBeTruthy();
-    expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("当前没有一次性 DraftContextPack。刷新页面后也不会恢复之前的前端草稿上下文。")).toBeTruthy();
+    expect(screen.getAllByText("Inspector Home").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByText("当前没有上下文或 run。发送前可直接输入问题，或从带上下文入口进入。")
+    ).toBeTruthy();
   });
 });

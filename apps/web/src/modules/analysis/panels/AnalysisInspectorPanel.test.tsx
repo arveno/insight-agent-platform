@@ -33,107 +33,82 @@ beforeAll(() => {
 });
 
 describe("AnalysisInspectorPanel", () => {
-  it("uses controller-owned run trace selection and drawer state", () => {
-    const session = analysisStaticViewModel.sessions[0];
-    const selectedRunEvent = session.runEvents[0] as AnalysisRunEvent;
-    const onSelectRunEvent = vi.fn();
-    const onCloseRunTraceDetail = vi.fn();
-
-    const { rerender } = render(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          activeInspectorPanel="run-trace"
-          currentRun={session.currentRun}
-          decisions={session.decisions}
-          decisionsState={session.decisionsState}
-          isRunTraceDetailOpen={false}
-          messageStream={session.messageStream}
-          messageStreamState={session.messageStreamState}
-          modelDetails={session.modelDetails}
-          modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={onCloseRunTraceDetail}
-          onOpenInspectorPanel={() => undefined}
-          onSelectRunEvent={onSelectRunEvent}
-          reportPreview={session.reportPreview}
-          reportPreviewState={session.reportPreviewState}
-          runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
-          sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={selectedRunEvent}
-          selectedRunEventId={selectedRunEvent.eventId}
-          toolDetails={session.toolDetails}
-          toolDetailsState={session.toolDetailsState}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. run.created" }));
-
-    expect(onSelectRunEvent).toHaveBeenCalledWith("event-analysis-q2-revenue-gap-user-input");
-    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
-
-    rerender(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          activeInspectorPanel="run-trace"
-          currentRun={session.currentRun}
-          decisions={session.decisions}
-          decisionsState={session.decisionsState}
-          isRunTraceDetailOpen
-          messageStream={session.messageStream}
-          messageStreamState={session.messageStreamState}
-          modelDetails={session.modelDetails}
-          modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={onCloseRunTraceDetail}
-          onOpenInspectorPanel={() => undefined}
-          onSelectRunEvent={onSelectRunEvent}
-          reportPreview={session.reportPreview}
-          reportPreviewState={session.reportPreviewState}
-          runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
-          sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={selectedRunEvent}
-          selectedRunEventId={selectedRunEvent.eventId}
-          toolDetails={session.toolDetails}
-          toolDetailsState={session.toolDetailsState}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByRole("dialog", { name: "Trace Event Detail" })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "关闭详情" }));
-
-    expect(onCloseRunTraceDetail).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders independent report and decision content instead of hiding them in assistant messages", () => {
-    const session = analysisStaticViewModel.sessions[0];
+  it("renders inspector home entries and drills down/back inside the inspector stack", () => {
+    const onBackInspector = vi.fn();
+    const onNavigateInspectorRoute = vi.fn();
 
     render(
       <TestProviders>
         <AnalysisInspectorPanel
-          activeInspectorPanel="report-preview"
+          activeInspectorRoute={{ key: "home" }}
+          canGoBackInInspector={false}
+          decisions={[]}
+          decisionsState="empty"
+          draftContext={{
+            chips: ["Northstar Retail China", "Last 7 days"],
+            sourceId: "report-weekly-operations-review",
+            sourceTitle: "周经营分析报告",
+            sourceType: "report",
+            suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
+            summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
+          }}
+          messageStreamState="empty"
+          modelDetails={[]}
+          modelDetailsState="empty"
+          onBackInspector={onBackInspector}
+          onNavigateInspectorRoute={onNavigateInspectorRoute}
+          onSelectRunEvent={() => undefined}
+          reportPreviewState="empty"
+          runEvents={[]}
+          selectedRunEventId={null}
+          sourceEvidence={[]}
+          sourceEvidenceState="empty"
+          toolDetails={[]}
+          toolDetailsState="empty"
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("Inspector Home")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open Context Origin" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open Source Ref" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Context Origin" }));
+
+    expect(onNavigateInspectorRoute).toHaveBeenCalledWith({ key: "context-origin" });
+    expect(onBackInspector).not.toHaveBeenCalled();
+  });
+
+  it("renders run-event detail inside the inspector instead of opening a drawer", () => {
+    const session = analysisStaticViewModel.sessions[0];
+    const selectedRunEvent = session.runEvents[1] as AnalysisRunEvent;
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          activeInspectorRoute={{
+            eventId: selectedRunEvent.eventId,
+            key: "run-event"
+          }}
+          canGoBackInInspector
           currentRun={session.currentRun}
           decisions={session.decisions}
           decisionsState={session.decisionsState}
-          isRunTraceDetailOpen={false}
           messageStream={session.messageStream}
           messageStreamState={session.messageStreamState}
           modelDetails={session.modelDetails}
           modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={() => undefined}
-          onOpenInspectorPanel={() => undefined}
+          onBackInspector={() => undefined}
+          onNavigateInspectorRoute={() => undefined}
           onSelectRunEvent={() => undefined}
           reportPreview={session.reportPreview}
           reportPreviewState={session.reportPreviewState}
           runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
+          selectedRunEvent={selectedRunEvent}
+          selectedRunEventId={selectedRunEvent.eventId}
           sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={session.runEvents[0]}
-          selectedRunEventId={session.runEvents[0]?.eventId ?? null}
+          sourceEvidenceState={session.sourceEvidenceState}
           toolDetails={session.toolDetails}
           toolDetailsState={session.toolDetailsState}
           workspaceName="Northstar Retail China"
@@ -141,9 +116,10 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
-    expect(screen.getAllByText("Report Preview").length).toBeGreaterThan(0);
-    expect(screen.getByText(session.reportPreview?.title ?? "")).toBeTruthy();
-    expect(screen.getByText("Decision")).toBeTruthy();
-    expect(screen.getByText(session.decisions[0]?.title ?? "")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back" })).toBeTruthy();
+    expect(screen.getByText("Run Event")).toBeTruthy();
+    expect(screen.getByText(selectedRunEvent.title)).toBeTruthy();
+    expect(screen.getAllByText(selectedRunEvent.summary).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
   });
 });

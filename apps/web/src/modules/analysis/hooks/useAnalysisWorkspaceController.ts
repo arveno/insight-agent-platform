@@ -14,7 +14,7 @@ import type {
   AnalysisComposerMode,
   AnalysisComposerViewModel,
   AnalysisDraftContextViewModel,
-  AnalysisInspectorPanelKey,
+  AnalysisInspectorRouteNode,
   AnalysisSessionViewModel,
   AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
@@ -63,7 +63,8 @@ export type UseAnalysisWorkspaceControllerOptions = {
 };
 
 export type AnalysisWorkspaceController = {
-  activeInspectorPanel: AnalysisInspectorPanelKey;
+  activeInspectorRoute: AnalysisInspectorRouteNode;
+  canGoBackInInspector: boolean;
   composerDraft: string;
   composerMode: AnalysisComposerMode;
   composerState: ComposerState;
@@ -74,15 +75,14 @@ export type AnalysisWorkspaceController = {
   currentRun?: AnalysisRun;
   draftContext?: AnalysisDraftContextViewModel;
   interactionMessage: string;
-  isRunTraceDetailOpen: boolean;
   messages: AnalysisMessage[];
   modelOptions: readonly { key: string; label: string }[];
-  onCloseRunTraceDetail: () => void;
+  onBackInspector: () => void;
   onComposerAccessoryClick: () => void;
   onComposerDraftChange: (value: string) => void;
   onComposerModeChange: (mode: AnalysisComposerMode) => void;
   onComposerStop: () => void;
-  onOpenInspectorPanel: (panel: AnalysisInspectorPanelKey) => void;
+  onNavigateInspectorRoute: (route: AnalysisInspectorRouteNode) => void;
   onResetForNewAnalysis: () => void;
   onSelectModel: (key: string) => void;
   onSelectRunEvent: (eventId: string) => void;
@@ -170,6 +170,55 @@ function getFirstRunEventId(session: AnalysisSessionViewModel | undefined): stri
   return session?.runEvents[0]?.eventId ?? null;
 }
 
+function createInitialInspectorRoute(
+  bootstrap: AnalysisRuntimeBootstrap,
+  draftContext?: DraftContextPack
+): AnalysisInspectorRouteNode {
+  if (bootstrap.conversationId || bootstrap.runId) {
+    return { key: "run-trace" };
+  }
+
+  if (draftContext) {
+    return { key: "context-origin" };
+  }
+
+  return { key: "home" };
+}
+
+function getDefaultInspectorRoute(
+  workspaceState: AnalysisWorkspaceState,
+  draftContext?: DraftContextPack
+): AnalysisInspectorRouteNode {
+  if (workspaceState.kind === "draft") {
+    return draftContext ? { key: "context-origin" } : { key: "home" };
+  }
+
+  if (workspaceState.kind === "ready") {
+    return { key: "run-trace" };
+  }
+
+  return { key: "home" };
+}
+
+function isSameInspectorRoute(
+  left: AnalysisInspectorRouteNode | undefined,
+  right: AnalysisInspectorRouteNode
+): boolean {
+  if (!left) {
+    return false;
+  }
+
+  if (left.key !== right.key) {
+    return false;
+  }
+
+  if (left.key === "run-event" && right.key === "run-event") {
+    return left.eventId === right.eventId;
+  }
+
+  return true;
+}
+
 function parseBootstrapFromLocation(): AnalysisRuntimeBootstrap {
   if (typeof window === "undefined") {
     return {};
@@ -246,18 +295,73 @@ export function useAnalysisWorkspaceController(
   const [composerState, setComposerState] = useState<ComposerState>("idle");
   const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelOptions[0].key);
   const [interactionMessage, setInteractionMessage] = useState("");
-  const [activeInspectorPanel, setActiveInspectorPanel] = useState<AnalysisInspectorPanelKey>(
-    bootstrap.conversationId || bootstrap.runId ? "run-trace" : "draft-context"
-  );
+  const [inspectorRouteStack, setInspectorRouteStack] = useState<AnalysisInspectorRouteNode[]>([
+    createInitialInspectorRoute(bootstrap, options.draftContext)
+  ]);
+  const inspectorRouteStackRef = useRef<AnalysisInspectorRouteNode[]>(inspectorRouteStack);
+  const inspectorNavigationModeRef = useRef<"auto" | "manual">("auto");
   const [selectedRunEventId, setSelectedRunEventId] = useState<string | null>(null);
-  const [isRunTraceDetailOpen, setIsRunTraceDetailOpen] = useState(false);
   const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
   const [selectedSourceEvidenceId, setSelectedSourceEvidenceId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
+  const applyInspectorNavigationState = (
+    nextStack: AnalysisInspectorRouteNode[],
+    nextMode: "auto" | "manual"
+  ) => {
+    inspectorRouteStackRef.current = nextStack;
+    inspectorNavigationModeRef.current = nextMode;
+    setInspectorRouteStack(nextStack);
+  };
+
+  const replaceInspectorRouteStack = (
+    route: AnalysisInspectorRouteNode,
+    mode: "auto" | "manual"
+  ) => {
+    applyInspectorNavigationState([route], mode);
+  };
+
+  const pushInspectorRoute = (route: AnalysisInspectorRouteNode) => {
+    const currentStack = inspectorRouteStackRef.current;
+    const currentRoute = currentStack.at(-1);
+
+    if (isSameInspectorRoute(currentRoute, route)) {
+      inspectorNavigationModeRef.current = "manual";
+      return;
+    }
+
+    applyInspectorNavigationState([...currentStack, route], "manual");
+  };
+
+  const popInspectorRoute = () => {
+    const currentStack = inspectorRouteStackRef.current;
+
+    if (currentStack.length <= 1) {
+      inspectorNavigationModeRef.current = "manual";
+      return;
+    }
+
+    applyInspectorNavigationState(currentStack.slice(0, -1), "manual");
+  };
+
   useEffect(() => {
     setDraftContext(options.draftContext);
   }, [draftContextSignature]);
+
+  useEffect(() => {
+    if (inspectorNavigationModeRef.current !== "auto") {
+      return;
+    }
+
+    const defaultRoute = getDefaultInspectorRoute(workspaceState, draftContext);
+    const currentStack = inspectorRouteStackRef.current;
+
+    if (currentStack.length === 1 && isSameInspectorRoute(currentStack[0], defaultRoute)) {
+      return;
+    }
+
+    replaceInspectorRouteStack(defaultRoute, "auto");
+  }, [draftContext, workspaceState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -374,7 +478,8 @@ export function useAnalysisWorkspaceController(
     "Default";
 
   return {
-    activeInspectorPanel,
+    activeInspectorRoute: inspectorRouteStack.at(-1) ?? { key: "home" },
+    canGoBackInInspector: inspectorRouteStack.length > 1,
     composerDraft: getActiveDraft(analysisDraft, composerMode, followUpDraft),
     composerMode,
     composerState,
@@ -382,11 +487,10 @@ export function useAnalysisWorkspaceController(
     currentRun: selectedSession?.currentRun,
     draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
     interactionMessage,
-    isRunTraceDetailOpen,
     messages: selectedSession?.messages ?? [],
     modelOptions,
-    onCloseRunTraceDetail: () => {
-      setIsRunTraceDetailOpen(false);
+    onBackInspector: () => {
+      popInspectorRoute();
     },
     onComposerAccessoryClick: () => {
       setInteractionMessage(
@@ -412,15 +516,8 @@ export function useAnalysisWorkspaceController(
         createInteractionMessage("当前页面未建立真实 streaming cancel，停止动作不可用。")
       );
     },
-    onOpenInspectorPanel: (panel) => {
-      if (workspaceState.kind === "draft") {
-        setActiveInspectorPanel("draft-context");
-        setIsRunTraceDetailOpen(false);
-        return;
-      }
-
-      setActiveInspectorPanel(panel);
-      setIsRunTraceDetailOpen(false);
+    onNavigateInspectorRoute: (route) => {
+      pushInspectorRoute(route);
     },
     onResetForNewAnalysis: () => {
       composerModeRef.current = "analysis";
@@ -430,9 +527,8 @@ export function useAnalysisWorkspaceController(
       setDraftContext(undefined);
       setAnalysisDraft("");
       setFollowUpDraft("");
-      setActiveInspectorPanel("draft-context");
       setSelectedConversationId(null);
-      setIsRunTraceDetailOpen(false);
+      replaceInspectorRouteStack({ key: "home" }, "auto");
       setInteractionMessage(
         createInteractionMessage(
           "已进入新聊天草稿态。发送前不会创建 Conversation 或 AnalysisRun；发送后才会进入正式 submit 链路。"
@@ -456,9 +552,8 @@ export function useAnalysisWorkspaceController(
         return;
       }
 
-      setActiveInspectorPanel("run-trace");
       setSelectedRunEventId(eventId);
-      setIsRunTraceDetailOpen(true);
+      pushInspectorRoute({ eventId, key: "run-event" });
     },
     onSelectSession: (conversationId) => {
       const nextSession = sessions.find((session) => session.conversationId === conversationId);
@@ -473,8 +568,7 @@ export function useAnalysisWorkspaceController(
       setDraftContext(undefined);
       setSelectedConversationId(nextSession.conversationId);
       setComposerState("idle");
-      setActiveInspectorPanel("run-trace");
-      setIsRunTraceDetailOpen(false);
+      replaceInspectorRouteStack({ key: "run-trace" }, "auto");
       setInteractionMessage(
         createInteractionMessage(`已切换到真实会话 ${nextSession.conversationId}。`)
       );
@@ -537,8 +631,9 @@ export function useAnalysisWorkspaceController(
           setFollowUpDraft("");
           setComposerMode("follow_up");
           setComposerState("idle");
-          setActiveInspectorPanel("run-trace");
-          setIsRunTraceDetailOpen(false);
+          if (workspaceState.kind !== "ready" || inspectorNavigationModeRef.current === "auto") {
+            replaceInspectorRouteStack({ key: "run-trace" }, "auto");
+          }
           setInteractionMessage("");
         } catch (error) {
           setComposerState("idle");

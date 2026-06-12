@@ -1,4 +1,4 @@
-import { Space, Tag, Typography } from "antd";
+import { Button, Descriptions, Divider, Space, Tag, Typography } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
@@ -6,14 +6,14 @@ import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { EventTimeline } from "../../../shared/ui/lists/EventTimeline";
 import { EmptyState } from "../../../shared/ui/states/EmptyState";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
-import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { StatusTag, type StatusTagProps } from "../../../shared/ui/status/StatusTag";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import { RunTraceDetailDrawer } from "../components/RunTraceDetailDrawer";
 import type {
   AnalysisDecisionViewModel,
   AnalysisDraftContextViewModel,
-  AnalysisInspectorPanelKey,
+  AnalysisInspectorRouteKey,
+  AnalysisInspectorRouteNode,
   AnalysisMessageStreamViewModel,
   AnalysisModelDetailViewModel,
   AnalysisReportPreviewViewModel,
@@ -24,18 +24,18 @@ import type {
 import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
 
 export type AnalysisInspectorPanelProps = {
-  activeInspectorPanel: AnalysisInspectorPanelKey;
+  activeInspectorRoute: AnalysisInspectorRouteNode;
+  canGoBackInInspector: boolean;
   currentRun?: AnalysisRun;
   decisions: AnalysisDecisionViewModel[];
   decisionsState: AnalysisSurfaceState;
   draftContext?: AnalysisDraftContextViewModel;
-  isRunTraceDetailOpen: boolean;
   messageStream?: AnalysisMessageStreamViewModel;
   messageStreamState: AnalysisSurfaceState;
   modelDetails: AnalysisModelDetailViewModel[];
   modelDetailsState: AnalysisSurfaceState;
-  onCloseRunTraceDetail: () => void;
-  onOpenInspectorPanel: (panel: AnalysisInspectorPanelKey) => void;
+  onBackInspector: () => void;
+  onNavigateInspectorRoute: (route: AnalysisInspectorRouteNode) => void;
   onSelectRunEvent: (eventId: string) => void;
   reportPreview?: AnalysisReportPreviewViewModel;
   reportPreviewState: AnalysisSurfaceState;
@@ -49,61 +49,44 @@ export type AnalysisInspectorPanelProps = {
   workspaceName: string;
 };
 
-function getPanelTitle(activeInspectorPanel: AnalysisInspectorPanelKey): string {
-  switch (activeInspectorPanel) {
-    case "draft-context":
-      return "Draft Context";
-    case "decision-detail":
-      return "Decision";
-    case "memory-context":
-      return "Memory Context";
-    case "report-preview":
-      return "Report Preview";
+type InspectorHomeCard = {
+  buttonLabel: string;
+  description: string;
+  disabled?: boolean;
+  eyebrow?: string;
+  key: string;
+  route: AnalysisInspectorRouteNode;
+  status: StatusTagProps;
+  title: string;
+};
+
+type InspectorHomeSection = {
+  cards: InspectorHomeCard[];
+  key: string;
+  title: string;
+};
+
+function getRouteTitle(route: AnalysisInspectorRouteNode): string {
+  switch (route.key) {
+    case "home":
+      return "Inspector Home";
+    case "context-origin":
+      return "Context Origin";
+    case "source-ref":
+      return "Source Ref";
     case "run-trace":
       return "Run Trace";
-    case "source-evidence":
-      return "Source Evidence";
-    case "tool-detail":
-      return "Tool / Model";
+    case "run-event":
+      return "Run Event";
+    case "report-preview":
+      return "Report Preview";
+    case "decision":
+      return "Decision";
+    case "tool-call":
+      return "Tool Call";
+    case "model-call":
+      return "Model Call";
   }
-}
-
-function DraftContextPanel({
-  draftContext
-}: Pick<AnalysisInspectorPanelProps, "draftContext">) {
-  if (!draftContext) {
-    return (
-      <ContentCard
-        description="当前没有一次性 DraftContextPack。刷新页面后也不会恢复之前的前端草稿上下文。"
-        title="Draft Context"
-      />
-    );
-  }
-
-  return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <ContentCard
-        description={draftContext.summary}
-        eyebrow={`${draftContext.sourceType} · ${draftContext.sourceId}`}
-        title={draftContext.sourceTitle}
-      >
-        <Space size={[8, 8]} wrap>
-          {draftContext.chips.map((chip) => (
-            <Tag key={chip}>{chip}</Tag>
-          ))}
-        </Space>
-      </ContentCard>
-
-      <ContentCard
-        description="发送前仍可编辑；如果当前 PR 尚未接 write path，这里只保留真实草稿和诚实提示。"
-        title="Suggested Prompt"
-      >
-        <Typography.Paragraph style={{ marginBottom: 0 }}>
-          {draftContext.suggestedPrompt || "当前没有预填建议问题。"}
-        </Typography.Paragraph>
-      </ContentCard>
-    </Space>
-  );
 }
 
 function renderSurfaceState(state: AnalysisSurfaceState, title: string) {
@@ -128,25 +111,372 @@ function renderSurfaceState(state: AnalysisSurfaceState, title: string) {
   return <EmptyState description="当前没有可展示的数据。" title={title} />;
 }
 
-function RunTracePanel({
+function createHomeSections({
   currentRun,
-  isRunTraceDetailOpen,
-  onCloseRunTraceDetail,
-  onSelectRunEvent,
+  decisions,
+  draftContext,
+  modelDetails,
+  reportPreview,
   runEvents,
   selectedRunEvent,
+  sourceEvidence,
+  toolDetails
+}: Pick<
+  AnalysisInspectorPanelProps,
+  | "currentRun"
+  | "decisions"
+  | "draftContext"
+  | "modelDetails"
+  | "reportPreview"
+  | "runEvents"
+  | "selectedRunEvent"
+  | "sourceEvidence"
+  | "toolDetails"
+>): InspectorHomeSection[] {
+  const sections: InspectorHomeSection[] = [];
+
+  if (draftContext || sourceEvidence.length > 0) {
+    sections.push({
+      cards: [
+        {
+          buttonLabel: "Open Context Origin",
+          description: draftContext
+            ? "当前存在一次性 draft context，可在 Inspector 内继续 drill-down。"
+            : "当前没有一次性 draft context；该承载位保留给 #202-2 的内容适配。",
+          disabled: !draftContext,
+          eyebrow: draftContext
+            ? `${draftContext.sourceType} · ${draftContext.sourceTitle}`
+            : "No draft context",
+          key: "context-origin",
+          route: { key: "context-origin" },
+          status: draftContext
+            ? { label: "Ready", tone: "success" }
+            : { label: "Disabled", tone: "default" },
+          title: "Context Origin"
+        },
+        {
+          buttonLabel: "Open Source Ref",
+          description:
+            sourceEvidence.length > 0
+              ? `当前 run 已绑定 ${sourceEvidence.length} 条来源证据；完整内容适配留给 #202-2。`
+              : "当前没有可用 supporting refs；本切片不伪造来源对象。",
+          disabled: sourceEvidence.length === 0,
+          eyebrow:
+            sourceEvidence.length > 0
+              ? `${sourceEvidence.length} refs available`
+              : "No supporting refs",
+          key: "source-ref",
+          route: { key: "source-ref" },
+          status:
+            sourceEvidence.length > 0
+              ? { label: "Ready", tone: "success" }
+              : { label: "Disabled", tone: "default" },
+          title: "Source Ref"
+        }
+      ],
+      key: "origin",
+      title: "Origin"
+    });
+  }
+
+  if (currentRun || selectedRunEvent || runEvents.length > 0) {
+    sections.push({
+      cards: [
+        {
+          buttonLabel: "Open Run Trace",
+          description: currentRun?.stageSummary ?? "当前没有 run trace 可展示。",
+          disabled: !currentRun,
+          eyebrow: currentRun ? `runId: ${currentRun.runId}` : "No current run",
+          key: "run-trace",
+          route: { key: "run-trace" },
+          status: currentRun
+            ? { label: "Ready", tone: "success" }
+            : { label: "Disabled", tone: "default" },
+          title: "Run Trace"
+        },
+        {
+          buttonLabel: "Open Run Event",
+          description:
+            selectedRunEvent?.summary ??
+            (runEvents.length > 0
+              ? "选择一个事件后可在 Inspector 内查看详情。"
+              : "当前没有可用 run event。"),
+          disabled: !selectedRunEvent,
+          eyebrow: selectedRunEvent ? selectedRunEvent.title : "No selected event",
+          key: "run-event",
+          route: selectedRunEvent
+            ? { eventId: selectedRunEvent.eventId, key: "run-event" }
+            : { key: "run-trace" },
+          status: selectedRunEvent
+            ? { label: "Ready", tone: "success" }
+            : { label: "Disabled", tone: "default" },
+          title: "Run Event"
+        }
+      ],
+      key: "trace",
+      title: "Trace"
+    });
+  }
+
+  if (reportPreview || decisions.length > 0) {
+    sections.push({
+      cards: [
+        {
+          buttonLabel: "Open Report Preview",
+          description: reportPreview?.summary ?? "当前没有 report preview。",
+          disabled: !reportPreview,
+          eyebrow: reportPreview ? reportPreview.title : "No report preview",
+          key: "report-preview",
+          route: { key: "report-preview" },
+          status: reportPreview
+            ? { label: "Ready", tone: "success" }
+            : { label: "Disabled", tone: "default" },
+          title: "Report Preview"
+        },
+        {
+          buttonLabel: "Open Decision",
+          description:
+            decisions[0]?.title ?? "当前没有 decision；该承载位保持真实空态。",
+          disabled: decisions.length === 0,
+          eyebrow:
+            decisions.length > 0 ? `${decisions.length} decision items` : "No decision",
+          key: "decision",
+          route: { key: "decision" },
+          status:
+            decisions.length > 0
+              ? { label: "Ready", tone: "success" }
+              : { label: "Disabled", tone: "default" },
+          title: "Decision"
+        }
+      ],
+      key: "delivery",
+      title: "Delivery"
+    });
+  }
+
+  if (toolDetails.length > 0 || modelDetails.length > 0) {
+    sections.push({
+      cards: [
+        {
+          buttonLabel: "Open Tool Call",
+          description:
+            toolDetails[0]?.summary ?? "当前没有 tool call；该承载位保持真实空态。",
+          disabled: toolDetails.length === 0,
+          eyebrow:
+            toolDetails.length > 0 ? `${toolDetails.length} tool calls` : "No tool calls",
+          key: "tool-call",
+          route: { key: "tool-call" },
+          status:
+            toolDetails.length > 0
+              ? { label: "Ready", tone: "success" }
+              : { label: "Disabled", tone: "default" },
+          title: "Tool Call"
+        },
+        {
+          buttonLabel: "Open Model Call",
+          description:
+            modelDetails[0]
+              ? `${modelDetails[0].provider} · ${modelDetails[0].latencyText}`
+              : "当前没有 model call；该承载位保持真实空态。",
+          disabled: modelDetails.length === 0,
+          eyebrow:
+            modelDetails.length > 0 ? `${modelDetails.length} model calls` : "No model calls",
+          key: "model-call",
+          route: { key: "model-call" },
+          status:
+            modelDetails.length > 0
+              ? { label: "Ready", tone: "success" }
+              : { label: "Disabled", tone: "default" },
+          title: "Model Call"
+        }
+      ],
+      key: "execution",
+      title: "Execution"
+    });
+  }
+
+  return sections;
+}
+
+function InspectorHomePanel({
+  currentRun,
+  decisions,
+  draftContext,
+  modelDetails,
+  onNavigateInspectorRoute,
+  reportPreview,
+  runEvents,
+  selectedRunEvent,
+  sourceEvidence,
+  toolDetails
+}: Pick<
+  AnalysisInspectorPanelProps,
+  | "currentRun"
+  | "decisions"
+  | "draftContext"
+  | "modelDetails"
+  | "onNavigateInspectorRoute"
+  | "reportPreview"
+  | "runEvents"
+  | "selectedRunEvent"
+  | "sourceEvidence"
+  | "toolDetails"
+>) {
+  const sections = createHomeSections({
+    currentRun,
+    decisions,
+    draftContext,
+    modelDetails,
+    reportPreview,
+    runEvents,
+    selectedRunEvent,
+    sourceEvidence,
+    toolDetails
+  });
+
+  if (sections.length === 0) {
+    return (
+      <EmptyState
+        description="当前没有上下文或 run。发送前可直接输入问题，或从带上下文入口进入。"
+        title="Inspector Home"
+      />
+    );
+  }
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      {sections.map((section) => (
+        <Space direction="vertical" key={section.key} size={12} style={{ width: "100%" }}>
+          <Typography.Text style={shellTypographyStyles.cardTitle}>{section.title}</Typography.Text>
+          <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            {section.cards.map((card) => (
+              <ContentCard
+                description={card.description}
+                eyebrow={card.eyebrow}
+                footerActions={
+                  <Button
+                    aria-label={card.buttonLabel}
+                    disabled={card.disabled}
+                    onClick={() => onNavigateInspectorRoute(card.route)}
+                    type="default"
+                  >
+                    {card.buttonLabel.replace("Open ", "")}
+                  </Button>
+                }
+                key={card.key}
+                tagSlot={<StatusTag {...card.status} />}
+                title={card.title}
+              />
+            ))}
+          </Space>
+        </Space>
+      ))}
+    </Space>
+  );
+}
+
+function ContextOriginPanel({
+  draftContext,
+  onNavigateInspectorRoute,
+  sourceEvidence
+}: Pick<
+  AnalysisInspectorPanelProps,
+  "draftContext" | "onNavigateInspectorRoute" | "sourceEvidence"
+>) {
+  if (!draftContext) {
+    return (
+      <ContentCard
+        description="本切片只建立 layered navigation foundation；Context Origin 的完整内容适配留给 #202-2。"
+        title="Context Origin"
+      />
+    );
+  }
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <ContentCard
+        description="当前先建立 Inspector 内部层级导航；summary / chips / supporting refs 的正式内容拟合由 #202-2 承接。"
+        eyebrow={`${draftContext.sourceType} · ${draftContext.sourceId}`}
+        tagSlot={<StatusTag label="Draft" tone="processing" />}
+        title={draftContext.sourceTitle}
+      >
+        <Space size={[8, 8]} wrap>
+          {draftContext.chips.map((chip) => (
+            <Tag key={chip}>{chip}</Tag>
+          ))}
+        </Space>
+      </ContentCard>
+
+      <ContentCard
+        description={
+          sourceEvidence.length > 0
+            ? `当前 run surfaces 可见 ${sourceEvidence.length} 条来源证据；完整 SourceRef 内容不在本切片实现。`
+            : "当前没有 supporting refs；本切片不伪造来源对象。"
+        }
+        footerActions={
+          <Button
+            aria-label="Open Source Ref"
+            disabled={sourceEvidence.length === 0}
+            onClick={() => onNavigateInspectorRoute({ key: "source-ref" })}
+            type="default"
+          >
+            Source Ref
+          </Button>
+        }
+        title="Source Ref"
+      />
+    </Space>
+  );
+}
+
+function SourceRefPanel({
+  draftContext,
+  sourceEvidence,
+  sourceEvidenceState
+}: Pick<
+  AnalysisInspectorPanelProps,
+  "draftContext" | "sourceEvidence" | "sourceEvidenceState"
+>) {
+  if (!draftContext && sourceEvidence.length === 0) {
+    return renderSurfaceState(sourceEvidenceState, "Source Ref");
+  }
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <ContentCard
+        description="本切片只建立 SourceRef 的 Inspector 路由承载位；canonical refs 内容适配与 stable href 策略留给 #202-2。"
+        eyebrow={draftContext ? `${draftContext.sourceType} · draft` : "runtime placeholder"}
+        title="Source Ref Foundation"
+      />
+      {sourceEvidence.length > 0 ? (
+        sourceEvidence.map((evidence) => (
+          <ContentCard
+            description="当前只展示真实存在的来源条目，不提供 deep link 或 fake ref。"
+            eyebrow={`${evidence.sourceType} · ${evidence.confidenceText}`}
+            key={evidence.sourceEvidenceId}
+            tagSlot={<StatusTag label="Placeholder" tone="warning" />}
+            title={evidence.title}
+          />
+        ))
+      ) : (
+        <ContentCard
+          description="当前没有 supporting refs；UI 不会为了完整性伪造来源对象。"
+          title="No Source Ref"
+        />
+      )}
+    </Space>
+  );
+}
+
+function RunTracePanel({
+  currentRun,
+  onSelectRunEvent,
+  runEvents,
   selectedRunEventId,
   workspaceName
 }: Pick<
   AnalysisInspectorPanelProps,
-  | "currentRun"
-  | "isRunTraceDetailOpen"
-  | "onCloseRunTraceDetail"
-  | "onSelectRunEvent"
-  | "runEvents"
-  | "selectedRunEvent"
-  | "selectedRunEventId"
-  | "workspaceName"
+  "currentRun" | "onSelectRunEvent" | "runEvents" | "selectedRunEventId" | "workspaceName"
 >) {
   const { t } = useI18n();
 
@@ -162,7 +492,7 @@ function RunTracePanel({
   ];
 
   return (
-    <>
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
       <ContentCard
         description={currentRun.stageSummary}
         eyebrow={`runId: ${currentRun.runId}`}
@@ -212,84 +542,147 @@ function RunTracePanel({
           title: event.title
         }))}
       />
-
-      <RunTraceDetailDrawer
-        event={selectedRunEvent}
-        onClose={onCloseRunTraceDetail}
-        open={isRunTraceDetailOpen}
-      />
-    </>
-  );
-}
-
-function ToolModelPanel({
-  modelDetails,
-  modelDetailsState,
-  toolDetails,
-  toolDetailsState
-}: Pick<
-  AnalysisInspectorPanelProps,
-  "modelDetails" | "modelDetailsState" | "toolDetails" | "toolDetailsState"
->) {
-  const { t } = useI18n();
-
-  return (
-    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      {toolDetails.length > 0 ? (
-        toolDetails.map((toolDetail) => (
-          <ContentCard
-            description={toolDetail.summary}
-            eyebrow={`runId: ${toolDetail.runId}`}
-            key={toolDetail.toolCallId}
-            title={toolDetail.toolName}
-          >
-            <StatusTag {...toStatusTag(t, toolDetail.statusViewModel)!} />
-          </ContentCard>
-        ))
-      ) : (
-        renderSurfaceState(toolDetailsState, "Tool Calls")
-      )}
-
-      {modelDetails.length > 0 ? (
-        modelDetails.map((modelDetail) => (
-          <ContentCard
-            description={`${modelDetail.provider} · ${modelDetail.latencyText} · ${modelDetail.costText}`}
-            eyebrow={`runId: ${modelDetail.runId}`}
-            key={modelDetail.modelCallId}
-            title={modelDetail.modelId}
-          >
-            <Space wrap>
-              <StatusTag {...toStatusTag(t, modelDetail.statusViewModel)!} />
-              <Typography.Text type="secondary">
-                Tokens: {modelDetail.tokenUsageText}
-              </Typography.Text>
-            </Space>
-          </ContentCard>
-        ))
-      ) : (
-        renderSurfaceState(modelDetailsState, "Model Calls")
-      )}
     </Space>
   );
 }
 
-function SourceEvidencePanel({
-  sourceEvidence,
-  sourceEvidenceState
-}: Pick<AnalysisInspectorPanelProps, "sourceEvidence" | "sourceEvidenceState">) {
-  if (sourceEvidence.length === 0) {
-    return renderSurfaceState(sourceEvidenceState, "Source Evidence");
+function RunEventPanel({ selectedRunEvent }: Pick<AnalysisInspectorPanelProps, "selectedRunEvent">) {
+  const { t } = useI18n();
+
+  if (!selectedRunEvent) {
+    return <EmptyState description="当前没有已选中的 run event。" title="Run Event" />;
+  }
+
+  const resourceItems = [
+    selectedRunEvent.toolName
+      ? {
+          key: "tool-name",
+          label: "Tool",
+          children: <Typography.Text code>{selectedRunEvent.toolName}</Typography.Text>
+        }
+      : null,
+    selectedRunEvent.modelName
+      ? {
+          key: "model-name",
+          label: "Model",
+          children: <Typography.Text code>{selectedRunEvent.modelName}</Typography.Text>
+        }
+      : null,
+    selectedRunEvent.tokenUsageText
+      ? {
+          key: "token-usage",
+          label: "Tokens",
+          children: selectedRunEvent.tokenUsageText
+        }
+      : null,
+    selectedRunEvent.costText
+      ? {
+          key: "cost",
+          label: "Cost",
+          children: selectedRunEvent.costText
+        }
+      : null
+  ].filter((item): item is NonNullable<typeof item> => item !== null);
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <ContentCard
+        description={selectedRunEvent.summary}
+        eyebrow={selectedRunEvent.eventType}
+        tagSlot={
+          <Space wrap>
+            <StatusTag {...toStatusTag(t, selectedRunEvent.statusViewModel)!} />
+            {selectedRunEvent.riskViewModel ? (
+              <RiskBadge {...toRiskBadge(t, selectedRunEvent.riskViewModel)!} />
+            ) : null}
+          </Space>
+        }
+        title={selectedRunEvent.title}
+      />
+
+      <Descriptions
+        column={1}
+        items={[
+          {
+            key: "timestamp",
+            label: "Timestamp",
+            children: selectedRunEvent.timestampText ?? "N/A"
+          },
+          {
+            key: "duration",
+            label: "Duration",
+            children: selectedRunEvent.durationText ?? "N/A"
+          }
+        ]}
+        size="small"
+      />
+
+      <Divider style={{ marginBlock: 0 }} />
+
+      <ContentCard description={selectedRunEvent.detail} title="Event Detail" />
+
+      {selectedRunEvent.inputSummary ? (
+        <ContentCard description={selectedRunEvent.inputSummary} title="Input Summary" />
+      ) : null}
+
+      {selectedRunEvent.outputSummary ? (
+        <ContentCard description={selectedRunEvent.outputSummary} title="Output Summary" />
+      ) : null}
+
+      {resourceItems.length > 0 ? <Descriptions column={1} items={resourceItems} size="small" /> : null}
+    </Space>
+  );
+}
+
+function ToolCallPanel({
+  toolDetails,
+  toolDetailsState
+}: Pick<AnalysisInspectorPanelProps, "toolDetails" | "toolDetailsState">) {
+  const { t } = useI18n();
+
+  if (toolDetails.length === 0) {
+    return renderSurfaceState(toolDetailsState, "Tool Call");
   }
 
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      {sourceEvidence.map((evidence) => (
+      {toolDetails.map((toolDetail) => (
         <ContentCard
-          description={evidence.summary}
-          eyebrow={`${evidence.sourceType} · ${evidence.confidenceText}`}
-          key={evidence.sourceEvidenceId}
-          title={evidence.title}
+          description={toolDetail.summary}
+          eyebrow={`runId: ${toolDetail.runId}`}
+          key={toolDetail.toolCallId}
+          tagSlot={<StatusTag {...toStatusTag(t, toolDetail.statusViewModel)!} />}
+          title={toolDetail.toolName}
         />
+      ))}
+    </Space>
+  );
+}
+
+function ModelCallPanel({
+  modelDetails,
+  modelDetailsState
+}: Pick<AnalysisInspectorPanelProps, "modelDetails" | "modelDetailsState">) {
+  const { t } = useI18n();
+
+  if (modelDetails.length === 0) {
+    return renderSurfaceState(modelDetailsState, "Model Call");
+  }
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      {modelDetails.map((modelDetail) => (
+        <ContentCard
+          description={`${modelDetail.provider} · ${modelDetail.latencyText} · ${modelDetail.costText}`}
+          eyebrow={`runId: ${modelDetail.runId}`}
+          key={modelDetail.modelCallId}
+          tagSlot={<StatusTag {...toStatusTag(t, modelDetail.statusViewModel)!} />}
+          title={modelDetail.modelId}
+        >
+          <Typography.Text type="secondary">
+            Tokens: {modelDetail.tokenUsageText}
+          </Typography.Text>
+        </ContentCard>
       ))}
     </Space>
   );
@@ -297,11 +690,13 @@ function SourceEvidencePanel({
 
 function ReportPreviewPanel({
   decisions,
+  onNavigateInspectorRoute,
   reportPreview,
   reportPreviewState
-}: Pick<AnalysisInspectorPanelProps, "decisions" | "reportPreview" | "reportPreviewState">) {
-  const { t } = useI18n();
-
+}: Pick<
+  AnalysisInspectorPanelProps,
+  "decisions" | "onNavigateInspectorRoute" | "reportPreview" | "reportPreviewState"
+>) {
   if (!reportPreview) {
     return renderSurfaceState(reportPreviewState, "Report Preview");
   }
@@ -311,6 +706,13 @@ function ReportPreviewPanel({
       <ContentCard
         description={reportPreview.summary}
         eyebrow={`runId: ${reportPreview.runId}`}
+        footerActions={
+          decisions.length > 0 ? (
+            <Button onClick={() => onNavigateInspectorRoute({ key: "decision" })} type="default">
+              Open Decision
+            </Button>
+          ) : null
+        }
         title="Report Preview"
       >
         <Space direction="vertical" size={6} style={{ width: "100%" }}>
@@ -320,25 +722,13 @@ function ReportPreviewPanel({
           {reportPreview.sections.map((section) => (
             <div key={section.key}>
               <Typography.Text style={shellTypographyStyles.meta}>{section.title}</Typography.Text>
-              <Typography.Paragraph style={{ marginBottom: 0 }}>{section.content}</Typography.Paragraph>
+              <Typography.Paragraph style={{ marginBottom: 0 }}>
+                {section.content}
+              </Typography.Paragraph>
             </div>
           ))}
         </Space>
       </ContentCard>
-
-      {decisions.length > 0 ? (
-        decisions.map((decision) => (
-          <ContentCard
-            description={decision.createdAtText}
-            eyebrow={`reportId: ${decision.reportId}`}
-            key={decision.decisionId}
-            tagSlot={<StatusTag {...toStatusTag(t, decision.statusViewModel)!} />}
-            title="Decision"
-          >
-            <Typography.Paragraph style={{ marginBottom: 0 }}>{decision.title}</Typography.Paragraph>
-          </ContentCard>
-        ))
-      ) : null}
     </Space>
   );
 }
@@ -370,19 +760,42 @@ function DecisionPanel({
   );
 }
 
+function routeDescription(routeKey: AnalysisInspectorRouteKey): string | undefined {
+  switch (routeKey) {
+    case "home":
+      return "Layered navigation stays inside the Analysis Inspector and does not replace the current Analysis page.";
+    case "context-origin":
+      return "Context Origin content fit is intentionally bounded; this slice establishes the internal Inspector route only.";
+    case "source-ref":
+      return "SourceRef deep content and stable href behavior remain bounded to #202-2.";
+    case "run-trace":
+      return "Run trace events drill down inside the Inspector stack instead of using browser back.";
+    case "run-event":
+      return "Run event detail is rendered inside the Inspector stack.";
+    case "report-preview":
+      return "Report preview remains inside the Inspector; opening a full source page is out of scope for this slice.";
+    case "decision":
+      return "Decision detail remains inside the Inspector stack.";
+    case "tool-call":
+      return "Tool call detail remains inside the Inspector stack.";
+    case "model-call":
+      return "Model call detail remains inside the Inspector stack.";
+  }
+}
+
 export function AnalysisInspectorPanel({
-  activeInspectorPanel,
+  activeInspectorRoute,
+  canGoBackInInspector,
   currentRun,
   decisions,
   decisionsState,
   draftContext,
-  isRunTraceDetailOpen,
   messageStream,
   messageStreamState,
   modelDetails,
   modelDetailsState,
-  onCloseRunTraceDetail,
-  onOpenInspectorPanel,
+  onBackInspector,
+  onNavigateInspectorRoute,
   onSelectRunEvent,
   reportPreview,
   reportPreviewState,
@@ -397,70 +810,104 @@ export function AnalysisInspectorPanel({
 }: AnalysisInspectorPanelProps) {
   void messageStream;
   void messageStreamState;
-  void onOpenInspectorPanel;
 
   let content;
 
-  switch (activeInspectorPanel) {
-    case "draft-context":
-      content = <DraftContextPanel draftContext={draftContext} />;
-      break;
-    case "run-trace":
+  switch (activeInspectorRoute.key) {
+    case "home":
       content = (
-        <RunTracePanel
+        <InspectorHomePanel
           currentRun={currentRun}
-          isRunTraceDetailOpen={isRunTraceDetailOpen}
-          onCloseRunTraceDetail={onCloseRunTraceDetail}
-          onSelectRunEvent={onSelectRunEvent}
+          decisions={decisions}
+          draftContext={draftContext}
+          modelDetails={modelDetails}
+          onNavigateInspectorRoute={onNavigateInspectorRoute}
+          reportPreview={reportPreview}
           runEvents={runEvents}
           selectedRunEvent={selectedRunEvent}
-          selectedRunEventId={selectedRunEventId}
-          workspaceName={workspaceName}
-        />
-      );
-      break;
-    case "tool-detail":
-      content = (
-        <ToolModelPanel
-          modelDetails={modelDetails}
-          modelDetailsState={modelDetailsState}
+          sourceEvidence={sourceEvidence}
           toolDetails={toolDetails}
-          toolDetailsState={toolDetailsState}
         />
       );
       break;
-    case "source-evidence":
+    case "context-origin":
       content = (
-        <SourceEvidencePanel
+        <ContextOriginPanel
+          draftContext={draftContext}
+          onNavigateInspectorRoute={onNavigateInspectorRoute}
+          sourceEvidence={sourceEvidence}
+        />
+      );
+      break;
+    case "source-ref":
+      content = (
+        <SourceRefPanel
+          draftContext={draftContext}
           sourceEvidence={sourceEvidence}
           sourceEvidenceState={sourceEvidenceState}
         />
       );
       break;
+    case "run-trace":
+      content = (
+        <RunTracePanel
+          currentRun={currentRun}
+          onSelectRunEvent={onSelectRunEvent}
+          runEvents={runEvents}
+          selectedRunEventId={selectedRunEventId}
+          workspaceName={workspaceName}
+        />
+      );
+      break;
+    case "run-event":
+      content = <RunEventPanel selectedRunEvent={selectedRunEvent} />;
+      break;
     case "report-preview":
       content = (
         <ReportPreviewPanel
           decisions={decisions}
+          onNavigateInspectorRoute={onNavigateInspectorRoute}
           reportPreview={reportPreview}
           reportPreviewState={reportPreviewState}
         />
       );
       break;
-    case "decision-detail":
+    case "decision":
       content = <DecisionPanel decisions={decisions} decisionsState={decisionsState} />;
       break;
-    case "memory-context":
+    case "tool-call":
       content = (
-        <ContentCard
-          description="MemoryContext 不在本 issue 范围内，当前保留结构化承载位。"
-          title="Memory Context"
-        />
+        <ToolCallPanel toolDetails={toolDetails} toolDetailsState={toolDetailsState} />
+      );
+      break;
+    case "model-call":
+      content = (
+        <ModelCallPanel modelDetails={modelDetails} modelDetailsState={modelDetailsState} />
       );
       break;
   }
 
+  const actions = (
+    <Space>
+      {activeInspectorRoute.key !== "home" ? (
+        <Button onClick={() => onNavigateInspectorRoute({ key: "home" })} type="text">
+          Home
+        </Button>
+      ) : null}
+      {canGoBackInInspector ? (
+        <Button onClick={onBackInspector} type="text">
+          Back
+        </Button>
+      ) : null}
+    </Space>
+  );
+
   return (
-    <SidePanel title={getPanelTitle(activeInspectorPanel)}>
+    <SidePanel
+      actions={actions}
+      description={routeDescription(activeInspectorRoute.key)}
+      title={getRouteTitle(activeInspectorRoute)}
+    >
       <Space aria-label="Analysis inspector" direction="vertical" size={16} style={{ width: "100%" }}>
         {content}
       </Space>
