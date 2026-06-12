@@ -86,8 +86,10 @@ paths:
       summary: 提交 Analysis 草稿
       description: >
         标准化 Analysis draft submit write path。
-        服务端在单链路 orchestration 中 create or reuse Conversation、create User Message、
-        create AnalysisTask，并创建 initial AnalysisRun。
+        服务端必须在同一 submit transaction 内分配 Conversation / AnalysisTask / AnalysisRun / User Message
+        canonical IDs，并按固定顺序完成 create or reuse Conversation、create AnalysisTask with typed
+        contextPack snapshot、create initial AnalysisRun、create User Message bound to
+        conversationId / analysisTaskId / runId，并在最终持久化状态中 update Conversation.currentRunId。
         当前 #201-1 先在 OpenAPI formalize 该边界；真实 backend write-path implementation 由 #201-2 承接。
       operationId: submitAnalysisDraft
       requestBody:
@@ -115,7 +117,7 @@ paths:
               title: 收入增速异常
       responses:
         "201":
-          description: Analysis draft submit 成功后的标准化 write-path 响应。
+          description: Analysis draft submit 成功后的标准化 write-path 响应，返回 currentRunId 已更新的 Conversation，以及已绑定 analysisTaskId / runId 的 User Message。
           content:
             application/json:
               schema:
@@ -130,20 +132,6 @@ paths:
                   status: active
                   createdAt: "2026-06-05T03:08:20Z"
                   updatedAt: "2026-06-05T03:08:30Z"
-                userMessage:
-                  messageId: message-revenue-gap-q2-user
-                  conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
-                  analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
-                  turnId: turn-revenue-gap-q2-1
-                  runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
-                  role: user
-                  content: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
-                  status: completed
-                  sourceEvidenceIds: []
-                  toolCallIds: []
-                  reportId: null
-                  createdAt: "2026-06-05T03:08:20Z"
-                  completedAt: "2026-06-05T03:08:20Z"
                 analysisTask:
                   analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
                   conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
@@ -191,6 +179,20 @@ paths:
                   retryable: true
                   retryOfRunId: null
                   originalRunId: null
+                userMessage:
+                  messageId: message-revenue-gap-q2-user
+                  conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
+                  analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
+                  turnId: turn-revenue-gap-q2-1
+                  runId: analysis-run-2c1ee63bc1a549e68c4780fe7a5bfb9a
+                  role: user
+                  content: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
+                  status: completed
+                  sourceEvidenceIds: []
+                  toolCallIds: []
+                  reportId: null
+                  createdAt: "2026-06-05T03:08:20Z"
+                  completedAt: "2026-06-05T03:08:20Z"
   /conversations:
     post:
       summary: 创建会话
@@ -1212,18 +1214,22 @@ components:
       additionalProperties: false
       required:
         - conversation
-        - userMessage
         - analysisTask
         - analysisRun
+        - userMessage
       properties:
         conversation:
+          description: 已完成 currentRunId 更新的 Conversation。
           $ref: "#/components/schemas/Conversation"
-        userMessage:
-          $ref: "#/components/schemas/Message"
         analysisTask:
+          description: 本次 submit transaction 中创建的 typed input snapshot。
           $ref: "#/components/schemas/AnalysisTask"
         analysisRun:
+          description: 本次 submit transaction 中创建的 initial AnalysisRun。
           $ref: "#/components/schemas/AnalysisRun"
+        userMessage:
+          description: 本次 submit transaction 中持久化的 user message，必须绑定 conversationId / analysisTaskId / runId。
+          $ref: "#/components/schemas/Message"
     WorkerClaimRequest:
       type: object
       additionalProperties: false

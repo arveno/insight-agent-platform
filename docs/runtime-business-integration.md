@@ -77,15 +77,16 @@ apps/web/src/modules/analysis/mappers/mapAnalysisRuntimeContractsToWorkspaceView
 建议后续真实业务按下面顺序接入：
 
 1. create or reuse Conversation
-2. create User Message
-3. 创建 AnalysisTask
-4. 创建 initial AnalysisRun
-5. 拉取 AnalysisRun
-6. 拉取 RunEvent
-7. 拉取 Messages
-8. 订阅 MessageStream
-9. 拉取 SourceEvidence / Report / Decision 相关对象
-10. 前端通过 mapper 落到 AnalysisWorkspaceViewModel
+2. 创建 AnalysisTask with typed contextPack snapshot
+3. 创建 initial AnalysisRun
+4. 创建 User Message，并绑定 conversationId / analysisTaskId / runId
+5. update Conversation.currentRunId
+6. 拉取 AnalysisRun
+7. 拉取 RunEvent
+8. 拉取 Messages
+9. 订阅 MessageStream
+10. 拉取 SourceEvidence / Report / Decision 相关对象
+11. 前端通过 mapper 落到 AnalysisWorkspaceViewModel
 
 对应当前最小 contract surface：
 
@@ -108,9 +109,10 @@ GET /analysis-runs/{runId}/conversation
 ```text
 `POST /analysis-tasks/submit` 是标准化 draft submit write path：
 Conversation
--> User Message
 -> AnalysisTask
 -> initial AnalysisRun
+-> User Message(bound to conversationId / analysisTaskId / runId)
+-> Conversation.currentRunId update
 
 `POST /conversations`、`POST /analysis-tasks`、`POST /analysis-runs` 仍可作为 lower-level foundation surface，
 但 UI 不应长期自行拼接多跳写入顺序来猜测 submit 语义。
@@ -130,6 +132,7 @@ Conversation
 创建 conversationId
 绑定 workspaceId / userId
 初始化 title / status / timestamps
+currentRunId 初始为空
 ```
 
 不负责：
@@ -174,7 +177,17 @@ Conversation
 触发真实 runtime dispatch（后续实现阶段）
 ```
 
-当前 `#201` phase 的 user Message 应由 draft submit orchestration 创建，而不是作为 `POST /analysis-runs` 的隐式 side effect。
+当前 `#201` phase 的标准化 submit transaction 固定为：
+
+```text
+create or reuse Conversation
+-> create AnalysisTask
+-> create initial AnalysisRun
+-> persist User Message with conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
+```
+
+`User Message` 应由 draft submit orchestration 创建，而不是作为 `POST /analysis-runs` 的隐式 side effect。
 
 ### 4.4 Run-bound endpoints
 

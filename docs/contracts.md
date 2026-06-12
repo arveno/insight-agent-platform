@@ -489,9 +489,10 @@ Open in Analysis with context
 -> 不立即创建 runId
 -> user sends question
 -> create or reuse Conversation
--> create User Message
--> 创建 AnalysisTask
+-> create AnalysisTask with typed contextPack snapshot
 -> create initial AnalysisRun
+-> create User Message bound to conversationId / analysisTaskId / runId
+-> update Conversation.currentRunId
 ```
 
 固定关系：
@@ -521,6 +522,8 @@ updatedAt
 
 `AnalysisTask.contextPack` 是用户发送时形成的 typed input snapshot，不能被后续 conversation 变化反向覆盖。
 
+同一 submit transaction 内分配 `Conversation / AnalysisTask / AnalysisRun / User Message` canonical IDs；最终持久化的 user message 必须绑定 `conversationId / analysisTaskId / runId`，`Conversation.currentRunId` 必须更新为 initial `runId`。
+
 如后续追问改变上下文，应形成新的 `AnalysisTask / AnalysisRun` 边界。
 
 `AnalysisRun` 不拥有 context，只引用 / 消费 `AnalysisTask` 输入。
@@ -538,8 +541,8 @@ runId
 
 其中：
 
-- `analysisTaskId`：消息所属正式分析请求；当前 `#201` phase 的持久化 user / assistant / tool turn 必须绑定同一 `analysisTaskId`。
-- `runId`：消息关联的执行实例；在消息创建时允许暂时为空，但不得替代 `analysisTaskId`。
+- `analysisTaskId`：消息所属正式分析请求；当前 `#201` phase 的持久化 submit turn message 必须绑定正式 `analysisTaskId`。
+- `runId`：消息关联的执行实例；当前 `#201` phase 的持久化 submit turn user message 必须绑定 initial `runId`。schema-level nullable 只保留给后续 message-only turn 扩展，不代表当前 submit flow 可以省略 `runId`。
 - `message-only chat turns`：当前不在 `#201` 范围内实现；如后续扩展，允许 `analysisTaskId = null`，但必须先补齐 contracts 与产品规则。
 
 当前 `AnalysisTask.contextPack` 的正式最小字段为：

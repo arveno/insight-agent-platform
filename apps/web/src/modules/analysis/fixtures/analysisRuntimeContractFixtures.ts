@@ -27,7 +27,6 @@ export type AnalysisRuntimeContractSessionFixture = {
 };
 
 function createConversation({
-  analysisTaskId,
   conversationId,
   currentRunId,
   title,
@@ -35,7 +34,6 @@ function createConversation({
   userId,
   workspaceId
 }: {
-  analysisTaskId: string;
   conversationId: string;
   currentRunId: string;
   title: string;
@@ -44,7 +42,6 @@ function createConversation({
   workspaceId: string;
 }): ConversationContract {
   return {
-    analysisTaskId,
     conversationId,
     createdAt: "2026-06-05T11:08:00+08:00",
     currentRunId,
@@ -108,6 +105,7 @@ function createRun({
 }
 
 function createMessage({
+  analysisTaskId,
   content,
   conversationId,
   createdAt,
@@ -120,6 +118,7 @@ function createMessage({
   toolCallIds,
   turnId
 }: {
+  analysisTaskId: string | null;
   content: string;
   conversationId: string;
   createdAt: string;
@@ -133,6 +132,7 @@ function createMessage({
   turnId: string;
 }): MessageContract {
   return {
+    analysisTaskId,
     completedAt: status === "streaming" ? null : createdAt,
     content,
     conversationId,
@@ -389,7 +389,6 @@ const revenueReportId = "report-revenue-gap-q2";
 const revenueToolCallId = "tool-call-analysis-q2-revenue-gap-metrics";
 
 const revenueConversation = createConversation({
-  analysisTaskId: "analysis-task-revenue-gap-q2",
   conversationId: revenueConversationId,
   currentRunId: revenueRunId,
   title: "收入增速异常",
@@ -412,6 +411,7 @@ const revenueRun = createRun({
 
 const revenueMessages = [
   createMessage({
+    analysisTaskId: "analysis-task-revenue-gap-q2",
     content:
       "当前从 Dashboard / Revenue 带上下文进入 Analysis，本阶段只固定 contracts-backed workspace 骨架。",
     conversationId: revenueConversationId,
@@ -426,6 +426,7 @@ const revenueMessages = [
     turnId: "turn-revenue-gap-q2-context"
   }),
   createMessage({
+    analysisTaskId: "analysis-task-revenue-gap-q2",
     content: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
     conversationId: revenueConversationId,
     createdAt: "2026-06-05T11:08:12+08:00",
@@ -439,6 +440,7 @@ const revenueMessages = [
     turnId: revenueTurnId
   }),
   createMessage({
+    analysisTaskId: "analysis-task-revenue-gap-q2",
     content: "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，而不是整体价格体系失效。",
     conversationId: revenueConversationId,
     createdAt: "2026-06-05T11:22:00+08:00",
@@ -631,7 +633,6 @@ const marginRunId = "analysis-margin-follow-up";
 const marginDecisions: Decision[] = [];
 
 const marginConversation = createConversation({
-  analysisTaskId: "analysis-task-margin-follow-up",
   conversationId: marginConversationId,
   currentRunId: marginRunId,
   title: "毛利率波动分析",
@@ -694,6 +695,7 @@ const marginRunEvents = [
 
 const marginMessages = [
   createMessage({
+    analysisTaskId: "analysis-task-margin-follow-up",
     content: "当前从 Metrics / Margin 带上下文进入 Analysis。",
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:05:00+08:00",
@@ -707,6 +709,7 @@ const marginMessages = [
     turnId: "turn-margin-follow-up-context"
   }),
   createMessage({
+    analysisTaskId: "analysis-task-margin-follow-up",
     content: "继续分析毛利率波动背后的主要驱动因素。",
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:05:12+08:00",
@@ -720,6 +723,7 @@ const marginMessages = [
     turnId: "turn-margin-follow-up-1"
   }),
   createMessage({
+    analysisTaskId: "analysis-task-margin-follow-up",
     content: "当前正在拆分品类与区域差异，初步判断促销结构变化对毛利率影响较大。",
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:18:00+08:00",
@@ -794,7 +798,6 @@ const stockoutRunId = "analysis-stockout-risk";
 const stockoutDecisions: Decision[] = [];
 
 const stockoutConversation = createConversation({
-  analysisTaskId: "analysis-task-stockout-risk",
   conversationId: stockoutConversationId,
   currentRunId: stockoutRunId,
   title: "库存异常定位",
@@ -817,6 +820,7 @@ const stockoutRun = createRun({
 
 const stockoutMessages = [
   createMessage({
+    analysisTaskId: "analysis-task-stockout-risk",
     content: "当前从 Metrics / Stockout 带上下文进入 Analysis。",
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:36:00+08:00",
@@ -830,6 +834,7 @@ const stockoutMessages = [
     turnId: "turn-stockout-risk-context"
   }),
   createMessage({
+    analysisTaskId: "analysis-task-stockout-risk",
     content: "解释北区缺货率异常与补货任务冲突的关系。",
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:36:12+08:00",
@@ -843,6 +848,7 @@ const stockoutMessages = [
     turnId: "turn-stockout-risk-1"
   }),
   createMessage({
+    analysisTaskId: "analysis-task-stockout-risk",
     content: "当前证据存在冲突，结论应保持审慎，优先保留治理和观测入口。",
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:46:00+08:00",
