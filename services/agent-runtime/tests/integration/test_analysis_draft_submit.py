@@ -55,6 +55,22 @@ def create_conversation(
     return response.json()
 
 
+def create_analysis_task_payload(
+    *,
+    conversation_id: str,
+    workspace_id: str = BLANK_SUBMIT_PAYLOAD["workspaceId"],
+    user_id: str = BLANK_SUBMIT_PAYLOAD["userId"],
+) -> dict[str, Any]:
+    return {
+        "businessDomainId": BLANK_SUBMIT_PAYLOAD["businessDomainId"],
+        "contextPack": CONTEXT_SUBMIT_PAYLOAD["contextPack"],
+        "conversationId": conversation_id,
+        "question": BLANK_SUBMIT_PAYLOAD["question"],
+        "userId": user_id,
+        "workspaceId": workspace_id,
+    }
+
+
 def test_submit_analysis_draft_creates_conversation_task_run_and_user_message(
     client: TestClient,
 ) -> None:
@@ -139,6 +155,71 @@ def test_submit_analysis_draft_reuses_existing_conversation(client: TestClient) 
     assert payload["conversation"]["conversationId"] == conversation["conversationId"]
     assert payload["analysisTask"]["conversationId"] == conversation["conversationId"]
     assert payload["userMessage"]["conversationId"] == conversation["conversationId"]
+
+
+def test_create_analysis_task_rejects_missing_conversation(client: TestClient) -> None:
+    response = client.post(
+        "/analysis-tasks",
+        json=create_analysis_task_payload(conversation_id="conversation-missing"),
+    )
+
+    assert response.status_code == 404, response.text
+    assert response.json() == {
+        "errorCode": "NOT_FOUND",
+        "message": "Conversation not found: conversation-missing",
+    }
+
+
+def test_create_analysis_task_rejects_workspace_mismatch(client: TestClient) -> None:
+    conversation = create_conversation(client)
+
+    response = client.post(
+        "/analysis-tasks",
+        json=create_analysis_task_payload(
+            conversation_id=conversation["conversationId"],
+            workspace_id="workspace-other",
+        ),
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json() == {
+        "errorCode": "MISMATCH",
+        "message": "Conversation.workspaceId does not match request.workspaceId",
+    }
+
+
+def test_create_analysis_task_rejects_user_mismatch(client: TestClient) -> None:
+    conversation = create_conversation(client)
+
+    response = client.post(
+        "/analysis-tasks",
+        json=create_analysis_task_payload(
+            conversation_id=conversation["conversationId"],
+            user_id="user-luca",
+        ),
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json() == {
+        "errorCode": "MISMATCH",
+        "message": "Conversation.userId does not match request.userId",
+    }
+
+
+def test_create_analysis_task_binds_to_valid_conversation(client: TestClient) -> None:
+    conversation = create_conversation(client)
+
+    response = client.post(
+        "/analysis-tasks",
+        json=create_analysis_task_payload(conversation_id=conversation["conversationId"]),
+    )
+
+    assert response.status_code == 201, response.text
+    payload = response.json()
+    assert payload["conversationId"] == conversation["conversationId"]
+    assert payload["workspaceId"] == conversation["workspaceId"]
+    assert payload["userId"] == conversation["userId"]
+    assert payload["contextPack"] == CONTEXT_SUBMIT_PAYLOAD["contextPack"]
 
 
 @pytest.mark.parametrize(

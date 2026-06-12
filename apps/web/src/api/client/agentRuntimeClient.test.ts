@@ -49,10 +49,8 @@ describe("AgentRuntimeClient", () => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json(
         {
-          error: {
-            code: "MISMATCH",
-            message: "Conversation.workspaceId does not match request.workspaceId"
-          }
+          errorCode: "MISMATCH",
+          message: "Conversation.workspaceId does not match request.workspaceId"
         },
         { status: 409 }
       )

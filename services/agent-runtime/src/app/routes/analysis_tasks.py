@@ -68,9 +68,39 @@ def _submit_service() -> AnalysisSubmitService:
     )
 
 
-@router.post("", response_model=AnalysisTaskResponse, status_code=status.HTTP_201_CREATED)
-def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskRecord:
+@router.post(
+    "",
+    response_model=AnalysisTaskResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskRecord | JSONResponse:
     """Create the formal AnalysisTask input object through the MySQL repository."""
+
+    try:
+        conversation = ConversationRepository(_runtime_foundation_database()).get_by_conversation_id(
+            request.conversationId
+        )
+    except KeyError as error:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {error.args[0]}",
+        )
+
+    if conversation["workspaceId"] != request.workspaceId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="Conversation.workspaceId does not match request.workspaceId",
+        )
+
+    if conversation["userId"] != request.userId:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message="Conversation.userId does not match request.userId",
+        )
 
     now = utc_timestamp()
     analysis_task: AnalysisTaskRecord = {
