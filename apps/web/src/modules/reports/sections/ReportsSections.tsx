@@ -16,7 +16,10 @@ import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
+import type {
+  DraftContextPack,
+  PageRouteProps
+} from "../../../shared/navigation/navigationTypes";
 
 import { DecisionCard } from "../components/DecisionCard";
 import { ReportFeedbackPanel } from "../components/ReportFeedbackPanel";
@@ -26,7 +29,7 @@ export type ReportsSectionsProps = PageRouteProps & {
   viewModel: ReportsViewModel;
 };
 
-function createReportDraftContext(viewModel: ReportsViewModel) {
+function createReportDraftContext(viewModel: ReportsViewModel): DraftContextPack {
   return {
     chips: [
       `reportId ${viewModel.selectedReport.reportId}`,

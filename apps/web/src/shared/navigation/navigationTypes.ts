@@ -19,11 +19,18 @@ export type StaticRouteKey =
   | "settings"
   | "workspace";
 
+export type DraftContextSourceType =
+  | "dashboard"
+  | "metric"
+  | "report"
+  | "evidence"
+  | "runTrace";
+
 export type DraftContextPack = {
   chips: string[];
   sourceId: string;
   sourceTitle: string;
-  sourceType: string;
+  sourceType: DraftContextSourceType;
   suggestedPrompt: string;
   summary: string;
 };

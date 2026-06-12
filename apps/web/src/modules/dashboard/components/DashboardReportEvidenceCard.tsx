@@ -3,6 +3,7 @@ import { Flex, Space, Typography } from "antd";
 import type { I18nMessageKey } from "../../../shared/i18n/messages";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey, type Translate } from "../../../shared/i18n/translateKey";
+import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
@@ -48,7 +49,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
   const { t } = useI18n();
 
   if (props.kind === "report") {
-    const reportDraftContextPack = {
+    const reportDraftContextPack: DraftContextPack = {
       chips: [
         `${props.report.evidenceCount} 条证据`,
         `更新时间 ${props.report.updatedAt}`
