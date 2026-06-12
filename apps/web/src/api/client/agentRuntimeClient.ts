@@ -20,10 +20,6 @@ type ListResponse<T> = {
 type RuntimeErrorPayload = {
   errorCode?: string;
   message?: string;
-  error?: {
-    code?: string;
-    message?: string;
-  };
 };
 
 export class RuntimeApiError extends Error {
@@ -72,11 +68,9 @@ async function readError(response: Response): Promise<RuntimeApiError> {
   }
 
   return new RuntimeApiError(
-    payload?.message ??
-      payload?.error?.message ??
-      `Runtime API request failed with status ${response.status}.`,
+    payload?.message ?? `Runtime API request failed with status ${response.status}.`,
     response.status,
-    payload?.errorCode ?? payload?.error?.code
+    payload?.errorCode
   );
 }
 

@@ -107,10 +107,8 @@ describe("AgentRuntimeClient", () => {
     const fetchMock = vi.fn().mockResolvedValue(
       Response.json(
         {
-          error: {
-            code: "STREAM_UNAVAILABLE",
-            message: "SSE stream unavailable."
-          }
+          errorCode: "STREAM_UNAVAILABLE",
+          message: "SSE stream unavailable."
         },
         { status: 503 }
       )
