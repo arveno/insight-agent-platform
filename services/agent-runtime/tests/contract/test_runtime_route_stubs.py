@@ -12,21 +12,12 @@ ROUTE_STUB_ERROR = {
 RouteCase = tuple[str, str, Mapping[str, object] | None, Mapping[str, str] | None]
 
 ROUTE_CASES: list[RouteCase] = [
-    ("get", "/conversations/conversation-revenue-gap-q2/messages", None, None),
     (
         "get",
         "/conversations/conversation-revenue-gap-q2/messages/message-revenue-gap-q2-user",
         None,
         None,
     ),
-    (
-        "get",
-        "/conversations/conversation-revenue-gap-q2/messages/message-revenue-gap-q2-assistant/stream",
-        None,
-        {"accept": "text/event-stream"},
-    ),
-    ("get", "/analysis-runs/analysis-q2-revenue-gap/tool-calls", None, None),
-    ("get", "/analysis-runs/analysis-q2-revenue-gap/model-calls", None, None),
     ("get", "/analysis-runs/analysis-q2-revenue-gap/approvals", None, None),
     (
         "post",
@@ -88,6 +79,11 @@ REQUEST_VALIDATION_CASES: list[tuple[str, Mapping[str, object], list[str]]] = [
         "/analysis-runs/analysis-q2-revenue-gap/cancel",
         {"reason": None, "payload": "unexpected"},
         ["payload"],
+    ),
+    (
+        "/analysis-runs/analysis-q2-revenue-gap/delivery/complete",
+        {},
+        ["producerId"],
     ),
 ]
 

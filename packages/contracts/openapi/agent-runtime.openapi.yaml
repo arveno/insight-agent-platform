@@ -180,8 +180,8 @@ paths:
                     reportId: report-revenue-gap-q2
                     createdAt: "2026-06-05T11:22:00+08:00"
                     completedAt: "2026-06-05T11:22:00+08:00"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /conversations/{conversationId}/messages/{messageId}:
     get:
       summary: 获取单条消息
@@ -560,6 +560,36 @@ paths:
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
           $ref: "#/components/responses/RuntimeInvalidState"
+  /analysis-runs/{runId}/delivery/complete:
+    post:
+      summary: 完成 delivery artifacts 持久化并结束运行
+      description: >
+        只允许 `running/delivery` 的 AnalysisRun 调用。
+        该入口负责真实持久化 ToolCall、ModelCall、SourceEvidence、Report、Decision、
+        assistant Message 和 MessageStream，并在 artifacts 落库后依次 append
+        `artifact.persisted` 与 `run.completed`。
+      operationId: completeDeliveryAnalysisRun
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryCompleteRequest"
+            example:
+              producerId: delivery-producer-foundation
+      responses:
+        "202":
+          description: delivery artifacts 已持久化并完成运行的 AnalysisRun。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisRun"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeInvalidState"
   /analysis-runs/{runId}/conversation:
     get:
       summary: 获取运行关联会话
@@ -654,8 +684,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ToolCallList"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/model-calls:
     get:
       summary: 获取模型调用列表
@@ -669,8 +699,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelCallList"
-        "501":
-          $ref: "#/components/responses/NotImplementedRuntimeRoute"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/source-evidence:
     get:
       summary: 获取来源证据列表
@@ -1098,6 +1128,14 @@ components:
         attemptId:
           type: string
         workerId:
+          type: string
+    DeliveryCompleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - producerId
+      properties:
+        producerId:
           type: string
     CancelAnalysisRunRequest:
       type: object

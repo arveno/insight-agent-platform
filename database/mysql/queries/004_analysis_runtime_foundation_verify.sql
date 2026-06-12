@@ -10,10 +10,14 @@ SELECT CONCAT(
         'analysis_runs',
         'execution_attempts',
         'run_events',
+        'tool_calls',
+        'model_calls',
         'source_evidence',
         'reports',
         'report_sections',
-        'decisions'
+        'decisions',
+        'messages',
+        'message_streams'
       )
   )
 ) AS check_line;
@@ -33,6 +37,12 @@ FROM execution_attempts;
 SELECT CONCAT('run_events.row_count=', COUNT(*)) AS check_line
 FROM run_events;
 
+SELECT CONCAT('tool_calls.row_count=', COUNT(*)) AS check_line
+FROM tool_calls;
+
+SELECT CONCAT('model_calls.row_count=', COUNT(*)) AS check_line
+FROM model_calls;
+
 SELECT CONCAT('source_evidence.row_count=', COUNT(*)) AS check_line
 FROM source_evidence;
 
@@ -44,6 +54,12 @@ FROM report_sections;
 
 SELECT CONCAT('decisions.row_count=', COUNT(*)) AS check_line
 FROM decisions;
+
+SELECT CONCAT('messages.row_count=', COUNT(*)) AS check_line
+FROM messages;
+
+SELECT CONCAT('message_streams.row_count=', COUNT(*)) AS check_line
+FROM message_streams;
 
 SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks

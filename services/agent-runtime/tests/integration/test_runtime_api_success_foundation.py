@@ -303,9 +303,17 @@ def assert_retry_creates_no_downstream_side_effects(
     assert decisions_response.status_code == 200
     assert decisions_response.json() == {"items": []}
 
-    assert client.get(f"/analysis-runs/{run_id}/tool-calls").status_code == 501
-    assert client.get(f"/analysis-runs/{run_id}/model-calls").status_code == 501
-    assert client.get(f"/conversations/{conversation_id}/messages").status_code == 501
+    tool_calls_response = client.get(f"/analysis-runs/{run_id}/tool-calls")
+    assert tool_calls_response.status_code == 200
+    assert tool_calls_response.json() == {"items": []}
+
+    model_calls_response = client.get(f"/analysis-runs/{run_id}/model-calls")
+    assert model_calls_response.status_code == 200
+    assert model_calls_response.json() == {"items": []}
+
+    messages_response = client.get(f"/conversations/{conversation_id}/messages")
+    assert messages_response.status_code == 200
+    assert messages_response.json() == {"items": []}
 
 
 def assert_no_delivery_side_effects(
@@ -326,9 +334,17 @@ def assert_no_delivery_side_effects(
     assert decisions_response.status_code == 200
     assert decisions_response.json() == {"items": []}
 
-    assert client.get(f"/analysis-runs/{run_id}/tool-calls").status_code == 501
-    assert client.get(f"/analysis-runs/{run_id}/model-calls").status_code == 501
-    assert client.get(f"/conversations/{conversation_id}/messages").status_code == 501
+    tool_calls_response = client.get(f"/analysis-runs/{run_id}/tool-calls")
+    assert tool_calls_response.status_code == 200
+    assert tool_calls_response.json() == {"items": []}
+
+    model_calls_response = client.get(f"/analysis-runs/{run_id}/model-calls")
+    assert model_calls_response.status_code == 200
+    assert model_calls_response.json() == {"items": []}
+
+    messages_response = client.get(f"/conversations/{conversation_id}/messages")
+    assert messages_response.status_code == 200
+    assert messages_response.json() == {"items": []}
 
 
 def build_source_evidence_records(run_id: str) -> list[SourceEvidenceRecord]:
@@ -476,7 +492,8 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
     assert analysis_run_repository.get_by_run_id(analysis_run["runId"]) == analysis_run
 
     list_messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
-    assert list_messages_response.status_code == 501
+    assert list_messages_response.status_code == 200
+    assert list_messages_response.json() == {"items": []}
 
     list_events_payload = get_run_events(client, analysis_run["runId"])
     assert len(list_events_payload["items"]) == 1
@@ -635,7 +652,8 @@ def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_record
     )
 
     list_messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
-    assert list_messages_response.status_code == 501
+    assert list_messages_response.status_code == 200
+    assert list_messages_response.json() == {"items": []}
 
     duplicate_dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
     assert duplicate_dispatch_response.status_code == 409
@@ -1548,8 +1566,13 @@ def test_artifact_endpoints_return_real_persisted_records(client: TestClient) ->
     assert get_run_response.json()["status"] == "queued"
     assert get_run_response.json()["phase"] == "queueing"
 
-    assert client.get(f"/analysis-runs/{analysis_run['runId']}/tool-calls").status_code == 501
-    assert client.get(f"/analysis-runs/{analysis_run['runId']}/model-calls").status_code == 501
+    tool_calls_response = client.get(f"/analysis-runs/{analysis_run['runId']}/tool-calls")
+    assert tool_calls_response.status_code == 200
+    assert tool_calls_response.json() == {"items": []}
+
+    model_calls_response = client.get(f"/analysis-runs/{analysis_run['runId']}/model-calls")
+    assert model_calls_response.status_code == 200
+    assert model_calls_response.json() == {"items": []}
 
 
 def test_artifact_endpoints_return_not_found_for_unknown_run(client: TestClient) -> None:

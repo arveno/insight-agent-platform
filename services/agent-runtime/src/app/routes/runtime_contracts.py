@@ -152,6 +152,14 @@ class WorkerReleaseRequest(BaseModel):
     workerId: str
 
 
+class DeliveryCompleteRequest(BaseModel):
+    """POST /analysis-runs/{runId}/delivery/complete request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    producerId: str
+
+
 class CancelAnalysisRunRequest(BaseModel):
     """POST /analysis-runs/{runId}/cancel request contract."""
 
@@ -269,6 +277,62 @@ class RunEventListResponse(BaseModel):
     items: list[RunEventResponse]
 
 
+class ToolCallResponse(BaseModel):
+    """ToolCall contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    toolCallId: str
+    runId: str
+    toolName: str
+    input: dict[str, object]
+    output: dict[str, object] | None = None
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    riskLevel: Literal["low", "medium", "high", "critical"]
+    permission: str
+    errorType: str | None = None
+    errorMessage: str | None = None
+    startedAt: str | None = None
+    completedAt: str | None = None
+
+
+class ToolCallListResponse(BaseModel):
+    """ToolCall list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ToolCallResponse]
+
+
+class ModelCallResponse(BaseModel):
+    """ModelCall contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    modelCallId: str
+    runId: str
+    provider: str
+    modelId: str
+    promptVersionId: str
+    inputTokens: int
+    outputTokens: int
+    cost: float
+    latencyMs: int
+    status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
+    errorType: str | None = None
+    errorMessage: str | None = None
+    startedAt: str | None = None
+    completedAt: str | None = None
+
+
+class ModelCallListResponse(BaseModel):
+    """ModelCall list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ModelCallResponse]
+
+
 class SourceEvidenceResponse(BaseModel):
     """SourceEvidence contract-shaped API response."""
 
@@ -383,6 +447,65 @@ class DecisionListResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     items: list[DecisionResponse]
+
+
+class MessageResponse(BaseModel):
+    """Message contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    messageId: str
+    conversationId: str
+    turnId: str
+    runId: str | None
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    sourceEvidenceIds: list[str]
+    toolCallIds: list[str]
+    reportId: str | None
+    createdAt: str
+    completedAt: str | None = None
+
+
+class MessageListResponse(BaseModel):
+    """Message list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[MessageResponse]
+
+
+class MessageStreamResponse(BaseModel):
+    """MessageStream contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    messageStreamId: str
+    conversationId: str
+    messageId: str
+    runId: str
+    sequence: int
+    eventType: Literal[
+        "stream.started",
+        "stream.delta",
+        "stream.completed",
+        "stream.failed",
+        "stream.cancelled",
+    ]
+    delta: str
+    status: Literal["created", "streaming", "completed", "failed", "cancelled"]
+    occurredAt: str
+    errorCode: str | None = None
+    errorMessage: str | None = None
+
+
+class MessageStreamListResponse(BaseModel):
+    """MessageStream list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[MessageStreamResponse]
 
 
 class ApprovalDecisionRequest(BaseModel):

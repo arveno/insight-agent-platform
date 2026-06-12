@@ -14,10 +14,14 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts/migration/runtime_foundation.sh"
 
 RUNTIME_FOUNDATION_TABLES = (
+    "message_streams",
+    "messages",
     "report_sections",
     "decisions",
     "reports",
     "source_evidence",
+    "model_calls",
+    "tool_calls",
     "run_events",
     "execution_attempts",
     "analysis_runs",

@@ -177,6 +177,24 @@ cancel route 只完成 lifecycle foundation，不 fake Message / MessageStream /
 Redis-backed queue / independent agent-worker process 由后续 issue 承接，本轮不宣称已完成。
 ```
 
+delivery completion 由独立 endpoint 承接：
+
+```text
+POST /analysis-runs/{runId}/delivery/complete
+  -> 只承接 running / delivery
+  -> 持久化 ToolCall / ModelCall / SourceEvidence / Report / Decision / Message / MessageStream
+  -> append artifact.persisted
+  -> append run.completed
+```
+
+硬规则：
+
+```text
+不得把 delivery completion 塞回 worker-release。
+worker-release 只负责 control-plane lease release，不负责 completed。
+run.completed 必须晚于 artifact.persisted。
+```
+
 `GET /analysis-runs/{runId}/conversation` 负责 run -> conversation join surface，但不改变 ownership：
 
 ```text
@@ -206,6 +224,20 @@ Accept: text/event-stream
 
 Accept: application/json
   -> read stored MessageStream records for replay/history
+```
+
+同一轮 backend delivery foundation 还必须推进：
+
+```text
+GET /conversations/{conversationId}/messages
+  -> read stored Message records
+
+GET /analysis-runs/{runId}/tool-calls
+GET /analysis-runs/{runId}/model-calls
+GET /analysis-runs/{runId}/source-evidence
+GET /analysis-runs/{runId}/reports
+GET /analysis-runs/{runId}/decisions
+  -> read repository-backed delivery artifacts by runId
 ```
 
 不要做：

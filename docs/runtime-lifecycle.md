@@ -1019,6 +1019,25 @@ worker release 不得写 run.completed。
 worker release 不得写 artifact.persisted。
 ```
 
+delivery completion 的正式 trigger：
+
+```text
+POST /analysis-runs/{runId}/delivery/complete
+  -> 只允许 status=running 且 phase=delivery
+  -> 真实持久化 ToolCall / ModelCall / SourceEvidence / Report / Decision / Message / MessageStream
+  -> append delivery.started / artifact.persisted / run.completed
+  -> AnalysisRun completed / delivery
+```
+
+补充硬规则：
+
+```text
+delivery/complete 不得创建新的 ExecutionAttempt。
+delivery/complete 不得自动 dispatch。
+artifact.persisted 必须在 delivery artifacts 全部落库后写。
+run.completed 必须在 artifact.persisted 后写。
+```
+
 ---
 
 ## 10. Cancellation 规则
@@ -1146,6 +1165,18 @@ HTTP JSON 只用于 MessageStream snapshot / replay / history，不替代 live s
 GET /conversations/{conversationId}/messages/{messageId}/stream
   - Accept: text/event-stream -> live SSE stream
   - Accept: application/json -> replay / history snapshot
+```
+
+当前冻结的 read surface：
+
+```text
+GET /conversations/{conversationId}/messages
+GET /conversations/{conversationId}/messages/{messageId}/stream
+GET /analysis-runs/{runId}/tool-calls
+GET /analysis-runs/{runId}/model-calls
+GET /analysis-runs/{runId}/source-evidence
+GET /analysis-runs/{runId}/reports
+GET /analysis-runs/{runId}/decisions
 ```
 
 实现边界：

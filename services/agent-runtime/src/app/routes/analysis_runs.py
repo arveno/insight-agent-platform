@@ -13,13 +13,16 @@ from src.app.routes.runtime_contracts import (
     ConversationResponse,
     CreateAnalysisRunRequest,
     DecisionListResponse,
+    DeliveryCompleteRequest,
     ExecutionAttemptListResponse,
     ExecutionAttemptResponse,
+    ModelCallListResponse,
     ReportListResponse,
     RunEventListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     SourceEvidenceListResponse,
+    ToolCallListResponse,
     WorkerClaimRequest,
     WorkerFailureRequest,
     WorkerHeartbeatRequest,
@@ -40,10 +43,12 @@ from src.infrastructure.database.runtime_foundation import (
     DecisionRepository,
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
+    ModelCallRepository,
     ReportRepository,
     RunEventRepository,
     RuntimeFoundationPyMySqlDatabase,
     SourceEvidenceRepository,
+    ToolCallRepository,
 )
 from src.modules.analysis_runs.lifecycle_service import (
     AnalysisRunConversationNotFoundError,
@@ -105,6 +110,14 @@ def _run_event_repository() -> RunEventRepository:
 
 def _source_evidence_repository() -> SourceEvidenceRepository:
     return SourceEvidenceRepository(_runtime_foundation_database())
+
+
+def _tool_call_repository() -> ToolCallRepository:
+    return ToolCallRepository(_runtime_foundation_database())
+
+
+def _model_call_repository() -> ModelCallRepository:
+    return ModelCallRepository(_runtime_foundation_database())
 
 
 def _report_repository() -> ReportRepository:
@@ -308,20 +321,48 @@ def list_analysis_run_events(run_id: str = Path(alias="runId")) -> dict[str, obj
     return {"items": _run_event_repository().list_by_run_id(run_id)}
 
 
-@router.get("/{runId}/tool-calls", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_analysis_run_tool_calls(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Register the ToolCall collection boundary without executing tools."""
+@router.get(
+    "/{runId}/tool-calls",
+    response_model=ToolCallListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_tool_calls(
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted ToolCall records for a real AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _tool_call_repository().list_by_run_id(run_id)}
 
 
-@router.get("/{runId}/model-calls", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_analysis_run_model_calls(run_id: str = Path(alias="runId")) -> JSONResponse:
-    """Register the ModelCall collection boundary without invoking the model gateway."""
+@router.get(
+    "/{runId}/model-calls",
+    response_model=ModelCallListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_model_calls(
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted ModelCall records for a real AnalysisRun."""
 
-    _ = run_id
-    return not_implemented_route_stub_response()
+    try:
+        _analysis_run_repository().get_by_run_id(run_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _model_call_repository().list_by_run_id(run_id)}
 
 
 @router.get(
@@ -556,6 +597,42 @@ def release_analysis_run_worker(
 
     try:
         return lifecycle_service.release_worker(run_id, request.attemptId, request.workerId)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    except AnalysisRunInvalidStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+
+
+@router.post(
+    "/{runId}/delivery/complete",
+    response_model=AnalysisRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def complete_analysis_run_delivery(
+    request: DeliveryCompleteRequest,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
+    """Persist delivery artifacts and move a running/delivery run into completed."""
+
+    lifecycle_service = _analysis_run_lifecycle_service()
+
+    try:
+        return lifecycle_service.complete_delivery(run_id, request.producerId)
+    except AnalysisRunConversationNotFoundError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found for AnalysisRun: {run_id}",
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
