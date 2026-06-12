@@ -13,6 +13,7 @@ export type AnalysisConversationPaneProps = {
     | "composerDraft"
     | "composerMode"
     | "composerState"
+    | "composerViewModels"
     | "interactionMessage"
     | "messages"
     | "modelOptions"
@@ -159,10 +160,7 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
         onSubmitComposer={controller.onSubmitComposer}
         selectedModelKey={controller.selectedModelKey}
         selectedModelLabel={controller.selectedModelLabel}
-        selectedSessionComposers={{
-          analysis: session.inputComposer,
-          followUp: session.followUpComposer
-        }}
+        selectedSessionComposers={controller.composerViewModels}
       />
     </CardSurface>
   );

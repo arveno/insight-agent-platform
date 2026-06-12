@@ -110,23 +110,50 @@ beforeAll(() => {
 });
 
 describe("AnalysisPage", () => {
-  it("renders an honest empty state without page header actions when no runtime bootstrap id is available", () => {
+  it("renders a new-chat draft mode instead of the old no-runtime empty state", () => {
     render(
       <TestProviders>
         <AnalysisPage />
       </TestProviders>
     );
 
-    expect(screen.queryByRole("region", { name: "Analysis conversation" })).toBeNull();
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
+
     expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
     expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
     expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
-    expect(screen.getByText("No analysis runtime selected")).toBeTruthy();
+    expect(within(main).getByText("Draft Context")).toBeTruthy();
+    expect(within(main).getByText("新聊天草稿")).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "新聊天草稿" })).toBeTruthy();
+    expect(screen.queryByText("No analysis runtime selected")).toBeNull();
+  });
+
+  it("hydrates one-shot DraftContextPack into the draft composer and structured context strip", () => {
+    render(
+      <TestProviders>
+        <AnalysisPage
+          routeState={{
+            draftContextPack: {
+              chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
+              sourceId: "report-weekly-operations-review",
+              sourceTitle: "周经营分析报告",
+              sourceType: "report",
+              suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
+              summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
+            }
+          }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("report · 周经营分析报告")).toBeTruthy();
+    expect(screen.getByText("sourceId: report-weekly-operations-review")).toBeTruthy();
+    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(
-      screen.getByText(
-        "当前没有 conversationId 或 runId。请从带上下文入口进入 Analysis，或通过 URL 提供 bootstrap id。"
-      )
-    ).toBeTruthy();
+      (
+        screen.getByRole("textbox", { name: "新聊天草稿" }) as HTMLTextAreaElement
+      ).value
+    ).toBe("请继续分析华东收入增速放缓的主要原因。");
   });
 
   it("loads the runtime-backed conversation shell when a bootstrap conversationId is present", async () => {

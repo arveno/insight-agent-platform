@@ -19,10 +19,24 @@ export type StaticRouteKey =
   | "settings"
   | "workspace";
 
-export type NavigateToRoute = (route: StaticRouteKey) => void;
+export type DraftContextPack = {
+  chips: string[];
+  sourceId: string;
+  sourceTitle: string;
+  sourceType: string;
+  suggestedPrompt: string;
+  summary: string;
+};
+
+export type AppRouteState = {
+  draftContextPack?: DraftContextPack;
+};
+
+export type NavigateToRoute = (route: StaticRouteKey, routeState?: AppRouteState) => void;
 
 export type PageRouteProps = {
   onNavigate?: NavigateToRoute;
+  routeState?: AppRouteState;
 };
 
 export type NavigationAction = {

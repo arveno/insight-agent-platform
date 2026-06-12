@@ -1,4 +1,4 @@
-import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
+import type { AppRouteState, NavigateToRoute } from "../../../shared/navigation/navigationTypes";
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import { AnalysisWorkspace } from "../components/AnalysisWorkspace";
 import { AnalysisSessionNav } from "../navigation/AnalysisSessionNav";
@@ -9,14 +9,18 @@ import { useAnalysisWorkspaceController } from "./useAnalysisWorkspaceController
 export type UseAnalysisShellSlotsParams = {
   onBackToRoot: () => void;
   onNavigate?: NavigateToRoute;
+  routeState?: AppRouteState;
   workspaceName: string;
 };
 
 export function useAnalysisShellSlots({
   onBackToRoot,
+  routeState,
   workspaceName
 }: UseAnalysisShellSlotsParams): ShellRegionSlots {
-  const controller = useAnalysisWorkspaceController();
+  const controller = useAnalysisWorkspaceController({
+    draftContext: routeState?.draftContextPack
+  });
 
   return {
     leftNav: (
@@ -37,6 +41,7 @@ export function useAnalysisShellSlots({
         currentRun={controller.currentRun}
         decisions={controller.selectedSession?.decisions ?? []}
         decisionsState={controller.selectedSession?.decisionsState ?? "empty"}
+        draftContext={controller.draftContext}
         isRunTraceDetailOpen={controller.isRunTraceDetailOpen}
         messageStream={controller.selectedSession?.messageStream}
         messageStreamState={controller.selectedSession?.messageStreamState ?? "empty"}

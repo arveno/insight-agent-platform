@@ -195,7 +195,7 @@ describe("AppShell", () => {
     expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
   });
 
-  it("enters analysis mode and keeps the session navigation honest when no runtime bootstrap id is available", () => {
+  it("enters analysis mode in draft state when no runtime bootstrap id is available", () => {
     render(
       <AppProviders>
         <AppShell />
@@ -217,12 +217,9 @@ describe("AppShell", () => {
     expect(within(analysisNavigation).queryByText("毛利率波动分析")).toBeNull();
     expect(within(analysisNavigation).queryByText("库存异常定位")).toBeNull();
     expect(within(analysisNavigation).getByText("暂无匹配会话")).toBeTruthy();
-    expect(screen.getByText("No analysis runtime selected")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "当前没有 conversationId 或 runId。请从带上下文入口进入 Analysis，或通过 URL 提供 bootstrap id。"
-      )
-    ).toBeTruthy();
+    expect(screen.getByText("新聊天草稿")).toBeTruthy();
+    expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("No analysis runtime selected")).toBeNull();
   });
 
   it("loads the runtime-backed conversation and inspector when analysis is entered with a bootstrap conversationId", async () => {

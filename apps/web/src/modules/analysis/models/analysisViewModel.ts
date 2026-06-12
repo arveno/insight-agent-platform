@@ -1,3 +1,4 @@
+import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import type {
   SharedRiskViewModel,
   SharedStatusViewModel
@@ -30,6 +31,8 @@ export type AnalysisContextPackViewModel = {
   timeRange: string;
   workspace: string;
 };
+
+export type AnalysisDraftContextViewModel = DraftContextPack;
 
 export type AnalysisSessionSummaryViewModel = {
   conversationId: string;
@@ -118,6 +121,7 @@ export type AnalysisMemoryContextViewModel = {
 };
 
 export type AnalysisInspectorPanelKey =
+  | "draft-context"
   | "run-trace"
   | "tool-detail"
   | "source-evidence"

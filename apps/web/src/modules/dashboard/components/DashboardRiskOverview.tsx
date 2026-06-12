@@ -26,6 +26,16 @@ export function DashboardRiskOverview({
       label: t("dashboard.action.analyzeWithContext"),
       onNavigate,
       route: "analysis",
+      routeState: {
+        draftContextPack: {
+          chips: [item.value, risk?.label ?? "风险待确认", eyebrow],
+          sourceId: item.key,
+          sourceTitle: item.label,
+          sourceType: isRiskSummary ? "dashboard" : "runTrace",
+          suggestedPrompt: `请基于 Dashboard 中的${item.label}，解释当前风险信号，并给出下一步核查建议。`,
+          summary: item.description ?? `${item.label} 当前值为 ${item.value}。`
+        }
+      },
       variant: "contextPrimary"
     }),
     createRouteAction({
@@ -34,6 +44,16 @@ export function DashboardRiskOverview({
       label: t("dashboard.action.viewAnomaly"),
       onNavigate,
       route: "analysis",
+      routeState: {
+        draftContextPack: {
+          chips: [item.value, risk?.label ?? "风险待确认", "Dashboard"],
+          sourceId: item.key,
+          sourceTitle: item.label,
+          sourceType: "runTrace",
+          suggestedPrompt: `请继续拆解 ${item.label} 的异常信号，并说明需要优先验证的证据。`,
+          summary: item.description ?? `${item.label} 当前值为 ${item.value}。`
+        }
+      },
       variant: "objectDetail"
     }),
     createRouteAction({

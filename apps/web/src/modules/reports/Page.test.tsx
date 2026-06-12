@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../shared/test/TestProviders";
@@ -76,5 +76,33 @@ describe("ReportsPage", () => {
     expect(screen.getAllByText("库存异常跟踪报告").length).toBeGreaterThan(0);
     expect(screen.getByText("runId: run-inventory-exception-tracking")).toBeTruthy();
     expect(screen.queryByText("周经营分析报告")).toBeNull();
+  });
+
+  it("hands the selected report into Analysis draft mode as one-shot route state", () => {
+    const onNavigate = vi.fn();
+
+    render(
+      <TestProviders>
+        <ReportsPageContent controller={createController()} onNavigate={onNavigate} />
+      </TestProviders>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "带上下文分析" }));
+
+    expect(onNavigate).toHaveBeenCalledWith("analysis", {
+      draftContextPack: {
+        chips: [
+          "reportId report-inventory-exception-tracking",
+          "runId run-inventory-exception-tracking",
+          "2 条证据",
+          "2 个章节"
+        ],
+        sourceId: "report-inventory-exception-tracking",
+        sourceTitle: "库存异常跟踪报告",
+        sourceType: "report",
+        suggestedPrompt: "请基于报告《库存异常跟踪报告》继续分析关键证据、风险判断和下一步动作。",
+        summary: "跟踪库存积压与补货错配，沉淀异常定位、证据与清仓优先级建议。"
+      }
+    });
   });
 });

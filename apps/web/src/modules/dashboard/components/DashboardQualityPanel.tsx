@@ -34,6 +34,16 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
       label: t("dashboard.action.viewPlatformAnomaly"),
       onNavigate,
       route: "analysis",
+      routeState: {
+        draftContextPack: {
+          chips: [item.value, risk?.label ?? "风险待确认", t("dashboard.quality.itemEyebrow")],
+          sourceId: item.key,
+          sourceTitle: item.label,
+          sourceType: "evidence",
+          suggestedPrompt: `请基于 ${item.label} 的平台质量摘要，解释当前异常风险与后续排查重点。`,
+          summary: item.description ?? `${item.label} 当前值 ${item.value}。`
+        }
+      },
       variant: "contextPrimary"
     }),
     createRouteAction({

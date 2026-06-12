@@ -6,6 +6,7 @@ import { LoadingState } from "../../../shared/ui/states/LoadingState";
 import type { AnalysisWorkspaceController } from "../hooks/useAnalysisWorkspaceController";
 
 import { AnalysisConversationPane } from "./AnalysisConversationPane";
+import { AnalysisDraftPane } from "./AnalysisDraftPane";
 
 export type AnalysisWorkspaceProps = {
   controller: AnalysisWorkspaceController;
@@ -26,6 +27,8 @@ export function AnalysisWorkspace({ controller }: AnalysisWorkspaceProps) {
         description={controller.workspaceState.description}
         title={controller.workspaceState.title}
       />
+    ) : controller.workspaceState.kind === "draft" ? (
+      <AnalysisDraftPane controller={controller} />
     ) : (
       <AnalysisConversationPane controller={controller} />
     );

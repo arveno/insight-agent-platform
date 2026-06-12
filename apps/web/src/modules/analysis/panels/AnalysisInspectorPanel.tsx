@@ -1,4 +1,4 @@
-import { Space, Typography } from "antd";
+import { Space, Tag, Typography } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
@@ -12,6 +12,7 @@ import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 import { RunTraceDetailDrawer } from "../components/RunTraceDetailDrawer";
 import type {
   AnalysisDecisionViewModel,
+  AnalysisDraftContextViewModel,
   AnalysisInspectorPanelKey,
   AnalysisMessageStreamViewModel,
   AnalysisModelDetailViewModel,
@@ -27,6 +28,7 @@ export type AnalysisInspectorPanelProps = {
   currentRun?: AnalysisRun;
   decisions: AnalysisDecisionViewModel[];
   decisionsState: AnalysisSurfaceState;
+  draftContext?: AnalysisDraftContextViewModel;
   isRunTraceDetailOpen: boolean;
   messageStream?: AnalysisMessageStreamViewModel;
   messageStreamState: AnalysisSurfaceState;
@@ -49,6 +51,8 @@ export type AnalysisInspectorPanelProps = {
 
 function getPanelTitle(activeInspectorPanel: AnalysisInspectorPanelKey): string {
   switch (activeInspectorPanel) {
+    case "draft-context":
+      return "Draft Context";
     case "decision-detail":
       return "Decision";
     case "memory-context":
@@ -62,6 +66,44 @@ function getPanelTitle(activeInspectorPanel: AnalysisInspectorPanelKey): string 
     case "tool-detail":
       return "Tool / Model";
   }
+}
+
+function DraftContextPanel({
+  draftContext
+}: Pick<AnalysisInspectorPanelProps, "draftContext">) {
+  if (!draftContext) {
+    return (
+      <ContentCard
+        description="当前没有一次性 DraftContextPack。刷新页面后也不会恢复之前的前端草稿上下文。"
+        title="Draft Context"
+      />
+    );
+  }
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+      <ContentCard
+        description={draftContext.summary}
+        eyebrow={`${draftContext.sourceType} · ${draftContext.sourceId}`}
+        title={draftContext.sourceTitle}
+      >
+        <Space size={[8, 8]} wrap>
+          {draftContext.chips.map((chip) => (
+            <Tag key={chip}>{chip}</Tag>
+          ))}
+        </Space>
+      </ContentCard>
+
+      <ContentCard
+        description="发送前仍可编辑；如果当前 PR 尚未接 write path，这里只保留真实草稿和诚实提示。"
+        title="Suggested Prompt"
+      >
+        <Typography.Paragraph style={{ marginBottom: 0 }}>
+          {draftContext.suggestedPrompt || "当前没有预填建议问题。"}
+        </Typography.Paragraph>
+      </ContentCard>
+    </Space>
+  );
 }
 
 function renderSurfaceState(state: AnalysisSurfaceState, title: string) {
@@ -333,6 +375,7 @@ export function AnalysisInspectorPanel({
   currentRun,
   decisions,
   decisionsState,
+  draftContext,
   isRunTraceDetailOpen,
   messageStream,
   messageStreamState,
@@ -359,6 +402,9 @@ export function AnalysisInspectorPanel({
   let content;
 
   switch (activeInspectorPanel) {
+    case "draft-context":
+      content = <DraftContextPanel draftContext={draftContext} />;
+      break;
     case "run-trace":
       content = (
         <RunTracePanel

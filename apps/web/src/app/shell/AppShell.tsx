@@ -11,7 +11,7 @@ import type { AppLocale } from "../../shared/i18n/localeTypes";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
-import type { StaticRouteKey } from "../../shared/navigation/navigationTypes";
+import type { AppRouteState, StaticRouteKey } from "../../shared/navigation/navigationTypes";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
 
@@ -28,6 +28,7 @@ export function AppShell() {
   const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
     appShellStaticViewModel.currentRoute
   );
+  const [activeRouteState, setActiveRouteState] = useState<AppRouteState | undefined>(undefined);
   const [leftNavMode, setLeftNavMode] = useState<LeftNavMode>(
     hasModuleShellRoute(appShellStaticViewModel.currentRoute)
       ? appShellStaticViewModel.currentRoute
@@ -42,8 +43,9 @@ export function AppShell() {
       (workspace) => workspace.workspaceId === selectedWorkspaceId
     ) ?? appShellStaticViewModel.workspace;
   const ActivePage = webCompositionRoutes[activeRoute];
-  const handleNavigate = (route: StaticRouteKey) => {
+  const handleNavigate = (route: StaticRouteKey, routeState?: AppRouteState) => {
     setActiveRoute(route);
+    setActiveRouteState(routeState);
     setLeftNavMode(hasModuleShellRoute(route) ? route : "root");
   };
   const navigationGroups = useMemo(
@@ -204,12 +206,14 @@ export function AppShell() {
     <ActivePage
       key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
       onNavigate={handleNavigate}
+      routeState={activeRouteState}
     />
   );
 
   return (
     <RouteShellOutlet
       activeRoute={activeRoute}
+      routeState={activeRouteState}
       defaultMainContent={defaultMainContent}
       header={header}
       leftNavMode={leftNavMode}

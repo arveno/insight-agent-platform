@@ -5,7 +5,12 @@ import { translateKey } from "../i18n/translateKey";
 import type { IconName } from "../icons/iconTypes";
 import type { ActionButtonVariant } from "../ui/actions/actionTypes";
 import type { StaticActionViewModel } from "../view-model/staticViewModelTypes";
-import type { NavigateToRoute, NavigationAction, StaticRouteKey } from "./navigationTypes";
+import type {
+  AppRouteState,
+  NavigateToRoute,
+  NavigationAction,
+  StaticRouteKey
+} from "./navigationTypes";
 
 export type CreateRouteActionArgs = {
   ariaLabel?: string;
@@ -15,6 +20,7 @@ export type CreateRouteActionArgs = {
   label: ReactNode;
   onNavigate?: NavigateToRoute;
   route?: StaticRouteKey;
+  routeState?: AppRouteState;
   title?: string;
   variant: ActionButtonVariant;
 };
@@ -27,6 +33,7 @@ export function createRouteAction({
   label,
   onNavigate,
   route,
+  routeState,
   title,
   variant
 }: CreateRouteActionArgs): NavigationAction {
@@ -36,7 +43,7 @@ export function createRouteAction({
     iconName,
     key,
     label,
-    onClick: route && onNavigate ? () => onNavigate(route) : undefined,
+    onClick: route && onNavigate ? () => onNavigate(route, routeState) : undefined,
     title,
     variant
   };

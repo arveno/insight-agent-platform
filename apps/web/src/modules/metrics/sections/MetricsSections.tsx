@@ -52,16 +52,32 @@ function buildTagSlot(
 }
 
 function buildAnalysisAction(
-  contextKey: string,
+  metric: MetricDetailViewModel,
   onNavigate: MetricsSectionsProps["onNavigate"],
   t: ReturnType<typeof useI18n>["t"]
 ) {
   return createRouteAction({
     iconName: "analysis",
-    key: `${contextKey}-analysis`,
+    key: `${metric.analysisContext.metricId}-analysis`,
     label: t("action.metricOpenAnalysis.label"),
     onNavigate,
     route: "analysis",
+    routeState: {
+      draftContextPack: {
+        chips: [
+          metric.businessDomain,
+          metric.timeRange,
+          `当前值 ${metric.currentValue}`,
+          metric.trend,
+          `风险 ${metric.analysisContext.riskLevel}`
+        ],
+        sourceId: metric.metricId,
+        sourceTitle: metric.metricName,
+        sourceType: "metric",
+        suggestedPrompt: `请基于 ${metric.metricName} 在 ${metric.timeRange} 的表现，解释 ${metric.trend} 的主要原因，并给出下一步建议。`,
+        summary: `当前值 ${metric.currentValue}，阈值 ${metric.analysisContext.threshold}，趋势 ${metric.trend}，可结合公式、血缘和证据继续分析。`
+      }
+    },
     title: t("action.metricOpenAnalysis.description"),
     variant: "contextPrimary"
   });
@@ -228,7 +244,7 @@ function MetricActionsCard({
     >
       <Flex gap={12} wrap>
         {[
-          buildAnalysisAction(metric.analysisContext.metricId, onNavigate, t),
+          buildAnalysisAction(metric, onNavigate, t),
           buildLineageAction(metric.metricId, onNavigate, t)
         ].map((action) => (
           <NavigationActionButton action={action} key={action.key} />

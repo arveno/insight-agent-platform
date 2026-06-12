@@ -32,7 +32,7 @@ type GoldenPathExample = {
 };
 
 describe("useAnalysisWorkspaceController", () => {
-  it("shows an honest empty state when no runtime bootstrap id is available", async () => {
+  it("enters draft mode when no runtime bootstrap id is available", async () => {
     const loader = vi.fn();
     const { result } = renderHook(() =>
       useAnalysisWorkspaceController({
@@ -42,7 +42,7 @@ describe("useAnalysisWorkspaceController", () => {
     );
 
     await waitFor(() => {
-      expect(result.current.workspaceState.kind).toBe("empty");
+      expect(result.current.workspaceState.kind).toBe("draft");
     });
 
     expect(loader).not.toHaveBeenCalled();
@@ -53,6 +53,42 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.messages).toEqual([]);
     expect(result.current.runEvents).toEqual([]);
     expect(result.current.currentRun).toBeUndefined();
+    expect(result.current.activeInspectorPanel).toBe("draft-context");
+    expect(result.current.composerMode).toBe("analysis");
+  });
+
+  it("hydrates DraftContextPack into the editable draft and clears it on new chat reset", async () => {
+    const loader = vi.fn();
+    const { result } = renderHook(() =>
+      useAnalysisWorkspaceController({
+        bootstrap: {},
+        draftContext: {
+          chips: ["Northstar Retail China", "Last 7 days"],
+          sourceId: "report-weekly-operations-review",
+          sourceTitle: "周经营分析报告",
+          sourceType: "report",
+          suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
+          summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
+        },
+        loader
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.workspaceState.kind).toBe("draft");
+    });
+
+    expect(result.current.draftContext?.sourceId).toBe("report-weekly-operations-review");
+    expect(result.current.composerDraft).toBe("请继续分析华东收入增速放缓的主要原因。");
+
+    act(() => {
+      result.current.onResetForNewAnalysis();
+    });
+
+    expect(result.current.workspaceState.kind).toBe("draft");
+    expect(result.current.draftContext).toBeUndefined();
+    expect(result.current.composerDraft).toBe("");
+    expect(result.current.activeInspectorPanel).toBe("draft-context");
   });
 
   it("loads real runtime data through the controller-owned loader and centralizes selection state", async () => {

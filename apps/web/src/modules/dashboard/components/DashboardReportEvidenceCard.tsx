@@ -48,6 +48,17 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
   const { t } = useI18n();
 
   if (props.kind === "report") {
+    const reportDraftContextPack = {
+      chips: [
+        `${props.report.evidenceCount} 条证据`,
+        `更新时间 ${props.report.updatedAt}`
+      ],
+      sourceId: props.report.reportId,
+      sourceTitle: props.report.title,
+      sourceType: "report",
+      suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
+      summary: t("dashboard.reportEvidence.suggestionSummary")
+    };
     const reportActions = [
       createRouteAction({
         iconName: "reports",
@@ -63,6 +74,9 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         label: t("dashboard.action.viewSuggestions"),
         onNavigate,
         route: "analysis",
+        routeState: {
+          draftContextPack: reportDraftContextPack
+        },
         variant: "objectDetail"
       }),
       createRouteAction({
@@ -71,6 +85,9 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         label: t("dashboard.action.analyzeWithContext"),
         onNavigate,
         route: "analysis",
+        routeState: {
+          draftContextPack: reportDraftContextPack
+        },
         variant: "contextPrimary"
       })
     ];
@@ -124,6 +141,24 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
       onNavigate,
       route: "reports",
       variant: "sourceLink"
+    }),
+    createRouteAction({
+      iconName: "analysis",
+      key: `${props.evidence.key}-context-analysis`,
+      label: t("dashboard.action.analyzeWithContext"),
+      onNavigate,
+      route: "analysis",
+      routeState: {
+        draftContextPack: {
+          chips: [evidenceSourceTypeLabel, evidenceConfidenceText ?? "可信度未标注"],
+          sourceId: props.evidence.sourceId,
+          sourceTitle: evidenceTitle,
+          sourceType: "evidence",
+          suggestedPrompt: `请基于证据《${evidenceTitle}》继续分析它对当前经营判断的影响。`,
+          summary: evidenceSummary
+        }
+      },
+      variant: "contextPrimary"
     }),
     createRouteAction({
       iconName: "data",

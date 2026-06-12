@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 
-import type { NavigateToRoute, StaticRouteKey } from "../../shared/navigation/navigationTypes";
+import type {
+  AppRouteState,
+  NavigateToRoute,
+  StaticRouteKey
+} from "../../shared/navigation/navigationTypes";
 import type { ShellRegionSlots } from "../../shared/layout/ShellRegionSlots";
 import { useAnalysisShellSlots } from "../../modules/analysis/hooks/useAnalysisShellSlots";
 import { useDataKnowledgeShellSlots } from "../../modules/data-knowledge/hooks/useDataKnowledgeShellSlots";
@@ -29,6 +33,7 @@ type SelectedWorkspace = {
 
 export type RouteShellOutletProps = {
   activeRoute: StaticRouteKey;
+  routeState?: AppRouteState;
   defaultMainContent: ReactNode;
   header?: ReactNode;
   leftNavMode: "root" | StaticRouteKey;
@@ -77,12 +82,14 @@ function AnalysisRouteShell({
   onBackToRoot,
   onNavigate,
   renderLeftNav,
+  routeState,
   rootLeftNavContent,
   selectedWorkspace
 }: RouteShellOutletProps) {
   const slots = useAnalysisShellSlots({
     onBackToRoot,
     onNavigate,
+    routeState,
     workspaceName: selectedWorkspace.name
   });
 

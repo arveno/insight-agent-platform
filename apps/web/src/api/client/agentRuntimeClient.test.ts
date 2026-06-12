@@ -47,14 +47,15 @@ describe("AgentRuntimeClient", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
     const client = new AgentRuntimeClient("http://runtime.test");
-
-    await expect(
-      client.streamMessageStream("conversation-123", "message-456")
-    ).rejects.toMatchObject<Partial<RuntimeApiError>>({
+    const expectedError: Partial<RuntimeApiError> = {
       code: "STREAM_UNAVAILABLE",
       message: "SSE stream unavailable.",
       name: "RuntimeApiError",
       status: 503
-    });
+    };
+
+    await expect(
+      client.streamMessageStream("conversation-123", "message-456")
+    ).rejects.toMatchObject(expectedError);
   });
 });
