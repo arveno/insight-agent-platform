@@ -327,10 +327,7 @@ describe("useAnalysisWorkspaceController", () => {
       runId: goldenPath.analysisRun.runId
     });
     expect(result.current.selectedMessageId).toBe(userMessage.messageId);
-    expect(result.current.inspectorTreeState).toEqual({
-      path: [goldenPath.analysisTask.contextPack!.root.nodeId],
-      rootKey: "context"
-    });
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
 
     act(() => {
       result.current.onSelectMessageAnchor(assistantMessage.messageId);

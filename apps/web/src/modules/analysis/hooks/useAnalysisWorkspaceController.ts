@@ -504,21 +504,12 @@ export function useAnalysisWorkspaceController(
       }
 
       if (message.role === "user" && message.analysisTaskId) {
-        const contextRootNodeId = getRootNodeId("context", selectedSession, draftContext);
-
         setSelectedInspectorSubject({
           type: "analysisTask",
           analysisTaskId: message.analysisTaskId,
           runId: message.runId ?? undefined
         });
-        setInspectorTreeState(
-          contextRootNodeId
-            ? {
-                path: [contextRootNodeId],
-                rootKey: "context"
-              }
-            : { path: [], rootKey: null }
-        );
+        setInspectorTreeState({ path: [], rootKey: null });
       }
     },
     onSelectModel: (key) => {

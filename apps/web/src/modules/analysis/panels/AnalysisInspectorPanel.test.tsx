@@ -63,6 +63,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("本次分析请求")).toBeTruthy();
     expect(screen.getByText(session.analysisTaskContextPack!.root.title)).toBeTruthy();
     expect(screen.getByText("运行记录")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
     expect(screen.queryByText(/^Context$/)).toBeNull();
     expect(screen.queryByText("Run Trace")).toBeNull();
 
@@ -111,6 +112,7 @@ describe("AnalysisInspectorPanel", () => {
       root: dashboardStaticViewModel.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
+    const onPopInspectorPath = vi.fn();
 
     const { container } = render(
       <TestProviders>
@@ -118,7 +120,7 @@ describe("AnalysisInspectorPanel", () => {
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
           draftContext={draftContext}
           inspectorTreeState={{ path: [draftContext.root.nodeId], rootKey: "context" }}
-          onPopInspectorPath={() => undefined}
+          onPopInspectorPath={onPopInspectorPath}
           onSelectInspectorNode={() => undefined}
           onSelectInspectorRoot={() => undefined}
           selectedSession={undefined}
@@ -130,7 +132,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("经营状态总览")).toBeTruthy();
     expect(screen.queryByText(/^分析详情$/)).toBeNull();
     expect(screen.queryByRole("button", { name: /经营状态总览/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
+    expect(screen.getByRole("button", { name: "返回上一级" })).toBeTruthy();
     expect(screen.getAllByText(dashboardStaticViewModel.root.summary!)).toHaveLength(1);
     expect(screen.getAllByText("Last 30 days")).toHaveLength(1);
     expect(screen.getByText("2 个指标")).toBeTruthy();
@@ -141,7 +143,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("报告与证据 · 3 项")).toBeTruthy();
     expect(screen.getByText("平台质量 · 1 项")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Last 30 days/ })).toBeNull();
-    expect(screen.getAllByRole("button")).toHaveLength(4);
+    expect(screen.getAllByRole("button")).toHaveLength(5);
     expect(screen.queryByText("dashboardOverview")).toBeNull();
     expect(screen.queryByText("timeRange")).toBeNull();
     expect(screen.queryByText(/^directory$/)).toBeNull();
@@ -149,6 +151,9 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByText(/metricId:/)).toBeNull();
     expect(screen.queryByText(/sourceEvidenceId:/)).toBeNull();
     expect(container.querySelectorAll(".ant-card")).toHaveLength(5);
+
+    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
+    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
   });
 
   it("renders child directory details as a header with leaf cards instead of a sibling directory card", () => {
@@ -224,7 +229,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByText("零售收入")).toBeNull();
   });
 
-  it("shows back only for child detail, while roots view and root detail have no back", () => {
+  it("shows back for root detail and child detail, while roots view has no back", () => {
     const session = analysisStaticViewModel.sessions[0]!;
     const contextRoot = session.analysisTaskContextPack!.root;
     const childNode = contextRoot.children?.[0];
@@ -258,7 +263,8 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
-    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
+    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: new RegExp(childNode.title) }));
     expect(onSelectInspectorNode).toHaveBeenCalledWith(childNode.nodeId);
@@ -286,6 +292,38 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
+    expect(onPopInspectorPath).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows back on assistant run trace detail and returns to run roots through inspector path pop", () => {
+    const session = analysisStaticViewModel.sessions[0]!;
+    const onPopInspectorPath = vi.fn();
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
+          draftContext={undefined}
+          inspectorTreeState={{
+            path: [`inspector-root-run-trace:${session.currentRun.runId}`],
+            rootKey: "run-trace"
+          }}
+          onPopInspectorPath={onPopInspectorPath}
+          onSelectInspectorNode={() => undefined}
+          onSelectInspectorRoot={() => undefined}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("Run Trace")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
     expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
   });

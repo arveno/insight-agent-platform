@@ -168,7 +168,8 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
   - 返回后展示当前 run roots。
 - 点击 user submit message：
   - 选中 `analysisTask(analysisTaskId)`。
-  - Inspector 默认进入 `Context`。
+  - Inspector 默认展示当前 `AnalysisTask` roots。
+  - `Context` 作为该 task roots 之一，由用户继续进入 detail。
 - `AnalysisTask.contextPack` 属于 `AnalysisTask`，必须成为 tree-shaped immutable input snapshot。
 - `AnalysisRun` 只消费 `AnalysisTask.contextPack`，不拥有它。
 - `RunTrace / SourceEvidence / Report / ToolCall / ModelCall / Decision` 主要归属 `AnalysisRun`。
@@ -262,7 +263,7 @@ Analysis
 - `Dashboard` 必须作为第一个 semantic context tree producer：Dashboard API / ViewModel 先暴露 semantic root tree，再由 Dashboard UI 和 Analysis context draft 共用。
 - Dashboard UI 上的 top / metric / risk / report / evidence 分析入口，本质上都是选择 semantic root tree 中的 node 或 subtree，再带入 Analysis。
 - `Analysis` 页面分工固定为：Conversation pane 负责 text-first thread，Inspector 负责 subject-scoped structured detail；结构化详情不得回塞 message card。
-- assistant message 选择 `runId` 并默认落到 `Run Trace`；user submit message 选择 `analysisTaskId` 并默认落到 `Context`。
+- assistant message 选择 `runId` 并默认落到 `Run Trace` detail；user submit message 选择 `analysisTaskId` 并默认落到 `AnalysisTask` roots。
 - 同一个 `reportId`、`sourceEvidenceId` 或其他 canonical `sourceRef` 在 `AnalysisTask` 与 `AnalysisRun` 侧可以以不同 `owner / role` 重复出现；重复出现不代表重复对象，也不改变归属。
 - `Data & Knowledge` 当前结构固定为：`LeftNav secondary list = grouped asset list`，其中 `数据资产 Data` 和 `知识文档 Docs` 只是页面内部二级列表分组，不是新的一级模块，不新增 `Data route / Knowledge route`，也不拆 `Data & Knowledge` 一级入口。
 - `Data & Knowledge` 的 `MainContent` 固定为：`SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，不再以全局总览卡片堆叠作为主线。
