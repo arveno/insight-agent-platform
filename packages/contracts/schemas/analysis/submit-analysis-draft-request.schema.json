@@ -5,22 +5,10 @@
   "description": "Analysis draft submit 的唯一正式编排入口请求体。",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "workspaceId",
-    "userId",
-    "businessDomainId",
-    "question",
-    "contextPack"
-  ],
+  "required": ["businessDomainId", "question", "contextPack"],
   "properties": {
     "conversationId": {
       "description": "复用既有 Conversation 时传入；省略时由服务端创建新 Conversation。",
-      "type": "string"
-    },
-    "workspaceId": {
-      "type": "string"
-    },
-    "userId": {
       "type": "string"
     },
     "businessDomainId": {

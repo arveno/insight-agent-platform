@@ -270,3 +270,9 @@ def resolve_authenticated_request_context(request: Request) -> AuthenticatedRequ
         workspaceId=current_workspace_context["workspaceId"],
         role=current_workspace_context["role"],
     )
+
+
+def authenticated_request_context_dependency(request: Request) -> AuthenticatedRequestContext:
+    """FastAPI dependency wrapper for the authenticated request context resolver."""
+
+    return resolve_authenticated_request_context(request)

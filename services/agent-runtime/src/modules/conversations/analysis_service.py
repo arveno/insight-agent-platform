@@ -236,9 +236,11 @@ class AnalysisSubmitService:
                 "updatedAt": now,
             }
 
-        conversation = self._conversation_repository.get_by_conversation_id(command.conversationId)
-        self._validate_conversation_chain(command, conversation)
-        return conversation
+        return self._conversation_repository.get_by_conversation_id_and_owner(
+            command.conversationId,
+            workspace_id=command.workspaceId,
+            user_id=command.userId,
+        )
 
     def _validate_conversation_chain(
         self, command: SubmitAnalysisDraftCommand, conversation: ConversationRecord

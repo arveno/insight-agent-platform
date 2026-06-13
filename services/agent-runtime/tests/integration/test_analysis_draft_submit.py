@@ -8,15 +8,19 @@ from fastapi.testclient import TestClient
 
 from src.app.main import create_app
 from src.app.routes.runtime_contracts import AnalysisTaskContextPackModel
+from tests.integration.conftest import login_client, seed_runtime_foundation
 
+DEFAULT_WORKSPACE_ID = "workspace-northstar-retail-china"
+USER_ID = "user-zoe"
+BUSINESS_DOMAIN_ID = "business-domain-revenue-quality"
+QUESTION = "解释华东区域收入增速放缓的主要原因，并给出下一步建议。"
 
 BLANK_SUBMIT_PAYLOAD = {
-    "workspaceId": "workspace-northstar-retail-china",
-    "userId": "user-zoe",
-    "businessDomainId": "business-domain-revenue-quality",
-    "question": "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+    "businessDomainId": BUSINESS_DOMAIN_ID,
+    "question": QUESTION,
     "contextPack": None,
 }
+
 
 def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
     owner: dict[str, str] = {"type": "analysisTask"}
@@ -68,6 +72,7 @@ def build_response_context_pack(analysis_task_id: str | None = None) -> dict[str
         ).model_dump(mode="json"),
     )
 
+
 CONTEXT_SUBMIT_PAYLOAD = {
     **BLANK_SUBMIT_PAYLOAD,
     "contextPack": build_context_pack(),
@@ -76,24 +81,20 @@ CONTEXT_SUBMIT_PAYLOAD = {
 
 @pytest.fixture()
 def client(runtime_foundation_env: None) -> Iterator[TestClient]:
+    seed_runtime_foundation()
     with TestClient(create_app()) as test_client:
+        login_client(test_client)
         yield test_client
 
 
 def create_conversation(
     client: TestClient,
     *,
-    workspace_id: str = BLANK_SUBMIT_PAYLOAD["workspaceId"],
-    user_id: str = BLANK_SUBMIT_PAYLOAD["userId"],
     title: str = "既有分析会话",
 ) -> dict[str, Any]:
     response = client.post(
         "/conversations",
-        json={
-            "workspaceId": workspace_id,
-            "userId": user_id,
-            "title": title,
-        },
+        json={"title": title},
     )
     assert response.status_code == 201, response.text
     return response.json()
@@ -102,16 +103,12 @@ def create_conversation(
 def create_analysis_task_payload(
     *,
     conversation_id: str,
-    workspace_id: str = BLANK_SUBMIT_PAYLOAD["workspaceId"],
-    user_id: str = BLANK_SUBMIT_PAYLOAD["userId"],
 ) -> dict[str, Any]:
     return {
-        "businessDomainId": BLANK_SUBMIT_PAYLOAD["businessDomainId"],
+        "businessDomainId": BUSINESS_DOMAIN_ID,
         "contextPack": CONTEXT_SUBMIT_PAYLOAD["contextPack"],
         "conversationId": conversation_id,
-        "question": BLANK_SUBMIT_PAYLOAD["question"],
-        "userId": user_id,
-        "workspaceId": workspace_id,
+        "question": QUESTION,
     }
 
 
@@ -129,23 +126,23 @@ def test_submit_analysis_draft_creates_conversation_task_run_and_user_message(
     user_message = payload["userMessage"]
 
     assert conversation["conversationId"].startswith("conversation-")
-    assert conversation["workspaceId"] == BLANK_SUBMIT_PAYLOAD["workspaceId"]
-    assert conversation["userId"] == BLANK_SUBMIT_PAYLOAD["userId"]
+    assert conversation["workspaceId"] == DEFAULT_WORKSPACE_ID
+    assert conversation["userId"] == USER_ID
     assert conversation["currentRunId"] == analysis_run["runId"]
     assert conversation["title"]
 
     assert analysis_task["analysisTaskId"].startswith("analysis-task-")
     assert analysis_task["conversationId"] == conversation["conversationId"]
-    assert analysis_task["workspaceId"] == BLANK_SUBMIT_PAYLOAD["workspaceId"]
-    assert analysis_task["userId"] == BLANK_SUBMIT_PAYLOAD["userId"]
-    assert analysis_task["businessDomainId"] == BLANK_SUBMIT_PAYLOAD["businessDomainId"]
-    assert analysis_task["question"] == BLANK_SUBMIT_PAYLOAD["question"]
+    assert analysis_task["workspaceId"] == DEFAULT_WORKSPACE_ID
+    assert analysis_task["userId"] == USER_ID
+    assert analysis_task["businessDomainId"] == BUSINESS_DOMAIN_ID
+    assert analysis_task["question"] == QUESTION
     assert analysis_task["contextPack"] is None
 
     assert analysis_run["runId"].startswith("analysis-run-")
     assert analysis_run["analysisTaskId"] == analysis_task["analysisTaskId"]
-    assert analysis_run["workspaceId"] == BLANK_SUBMIT_PAYLOAD["workspaceId"]
-    assert analysis_run["userId"] == BLANK_SUBMIT_PAYLOAD["userId"]
+    assert analysis_run["workspaceId"] == DEFAULT_WORKSPACE_ID
+    assert analysis_run["userId"] == USER_ID
     assert analysis_run["status"] == "created"
     assert analysis_run["phase"] == "intake"
 
@@ -155,7 +152,7 @@ def test_submit_analysis_draft_creates_conversation_task_run_and_user_message(
     assert user_message["runId"] == analysis_run["runId"]
     assert user_message["role"] == "user"
     assert user_message["status"] == "completed"
-    assert user_message["content"] == BLANK_SUBMIT_PAYLOAD["question"]
+    assert user_message["content"] == QUESTION
 
     messages_response = client.get(f"/conversations/{conversation['conversationId']}/messages")
     assert messages_response.status_code == 200, messages_response.text
@@ -216,40 +213,33 @@ def test_create_analysis_task_rejects_missing_conversation(client: TestClient) -
     }
 
 
-def test_create_analysis_task_rejects_workspace_mismatch(client: TestClient) -> None:
-    conversation = create_conversation(client)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "conversationId": "conversation-placeholder",
+            "businessDomainId": BUSINESS_DOMAIN_ID,
+            "question": QUESTION,
+            "contextPack": None,
+            "workspaceId": DEFAULT_WORKSPACE_ID,
+        },
+        {
+            "conversationId": "conversation-placeholder",
+            "businessDomainId": BUSINESS_DOMAIN_ID,
+            "question": QUESTION,
+            "contextPack": None,
+            "userId": USER_ID,
+        },
+    ],
+)
+def test_create_analysis_task_rejects_client_supplied_identity_fields(
+    client: TestClient,
+    payload: dict[str, Any],
+) -> None:
+    response = client.post("/analysis-tasks", json=payload)
 
-    response = client.post(
-        "/analysis-tasks",
-        json=create_analysis_task_payload(
-            conversation_id=conversation["conversationId"],
-            workspace_id="workspace-other",
-        ),
-    )
-
-    assert response.status_code == 409, response.text
-    assert response.json() == {
-        "errorCode": "MISMATCH",
-        "message": "Conversation.workspaceId does not match request.workspaceId",
-    }
-
-
-def test_create_analysis_task_rejects_user_mismatch(client: TestClient) -> None:
-    conversation = create_conversation(client)
-
-    response = client.post(
-        "/analysis-tasks",
-        json=create_analysis_task_payload(
-            conversation_id=conversation["conversationId"],
-            user_id="user-luca",
-        ),
-    )
-
-    assert response.status_code == 409, response.text
-    assert response.json() == {
-        "errorCode": "MISMATCH",
-        "message": "Conversation.userId does not match request.userId",
-    }
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "extra_forbidden"
 
 
 def test_create_analysis_task_binds_to_valid_conversation(client: TestClient) -> None:
@@ -263,8 +253,8 @@ def test_create_analysis_task_binds_to_valid_conversation(client: TestClient) ->
     assert response.status_code == 201, response.text
     payload = response.json()
     assert payload["conversationId"] == conversation["conversationId"]
-    assert payload["workspaceId"] == conversation["workspaceId"]
-    assert payload["userId"] == conversation["userId"]
+    assert payload["workspaceId"] == DEFAULT_WORKSPACE_ID
+    assert payload["userId"] == USER_ID
     assert payload["contextPack"] == build_response_context_pack(payload["analysisTaskId"])
 
 
@@ -288,26 +278,23 @@ def test_get_analysis_task_returns_persisted_tree_shaped_context_pack(client: Te
 
 
 @pytest.mark.parametrize(
-    ("field_name", "field_value", "message"),
+    ("field_name", "field_value"),
     [
-        ("workspaceId", "workspace-other", "Conversation.workspaceId does not match request.workspaceId"),
-        ("userId", "user-luca", "Conversation.userId does not match request.userId"),
+        ("workspaceId", "workspace-other"),
+        ("userId", "user-luca"),
     ],
 )
-def test_submit_analysis_draft_rejects_conversation_workspace_or_user_mismatch(
+def test_submit_analysis_draft_rejects_client_supplied_identity_fields(
     client: TestClient,
     field_name: str,
     field_value: str,
-    message: str,
 ) -> None:
-    conversation = create_conversation(client)
     payload = {
         **BLANK_SUBMIT_PAYLOAD,
-        "conversationId": conversation["conversationId"],
         field_name: field_value,
     }
 
     response = client.post("/analysis-tasks/submit", json=payload)
 
-    assert response.status_code == 409, response.text
-    assert response.json() == {"errorCode": "MISMATCH", "message": message}
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "extra_forbidden"

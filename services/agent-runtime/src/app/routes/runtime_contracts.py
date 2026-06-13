@@ -340,8 +340,6 @@ class CreateAnalysisTaskRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     conversationId: str
-    workspaceId: str
-    userId: str
     businessDomainId: str
     question: str
     contextPack: AnalysisTaskContextPackModel | None
@@ -369,8 +367,6 @@ class CreateConversationRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    workspaceId: str
-    userId: str
     title: str
 
 
@@ -394,8 +390,6 @@ class CreateAnalysisRunRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    workspaceId: str
-    userId: str
     analysisTaskId: str
 
 
@@ -405,8 +399,6 @@ class SubmitAnalysisDraftRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     conversationId: str | None = None
-    workspaceId: str
-    userId: str
     businessDomainId: str
     question: str
     contextPack: AnalysisTaskContextPackModel | None

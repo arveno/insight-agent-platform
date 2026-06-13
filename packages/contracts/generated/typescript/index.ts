@@ -233,8 +233,6 @@ export interface SourceRef {
 /** Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json */
 export interface SubmitAnalysisDraftRequest {
   conversationId?: string;
-  workspaceId: string;
-  userId: string;
   businessDomainId: string;
   question: string;
   contextPack: AnalysisTaskContextPack | null;

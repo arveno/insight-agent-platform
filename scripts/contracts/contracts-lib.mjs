@@ -282,8 +282,6 @@ export const requiredFieldsBySchema = {
     "updatedAt"
   ],
   "analysis/submit-analysis-draft-request.schema.json": [
-    "workspaceId",
-    "userId",
     "businessDomainId",
     "question",
     "contextPack"
