@@ -25,6 +25,8 @@ packages/contracts/examples/analysis-runtime/golden-path.json
 
 该 example 当前表达的是这条切片的 contracts-backed terminal snapshot，不等同于完整自动化实现，也不替代本文的验收约束。
 
+如本文与当前 `docs/contracts.md`、`packages/contracts/**` 中的 `AnalysisTaskContextPack` 或 `InspectorTreeNode` 正式结构发生冲突，以 tree-shaped `AnalysisTaskContextPack` 正式口径为准。
+
 ## 1. 验收边界
 
 本切片只冻结一条后续共同使用的真实业务闭环：
@@ -89,17 +91,91 @@ Metrics finding
 
 ### 3.2 Context Pack 语义
 
-`Open in Analysis with context` 进入 Analysis 草稿态时，必须绑定但尚未持久化为 run 的上下文至少包括：
+`Open in Analysis with context` 进入 Analysis 草稿态时，必须绑定一个后续会在 submit 时持久化为 `AnalysisTask.contextPack` 的 tree-shaped context pack。
 
-- `workspaceId = workspace-northstar-retail-china`
-- `userId = user-zoe`
-- `businessDomainId = business-domain-revenue-quality`
-- `sourceType = metric`
-- `sourceId = metric-recognized-revenue`
-- `sourceTitle = 确认收入`
-- `summary = 华东区域收入增速低于阈值，需要继续解释主因与下一步建议。`
-- `chips = [Revenue quality, 2026 Q2, 收入增速 < -2%]`
-- `suggestedPrompt = 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。`
+本切片固定采用当前正式 `AnalysisTaskContextPack` 语义：
+
+```ts
+type AnalysisTaskContextPack = {
+  version: 1;
+  suggestedPrompt: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。";
+  traceability: "direct_refs";
+  capturedAt: "2026-07-15T09:00:00Z";
+  root: InspectorTreeNode;
+};
+```
+
+本切片的 `root` 必须通过 `InspectorTreeNode` 表达 `metric / data table / knowledge document` 等 context，而不是回退到 flat `sourceType / sourceId / sourceTitle / summary / chips / suggestedPrompt` 字段集合。
+
+示例方向如下：
+
+```ts
+const root: InspectorTreeNode = {
+  nodeId: "context-root-revenue-gap-q2",
+  kind: "directory",
+  role: "inputContext",
+  owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+  title: "Revenue quality / 2026 Q2",
+  summary: "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+  chips: ["Revenue quality", "2026 Q2", "收入增速 < -2%"],
+  capturedAt: "2026-07-15T09:00:00Z",
+  children: [
+    {
+      nodeId: "context-metric-recognized-revenue",
+      kind: "metric",
+      role: "inputContext",
+      owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+      title: "确认收入",
+      summary: "当前异常指标来源。",
+      sourceRef: { type: "metric", metricId: "metric-recognized-revenue" },
+    },
+    {
+      nodeId: "context-table-sales-order",
+      kind: "dataTable",
+      role: "inputContext",
+      owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+      title: "销售订单表",
+      sourceRef: { type: "dataTable", tableId: "table-sales-order" },
+    },
+    {
+      nodeId: "context-table-refund-order",
+      kind: "dataTable",
+      role: "inputContext",
+      owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+      title: "退款订单表",
+      sourceRef: { type: "dataTable", tableId: "table-refund-order" },
+    },
+    {
+      nodeId: "context-knowledge-channel-weekly-17",
+      kind: "knowledgeDocument",
+      role: "inputContext",
+      owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+      title: "渠道周报 Week 17",
+      sourceRef: {
+        type: "knowledgeDocument",
+        knowledgeDocumentId: "knowledge-document-channel-weekly-17",
+      },
+    },
+    {
+      nodeId: "context-knowledge-inventory-east-04",
+      kind: "knowledgeDocument",
+      role: "inputContext",
+      owner: { type: "analysisTask", analysisTaskId: "analysis-task-revenue-gap-q2" },
+      title: "华东库存说明 04",
+      sourceRef: {
+        type: "knowledgeDocument",
+        knowledgeDocumentId: "knowledge-document-inventory-east-04",
+      },
+    },
+  ],
+};
+```
+
+补充约束：
+
+- `sourceRef` 必须回到 canonical IDs：`metricId`、`tableId`、`knowledgeDocumentId`。
+- 草稿态 context tree 与持久化后的 `AnalysisTask.contextPack` 必须保持同一 tree shape；submit transaction 负责补齐正式 `analysisTaskId` 归属。
+- 本切片不保留旧 flat context pack 兼容路径。
 
 该 context pack 只进入 Analysis 新聊天草稿态，不立即创建 `conversationId`，不立即创建 `runId`。
 

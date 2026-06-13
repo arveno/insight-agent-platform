@@ -180,7 +180,8 @@ insight-agent-platform/
 - 非 `Analysis` 页面统一使用 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
 - `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
 - `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只能消费 module 暴露的 Analysis workspace 入口或 slots，不直接拼低层 Analysis 业务结构。
-- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / selectedInspectorSubject / inspectorTreePath / messages / currentRun / runEvents / composerState` 不得分散到 `AppShell`、`Inspector` 或 message 组件本地状态。
+- `RunEvent` detail 属于 `AnalysisInspectorPanel` 的 subject-scoped tree path node/detail，不再作为顶层 `selectedRunEventId` 或 `activeInspectorPanel` 主状态单独维护。
 - `AnalysisMessageList` 只展示 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须保留独立承载位，不得回塞 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；`SectionStack` 只负责页面内容大块纵向节奏。
 - 非 `Analysis` `Page.tsx` 只负责状态接入与 `ResponsivePageShell -> ModuleSections` 组合，不得直接组织 `PageIntro / SectionStack / ContentSection`。
