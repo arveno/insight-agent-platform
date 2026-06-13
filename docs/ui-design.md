@@ -113,20 +113,29 @@ Code
 - Inspector 是统一的可插拔上下文插槽。
 - 页面可以选择是否启用 Inspector。
 - 页面通过当前选中对象提供 `inspectorContext`。
-- Inspector 根据 `subjectType` 插入能力卡片。
-- `AnalysisInspectorPanel` 是 Analysis 页面内部的 layered detail browser，不是浏览器 back stack 的替身。
-- `Analysis Inspector` 点击卡片默认只在 Inspector stack 内进入下一层，不默认触发浏览器返回、同 tab 跳页或替换当前 Analysis 页面。
-- `Context Origin` 是 UI / product representation，不是 source of truth；它只说明本次 Analysis 输入从哪里来、能追溯到哪些 canonical source objects。
-- `Context Origin` 必须展示 traceability state：`none | summary_only | partial_refs | direct_refs`。
-- 如果当前只有 `summary / chips`，没有稳定 canonical refs，UI 必须展示 `summary_only`，不得为了视觉完整性伪造 supporting refs。
-- 最终来源详情层可以提供 `Open full source` 次级动作；在此之前，Inspector 内导航应优先停留在 Analysis 页面内部。
+- Inspector 根据 `subjectType` 插入 subject-scoped roots 与 detail。
+- `AnalysisInspectorPanel` 是 Analysis 页面内部的 subject-scoped tree detail browser，不是浏览器 back stack 的替身。
+- `Context` 只是 Analysis Inspector 的一个 root，不等于整个 Inspector。
+- root view 只展示当前 selected subject 的 roots。
+- child view 展示当前 selected root 或 tree node 的 detail。
+- `Analysis Inspector` 内导航默认只在 Inspector tree path 内推进，不默认触发浏览器返回、同 tab 跳页或替换当前 Analysis 页面。
+- root level 不显示 Back。
+- child level 只显示 `返回上一级`。
+- 本切片不提供 Home button。
+- Inspector 不得依赖 browser back。
+- 最终来源详情层可以提供 `Open full source` 次级动作；在此之前，Inspector 主导航应停留在 Analysis 页面内部。
 - `Open full source` 必须依赖由 canonical contract ID 推导出的 stable href，在新浏览器 tab 打开，不得替换当前 Analysis 页面，也不得清空 `conversation / run / draft / inspector` 状态。
 - 如果没有 stable href，`Open full source` 必须禁用并给出诚实原因，不能伪造可打开入口。
+- default Inspector view 固定如下：
+  - assistant message selected -> `Run Trace`
+  - user submit message selected -> `Context`
+  - blank draft -> empty / draft context
+  - Dashboard context draft -> `Context`
 
 默认策略：
 
 - `Dashboard` 默认不启用 Inspector。
-- `Analysis` 需要 Inspector，用于当前草稿上下文、run、evidence、report、feedback 上下文。
+- `Analysis` 需要 Inspector，用于当前 subject 的 context、run、evidence、report、decision、tool call、model call detail。
 - `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
 - `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
 - `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
@@ -175,8 +184,10 @@ AppShell
 - 标准模块页面冻结结构固定为 `ResponsivePageShell -> ModuleSections -> SectionStack -> PageIntro(optional) -> ContentSection`；`Analysis` 是唯一明确例外，保持对话式工作区结构。
 - `Analysis` 的 canonical 工作区结构固定为 `AnalysisWorkspace -> AnalysisSessionNav / AnalysisConversationPane / AnalysisInspectorPanel`；不强行套 `PageIntro / ContentSection`。
 - `AnalysisPage` 只负责状态接入和 workspace 入口；`AppShell` 只承接 module 暴露的 Analysis workspace 入口或 slots，不直接拼 session nav、message list、composer、inspector、drawer。
-- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / messages / currentRun / runEvents / selectedRunEventId / activeInspectorPanel / composerState` 不得多处维护。
-- `AnalysisMessageList` 只负责 conversation；`RunTrace / ToolDetail / SourceEvidence / ReportPreview / MemoryContext` 必须有独立承载位，不得继续塞进 assistant message。
+- `Analysis` 状态必须由单一 workspace controller 承接：`sessions / selectedConversationId / selectedInspectorSubject / inspectorTreePath / messages / currentRun / runEvents / composerState` 不得多处维护。
+- `AnalysisConversationPane / AnalysisMessageList` 只负责 text-first conversation；它们只展示 user message text、assistant message text 和 lightweight state。
+- `AnalysisConversationPane / AnalysisMessageList` 不展示 `Context` cards、`Evidence` cards、`Report` cards、`Run Trace` cards、`SourceRef` cards 或复杂 context tree。
+- `AnalysisMessageList` 只负责 conversation；`Context / RunTrace / ToolDetail / SourceEvidence / ReportPreview / Decision / MemoryContext` 必须有独立承载位，不得继续塞进 assistant message。
 - `ResponsivePageShell` 只负责 page padding 和 children 承载；页面内容结构从 `ModuleSections` 开始组织，不再承接自动 header。
 - 页面 padding 只能由 `ResponsivePageShell` 承接；`SectionStack` 只负责页面主内容的大块纵向节奏和宽度，不承接 padding。
 - `PageScaffold` 已删除；不允许再通过页面壳自动生成 `PageIntro` 或自动注入页面操作区。
@@ -261,6 +272,8 @@ AppShell
 - `Open in Analysis with context` 等能力必须通过统一 navigation helper 承接上下文，不得页面临时拼按钮。
 - `Dashboard / Metrics / Reports / Data & Knowledge / Run Trace / Evidence` 进入 `Open in Analysis with context` 时，必须从 canonical contract objects 生成上下文；入口 surface 不是 source of truth。
 - `Dashboard` 可以是 origin surface，但当 `metric / report / evidence / data / knowledge` refs 已存在时，不得在前端把 `Dashboard` 当作唯一来源对象。
+- `Dashboard` 作为首个 context tree producer，必须先暴露 semantic root tree；Dashboard UI 与 Analysis draft context tree 共享同一语义来源。
+- Dashboard top analysis action 选择 overview root subtree；metric / risk / report / evidence action 选择对应 node 或 subtree。
 - 前端可以组合 Inspector 内部 UI routes、stack node keys 和本地选择态，但不得发明新的 business ID；具体 canonical ID 映射以 `docs/contracts.md` 为准。
 - 页面入口只表达导航、Analysis 新聊天草稿态入口或只读摘要入口，不等于真实执行。
 
@@ -406,6 +419,8 @@ AI 对话 / 输入 / 回复类场景：Ant Design X
 - Section 级模块入口放在 Section Header 右侧。
 - 卡片内部动作统一放在 Footer Actions 左下横向排列。
 - Inspector 内动作在分组内左对齐横向排列。
+- Inspector tree node 导航优先使用 whole-card click。
+- Footer actions 只保留次级动作，例如未来的 `Open full source`。
 
 ### Layout Rules
 

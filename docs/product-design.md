@@ -158,16 +158,30 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
 - `Open in Analysis with context` 是产品能力，不是某个页面临时发明的按钮。
 - 上下文必须带明确业务 ID，例如 `reportId`、`sourceEvidenceId`、`runId`、`toolCallId`、`modelCallId`、`jobId`。
 - 带上下文进入 Analysis 时，不立即创建 conversation 或 run；只有用户发送后才进入新的分析链路。
-- `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
-- `DraftContextPack` 刷新页面后不需要恢复；刷新后回到普通新聊天草稿态。
-- `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
-- blank draft submit 时，`AnalysisTask.contextPack = null`；context draft submit 时，`DraftContextPack` 必须原样固化为 typed `AnalysisTask.contextPack` snapshot。
-- `Context Origin` 本身不是事实源；它只是说明本次 Analysis 输入从哪里来、能追溯到哪些 canonical source objects。
-- `DraftContextPack / AnalysisTask.contextPack` 中的 `summary / chips` 不能替代真实 evidence / report / metric / data / knowledge source。
-- `Context Origin` 必须暴露 traceability state：`none | summary_only | partial_refs | direct_refs`。
-- 如果只有 `summary / chips` 而没有稳定 canonical refs，traceability state 必须是 `summary_only`；不得为了 UI 完整性伪造 supporting refs。
-- `Analysis Inspector` 是 Analysis 页面内部的层级详情浏览器；点击卡片默认只在 Inspector 内进入下一层，不默认跳出 Analysis 页面。
-- 完整来源页面只能作为最终来源详情里的次级动作打开，不得替代 Inspector 内的主导航链路。
+- Analysis 主区的 `Conversation pane` 固定为 text-first；它只承接 message text 和 lightweight state，不承接复杂 Context / Evidence / Report / Run Trace 卡片。
+- message 只是 Inspector selection anchor，不是结构化详情容器。
+- `Analysis Inspector` 是 subject-scoped tree browser；当前选中 subject 可以是 `message / analysisTask / analysisRun / report / evidence`，Inspector roots 必须由当前 subject 生成。
+- `Context` 只是 Inspector 的一个 root，不等于整个 Inspector。
+- 点击 assistant message：
+  - 选中 `analysisRun(runId)`。
+  - Inspector 默认进入 `Run Trace` detail。
+  - 返回后展示当前 run roots。
+- 点击 user submit message：
+  - 选中 `analysisTask(analysisTaskId)`。
+  - Inspector 默认进入 `Context`。
+- `AnalysisTask.contextPack` 属于 `AnalysisTask`，必须成为 tree-shaped immutable input snapshot。
+- `AnalysisRun` 只消费 `AnalysisTask.contextPack`，不拥有它。
+- `RunTrace / SourceEvidence / Report / ToolCall / ModelCall / Decision` 主要归属 `AnalysisRun`。
+- `Dashboard` 是第一个 context tree producer；Dashboard API / ViewModel 必须暴露 semantic root tree，Dashboard UI 与 Analysis context tree 共享同一语义来源。
+- Dashboard context 入口规则固定如下：
+  - top analysis action -> overview root subtree
+  - metric action -> metric node/subtree
+  - risk action -> risk node/subtree
+  - report action -> report node/subtree
+  - evidence action -> evidence node/subtree
+- context tree 只存轻量目录快照和 canonical `sourceRef`，不得重复完整 `Report / Evidence / Metric / Data / Knowledge` 对象内容。
+- 同一个业务对象在不同 owner / role 下可以形成不同 tree node occurrence；例如同一 `reportId` 可以同时是 `AnalysisTask` 的 `inputContext`，也可以是 `AnalysisRun` 的 `runtimeReferencedSource` 或 `runOutput`。
+- 旧 flat `DraftContextPack` 不是正式方向，不保留长期兼容路径。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
 - 旧请求不能覆盖新会话；多轮追问必须用明确的 run / request / message 识别边界。
@@ -243,11 +257,13 @@ Analysis
 - `Metrics` 当前结构固定为：`LeftNav secondary list = 当前 Workspace 的 Metric list`，`MainContent = 指标总览 + 当前指标详情`，`Inspector = 当前阶段不强制启用`。
 - `Metrics` 左侧二级列表只负责选择当前指标，只显示指标名；不显示当前值、趋势、证据数、按钮或大段描述。
 - `Metrics` 的 `Open in Analysis with context` 只进入 Analysis 新聊天草稿态，不立即创建 conversation，不立即创建 run，不立即运行 Agent。
-- `DraftContextPack` 是一次性前端草稿上下文；Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入 Analysis 时，只进入新聊天草稿态。
-- `DraftContextPack` 刷新页面后不需要恢复，回到普通新聊天草稿态。
-- `DraftContextPack` 用于 context strip、Draft Context inspector 和 suggestedPrompt，不立即创建 `conversationId` 或 `runId`。
 - `Dashboard / Metrics / Reports / Data & Knowledge / Run Trace / Evidence` 的 `Open in Analysis with context` 必须从 canonical contract objects 生成上下文；入口页面只是 origin surface，不自动升格为唯一事实源。
 - `Dashboard` 可以作为问题发现入口，但当 `metric / report / evidence / data / knowledge` refs 已存在时，不得把 `Dashboard` 视为唯一 source of truth。
+- `Dashboard` 必须作为第一个 semantic context tree producer：Dashboard API / ViewModel 先暴露 semantic root tree，再由 Dashboard UI 和 Analysis context draft 共用。
+- Dashboard UI 上的 top / metric / risk / report / evidence 分析入口，本质上都是选择 semantic root tree 中的 node 或 subtree，再带入 Analysis。
+- `Analysis` 页面分工固定为：Conversation pane 负责 text-first thread，Inspector 负责 subject-scoped structured detail；结构化详情不得回塞 message card。
+- assistant message 选择 `runId` 并默认落到 `Run Trace`；user submit message 选择 `analysisTaskId` 并默认落到 `Context`。
+- 同一个 `reportId`、`sourceEvidenceId` 或其他 canonical `sourceRef` 在 `AnalysisTask` 与 `AnalysisRun` 侧可以以不同 `owner / role` 重复出现；重复出现不代表重复对象，也不改变归属。
 - `Data & Knowledge` 当前结构固定为：`LeftNav secondary list = grouped asset list`，其中 `数据资产 Data` 和 `知识文档 Docs` 只是页面内部二级列表分组，不是新的一级模块，不新增 `Data route / Knowledge route`，也不拆 `Data & Knowledge` 一级入口。
 - `Data & Knowledge` 的 `MainContent` 固定为：`SelectedAssetHeader + AssetRelationshipGraph + SelectedNodeDetail`，不再以全局总览卡片堆叠作为主线。
 - `Data & Knowledge` 的 `Inspector` 固定承接：`Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。

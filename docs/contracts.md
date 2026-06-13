@@ -202,11 +202,19 @@ localOnlyId
 - `StaticFeedbackEntranceViewModel.targetId / targetType` 可以作为 UI 本地表达。
 - 以上字段都不得替代 `runId`、`reportId`、`sourceEvidenceId`、`metricId` 等 canonical object id。
 
-### SourceRef / Context Origin ID Boundary
+### SourceRef / Inspector Tree Boundary
 
-`Context Origin` 与 `SourceRef` 是产品 / UI 可追溯性表达，不是新的正式 contract 对象，也不是 business identity 的替代品。
+`SourceRef` 是 canonical business source identity。
 
-Frontend 可以组合 Inspector UI routes、stack node keys 和本地选择态，但不得发明新的 business ID。
+`InspectorTreeNode` 是 subject-scoped Inspector tree 内的一次节点出现。
+
+`owner` 表示当前节点出现归属给谁。
+
+`role` 表示该节点为什么出现在当前树里。
+
+`Context` 只是 Analysis Inspector 的一个 root，不等于整个 Inspector。
+
+Frontend 可以组合 Inspector UI routes、tree path keys 和本地选择态，但不得发明新的 business ID。
 
 如果 UI 暴露来源 ref，它的业务身份必须回到现有 contract ID：
 
@@ -234,6 +242,82 @@ source-1
 context-item-001
 fake-report-id
 origin-ref-x
+```
+
+建议结构方向固定如下：
+
+```ts
+type InspectorOwnerRef =
+  | { type: "conversation"; conversationId: string }
+  | { type: "analysisTask"; analysisTaskId: string }
+  | { type: "analysisRun"; runId: string }
+  | { type: "report"; reportId: string }
+  | { type: "sourceEvidence"; sourceEvidenceId: string };
+
+type InspectorNodeRole =
+  | "inputContext"
+  | "runtimeReferencedSource"
+  | "runOutput"
+  | "reportSection"
+  | "evidenceItem"
+  | "traceEvent"
+  | "toolCall"
+  | "modelCall"
+  | "decision"
+  | "directory";
+
+type InspectorTreeNode = {
+  nodeId: string;
+  kind: string;
+  role: InspectorNodeRole;
+  owner: InspectorOwnerRef;
+
+  title: string;
+  summary?: string;
+  description?: string;
+  value?: string;
+  chips?: string[];
+
+  timeRange?: {
+    key: string;
+    label: string;
+  };
+
+  capturedAt?: string;
+  asOfAt?: string;
+
+  sourceRef?: SourceRef;
+  children?: InspectorTreeNode[];
+
+  disabledReason?: string;
+};
+```
+
+同一 `sourceRef` 的出现规则固定如下：
+
+- 同一个 `sourceRef` 可以出现在不同 tree 或不同 root 中。
+- 同一个 `sourceRef` 不代表相同 `owner`。
+- 同一个 `sourceRef` 不代表相同 `role`。
+- 同一个 `sourceRef` 不得做全局去重。
+- 后续 detail UI 可以展示 same-source relationship，但不能改变 tree ownership。
+
+示例：
+
+```text
+AnalysisTask.contextPack.root:
+- reportId=report-weekly-business
+- owner=analysisTaskId
+- role=inputContext
+
+AnalysisRun.runtimeReferencedSources:
+- reportId=report-weekly-business
+- owner=runId
+- role=runtimeReferencedSource
+
+AnalysisRun.reports:
+- reportId=report-weekly-business
+- owner=runId
+- role=runOutput
 ```
 
 当前已知风险：
@@ -579,41 +663,93 @@ runId
 - `runId`：消息关联的执行实例；当前 `#201` phase 的持久化 submit turn user message 必须绑定 initial `runId`。schema-level nullable 只保留给后续 message-only turn 扩展，不代表当前 submit flow 可以省略 `runId`。
 - `message-only chat turns`：当前不在 `#201` 范围内实现；如后续扩展，允许 `analysisTaskId = null`，但必须先补齐 contracts 与产品规则。
 
-当前 `AnalysisTask.contextPack` 的正式形态分两种：
+当前 `AnalysisTask.contextPack` 的正式形态固定如下：
 
 ```text
 blank draft submit -> null
-context draft submit -> sourceType / sourceId / sourceTitle / summary / chips / suggestedPrompt
+context draft submit -> AnalysisTaskContextPack
 ```
 
-字段语义固定如下：
+`AnalysisTask.contextPack` 的归属固定如下：
 
-- `businessDomainId`：引用既有 `BusinessDomain` contract 的 canonical id。
-- `contextPack = null`：表示用户从 blank draft 直接发送，没有一次性来源上下文。
-- `sourceType`：当前一次性上下文来源类型；正式枚举只允许 `dashboard | metric | report | evidence | runTrace`。
-- `sourceId`：来源对象的 canonical id。
-- `sourceTitle`：来源对象在产品中的显示标题。
-- `summary`：来源上下文摘要，不替代正式 `question`。
-- `chips`：用于 Draft Context strip / inspector 的结构化 chip 列表。
-- `suggestedPrompt`：进入草稿态时给 composer 的可编辑预填文本；发送后保留为 typed snapshot，不回写覆盖 `question`。
-- `question`：用户正式发送的问题文本，不得被 `summary`、`suggestedPrompt` 或任意草稿态 context 替代。
-- `Context Origin`：产品 / UI 用于说明 Analysis 输入从哪里来、可由哪些 canonical source objects 验证的表达层；它本身不是 source of truth，也不是新的持久化 contract 对象。
-- `summary / chips`：只能作为草稿态摘要和可读性辅助，不能替代真实 evidence / report / metric / data / knowledge source。
+- `AnalysisTask.contextPack` 属于 `AnalysisTask`。
+- `Conversation` 不拥有 `contextPack`。
+- `AnalysisRun` 不拥有 `contextPack`。
+- `AnalysisRun` 只消费 `AnalysisTask.contextPack`。
 
-`Context Origin` 的 traceability state 语义固定如下：
+非空 `AnalysisTask.contextPack` 的方向固定如下：
 
-```text
-none
-summary_only
-partial_refs
-direct_refs
+```ts
+type AnalysisTaskContextPack = {
+  version: 1;
+  suggestedPrompt: string;
+  traceability: "none" | "summary_only" | "partial_refs" | "direct_refs";
+  capturedAt: string;
+  root: InspectorTreeNode;
+};
 ```
 
 补充规则：
 
-- 如果只有 `summary / chips`，没有稳定 canonical refs，traceability state 必须是 `summary_only`。
-- 不得为了 UI 完整性伪造 supporting refs。
-- `traceability state` 当前是产品 / UI 的共享语义，不代表已新增 `packages/contracts` schema 字段；如未来进入共享 API，必须先更新 `packages/contracts`。
+- 这替代旧的 flat `sourceType / sourceId / sourceTitle / summary / chips / suggestedPrompt` 方向。
+- 不保留旧 flat shape 的兼容路径。
+- `businessDomainId` 仍引用既有 `BusinessDomain` contract 的 canonical id。
+- `contextPack = null` 表示用户从 blank draft 直接发送，没有一次性来源上下文。
+- `question` 是用户正式发送的问题文本，不得被 `suggestedPrompt`、tree summary 或任意草稿态 context 替代。
+
+`contextPack` 只允许存储以下轻量目录快照：
+
+```text
+directory structure
+node title
+lightweight summary
+value / chips
+timeRange
+capturedAt / asOfAt
+canonical sourceRef
+children
+disabledReason
+traceability
+suggestedPrompt
+```
+
+`contextPack` 不得存储以下完整载荷：
+
+```text
+full Report content
+full Report sections
+full Evidence payload
+full Metric definition
+full DataTable data
+full KnowledgeDocument content
+full RunEvent payload
+full ToolCall raw output
+full ModelCall raw output
+```
+
+生命周期与不可变规则固定如下：
+
+- `AnalysisTask.contextPack` 是 immutable input snapshot。
+- `AnalysisRun` 是 execution instance。
+- `RunEvent` 是 append-only。
+- completed / published `Report` 不得原地更新。
+- `SourceEvidence` 不得原地更新。
+- `Metric` definition 可以做版本化。
+- `Metric` observation / snapshot 必须绑定 time range，不得被 latest value 原地覆盖。
+- `KnowledgeDocument` / `DataTable` schema 如有变化，应通过 version / asOf 表达。
+- raw data 不进入 `contextPack`。
+
+为支持刷新后或 conversation re-entry 后恢复 Inspector，read surface 最低必须提供：
+
+```text
+conversationId
+currentRunId or selected message runId
+analysisTaskId
+AnalysisTask.contextPack.root
+run outputs for selected runId
+```
+
+该 read surface 未来可以由 aggregate read API 或 task/run 分离读取实现，但读取语义不能缺失。
 
 禁止：
 
@@ -621,7 +757,8 @@ direct_refs
 metadata.contextPack
 inputJson
 randomContextJson
-question || draftPrompt
+oldContextPack || newContextPack
+question || suggestedPrompt
 businessDomainId || metadata.businessDomainId
 ```
 
