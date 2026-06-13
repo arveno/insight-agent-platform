@@ -272,9 +272,7 @@ describe("useAnalysisWorkspaceController", () => {
       expect(result.current.workspaceState.kind).toBe("draft");
       expect(result.current.messages).toEqual([]);
       expect(result.current.currentRun).toBeUndefined();
-      expect(result.current.interactionMessage).toContain(
-        "Conversation.workspaceId does not match request.workspaceId"
-      );
+      expect(result.current.interactionMessage).toBe("发送失败，请稍后重试。");
     });
   });
 
@@ -329,12 +327,6 @@ describe("useAnalysisWorkspaceController", () => {
       runId: goldenPath.analysisRun.runId
     });
     expect(result.current.selectedMessageId).toBe(userMessage.messageId);
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
-
-    act(() => {
-      result.current.onSelectInspectorRoot("context");
-    });
-
     expect(result.current.inspectorTreeState).toEqual({
       path: [goldenPath.analysisTask.contextPack!.root.nodeId],
       rootKey: "context"

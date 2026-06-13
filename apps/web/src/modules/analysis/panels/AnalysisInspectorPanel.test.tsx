@@ -130,7 +130,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("经营状态总览")).toBeTruthy();
     expect(screen.queryByText(/^分析详情$/)).toBeNull();
     expect(screen.queryByRole("button", { name: /经营状态总览/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "返回上一级" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
     expect(screen.getAllByText(dashboardStaticViewModel.root.summary!)).toHaveLength(1);
     expect(screen.getAllByText("Last 30 days")).toHaveLength(1);
     expect(screen.getByText("2 个指标")).toBeTruthy();
@@ -141,7 +141,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("报告与证据 · 3 项")).toBeTruthy();
     expect(screen.getByText("平台质量 · 1 项")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Last 30 days/ })).toBeNull();
-    expect(screen.getAllByRole("button")).toHaveLength(5);
+    expect(screen.getAllByRole("button")).toHaveLength(4);
     expect(screen.queryByText("dashboardOverview")).toBeNull();
     expect(screen.queryByText("timeRange")).toBeNull();
     expect(screen.queryByText(/^directory$/)).toBeNull();
@@ -224,7 +224,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByText("零售收入")).toBeNull();
   });
 
-  it("shows back for root detail and child detail, while roots view has no back", () => {
+  it("shows back only for child detail, while roots view and root detail have no back", () => {
     const session = analysisStaticViewModel.sessions[0]!;
     const contextRoot = session.analysisTaskContextPack!.root;
     const childNode = contextRoot.children?.[0];
@@ -258,8 +258,7 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
-    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: new RegExp(childNode.title) }));
     expect(onSelectInspectorNode).toHaveBeenCalledWith(childNode.nodeId);
@@ -288,7 +287,7 @@ describe("AnalysisInspectorPanel", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
-    expect(onPopInspectorPath).toHaveBeenCalledTimes(2);
+    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
   });
 
   it("assigns report section nodes to the report owner instead of the analysis run owner", () => {

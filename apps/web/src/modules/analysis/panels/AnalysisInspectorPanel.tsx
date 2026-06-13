@@ -382,7 +382,7 @@ export function AnalysisInspectorPanel({
           node={selectedNode}
           onBack={onPopInspectorPath}
           onSelectChild={onSelectInspectorNode}
-          showBack={inspectorTreeState.path.length > 0}
+          showBack={inspectorTreeState.path.length > 1}
         />
       )}
     </SidePanel>

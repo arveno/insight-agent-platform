@@ -262,9 +262,9 @@ export function useAnalysisWorkspaceController(
   const [workspaceState, setWorkspaceState] = useState<AnalysisWorkspaceState>(() =>
     bootstrap.conversationId || bootstrap.runId
       ? {
-          description: "正在读取 Conversation / AnalysisTask / AnalysisRun / delivery surfaces。",
+          description: "正在准备当前会话与分析详情。",
           kind: "loading",
-          title: "Loading analysis runtime"
+          title: "正在加载分析详情"
         }
       : { kind: "draft" }
   );
@@ -504,12 +504,21 @@ export function useAnalysisWorkspaceController(
       }
 
       if (message.role === "user" && message.analysisTaskId) {
+        const contextRootNodeId = getRootNodeId("context", selectedSession, draftContext);
+
         setSelectedInspectorSubject({
           type: "analysisTask",
           analysisTaskId: message.analysisTaskId,
           runId: message.runId ?? undefined
         });
-        setInspectorTreeState({ path: [], rootKey: null });
+        setInspectorTreeState(
+          contextRootNodeId
+            ? {
+                path: [contextRootNodeId],
+                rootKey: "context"
+              }
+            : { path: [], rootKey: null }
+        );
       }
     },
     onSelectModel: (key) => {
@@ -586,8 +595,7 @@ export function useAnalysisWorkspaceController(
             setComposerState("idle");
             setInteractionMessage(
               createInteractionMessage(
-                loadResult.description ??
-                  "Analysis submit succeeded, but runtime workspace could not be loaded."
+                loadResult.description ?? "分析请求已提交，但暂时无法刷新当前会话。"
               )
             );
             return;
@@ -627,11 +635,7 @@ export function useAnalysisWorkspaceController(
           setInteractionMessage("");
         } catch (error) {
           setComposerState("idle");
-          setInteractionMessage(
-            createInteractionMessage(
-              error instanceof Error ? error.message : "Analysis submit failed."
-            )
-          );
+          setInteractionMessage(createInteractionMessage("发送失败，请稍后重试。"));
         }
       })();
     },
