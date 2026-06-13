@@ -73,17 +73,18 @@ Issue 必须包含：
 - 测试要求。
 - PR 证据要求。
 
-Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format、typecheck、test、smoke、security 中适用的检查。
+Issue 必须写清本任务需要运行哪些工具命令，包括 lint、format、typecheck、test、smoke、security 中适用的检查；命令必须按触碰范围收紧，不得默认把全量验证当作必选项。
 
-事实源至少包括：
+事实源必须按触碰范围列出，不得默认抄写全部 docs。最小基线包括：
 
-- 需求本身。
 - `AGENTS.md`。
 - `docs/workflow.md`。
-- `docs/architecture.md`。
-- `docs/contracts.md`。
-- `packages/contracts`。
-- 涉及产品体验、导航、页面职责、Inspector 的任务可以附带 `docs/prototypes/product-experience.html` 作为产品体验原型参考，但必须明确正式规则已经沉淀到 `AGENTS.md`、`docs/ui-design.md`、`docs/architecture.md`、`docs/contracts.md` 和 `packages/contracts`。
+- 当前 Issue body / comments。
+- 相关 PR body，如有。
+
+只有当任务实际触碰相关边界时，才追加 `docs/architecture.md`、`docs/contracts.md`、`packages/contracts`、`docs/ui-design.md`、`docs/database.md`、`docs/deployment.md` 或其它事实源。具体追加规则见 `Scoped fact-source reading and verification policy`。
+
+涉及产品体验、导航、页面职责、Inspector 的任务可以附带 `docs/prototypes/product-experience.html` 作为产品体验原型参考，但必须明确正式规则已经沉淀到正式事实源后，才能进入 Issue 和代码。
 
 Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”，必须摘出本次任务相关规则。
 
@@ -125,6 +126,65 @@ Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”�
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
 
+## Scoped fact-source reading and verification policy
+
+### Scoped reading
+
+Codex 不得默认全量读取所有 docs。
+
+每个执行任务固定最小必读：
+
+```text
+AGENTS.md
+docs/workflow.md
+当前 Issue body / comments
+相关 PR body，如有
+```
+
+然后按触碰范围追加：
+
+```text
+Identity / Workspace -> product-design 2.1, contracts, database, deployment, OpenAPI, app router, api client, backend routes/db
+SourceRef / Inspector -> product-design result follow-up, contracts SourceRef/InspectorTreeNode, ui-design Inspector, Analysis/Dashboard code
+Conversation re-entry -> product-design Conversation-first, contracts Conversation/AnalysisTask/AnalysisRun, database, runtime read surfaces, Analysis session nav
+DB / migration -> database, deployment, migration/seed/query verify scripts
+runtime lifecycle -> runtime-lifecycle, runtime-business-integration, related backend module
+frontend-only -> ui-design, architecture frontend boundary, related module code
+```
+
+只有出现事实源冲突、跨模块对象边界变化、contract/database 变更时，才扩大读取范围。
+
+PR body / execution report 必须写：
+
+```text
+Actual fact sources read
+Why no broader docs read was needed
+```
+
+### Scoped verification
+
+Codex 不得默认全量跑测试。
+
+按触碰范围执行：
+
+```text
+issue-only -> no tests
+docs-only -> git diff --check
+contracts/OpenAPI -> generate/check/drift
+frontend API/mapper/UI -> targeted web tests, typecheck:web when type boundary touched
+backend route/service -> py_compile + targeted backend tests
+DB migration/seed -> migration + seed + query verify
+auth/workspace foundation -> contracts check + migration/seed/query verify + backend auth/session tests + frontend login/guard/workspace tests
+stage merge/mainline closure -> broader verify if needed
+```
+
+Execution report 必须写：
+
+```text
+Actual verification run
+Why broader tests were not run
+```
+
 ## 8. PR 创建阶段
 
 PR 必须：
@@ -134,6 +194,8 @@ PR 必须：
 - 说明修改范围。
 - 说明规则遵守情况。
 - 提供测试 / CI / 验证证据。
+- 说明 `Actual fact sources read` 与 `Why no broader docs read was needed`。
+- 说明 `Actual verification run` 与 `Why broader tests were not run`。
 - 说明风险与未完成项。
 - 不重新定义标准，只证明自己按 Issue 完成。
 

@@ -39,6 +39,8 @@
 - Issue 未完成合规审查、未明确允许 Codex 执行前，Codex 不得写代码。
 - Codex 只能在已审查通过的 Issue 范围内执行；范围变化时必须先回到 Issue 重审。
 - 流程细节、审查项、PR 门禁、merge 条件以 `docs/workflow.md` 为准。
+- Scoped fact-source reading and verification policy is defined in `docs/workflow.md`.
+- Codex must not default to full-doc reading or full verification unless the current Issue requires it.
 - Codex 不能自审，不能自行判断“审核通过”，不能自行决定 merge，不能自行关闭治理 Issue。
 - Issue / PR 的最终判断仍等待 ChatGPT / human review 与用户决策。
 
