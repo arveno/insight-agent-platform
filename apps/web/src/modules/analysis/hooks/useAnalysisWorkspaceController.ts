@@ -484,18 +484,24 @@ export function useAnalysisWorkspaceController(
     onSelectMessageAnchor: (messageId) => {
       const message = selectedSession?.messages.find((item) => item.messageId === messageId);
 
-      if (!message || message.role !== "assistant" || !message.runId || !message.analysisTaskId) {
+      if (!message || message.role !== "assistant") {
+        return;
+      }
+
+      const { analysisTaskId, runId } = message;
+
+      if (runId == null || analysisTaskId == null) {
         return;
       }
 
       setSelectedMessageId(messageId);
       setSelectedInspectorSubject({
         type: "analysisRun",
-        analysisTaskId: message.analysisTaskId,
-        runId: message.runId
+        analysisTaskId,
+        runId
       });
       setInspectorTreeState({
-        path: [createRunTraceRootNodeId(message.runId)],
+        path: [createRunTraceRootNodeId(runId)],
         rootKey: "run-trace"
       });
     },

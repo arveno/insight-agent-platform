@@ -2,9 +2,9 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createAnalysisContextPackFromTree } from "../../../shared/navigation/analysisContextPack";
+import { dashboardInspectorDraftFixture } from "../../../shared/test/fixtures/dashboardInspectorDraftFixture";
 import { TestProviders } from "../../../shared/test/TestProviders";
 import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
-import { dashboardStaticViewModel } from "../../dashboard/fixtures/dashboardStaticViewModel";
 import {
   AnalysisInspectorPanel,
   buildAnalysisInspectorRoots
@@ -74,8 +74,8 @@ describe("AnalysisInspectorPanel", () => {
 
   it("shows dashboard draft context as a single roots entry before opening detail", () => {
     const draftContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
-      root: dashboardStaticViewModel.root,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
+      root: dashboardInspectorDraftFixture.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
 
@@ -108,8 +108,8 @@ describe("AnalysisInspectorPanel", () => {
 
   it("renders dashboard root detail only after the roots entry is opened", () => {
     const draftContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
-      root: dashboardStaticViewModel.root,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
+      root: dashboardInspectorDraftFixture.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
     const onPopInspectorPath = vi.fn();
@@ -133,7 +133,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByText(/^分析详情$/)).toBeNull();
     expect(screen.queryByRole("button", { name: /经营状态总览/ })).toBeNull();
     expect(screen.getByRole("button", { name: "返回上一级" })).toBeTruthy();
-    expect(screen.getAllByText(dashboardStaticViewModel.root.summary!)).toHaveLength(1);
+    expect(screen.getAllByText(dashboardInspectorDraftFixture.root.summary!)).toHaveLength(1);
     expect(screen.getAllByText("Last 30 days").length).toBeGreaterThan(0);
     expect(screen.getByText("2 个指标")).toBeTruthy();
     expect(screen.getByText("2 条证据")).toBeTruthy();
@@ -157,8 +157,8 @@ describe("AnalysisInspectorPanel", () => {
 
   it("renders child directory details as a header with leaf cards instead of a sibling directory card", () => {
     const draftContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
-      root: dashboardStaticViewModel.root,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
+      root: dashboardInspectorDraftFixture.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
     const metricsNode = draftContext.root.children?.find((node) => node.title === "核心指标");
@@ -200,8 +200,8 @@ describe("AnalysisInspectorPanel", () => {
 
   it("keeps metric node presentation consistent between parent-path detail and direct analysis detail", () => {
     const draftContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
-      root: dashboardStaticViewModel.root,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
+      root: dashboardInspectorDraftFixture.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
     const metricsNode = draftContext.root.children?.find((node) => node.title === "核心指标");
@@ -238,7 +238,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("4 条证据")).toBeTruthy();
 
     const directContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
       root: revenueNode,
       suggestedPrompt: "继续分析零售收入。"
     });
@@ -277,8 +277,8 @@ describe("AnalysisInspectorPanel", () => {
 
   it("reuses the generic inspector detail renderer for report, evidence, and platform-quality nodes", () => {
     const draftContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
-      root: dashboardStaticViewModel.root,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
+      root: dashboardInspectorDraftFixture.root,
       suggestedPrompt: "请继续分析当前经营状态。"
     });
     const reportNode = draftContext.root.children
@@ -321,7 +321,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("当前仅提供平台质量摘要。")).toBeTruthy();
 
     const directReportContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
       root: reportNode,
       suggestedPrompt: "继续分析周经营分析报告。"
     });
@@ -351,7 +351,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("更新时间 2026-06-03T17:30:00+08:00")).toBeTruthy();
 
     const directEvidenceContext = createAnalysisContextPackFromTree({
-      capturedAt: dashboardStaticViewModel.lastUpdatedAt,
+      capturedAt: dashboardInspectorDraftFixture.lastUpdatedAt,
       root: evidenceNode,
       suggestedPrompt: "继续分析零售收入证据摘要。"
     });
