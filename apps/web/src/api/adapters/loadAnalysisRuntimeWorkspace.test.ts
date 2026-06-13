@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   AnalysisRun,
+  AnalysisTask,
   Conversation,
   Decision,
   Message,
@@ -18,6 +19,7 @@ import { loadAnalysisRuntimeWorkspace } from "./loadAnalysisRuntimeWorkspace";
 
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
+  analysisTask: AnalysisTask;
   conversation: Conversation;
   decisions: Decision[];
   messageStream: MessageStream[];
@@ -55,6 +57,10 @@ describe("loadAnalysisRuntimeWorkspace", () => {
 
       if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}`)) {
         return Response.json(goldenPath.analysisRun);
+      }
+
+      if (url.endsWith(`/analysis-tasks/${goldenPath.analysisTask.analysisTaskId}`)) {
+        return Response.json(goldenPath.analysisTask);
       }
 
       if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}/messages`)) {
@@ -109,6 +115,7 @@ describe("loadAnalysisRuntimeWorkspace", () => {
     const session = result.viewModel.sessions[0]!;
 
     expect(session.conversationId).toBe(goldenPath.conversation.conversationId);
+    expect(session.analysisTaskId).toBe(goldenPath.analysisTask.analysisTaskId);
     expect(session.currentRun.runId).toBe(goldenPath.analysisRun.runId);
     expect(session.messageStream?.messageId).toBe(goldenPath.messageStream.at(-1)?.messageId);
     expect(session.toolDetails.map((item) => item.toolCallId)).toEqual(
@@ -124,6 +131,6 @@ describe("loadAnalysisRuntimeWorkspace", () => {
     expect(session.decisions.map((item) => item.decisionId)).toEqual(
       goldenPath.decisions.map((item) => item.decisionId)
     );
-    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 });

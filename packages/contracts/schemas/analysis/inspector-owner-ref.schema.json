@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/inspector-owner-ref.schema.json",
+  "title": "InspectorOwnerRef",
+  "description": "Inspector tree node occurrence 的 owner；表示该节点在当前树中的归属对象。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["conversation", "analysisTask", "analysisRun", "report", "sourceEvidence"]
+    },
+    "conversationId": {
+      "type": "string"
+    },
+    "analysisTaskId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "sourceEvidenceId": {
+      "type": "string"
+    }
+  },
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "conversationId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["conversation"]
+        },
+        "conversationId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["analysisTask"]
+        },
+        "analysisTaskId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "runId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["analysisRun"]
+        },
+        "runId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "reportId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["report"]
+        },
+        "reportId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "sourceEvidenceId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["sourceEvidence"]
+        },
+        "sourceEvidenceId": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

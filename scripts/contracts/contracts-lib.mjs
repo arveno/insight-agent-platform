@@ -226,12 +226,11 @@ export const runtimeSchemaPaths = [
 
 export const requiredFieldsBySchema = {
   "analysis/analysis-task-context-pack.schema.json": [
-    "sourceType",
-    "sourceId",
-    "sourceTitle",
-    "summary",
-    "chips",
-    "suggestedPrompt"
+    "version",
+    "suggestedPrompt",
+    "traceability",
+    "capturedAt",
+    "root"
   ],
   "analysis/analysis-task.schema.json": [
     "analysisTaskId",

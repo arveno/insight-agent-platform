@@ -25,10 +25,9 @@ beforeAll(() => {
 });
 
 describe("AnalysisComposer", () => {
-  it("delegates draft, mode, model, and submit interactions through controller actions", async () => {
+  it("uses a simplified question-first composer without visible mode tabs", async () => {
     const session = analysisStaticViewModel.sessions[0];
     const onComposerDraftChange = vi.fn();
-    const onComposerModeChange = vi.fn();
     const onSelectModel = vi.fn();
     const onSubmitComposer = vi.fn();
 
@@ -42,7 +41,7 @@ describe("AnalysisComposer", () => {
           modelOptions={analysisStaticViewModel.modelOptions}
           onComposerAccessoryClick={vi.fn()}
           onComposerDraftChange={onComposerDraftChange}
-          onComposerModeChange={onComposerModeChange}
+          onComposerModeChange={vi.fn()}
           onComposerStop={vi.fn()}
           onSelectModel={onSelectModel}
           onSubmitComposer={onSubmitComposer}
@@ -56,10 +55,14 @@ describe("AnalysisComposer", () => {
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByText("分析任务"));
-    expect(onComposerModeChange).toHaveBeenCalledWith("analysis");
+    const textbox = screen.getByRole("textbox", { name: "输入你想分析的问题" }) as HTMLTextAreaElement;
 
-    fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
+    expect(screen.queryByText("分析任务")).toBeNull();
+    expect(screen.queryByText("后续追问")).toBeNull();
+    expect(textbox.placeholder).toBe("输入你想分析的问题");
+    expect(textbox.rows).toBe(3);
+
+    fireEvent.change(textbox, {
       target: { value: "继续收紧华东时间窗口。" }
     });
     expect(onComposerDraftChange).toHaveBeenCalledWith("继续收紧华东时间窗口。");
@@ -68,7 +71,7 @@ describe("AnalysisComposer", () => {
     fireEvent.click(await screen.findByText("Reasoning"));
     expect(onSelectModel).toHaveBeenCalledWith("reasoning");
 
-    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    fireEvent.click(screen.getByRole("button", { name: "发送" }));
     expect(onSubmitComposer).toHaveBeenCalledTimes(1);
   });
 });

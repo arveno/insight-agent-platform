@@ -1,37 +1,45 @@
+import type { ReactNode } from "react";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
-
-import type { DashboardViewModel } from "../models/dashboardViewModel";
+import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
+import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
 type DashboardNavigationProps = {
   onNavigate?: NavigateToRoute;
 };
 
 export type DashboardHeroProps = DashboardNavigationProps & {
-  onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
-  selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
-  selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
-  viewModel: DashboardViewModel;
+  children?: ReactNode;
+  onTimeRangeChange: (key: DashboardSurfaceViewModel["timeRange"]["selectedKey"]) => void;
+  selectedTimeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
+  selectedTimeRangeKey: DashboardSurfaceViewModel["timeRange"]["selectedKey"];
+  viewModel: DashboardSurfaceViewModel;
 };
 
 export type DashboardStatCardProps = DashboardNavigationProps & {
-  metric: DashboardViewModel["businessStatCards"][number];
+  metric: InspectorTreeNode;
+  timeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
+  viewModel: DashboardSurfaceViewModel;
 };
 
 export type DashboardRiskCardProps = DashboardNavigationProps & {
   isRiskSummary?: boolean;
-  item: DashboardViewModel["anomalyCards"][number] | DashboardViewModel["riskSummary"][number];
+  item: InspectorTreeNode;
+  viewModel: DashboardSurfaceViewModel;
 };
 
 export type DashboardReportEvidenceCardProps =
   | (DashboardNavigationProps & {
       kind: "report";
-      report: DashboardViewModel["recentReports"][number];
+      report: InspectorTreeNode;
+      viewModel: DashboardSurfaceViewModel;
     })
   | (DashboardNavigationProps & {
-      evidence: DashboardViewModel["evidenceEntrances"][number];
+      evidence: InspectorTreeNode;
       kind: "evidence";
+      viewModel: DashboardSurfaceViewModel;
     });
 
 export type DashboardQualityCardProps = DashboardNavigationProps & {
-  item: DashboardViewModel["platformQualitySummary"][number];
+  item: InspectorTreeNode;
+  viewModel: DashboardSurfaceViewModel;
 };

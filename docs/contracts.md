@@ -595,7 +595,9 @@ Conversation / Message / MessageStream 的边界固定如下：
 
 `AnalysisTask` 是用户在 Analysis 草稿态真正发送问题后形成的正式输入任务对象。
 
-发送前的 `DraftContextPack` 只是一次性前端草稿上下文，不是持久化 contract 对象。
+发送前可以存在前端草稿态 context candidate；非空 submit 后必须固化为 tree-shaped `AnalysisTaskContextPack`。旧 flat `sourceType / sourceId / sourceTitle / summary / chips / suggestedPrompt` shape 不再是正式方向，也不得保留兼容路径。
+
+如草稿态 tree node 的 owner 已表达 `analysisTask` 语义但尚未拿到 canonical `analysisTaskId`，submit transaction 必须在持久化 `AnalysisTask.contextPack` 时补齐正式 `analysisTaskId`。
 
 固定规则：
 

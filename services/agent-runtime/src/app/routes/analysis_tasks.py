@@ -28,6 +28,7 @@ from src.modules.conversations.analysis_service import (
     AnalysisDraftConversationMismatchError,
     AnalysisSubmitService,
     SubmitAnalysisDraftCommand,
+    bind_analysis_task_context_pack,
 )
 
 router = APIRouter(prefix="/analysis-tasks", tags=["analysis-tasks"])
@@ -103,21 +104,43 @@ def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskReco
         )
 
     now = utc_timestamp()
+    analysis_task_id = generate_canonical_id("analysis-task")
     analysis_task: AnalysisTaskRecord = {
-        "analysisTaskId": generate_canonical_id("analysis-task"),
+        "analysisTaskId": analysis_task_id,
         "conversationId": request.conversationId,
         "workspaceId": request.workspaceId,
         "userId": request.userId,
         "businessDomainId": request.businessDomainId,
         "question": request.question,
-        "contextPack": cast(AnalysisTaskContextPack, request.contextPack.model_dump())
-        if request.contextPack is not None
-        else None,
+        "contextPack": bind_analysis_task_context_pack(
+            cast(AnalysisTaskContextPack, request.contextPack.model_dump())
+            if request.contextPack is not None
+            else None,
+            analysis_task_id,
+        ),
         "createdAt": now,
         "updatedAt": now,
     }
     _analysis_task_repository().create(analysis_task)
     return analysis_task
+
+
+@router.get(
+    "/{analysisTaskId}",
+    response_model=AnalysisTaskResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def get_analysis_task(analysisTaskId: str) -> AnalysisTaskRecord | JSONResponse:
+    """Read one persisted AnalysisTask including its immutable context snapshot."""
+
+    try:
+        return _analysis_task_repository().get_by_analysis_task_id(analysisTaskId)
+    except KeyError as error:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisTask not found: {error.args[0]}",
+        )
 
 
 @router.post(

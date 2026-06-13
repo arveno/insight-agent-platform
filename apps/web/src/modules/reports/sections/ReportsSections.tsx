@@ -11,15 +11,16 @@ import {
   createNavigationActionsFromViewModel,
   createRouteAction
 } from "../../../shared/navigation/createRouteAction";
+import {
+  createAnalysisContextPackFromTree,
+  createDraftAnalysisTaskOwnerRef
+} from "../../../shared/navigation/analysisContextPack";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../../shared/theme/typography";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import type {
-  DraftContextPack,
-  PageRouteProps
-} from "../../../shared/navigation/navigationTypes";
+import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 
 import { DecisionCard } from "../components/DecisionCard";
 import { ReportFeedbackPanel } from "../components/ReportFeedbackPanel";
@@ -29,20 +30,29 @@ export type ReportsSectionsProps = PageRouteProps & {
   viewModel: ReportsViewModel;
 };
 
-function createReportDraftContext(viewModel: ReportsViewModel): DraftContextPack {
-  return {
-    chips: [
-      `reportId ${viewModel.selectedReport.reportId}`,
-      `runId ${viewModel.selectedReport.runId}`,
-      `${viewModel.selectedReport.evidenceCount} 条证据`,
-      `${viewModel.selectedReport.sectionCount} 个章节`
-    ],
-    sourceId: viewModel.selectedReport.reportId,
-    sourceTitle: viewModel.selectedReport.title,
-    sourceType: "report",
-    suggestedPrompt: `请基于报告《${viewModel.selectedReport.title}》继续分析关键证据、风险判断和下一步动作。`,
-    summary: viewModel.selectedReport.summary
-  };
+function createReportDraftContext(viewModel: ReportsViewModel) {
+  return createAnalysisContextPackFromTree({
+    capturedAt: viewModel.lastUpdatedAt,
+    root: {
+      nodeId: `reports-node-${viewModel.selectedReport.reportId}`,
+      kind: "report",
+      role: "inputContext",
+      owner: createDraftAnalysisTaskOwnerRef(),
+      title: viewModel.selectedReport.title,
+      summary: viewModel.selectedReport.summary,
+      chips: [
+        `reportId ${viewModel.selectedReport.reportId}`,
+        `runId ${viewModel.selectedReport.runId}`,
+        `${viewModel.selectedReport.evidenceCount} 条证据`,
+        `${viewModel.selectedReport.sectionCount} 个章节`
+      ],
+      sourceRef: {
+        type: "report",
+        reportId: viewModel.selectedReport.reportId
+      }
+    },
+    suggestedPrompt: `请基于报告《${viewModel.selectedReport.title}》继续分析关键证据、风险判断和下一步动作。`
+  });
 }
 
 export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps) {
@@ -55,7 +65,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: createReportDraftContext(viewModel)
+        analysisContextPack: createReportDraftContext(viewModel)
       },
       variant: "contextPrimary"
     })
@@ -72,7 +82,7 @@ export function ReportsSections({ onNavigate, viewModel }: ReportsSectionsProps)
     onNavigate,
     route: "analysis",
     routeState: {
-      draftContextPack: createReportDraftContext(viewModel)
+      analysisContextPack: createReportDraftContext(viewModel)
     },
     variant: "contextPrimary"
   });

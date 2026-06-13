@@ -1,7 +1,7 @@
 """Shared request, response, and error models for runtime routes."""
 
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Literal, TypeAlias
 from uuid import uuid4
 
 from fastapi.responses import JSONResponse
@@ -26,17 +26,179 @@ class RuntimeRequestErrorResponse(BaseModel):
     message: str
 
 
-class AnalysisTaskContextPackModel(BaseModel):
-    """Typed context pack carried by the first L3 golden-path AnalysisTask."""
+class SourceRefReportModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["report"]
+    reportId: str
+
+
+class SourceRefMetricModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["metric"]
+    metricId: str
+
+
+class SourceRefSourceEvidenceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["sourceEvidence"]
+    sourceEvidenceId: str
+
+
+class SourceRefAnalysisRunModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["analysisRun"]
+    runId: str
+
+
+class SourceRefDataTableModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["dataTable"]
+    tableId: str
+
+
+class SourceRefKnowledgeDocumentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["knowledgeDocument"]
+    knowledgeDocumentId: str
+
+
+class SourceRefToolCallModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["toolCall"]
+    toolCallId: str
+
+
+class SourceRefModelCallModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["modelCall"]
+    modelCallId: str
+
+
+class SourceRefJobModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["job"]
+    jobId: str
+
+
+SourceRefModel: TypeAlias = (
+    SourceRefReportModel
+    | SourceRefMetricModel
+    | SourceRefSourceEvidenceModel
+    | SourceRefAnalysisRunModel
+    | SourceRefDataTableModel
+    | SourceRefKnowledgeDocumentModel
+    | SourceRefToolCallModel
+    | SourceRefModelCallModel
+    | SourceRefJobModel
+)
+
+
+class InspectorOwnerConversationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["conversation"]
+    conversationId: str
+
+
+class InspectorOwnerAnalysisTaskModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["analysisTask"]
+    analysisTaskId: str | None = None
+
+
+class InspectorOwnerAnalysisRunModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["analysisRun"]
+    runId: str
+
+
+class InspectorOwnerReportModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["report"]
+    reportId: str
+
+
+class InspectorOwnerSourceEvidenceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["sourceEvidence"]
+    sourceEvidenceId: str
+
+
+InspectorOwnerRefModel: TypeAlias = (
+    InspectorOwnerConversationModel
+    | InspectorOwnerAnalysisTaskModel
+    | InspectorOwnerAnalysisRunModel
+    | InspectorOwnerReportModel
+    | InspectorOwnerSourceEvidenceModel
+)
+
+
+class InspectorTreeTimeRangeModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    key: str
+    label: str
+
+
+class InspectorTreeNodeModel(BaseModel):
+    """One node occurrence inside the subject-scoped Inspector tree."""
 
     model_config = ConfigDict(extra="forbid")
 
-    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
-    sourceId: str
-    sourceTitle: str
-    summary: str
-    chips: list[str]
+    nodeId: str
+    kind: str
+    role: Literal[
+        "inputContext",
+        "runtimeReferencedSource",
+        "runOutput",
+        "reportSection",
+        "evidenceItem",
+        "traceEvent",
+        "toolCall",
+        "modelCall",
+        "decision",
+        "directory",
+    ]
+    owner: InspectorOwnerRefModel
+    title: str
+    summary: str | None = None
+    description: str | None = None
+    value: str | None = None
+    chips: list[str] | None = None
+    timeRange: InspectorTreeTimeRangeModel | None = None
+    capturedAt: str | None = None
+    asOfAt: str | None = None
+    sourceRef: SourceRefModel | None = None
+    children: list["InspectorTreeNodeModel"] | None = None
+    disabledReason: str | None = None
+
+
+class AnalysisTaskContextPackModel(BaseModel):
+    """Tree-shaped immutable input snapshot owned by AnalysisTask."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal[1]
     suggestedPrompt: str
+    traceability: Literal["none", "summary_only", "partial_refs", "direct_refs"]
+    capturedAt: str
+    root: InspectorTreeNodeModel
+
+
+InspectorTreeNodeModel.model_rebuild()
 
 
 class CreateAnalysisTaskRequest(BaseModel):

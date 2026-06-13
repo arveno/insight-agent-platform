@@ -5,12 +5,7 @@ import { analysisRuntimeContractSessionFixtures } from "./analysisRuntimeContrac
 
 const workspaceViewModels = analysisRuntimeContractSessionFixtures.map((fixture) =>
   mapAnalysisRuntimeContractsToWorkspaceViewModel(fixture.input, {
-    contextPack: {
-      sourceObject: fixture.presentation.sourceObject,
-      sourceRoute: fixture.presentation.sourceRoute,
-      timeRange: fixture.presentation.timeRange,
-      workspace: fixture.presentation.workspaceName
-    },
+    contextPanelNote: "点击消息后，右侧会显示对应的分析详情与上下文。",
     followUpComposerDraft: fixture.drafts.followUp,
     inputComposerDraft: fixture.drafts.input
   })
@@ -18,7 +13,7 @@ const workspaceViewModels = analysisRuntimeContractSessionFixtures.map((fixture)
 
 export const analysisStaticViewModel: AnalysisWorkspaceViewModel = {
   contextPanelNote:
-    "当前 Analysis 使用 contracts-backed 静态数据源。切换会话、提交问题、继续追问和反馈标记都只更新页面级 UI State，不触发真实 API、Agent、Tool、RAG 或 SSE 订阅。",
+    "右侧会根据当前消息显示分析详情。当前页面使用静态示例数据。",
   modelOptions: workspaceViewModels[0]?.modelOptions ?? [],
   sessions: workspaceViewModels.flatMap((workspaceViewModel) => workspaceViewModel.sessions)
 };

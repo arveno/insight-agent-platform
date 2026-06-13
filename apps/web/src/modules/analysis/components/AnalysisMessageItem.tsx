@@ -1,4 +1,4 @@
-import { List, Space, Typography, theme } from "antd";
+import { Space, Typography, theme } from "antd";
 
 import type { AnalysisMessage } from "../models/analysisMessage";
 
@@ -28,12 +28,15 @@ function getTone(role: AnalysisMessage["role"]): "assistant" | "system" | "user"
 }
 
 export type AnalysisMessageItemProps = {
+  isSelected: boolean;
   message: AnalysisMessage;
+  onSelect?: () => void;
 };
 
-export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
+export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisMessageItemProps) {
   const { token } = theme.useToken();
   const tone = getTone(message.role);
+  const isInteractive = Boolean(onSelect);
   const backgroundByTone = {
     assistant: token.colorBgContainer,
     system: token.colorFillAlter,
@@ -45,12 +48,12 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
     user: token.colorBorder
   };
 
-  return (
+  const content = (
     <div
       style={{
         alignSelf: message.role === "user" ? "flex-end" : "flex-start",
         background: backgroundByTone[tone],
-        border: `1px solid ${borderByTone[tone]}`,
+        border: `1px solid ${isInteractive && isSelected ? token.colorPrimary : borderByTone[tone]}`,
         borderRadius: token.borderRadiusLG,
         maxWidth: "78%",
         padding: token.paddingLG
@@ -59,22 +62,6 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
       <Space direction="vertical" size={token.marginXS} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{getRoleLabel(message.role)}</Typography.Text>
         <Typography.Paragraph style={{ margin: 0 }}>{message.content}</Typography.Paragraph>
-        {message.supportingItems?.length ? (
-          <div>
-            <Typography.Text style={{ fontWeight: token.fontWeightStrong }}>
-              {message.supportingTitle ?? "支持信息"}
-            </Typography.Text>
-            <List
-              dataSource={message.supportingItems}
-              renderItem={(item) => (
-                <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
-                  <Typography.Text>{item}</Typography.Text>
-                </List.Item>
-              )}
-              split={false}
-            />
-          </div>
-        ) : null}
         {message.metaText ? (
           <Typography.Text type="secondary">{message.metaText}</Typography.Text>
         ) : null}
@@ -83,5 +70,27 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
         ) : null}
       </Space>
     </div>
+  );
+
+  if (!isInteractive) {
+    return content;
+  }
+
+  return (
+    <button
+      onClick={onSelect}
+      style={{
+        alignSelf: message.role === "user" ? "flex-end" : "flex-start",
+        background: "transparent",
+        border: 0,
+        cursor: "pointer",
+        display: "flex",
+        padding: 0,
+        textAlign: "left"
+      }}
+      type="button"
+    >
+      {content}
+    </button>
   );
 }

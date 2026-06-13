@@ -1,8 +1,8 @@
-import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import type {
   SharedRiskViewModel,
   SharedStatusViewModel
 } from "../../../shared/utils/viewModelState";
+import type { AnalysisTaskContextPack } from "./runtimeContractTypes";
 
 import type { AnalysisMessage } from "./analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "./analysisRun";
@@ -23,16 +23,7 @@ export type AnalysisComposerViewModel = {
   title: string;
 };
 
-export type AnalysisContextPackViewModel = {
-  sourceObject: string;
-  sourceRoute: string;
-  stripText: string;
-  systemText: string;
-  timeRange: string;
-  workspace: string;
-};
-
-export type AnalysisDraftContextViewModel = DraftContextPack;
+export type AnalysisDraftContextViewModel = AnalysisTaskContextPack;
 
 export type AnalysisSessionSummaryViewModel = {
   conversationId: string;
@@ -43,17 +34,6 @@ export type AnalysisSessionSummaryViewModel = {
   summary: string;
   title: string;
   updatedAtText: string;
-};
-
-export type AnalysisResultSummaryViewModel = {
-  actionSuggestions: string[];
-  conclusion: string;
-  evidenceSummary: string;
-  findingBullets: string[];
-  key: string;
-  riskViewModel?: SharedRiskViewModel;
-  statusViewModel: SharedStatusViewModel;
-  title: string;
 };
 
 export type AnalysisSurfaceState = "ready" | "empty" | "notImplemented" | "unavailable";
@@ -114,32 +94,17 @@ export type AnalysisDecisionViewModel = {
   title: string;
 };
 
-export type AnalysisMemoryContextViewModel = {
-  memoryItemId: string;
-  summary: string;
-  title: string;
-};
-
-export type AnalysisInspectorPanelKey =
-  | "draft-context"
-  | "run-trace"
-  | "tool-detail"
-  | "source-evidence"
-  | "report-preview"
-  | "decision-detail"
-  | "memory-context";
-
 export type AnalysisComposerMode = "analysis" | "follow_up";
 
 export type AnalysisSessionViewModel = {
+  analysisTaskContextPack: AnalysisTaskContextPack | null;
+  analysisTaskId: string;
   conversationId: string;
   currentRun: AnalysisRun;
-  contextPack: AnalysisContextPackViewModel;
   decisions: AnalysisDecisionViewModel[];
   decisionsState: AnalysisSurfaceState;
   followUpComposer: AnalysisComposerViewModel;
   inputComposer: AnalysisComposerViewModel;
-  memoryContext?: AnalysisMemoryContextViewModel;
   messageStream?: AnalysisMessageStreamViewModel;
   messageStreamState: AnalysisSurfaceState;
   messages: AnalysisMessage[];
@@ -147,7 +112,6 @@ export type AnalysisSessionViewModel = {
   modelDetailsState: AnalysisSurfaceState;
   reportPreview?: AnalysisReportPreviewViewModel;
   reportPreviewState: AnalysisSurfaceState;
-  resultSummary: AnalysisResultSummaryViewModel;
   runEvents: AnalysisRunEvent[];
   sessionSummary: AnalysisSessionSummaryViewModel;
   sourceEvidence: AnalysisSourceEvidenceViewModel[];

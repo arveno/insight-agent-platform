@@ -1,5 +1,6 @@
 import type {
   AnalysisRunContract,
+  AnalysisTask,
   ConversationContract,
   Decision,
   MessageContract,
@@ -100,6 +101,101 @@ function createRun({
     validatingAt: status === "created" ? null : createdAt,
     waitingFor: null,
     waitingSince: null,
+    workspaceId
+  };
+}
+
+function createAnalysisTaskContextPack({
+  analysisTaskId,
+  capturedAt,
+  nodeId,
+  sourceRef,
+  suggestedPrompt,
+  summary,
+  timeRangeLabel,
+  title
+}: {
+  analysisTaskId: string;
+  capturedAt: string;
+  nodeId: string;
+  sourceRef:
+    | { metricId: string; type: "metric" }
+    | { reportId: string; type: "report" }
+    | { sourceEvidenceId: string; type: "sourceEvidence" };
+  suggestedPrompt: string;
+  summary: string;
+  timeRangeLabel: string;
+  title: string;
+}): NonNullable<AnalysisTask["contextPack"]> {
+  return {
+    capturedAt,
+    root: {
+      nodeId,
+      kind: "contextEntry",
+      role: "inputContext",
+      owner: {
+        analysisTaskId,
+        type: "analysisTask"
+      },
+      title,
+      summary,
+      chips: ["已附带上下文", timeRangeLabel],
+      timeRange: {
+        key: timeRangeLabel.toLowerCase().replaceAll(" ", "_"),
+        label: timeRangeLabel
+      },
+      sourceRef,
+      children: [
+        {
+          nodeId: `${nodeId}-primary-source`,
+          kind: sourceRef.type,
+          role: "inputContext",
+          owner: {
+            analysisTaskId,
+            type: "analysisTask"
+          },
+          title: `${title} · 关键来源`,
+          summary: "当前请求会基于这份来源摘要继续分析。",
+          sourceRef
+        }
+      ]
+    },
+    suggestedPrompt,
+    traceability: "direct_refs",
+    version: 1
+  };
+}
+
+function createAnalysisTask({
+  analysisTaskId,
+  businessDomainId,
+  contextPack,
+  conversationId,
+  createdAt,
+  question,
+  updatedAt,
+  userId,
+  workspaceId
+}: {
+  analysisTaskId: string;
+  businessDomainId: string;
+  contextPack: AnalysisTask["contextPack"];
+  conversationId: string;
+  createdAt: string;
+  question: string;
+  updatedAt: string;
+  userId: string;
+  workspaceId: string;
+}): AnalysisTask {
+  return {
+    analysisTaskId,
+    businessDomainId,
+    contextPack,
+    conversationId,
+    createdAt,
+    question,
+    updatedAt,
+    userId,
     workspaceId
   };
 }
@@ -386,7 +482,9 @@ const revenueConversationId = "conversation-revenue-gap-q2";
 const revenueRunId = "analysis-q2-revenue-gap";
 const revenueTurnId = "turn-revenue-gap-q2-1";
 const revenueReportId = "report-revenue-gap-q2";
+const revenueAnalysisTaskId = "analysis-task-revenue-gap-q2";
 const revenueToolCallId = "tool-call-analysis-q2-revenue-gap-metrics";
+const revenueQuestion = "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。";
 
 const revenueConversation = createConversation({
   conversationId: revenueConversationId,
@@ -398,7 +496,7 @@ const revenueConversation = createConversation({
 });
 
 const revenueRun = createRun({
-  analysisTaskId: "analysis-task-revenue-gap-q2",
+  analysisTaskId: revenueAnalysisTaskId,
   completedAt: "2026-06-05T11:24:00+08:00",
   createdAt: "2026-06-05T11:08:00+08:00",
   phase: "delivery",
@@ -409,9 +507,33 @@ const revenueRun = createRun({
   workspaceId
 });
 
+const revenueAnalysisTask = createAnalysisTask({
+  analysisTaskId: revenueAnalysisTaskId,
+  businessDomainId: "business-domain-revenue-quality",
+  contextPack: createAnalysisTaskContextPack({
+    analysisTaskId: revenueAnalysisTaskId,
+    capturedAt: "2026-06-05T11:08:12+08:00",
+    nodeId: "analysis-task-revenue-gap-context-root",
+    sourceRef: {
+      metricId: "metric-recognized-revenue",
+      type: "metric"
+    },
+    suggestedPrompt: revenueQuestion,
+    summary: "Dashboard / Revenue 入口把收入异常子树固化为本次 AnalysisTask 的不可变输入快照。",
+    timeRangeLabel: "Last 30 days",
+    title: "Dashboard / Revenue"
+  }),
+  conversationId: revenueConversationId,
+  createdAt: "2026-06-05T11:08:12+08:00",
+  question: revenueQuestion,
+  updatedAt: "2026-06-05T11:08:12+08:00",
+  userId,
+  workspaceId
+});
+
 const revenueMessages = [
   createMessage({
-    analysisTaskId: "analysis-task-revenue-gap-q2",
+    analysisTaskId: revenueAnalysisTaskId,
     content:
       "当前从 Dashboard / Revenue 带上下文进入 Analysis，本阶段只固定 contracts-backed workspace 骨架。",
     conversationId: revenueConversationId,
@@ -426,8 +548,8 @@ const revenueMessages = [
     turnId: "turn-revenue-gap-q2-context"
   }),
   createMessage({
-    analysisTaskId: "analysis-task-revenue-gap-q2",
-    content: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+    analysisTaskId: revenueAnalysisTaskId,
+    content: revenueQuestion,
     conversationId: revenueConversationId,
     createdAt: "2026-06-05T11:08:12+08:00",
     messageId: "message-revenue-gap-q2-user",
@@ -440,7 +562,7 @@ const revenueMessages = [
     turnId: revenueTurnId
   }),
   createMessage({
-    analysisTaskId: "analysis-task-revenue-gap-q2",
+    analysisTaskId: revenueAnalysisTaskId,
     content: "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，而不是整体价格体系失效。",
     conversationId: revenueConversationId,
     createdAt: "2026-06-05T11:22:00+08:00",
@@ -630,6 +752,8 @@ const revenueMessageStream = [
 
 const marginConversationId = "conversation-margin-follow-up";
 const marginRunId = "analysis-margin-follow-up";
+const marginAnalysisTaskId = "analysis-task-margin-follow-up";
+const marginQuestion = "继续分析毛利率波动背后的主要驱动因素。";
 const marginDecisions: Decision[] = [];
 
 const marginConversation = createConversation({
@@ -642,13 +766,37 @@ const marginConversation = createConversation({
 });
 
 const marginRun = createRun({
-  analysisTaskId: "analysis-task-margin-follow-up",
+  analysisTaskId: marginAnalysisTaskId,
   completedAt: null,
   createdAt: "2026-06-05T10:05:00+08:00",
   phase: "synthesis",
   runId: marginRunId,
   startedAt: "2026-06-05T10:05:30+08:00",
   status: "running",
+  userId,
+  workspaceId
+});
+
+const marginAnalysisTask = createAnalysisTask({
+  analysisTaskId: marginAnalysisTaskId,
+  businessDomainId: "business-domain-margin-analysis",
+  contextPack: createAnalysisTaskContextPack({
+    analysisTaskId: marginAnalysisTaskId,
+    capturedAt: "2026-06-05T10:05:12+08:00",
+    nodeId: "analysis-task-margin-context-root",
+    sourceRef: {
+      metricId: "metric-gross-margin",
+      type: "metric"
+    },
+    suggestedPrompt: marginQuestion,
+    summary: "Metrics / Margin 入口将毛利率波动节点固化为本次 AnalysisTask 的树形输入。",
+    timeRangeLabel: "Current quarter",
+    title: "Metrics / Margin"
+  }),
+  conversationId: marginConversationId,
+  createdAt: "2026-06-05T10:05:12+08:00",
+  question: marginQuestion,
+  updatedAt: "2026-06-05T10:05:12+08:00",
   userId,
   workspaceId
 });
@@ -695,7 +843,7 @@ const marginRunEvents = [
 
 const marginMessages = [
   createMessage({
-    analysisTaskId: "analysis-task-margin-follow-up",
+    analysisTaskId: marginAnalysisTaskId,
     content: "当前从 Metrics / Margin 带上下文进入 Analysis。",
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:05:00+08:00",
@@ -709,8 +857,8 @@ const marginMessages = [
     turnId: "turn-margin-follow-up-context"
   }),
   createMessage({
-    analysisTaskId: "analysis-task-margin-follow-up",
-    content: "继续分析毛利率波动背后的主要驱动因素。",
+    analysisTaskId: marginAnalysisTaskId,
+    content: marginQuestion,
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:05:12+08:00",
     messageId: "message-margin-follow-up-user",
@@ -723,7 +871,7 @@ const marginMessages = [
     turnId: "turn-margin-follow-up-1"
   }),
   createMessage({
-    analysisTaskId: "analysis-task-margin-follow-up",
+    analysisTaskId: marginAnalysisTaskId,
     content: "当前正在拆分品类与区域差异，初步判断促销结构变化对毛利率影响较大。",
     conversationId: marginConversationId,
     createdAt: "2026-06-05T10:18:00+08:00",
@@ -795,6 +943,8 @@ const marginMessageStream = [
 
 const stockoutConversationId = "conversation-stockout-risk";
 const stockoutRunId = "analysis-stockout-risk";
+const stockoutAnalysisTaskId = "analysis-task-stockout-risk";
+const stockoutQuestion = "解释北区缺货率异常与补货任务冲突的关系。";
 const stockoutDecisions: Decision[] = [];
 
 const stockoutConversation = createConversation({
@@ -807,7 +957,7 @@ const stockoutConversation = createConversation({
 });
 
 const stockoutRun = createRun({
-  analysisTaskId: "analysis-task-stockout-risk",
+  analysisTaskId: stockoutAnalysisTaskId,
   completedAt: null,
   createdAt: "2026-06-05T09:36:00+08:00",
   phase: "evidence_binding",
@@ -818,9 +968,33 @@ const stockoutRun = createRun({
   workspaceId
 });
 
+const stockoutAnalysisTask = createAnalysisTask({
+  analysisTaskId: stockoutAnalysisTaskId,
+  businessDomainId: "business-domain-stockout-governance",
+  contextPack: createAnalysisTaskContextPack({
+    analysisTaskId: stockoutAnalysisTaskId,
+    capturedAt: "2026-06-05T09:36:12+08:00",
+    nodeId: "analysis-task-stockout-context-root",
+    sourceRef: {
+      sourceEvidenceId: "source-evidence-quality-job",
+      type: "sourceEvidence"
+    },
+    suggestedPrompt: stockoutQuestion,
+    summary: "Metrics / Stockout 入口把异常节点与任务证据子树固定为本次 AnalysisTask 输入。",
+    timeRangeLabel: "Last 12 hours",
+    title: "Metrics / Stockout"
+  }),
+  conversationId: stockoutConversationId,
+  createdAt: "2026-06-05T09:36:12+08:00",
+  question: stockoutQuestion,
+  updatedAt: "2026-06-05T09:36:12+08:00",
+  userId,
+  workspaceId
+});
+
 const stockoutMessages = [
   createMessage({
-    analysisTaskId: "analysis-task-stockout-risk",
+    analysisTaskId: stockoutAnalysisTaskId,
     content: "当前从 Metrics / Stockout 带上下文进入 Analysis。",
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:36:00+08:00",
@@ -834,8 +1008,8 @@ const stockoutMessages = [
     turnId: "turn-stockout-risk-context"
   }),
   createMessage({
-    analysisTaskId: "analysis-task-stockout-risk",
-    content: "解释北区缺货率异常与补货任务冲突的关系。",
+    analysisTaskId: stockoutAnalysisTaskId,
+    content: stockoutQuestion,
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:36:12+08:00",
     messageId: "message-stockout-risk-user",
@@ -848,7 +1022,7 @@ const stockoutMessages = [
     turnId: "turn-stockout-risk-1"
   }),
   createMessage({
-    analysisTaskId: "analysis-task-stockout-risk",
+    analysisTaskId: stockoutAnalysisTaskId,
     content: "当前证据存在冲突，结论应保持审慎，优先保留治理和观测入口。",
     conversationId: stockoutConversationId,
     createdAt: "2026-06-05T09:46:00+08:00",
@@ -945,6 +1119,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
       input: "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。"
     },
     input: {
+      analysisTask: revenueAnalysisTask,
       conversation: revenueConversation,
       currentRun: revenueRun,
       decisions: revenueDecisions,
@@ -969,6 +1144,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
       input: "继续分析毛利率波动背后的主要驱动因素。"
     },
     input: {
+      analysisTask: marginAnalysisTask,
       conversation: marginConversation,
       currentRun: marginRun,
       decisions: marginDecisions,
@@ -993,6 +1169,7 @@ export const analysisRuntimeContractSessionFixtures: AnalysisRuntimeContractSess
       input: "解释北区缺货率异常与补货任务冲突的关系。"
     },
     input: {
+      analysisTask: stockoutAnalysisTask,
       conversation: stockoutConversation,
       currentRun: stockoutRun,
       decisions: stockoutDecisions,

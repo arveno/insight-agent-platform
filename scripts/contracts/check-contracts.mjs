@@ -171,9 +171,11 @@ if (JSON.stringify(runEventSchema.properties.eventType.enum) !== JSON.stringify(
 
 const toolCallSchema = schemaByPath.get("analysis/tool-call.schema.json");
 const modelCallSchema = schemaByPath.get("analysis/model-call.schema.json");
+const sourceRefSchema = schemaByPath.get("analysis/source-ref.schema.json");
+const inspectorOwnerRefSchema = schemaByPath.get("analysis/inspector-owner-ref.schema.json");
 
-if (!toolCallSchema || !modelCallSchema) {
-  fail("ToolCall or ModelCall schema is missing.");
+if (!toolCallSchema || !modelCallSchema || !sourceRefSchema || !inspectorOwnerRefSchema) {
+  fail("ToolCall, ModelCall, SourceRef, or InspectorOwnerRef schema is missing.");
 }
 
 if (JSON.stringify(toolCallSchema.properties.status.enum) !== JSON.stringify(runEventStatuses)) {
@@ -205,6 +207,48 @@ if (
   fail("ApprovalRequest.status enum does not match the formal ApprovalStatus list.");
 }
 
+const validDraftOwnerRef = {
+  type: "analysisTask"
+};
+
+if (validateExampleAgainstSchema(validDraftOwnerRef, "InspectorOwnerRef", schemaEntries).length > 0) {
+  fail("InspectorOwnerRef must allow draft analysisTask owners without analysisTaskId.");
+}
+
+for (const [schemaTitle, label, example] of [
+  [
+    "SourceRef",
+    "SourceRef report branch must reject mixed metricId",
+    { type: "report", reportId: "report-1", metricId: "metric-1" }
+  ],
+  [
+    "SourceRef",
+    "SourceRef analysisRun branch must reject mixed reportId",
+    { type: "analysisRun", runId: "run-1", reportId: "report-1" }
+  ],
+  [
+    "InspectorOwnerRef",
+    "InspectorOwnerRef analysisRun branch must reject analysisTaskId",
+    { type: "analysisRun", runId: "run-1", analysisTaskId: "analysis-task-1" }
+  ],
+  [
+    "InspectorOwnerRef",
+    "InspectorOwnerRef analysisTask branch must reject runId",
+    { type: "analysisTask", runId: "run-1" }
+  ],
+  [
+    "InspectorOwnerRef",
+    "InspectorOwnerRef report branch must reject sourceEvidenceId",
+    { type: "report", reportId: "report-1", sourceEvidenceId: "source-evidence-1" }
+  ]
+]) {
+  const errors = validateExampleAgainstSchema(example, schemaTitle, schemaEntries);
+
+  if (errors.length === 0) {
+    fail(`${label}; schema accepted invalid payload ${JSON.stringify(example)}.`);
+  }
+}
+
 const contractsCoreObjectsMatch = contractsDocs.match(
   /核心对象包括：\n\n```text\n([\s\S]*?)\n```/
 );
@@ -222,6 +266,9 @@ const contractsCoreObjects = new Set(
 
 const nonCoreSchemaTitles = new Set([
   "AnalysisTaskContextPack",
+  "InspectorOwnerRef",
+  "InspectorTreeNode",
+  "SourceRef",
   "SubmitAnalysisDraftRequest",
   "SubmitAnalysisDraftResponse"
 ]);

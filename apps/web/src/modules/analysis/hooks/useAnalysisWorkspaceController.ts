@@ -9,17 +9,31 @@ import {
   submitAnalysisDraft,
   type SubmitAnalysisDraftInput
 } from "../../../api/adapters/submitAnalysisDraft";
-import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
+import type { AnalysisContextRouteState } from "../../../shared/navigation/navigationTypes";
 import type {
   AnalysisComposerMode,
   AnalysisComposerViewModel,
   AnalysisDraftContextViewModel,
-  AnalysisInspectorPanelKey,
   AnalysisSessionViewModel,
   AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
 import type { AnalysisMessage } from "../models/analysisMessage";
-import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
+import type { AnalysisRun } from "../models/analysisRun";
+import type { InspectorSubject } from "../models/inspectorSubject";
+import type {
+  AnalysisInspectorRootKey,
+  AnalysisInspectorTreeState
+} from "../models/inspectorTree";
+import {
+  createContextRootNodeId,
+  createDecisionsRootNodeId,
+  createEvidenceRootNodeId,
+  createModelCallsRootNodeId,
+  createReportsRootNodeId,
+  createRunHistoryRootNodeId,
+  createRunTraceRootNodeId,
+  createToolCallsRootNodeId
+} from "../models/inspectorTree";
 import type { SubmitAnalysisDraftResponse } from "../models/runtimeContractTypes";
 
 type ComposerState = "idle" | "running";
@@ -56,14 +70,13 @@ export type AnalysisDraftSubmitter = (
 
 export type UseAnalysisWorkspaceControllerOptions = {
   bootstrap?: AnalysisRuntimeBootstrap;
-  draftContext?: DraftContextPack;
+  draftContext?: AnalysisContextRouteState;
   loader?: AnalysisWorkspaceDataLoader;
   submitIdentity?: AnalysisDraftSubmitIdentity;
   submitter?: AnalysisDraftSubmitter;
 };
 
 export type AnalysisWorkspaceController = {
-  activeInspectorPanel: AnalysisInspectorPanelKey;
   composerDraft: string;
   composerMode: AnalysisComposerMode;
   composerState: ComposerState;
@@ -74,31 +87,28 @@ export type AnalysisWorkspaceController = {
   currentRun?: AnalysisRun;
   draftContext?: AnalysisDraftContextViewModel;
   interactionMessage: string;
-  isRunTraceDetailOpen: boolean;
+  inspectorTreeState: AnalysisInspectorTreeState;
   messages: AnalysisMessage[];
   modelOptions: readonly { key: string; label: string }[];
-  onCloseRunTraceDetail: () => void;
   onComposerAccessoryClick: () => void;
   onComposerDraftChange: (value: string) => void;
   onComposerModeChange: (mode: AnalysisComposerMode) => void;
   onComposerStop: () => void;
-  onOpenInspectorPanel: (panel: AnalysisInspectorPanelKey) => void;
+  onPopInspectorPath: () => void;
   onResetForNewAnalysis: () => void;
+  onSelectInspectorNode: (nodeId: string) => void;
+  onSelectInspectorRoot: (rootKey: AnalysisInspectorRootKey) => void;
+  onSelectMessageAnchor: (messageId: string) => void;
   onSelectModel: (key: string) => void;
-  onSelectRunEvent: (eventId: string) => void;
   onSelectSession: (conversationId: string) => void;
   onSessionSearchChange: (value: string) => void;
   onSubmitComposer: () => void;
-  runEvents: AnalysisRunEvent[];
+  selectedConversationId: string | null;
+  selectedInspectorSubject?: InspectorSubject;
+  selectedMessageId: string | null;
   selectedModelKey: string;
   selectedModelLabel: string;
-  selectedReportId: string | null;
-  selectedRunEvent?: AnalysisRunEvent;
-  selectedRunEventId: string | null;
   selectedSession?: AnalysisSessionViewModel;
-  selectedConversationId: string | null;
-  selectedSourceEvidenceId: string | null;
-  selectedToolCallId: string | null;
   sessionSearchQuery: string;
   sessions: AnalysisSessionViewModel[];
   visibleSessions: AnalysisSessionViewModel[];
@@ -110,52 +120,34 @@ function createInteractionMessage(text: string): string {
 }
 
 function createDraftComposerViewModels(
-  draftContext?: DraftContextPack
+  draftContext?: AnalysisContextRouteState
 ): AnalysisWorkspaceController["composerViewModels"] {
-  const contextHint = draftContext
-    ? `当前草稿上下文来自 ${draftContext.sourceType} · ${draftContext.sourceTitle}。`
-    : "当前处于新聊天草稿态，发送前不会创建 Conversation 或 AnalysisRun。";
-  const helperText = draftContext
-    ? "发送后才会把 DraftContextPack 固化为本次 AnalysisTask.contextPack snapshot。"
-    : "可以直接输入问题，或从 Dashboard / Metrics / Reports / Evidence / Run Trace 带上下文进入。";
-
   return {
     analysis: {
-      contextHint,
-      helperText,
+      contextHint: "",
+      helperText: "",
       initialDraft: draftContext?.suggestedPrompt ?? "",
       key: "draft-analysis",
-      placeholder: "例如：解释最近收入增速变化，并给出下一步建议。",
-      submitLabel: "发送消息",
+      placeholder: "输入你想分析的问题",
+      submitLabel: "发送",
       suggestions: [],
-      title: "新聊天草稿"
+      title: "输入你想分析的问题"
     },
     followUp: {
-      contextHint,
-      helperText: "当前还没有已创建的会话；如需发送，仍会以新的 AnalysisTask 开始。",
+      contextHint: "",
+      helperText: "",
       initialDraft: draftContext?.suggestedPrompt ?? "",
       key: "draft-follow-up",
-      placeholder: "补充你希望一起发送的约束、时间范围或证据线索。",
-      submitLabel: "发送消息",
+      placeholder: "输入你想分析的问题",
+      submitLabel: "发送",
       suggestions: [],
-      title: "草稿补充"
+      title: "输入你想分析的问题"
     }
   };
 }
 
-function getDraftContextSignature(draftContext?: DraftContextPack): string {
-  if (!draftContext) {
-    return "";
-  }
-
-  return [
-    draftContext.sourceType,
-    draftContext.sourceId,
-    draftContext.sourceTitle,
-    draftContext.summary,
-    draftContext.suggestedPrompt,
-    draftContext.chips.join("|")
-  ].join("::");
+function getDraftContextSignature(draftContext?: AnalysisContextRouteState): string {
+  return draftContext ? JSON.stringify(draftContext) : "";
 }
 
 function getActiveDraft(
@@ -164,10 +156,6 @@ function getActiveDraft(
   followUpDraft: string
 ): string {
   return composerMode === "analysis" ? analysisDraft : followUpDraft;
-}
-
-function getFirstRunEventId(session: AnalysisSessionViewModel | undefined): string | null {
-  return session?.runEvents[0]?.eventId ?? null;
 }
 
 function parseBootstrapFromLocation(): AnalysisRuntimeBootstrap {
@@ -202,6 +190,62 @@ function getWorkspaceStateFromLoadResult(result: AnalysisWorkspaceLoadResult): A
   }
 }
 
+function findLatestMessageByRole(
+  session: AnalysisSessionViewModel | undefined,
+  role: AnalysisMessage["role"]
+): AnalysisMessage | undefined {
+  return session?.messages
+    .slice()
+    .reverse()
+    .find((message) => message.role === role);
+}
+
+function getRootNodeId(
+  rootKey: AnalysisInspectorRootKey,
+  session: AnalysisSessionViewModel | undefined,
+  draftContext: AnalysisContextRouteState | undefined
+): string | null {
+  if (rootKey === "context") {
+    return (
+      session?.analysisTaskContextPack?.root.nodeId ??
+      (session ? createContextRootNodeId(session.analysisTaskId) : null) ??
+      draftContext?.root.nodeId ??
+      null
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  switch (rootKey) {
+    case "decisions":
+      return createDecisionsRootNodeId(session.currentRun.runId);
+    case "evidence":
+      return createEvidenceRootNodeId(session.currentRun.runId);
+    case "model-calls":
+      return createModelCallsRootNodeId(session.currentRun.runId);
+    case "reports":
+      return createReportsRootNodeId(session.currentRun.runId);
+    case "run-history":
+      return createRunHistoryRootNodeId(session.analysisTaskId);
+    case "run-trace":
+      return createRunTraceRootNodeId(session.currentRun.runId);
+    case "tool-calls":
+      return createToolCallsRootNodeId(session.currentRun.runId);
+    case "runtime-references":
+      return `inspector-root-runtime-references:${session.currentRun.runId}`;
+  }
+}
+
+function createRunSubject(session: AnalysisSessionViewModel): InspectorSubject {
+  return {
+    type: "analysisRun",
+    analysisTaskId: session.analysisTaskId,
+    runId: session.currentRun.runId
+  };
+}
+
 export function useAnalysisWorkspaceController(
   options: UseAnalysisWorkspaceControllerOptions = {}
 ): AnalysisWorkspaceController {
@@ -213,26 +257,21 @@ export function useAnalysisWorkspaceController(
   const submitter = options.submitter ?? submitAnalysisDraft;
   const draftContextSignature = useMemo(
     () => getDraftContextSignature(options.draftContext),
-    [
-      options.draftContext?.chips,
-      options.draftContext?.sourceId,
-      options.draftContext?.sourceTitle,
-      options.draftContext?.sourceType,
-      options.draftContext?.suggestedPrompt,
-      options.draftContext?.summary
-    ]
+    [options.draftContext]
   );
   const [workspaceState, setWorkspaceState] = useState<AnalysisWorkspaceState>(() =>
     bootstrap.conversationId || bootstrap.runId
       ? {
-          description: "正在读取 Conversation / AnalysisRun / delivery surfaces。",
+          description: "正在准备当前会话与分析详情。",
           kind: "loading",
-          title: "Loading analysis runtime"
+          title: "正在加载分析详情"
         }
       : { kind: "draft" }
   );
   const [workspaceViewModel, setWorkspaceViewModel] = useState<AnalysisWorkspaceViewModel | null>(null);
-  const [draftContext, setDraftContext] = useState<DraftContextPack | undefined>(options.draftContext);
+  const [draftContext, setDraftContext] = useState<AnalysisContextRouteState | undefined>(
+    options.draftContext
+  );
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
   const [analysisDraft, setAnalysisDraft] = useState(options.draftContext?.suggestedPrompt ?? "");
@@ -246,14 +285,13 @@ export function useAnalysisWorkspaceController(
   const [composerState, setComposerState] = useState<ComposerState>("idle");
   const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelOptions[0].key);
   const [interactionMessage, setInteractionMessage] = useState("");
-  const [activeInspectorPanel, setActiveInspectorPanel] = useState<AnalysisInspectorPanelKey>(
-    bootstrap.conversationId || bootstrap.runId ? "run-trace" : "draft-context"
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [selectedInspectorSubject, setSelectedInspectorSubject] = useState<
+    InspectorSubject | undefined
+  >(undefined);
+  const [inspectorTreeState, setInspectorTreeState] = useState<AnalysisInspectorTreeState>(() =>
+    options.draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
   );
-  const [selectedRunEventId, setSelectedRunEventId] = useState<string | null>(null);
-  const [isRunTraceDetailOpen, setIsRunTraceDetailOpen] = useState(false);
-  const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(null);
-  const [selectedSourceEvidenceId, setSelectedSourceEvidenceId] = useState<string | null>(null);
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
   useEffect(() => {
     setDraftContext(options.draftContext);
@@ -314,29 +352,31 @@ export function useAnalysisWorkspaceController(
   }, [sessions, workspaceState.kind]);
 
   useEffect(() => {
-    if (!selectedSession) {
-      setSelectedRunEventId(null);
-      setSelectedToolCallId(null);
-      setSelectedSourceEvidenceId(null);
-      setSelectedReportId(null);
-
-      if (workspaceState.kind === "draft") {
-        setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
-        setFollowUpDraft("");
-      } else {
-        setAnalysisDraft("");
-        setFollowUpDraft("");
-      }
-
+    if (workspaceState.kind === "draft") {
+      setSelectedInspectorSubject(undefined);
+      setSelectedMessageId(null);
+      setInspectorTreeState(
+        draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
+      );
+      setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
+      setFollowUpDraft("");
       return;
     }
 
+    if (!selectedSession) {
+      return;
+    }
+
+    const latestAssistantMessage = findLatestMessageByRole(selectedSession, "assistant");
+
+    setSelectedInspectorSubject(createRunSubject(selectedSession));
+    setSelectedMessageId(latestAssistantMessage?.messageId ?? null);
+    setInspectorTreeState({
+      path: [createRunTraceRootNodeId(selectedSession.currentRun.runId)],
+      rootKey: "run-trace"
+    });
     setAnalysisDraft(selectedSession.inputComposer.initialDraft);
     setFollowUpDraft(selectedSession.followUpComposer.initialDraft);
-    setSelectedRunEventId(getFirstRunEventId(selectedSession));
-    setSelectedToolCallId(selectedSession.toolDetails[0]?.toolCallId ?? null);
-    setSelectedSourceEvidenceId(selectedSession.sourceEvidence[0]?.sourceEvidenceId ?? null);
-    setSelectedReportId(selectedSession.reportPreview?.reportId ?? null);
   }, [draftContext, selectedSession, workspaceState.kind]);
 
   const visibleSessions = useMemo(() => {
@@ -351,12 +391,6 @@ export function useAnalysisWorkspaceController(
     );
   }, [sessionSearchQuery, sessions]);
 
-  const selectedRunEvent = useMemo(
-    () =>
-      selectedSession?.runEvents.find((event) => event.eventId === selectedRunEventId) ??
-      selectedSession?.runEvents[0],
-    [selectedRunEventId, selectedSession]
-  );
   const draftComposerViewModels = useMemo(
     () => createDraftComposerViewModels(draftContext),
     [draftContext]
@@ -374,7 +408,6 @@ export function useAnalysisWorkspaceController(
     "Default";
 
   return {
-    activeInspectorPanel,
     composerDraft: getActiveDraft(analysisDraft, composerMode, followUpDraft),
     composerMode,
     composerState,
@@ -382,16 +415,11 @@ export function useAnalysisWorkspaceController(
     currentRun: selectedSession?.currentRun,
     draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
     interactionMessage,
-    isRunTraceDetailOpen,
+    inspectorTreeState,
     messages: selectedSession?.messages ?? [],
     modelOptions,
-    onCloseRunTraceDetail: () => {
-      setIsRunTraceDetailOpen(false);
-    },
     onComposerAccessoryClick: () => {
-      setInteractionMessage(
-        createInteractionMessage("当前 issue 只接 read surfaces；附件和工具 write path 暂未实现。")
-      );
+      setInteractionMessage(createInteractionMessage("该功能暂不可用。"));
     },
     onComposerDraftChange: (value) => {
       if (composerModeRef.current === "analysis") {
@@ -408,36 +436,74 @@ export function useAnalysisWorkspaceController(
     },
     onComposerStop: () => {
       setComposerState("idle");
-      setInteractionMessage(
-        createInteractionMessage("当前页面未建立真实 streaming cancel，停止动作不可用。")
-      );
+      setInteractionMessage(createInteractionMessage("当前无法停止此次生成。"));
     },
-    onOpenInspectorPanel: (panel) => {
-      if (workspaceState.kind === "draft") {
-        setActiveInspectorPanel("draft-context");
-        setIsRunTraceDetailOpen(false);
-        return;
-      }
-
-      setActiveInspectorPanel(panel);
-      setIsRunTraceDetailOpen(false);
+    onPopInspectorPath: () => {
+      setInspectorTreeState((current) =>
+        current.path.length <= 1
+          ? { path: [], rootKey: null }
+          : {
+              ...current,
+              path: current.path.slice(0, -1)
+            }
+      );
     },
     onResetForNewAnalysis: () => {
       composerModeRef.current = "analysis";
       setComposerMode("analysis");
       setComposerState("idle");
       setWorkspaceState({ kind: "draft" });
+      setWorkspaceViewModel(null);
       setDraftContext(undefined);
       setAnalysisDraft("");
       setFollowUpDraft("");
-      setActiveInspectorPanel("draft-context");
       setSelectedConversationId(null);
-      setIsRunTraceDetailOpen(false);
-      setInteractionMessage(
-        createInteractionMessage(
-          "已进入新聊天草稿态。发送前不会创建 Conversation 或 AnalysisRun；发送后才会进入正式 submit 链路。"
-        )
-      );
+      setSelectedInspectorSubject(undefined);
+      setSelectedMessageId(null);
+      setInspectorTreeState({ path: [], rootKey: null });
+      setInteractionMessage("");
+    },
+    onSelectInspectorNode: (nodeId) => {
+      setInspectorTreeState((current) => ({
+        ...current,
+        path: [...current.path, nodeId]
+      }));
+    },
+    onSelectInspectorRoot: (rootKey) => {
+      const rootNodeId = getRootNodeId(rootKey, selectedSession, draftContext);
+
+      if (!rootNodeId) {
+        return;
+      }
+
+      setInspectorTreeState({
+        path: [rootNodeId],
+        rootKey
+      });
+    },
+    onSelectMessageAnchor: (messageId) => {
+      const message = selectedSession?.messages.find((item) => item.messageId === messageId);
+
+      if (!message || message.role !== "assistant") {
+        return;
+      }
+
+      const { analysisTaskId, runId } = message;
+
+      if (runId == null || analysisTaskId == null) {
+        return;
+      }
+
+      setSelectedMessageId(messageId);
+      setSelectedInspectorSubject({
+        type: "analysisRun",
+        analysisTaskId,
+        runId
+      });
+      setInspectorTreeState({
+        path: [createRunTraceRootNodeId(runId)],
+        rootKey: "run-trace"
+      });
     },
     onSelectModel: (key) => {
       const nextModel = modelOptions.find((model) => model.key === key);
@@ -447,18 +513,7 @@ export function useAnalysisWorkspaceController(
       }
 
       setSelectedModelKey(nextModel.key);
-      setInteractionMessage(
-        createInteractionMessage(`已切换模型展示选项为 ${nextModel.label}。`)
-      );
-    },
-    onSelectRunEvent: (eventId) => {
-      if (workspaceState.kind === "draft") {
-        return;
-      }
-
-      setActiveInspectorPanel("run-trace");
-      setSelectedRunEventId(eventId);
-      setIsRunTraceDetailOpen(true);
+      setInteractionMessage("");
     },
     onSelectSession: (conversationId) => {
       const nextSession = sessions.find((session) => session.conversationId === conversationId);
@@ -470,14 +525,16 @@ export function useAnalysisWorkspaceController(
       composerModeRef.current = "follow_up";
       setComposerMode("follow_up");
       setWorkspaceState({ kind: "ready" });
-      setDraftContext(undefined);
       setSelectedConversationId(nextSession.conversationId);
+      setDraftContext(undefined);
+      setSelectedInspectorSubject(createRunSubject(nextSession));
+      setSelectedMessageId(findLatestMessageByRole(nextSession, "assistant")?.messageId ?? null);
       setComposerState("idle");
-      setActiveInspectorPanel("run-trace");
-      setIsRunTraceDetailOpen(false);
-      setInteractionMessage(
-        createInteractionMessage(`已切换到真实会话 ${nextSession.conversationId}。`)
-      );
+      setInspectorTreeState({
+        path: [createRunTraceRootNodeId(nextSession.currentRun.runId)],
+        rootKey: "run-trace"
+      });
+      setInteractionMessage("");
     },
     onSessionSearchChange: setSessionSearchQuery,
     onSubmitComposer: () => {
@@ -486,16 +543,14 @@ export function useAnalysisWorkspaceController(
 
       if (question.length === 0) {
         setComposerState("idle");
-        setInteractionMessage(createInteractionMessage("请输入要提交的 Analysis 问题。"));
+        setInteractionMessage(createInteractionMessage("输入你想分析的问题。"));
         return;
       }
 
       if (!submitIdentity) {
         setComposerState("idle");
         setInteractionMessage(
-          createInteractionMessage(
-            "当前页面未提供 workspaceId / userId / businessDomainId，无法发起 Analysis submit。"
-          )
+          createInteractionMessage("当前环境未配置分析提交能力。")
         );
         return;
       }
@@ -523,10 +578,14 @@ export function useAnalysisWorkspaceController(
             setWorkspaceViewModel(null);
             setComposerState("idle");
             setInteractionMessage(
-              createInteractionMessage(loadResult.description ?? "Analysis submit succeeded, but runtime workspace could not be loaded.")
+              createInteractionMessage(
+                loadResult.description ?? "分析请求已提交，但暂时无法刷新当前会话。"
+              )
             );
             return;
           }
+
+          const loadedSession = loadResult.viewModel.sessions[0];
 
           composerModeRef.current = "follow_up";
           setWorkspaceViewModel(loadResult.viewModel);
@@ -537,29 +596,39 @@ export function useAnalysisWorkspaceController(
           setFollowUpDraft("");
           setComposerMode("follow_up");
           setComposerState("idle");
-          setActiveInspectorPanel("run-trace");
-          setIsRunTraceDetailOpen(false);
+          setSelectedInspectorSubject(
+            loadedSession
+              ? {
+                  type: "analysisRun",
+                  analysisTaskId: loadedSession.analysisTaskId,
+                  runId: loadedSession.currentRun.runId
+                }
+              : undefined
+          );
+          setSelectedMessageId(
+            loadedSession ? findLatestMessageByRole(loadedSession, "assistant")?.messageId ?? null : null
+          );
+          setInspectorTreeState(
+            loadedSession
+              ? {
+                  path: [createRunTraceRootNodeId(loadedSession.currentRun.runId)],
+                  rootKey: "run-trace"
+                }
+              : { path: [], rootKey: null }
+          );
           setInteractionMessage("");
         } catch (error) {
           setComposerState("idle");
-          setInteractionMessage(
-            createInteractionMessage(
-              error instanceof Error ? error.message : "Analysis submit failed."
-            )
-          );
+          setInteractionMessage(createInteractionMessage("发送失败，请稍后重试。"));
         }
       })();
     },
-    runEvents: selectedSession?.runEvents ?? [],
+    selectedConversationId,
+    selectedInspectorSubject,
+    selectedMessageId,
     selectedModelKey,
     selectedModelLabel,
-    selectedReportId,
-    selectedRunEvent,
-    selectedRunEventId,
     selectedSession,
-    selectedConversationId,
-    selectedSourceEvidenceId,
-    selectedToolCallId,
     sessionSearchQuery,
     sessions,
     visibleSessions,

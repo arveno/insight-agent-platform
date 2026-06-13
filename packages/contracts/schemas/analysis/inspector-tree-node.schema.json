@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/inspector-tree-node.schema.json",
+  "title": "InspectorTreeNode",
+  "description": "Inspector tree 中的单个 node occurrence；表达 subject-scoped tree browser 的树节点快照。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nodeId", "kind", "role", "owner", "title"],
+  "properties": {
+    "nodeId": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "inputContext",
+        "runtimeReferencedSource",
+        "runOutput",
+        "reportSection",
+        "evidenceItem",
+        "traceEvent",
+        "toolCall",
+        "modelCall",
+        "decision",
+        "directory"
+      ]
+    },
+    "owner": {
+      "$ref": "./inspector-owner-ref.schema.json"
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    },
+    "chips": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "timeRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label"],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "asOfAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sourceRef": {
+      "$ref": "./source-ref.schema.json"
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "$ref": "./inspector-tree-node.schema.json"
+      }
+    },
+    "disabledReason": {
+      "type": "string"
+    }
+  }
+}

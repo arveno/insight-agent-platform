@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/source-ref.schema.json",
+  "title": "SourceRef",
+  "description": "Inspector tree 中引用业务来源对象的 canonical source identity；同一 sourceRef 可在不同 owner / role 下多次出现。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "report",
+        "metric",
+        "sourceEvidence",
+        "analysisRun",
+        "dataTable",
+        "knowledgeDocument",
+        "toolCall",
+        "modelCall",
+        "job"
+      ]
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "sourceEvidenceId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "tableId": {
+      "type": "string"
+    },
+    "knowledgeDocumentId": {
+      "type": "string"
+    },
+    "toolCallId": {
+      "type": "string"
+    },
+    "modelCallId": {
+      "type": "string"
+    },
+    "jobId": {
+      "type": "string"
+    }
+  },
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "reportId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["report"]
+        },
+        "reportId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "metricId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["metric"]
+        },
+        "metricId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "sourceEvidenceId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["sourceEvidence"]
+        },
+        "sourceEvidenceId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "runId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["analysisRun"]
+        },
+        "runId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "tableId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["dataTable"]
+        },
+        "tableId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "knowledgeDocumentId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["knowledgeDocument"]
+        },
+        "knowledgeDocumentId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "toolCallId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["toolCall"]
+        },
+        "toolCallId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "modelCallId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["modelCall"]
+        },
+        "modelCallId": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "jobId"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["job"]
+        },
+        "jobId": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

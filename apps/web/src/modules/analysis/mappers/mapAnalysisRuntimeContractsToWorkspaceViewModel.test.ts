@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type {
   AnalysisRun,
+  AnalysisTask,
   Conversation,
   Decision,
   Message,
@@ -18,6 +19,7 @@ import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "./mapAnalysisRu
 
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
+  analysisTask: AnalysisTask;
   conversation: Conversation;
   decisions: Decision[];
   messageStream: MessageStream[];
@@ -34,6 +36,7 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
 
     const workspaceViewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
+      analysisTask: goldenPath.analysisTask,
       conversation: goldenPath.conversation,
       currentRun: goldenPath.analysisRun,
       decisions: goldenPath.decisions,
@@ -54,6 +57,10 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     );
 
     expect(session.conversationId).toBe(goldenPath.conversation.conversationId);
+    expect(session.analysisTaskId).toBe(goldenPath.analysisTask.analysisTaskId);
+    expect(session.analysisTaskContextPack?.root.title).toBe(
+      goldenPath.analysisTask.contextPack?.root.title
+    );
     expect(session.sessionSummary.conversationId).toBe(goldenPath.conversation.conversationId);
     expect(session.currentRun.runId).toBe(goldenPath.analysisRun.runId);
     expect(session.currentRun.status).toBe(goldenPath.analysisRun.status);
@@ -83,6 +90,16 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     expect(session.messages.find((message) => message.role === "assistant")?.content).toBe(
       assistantContractMessage?.content
     );
+    expect(session.messages.find((message) => message.role === "assistant")?.analysisTaskId).toBe(
+      goldenPath.analysisTask.analysisTaskId
+    );
+    expect(session.messages.find((message) => message.role === "assistant")?.footerText).toBe(
+      "点击消息查看本次运行。"
+    );
+    expect(session.messages.every((message) => !("supportingItems" in message))).toBe(true);
+    expect(session.messages.every((message) => !message.metaText?.includes("analysisTaskId:"))).toBe(
+      true
+    );
     expect(session.reportPreview?.reportId).toBe(goldenPath.reports[0]?.reportId ?? null);
   });
 
@@ -90,6 +107,7 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
 
     const workspaceViewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
+      analysisTask: goldenPath.analysisTask,
       conversation: goldenPath.conversation,
       currentRun: {
         ...goldenPath.analysisRun,

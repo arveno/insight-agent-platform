@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AnalysisTaskContextPack } from "@insight-agent/contracts/generated/typescript";
 
 import type { IconName } from "../icons/iconTypes";
 import type { ActionButtonVariant } from "../ui/actions/actionTypes";
@@ -19,24 +20,10 @@ export type StaticRouteKey =
   | "settings"
   | "workspace";
 
-export type DraftContextSourceType =
-  | "dashboard"
-  | "metric"
-  | "report"
-  | "evidence"
-  | "runTrace";
-
-export type DraftContextPack = {
-  chips: string[];
-  sourceId: string;
-  sourceTitle: string;
-  sourceType: DraftContextSourceType;
-  suggestedPrompt: string;
-  summary: string;
-};
+export type AnalysisContextRouteState = AnalysisTaskContextPack;
 
 export type AppRouteState = {
-  draftContextPack?: DraftContextPack;
+  analysisContextPack?: AnalysisContextRouteState;
 };
 
 export type NavigateToRoute = (route: StaticRouteKey, routeState?: AppRouteState) => void;

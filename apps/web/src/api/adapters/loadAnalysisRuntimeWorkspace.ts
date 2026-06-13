@@ -55,10 +55,9 @@ export async function loadAnalysisRuntimeWorkspace(
 ): Promise<AnalysisWorkspaceLoadResult> {
   if (isMissingBootstrap(bootstrap)) {
     return {
-      description:
-        "当前没有可读取的 conversationId 或 runId。请从带上下文入口进入 Analysis，或通过 URL 提供 bootstrap id。",
+      description: "输入问题开始新的分析，或从其他入口带入上下文。",
       kind: "empty",
-      title: "No analysis runtime selected"
+      title: "当前还没有可展示的分析内容"
     };
   }
 
@@ -70,9 +69,9 @@ export async function loadAnalysisRuntimeWorkspace(
 
     if (!runId) {
       return {
-        description: "当前会话尚未绑定 AnalysisRun，无法加载 runtime delivery 内容。",
+        description: "请先发送问题，再查看本次运行的分析详情。",
         kind: "empty",
-        title: "Conversation has no current run"
+        title: "当前会话还没有运行结果"
       };
     }
 
@@ -80,6 +79,7 @@ export async function loadAnalysisRuntimeWorkspace(
       client.getAnalysisRun(runId),
       client.listConversationMessages(conversation.conversationId)
     ]);
+    const analysisTask = await client.getAnalysisTask(currentRun.analysisTaskId);
     const latestAssistantMessage = messageList.items
       .filter((message) => message.role === "assistant")
       .at(-1);
@@ -102,6 +102,7 @@ export async function loadAnalysisRuntimeWorkspace(
       kind: "ready",
       viewModel: mapAnalysisRuntimeContractsToWorkspaceViewModel(
         {
+          analysisTask,
           conversation,
           currentRun,
           decisions: decisions.items,
@@ -125,14 +126,11 @@ export async function loadAnalysisRuntimeWorkspace(
         }
       )
     };
-  } catch (error) {
+  } catch {
     return {
-      description:
-        error instanceof Error
-          ? error.message
-          : "Analysis runtime read surfaces are temporarily unavailable.",
+      description: "暂时无法读取当前会话的分析详情，请稍后重试。",
       kind: "error",
-      title: "Failed to load analysis runtime"
+      title: "暂时无法加载分析详情"
     };
   }
 }

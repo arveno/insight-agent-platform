@@ -3,10 +3,10 @@ import { Flex, Space, Typography } from "antd";
 import type { I18nMessageKey } from "../../../shared/i18n/messages";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey, type Translate } from "../../../shared/i18n/translateKey";
-import type { DraftContextPack } from "../../../shared/navigation/navigationTypes";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 
 import type { DashboardReportEvidenceCardProps } from "./dashboardComponentTypes";
 
@@ -21,13 +21,13 @@ const confidenceKeyByText: Record<string, I18nMessageKey> = {
 };
 
 const summaryKeyByEvidenceKey: Record<string, I18nMessageKey> = {
-  "metric-revenue-evidence": "evidence.summary.metricRevenue",
-  "quality-job-evidence": "evidence.summary.qualityJob"
+  "dashboard-node-evidence-revenue-summary": "evidence.summary.metricRevenue",
+  "dashboard-node-evidence-quality-job": "evidence.summary.qualityJob"
 };
 
 const titleKeyByEvidenceKey: Record<string, I18nMessageKey> = {
-  "metric-revenue-evidence": "evidence.title.metricRevenue",
-  "quality-job-evidence": "evidence.title.qualityJob"
+  "dashboard-node-evidence-revenue-summary": "evidence.title.metricRevenue",
+  "dashboard-node-evidence-quality-job": "evidence.title.qualityJob"
 };
 
 function translateMappedText(
@@ -49,21 +49,10 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
   const { t } = useI18n();
 
   if (props.kind === "report") {
-    const reportDraftContextPack: DraftContextPack = {
-      chips: [
-        `${props.report.evidenceCount} 条证据`,
-        `更新时间 ${props.report.updatedAt}`
-      ],
-      sourceId: props.report.reportId,
-      sourceTitle: props.report.title,
-      sourceType: "report",
-      suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
-      summary: t("dashboard.reportEvidence.suggestionSummary")
-    };
     const reportActions = [
       createRouteAction({
         iconName: "reports",
-        key: `${props.report.key}-view-report`,
+        key: `${props.report.nodeId}-view-report`,
         label: t("dashboard.action.viewReports"),
         onNavigate,
         route: "reports",
@@ -71,23 +60,31 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
       }),
       createRouteAction({
         iconName: "analysis",
-        key: `${props.report.key}-suggestions`,
+        key: `${props.report.nodeId}-suggestions`,
         label: t("dashboard.action.viewSuggestions"),
         onNavigate,
         route: "analysis",
         routeState: {
-          draftContextPack: reportDraftContextPack
+          analysisContextPack: createDashboardAnalysisContextPack({
+            nodeId: props.report.nodeId,
+            suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
+            viewModel: props.viewModel
+          })
         },
         variant: "objectDetail"
       }),
       createRouteAction({
         iconName: "analysis",
-        key: `${props.report.key}-context-analysis`,
+        key: `${props.report.nodeId}-context-analysis`,
         label: t("dashboard.action.analyzeWithContext"),
         onNavigate,
         route: "analysis",
         routeState: {
-          draftContextPack: reportDraftContextPack
+          analysisContextPack: createDashboardAnalysisContextPack({
+            nodeId: props.report.nodeId,
+            suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
+            viewModel: props.viewModel
+          })
         },
         variant: "contextPrimary"
       })
@@ -107,11 +104,10 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         meta={
           <Space wrap>
             <Typography.Text type="secondary">
-              {t("dashboard.common.updatedAtPrefix")}
-              {props.report.updatedAt}
+              {props.report.chips?.[1] ?? "更新时间未提供"}
             </Typography.Text>
             <Typography.Text type="secondary">
-              {props.report.evidenceCount} {t("dashboard.common.evidenceCountSuffix")}
+              {props.report.chips?.[0] ?? `0 ${t("dashboard.common.evidenceCountSuffix")}`}
             </Typography.Text>
           </Space>
         }
@@ -120,24 +116,17 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
     );
   }
 
-  const evidenceTitleKey = titleKeyByEvidenceKey[props.evidence.key];
-  const evidenceSummaryKey = summaryKeyByEvidenceKey[props.evidence.key];
+  const evidenceTitleKey = titleKeyByEvidenceKey[props.evidence.nodeId];
+  const evidenceSummaryKey = summaryKeyByEvidenceKey[props.evidence.nodeId];
   const evidenceTitle = evidenceTitleKey ? translateKey(t, evidenceTitleKey) : props.evidence.title;
-  const evidenceSummary = evidenceSummaryKey
-    ? translateKey(t, evidenceSummaryKey)
-    : props.evidence.summary;
+  const evidenceSummary = evidenceSummaryKey ? translateKey(t, evidenceSummaryKey) : props.evidence.summary;
   const evidenceSourceTypeLabel =
-    translateMappedText(t, props.evidence.sourceType, sourceTypeKeyByLabel) ??
-    props.evidence.sourceType;
-  const evidenceConfidenceText = translateMappedText(
-    t,
-    props.evidence.confidenceText,
-    confidenceKeyByText
-  );
+    translateMappedText(t, props.evidence.chips?.[0], sourceTypeKeyByLabel) ?? props.evidence.chips?.[0];
+  const evidenceConfidenceText = translateMappedText(t, props.evidence.chips?.[1], confidenceKeyByText);
   const evidenceActions = [
     createRouteAction({
       iconName: "evidence",
-      key: `${props.evidence.key}-view-evidence`,
+      key: `${props.evidence.nodeId}-view-evidence`,
       label: t("dashboard.action.viewEvidence"),
       onNavigate,
       route: "reports",
@@ -145,25 +134,22 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
     }),
     createRouteAction({
       iconName: "analysis",
-      key: `${props.evidence.key}-context-analysis`,
+      key: `${props.evidence.nodeId}-context-analysis`,
       label: t("dashboard.action.analyzeWithContext"),
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: {
-          chips: [evidenceSourceTypeLabel, evidenceConfidenceText ?? "可信度未标注"],
-          sourceId: props.evidence.sourceId,
-          sourceTitle: evidenceTitle,
-          sourceType: "evidence",
+        analysisContextPack: createDashboardAnalysisContextPack({
+          nodeId: props.evidence.nodeId,
           suggestedPrompt: `请基于证据《${evidenceTitle}》继续分析它对当前经营判断的影响。`,
-          summary: evidenceSummary
-        }
+          viewModel: props.viewModel
+        })
       },
       variant: "contextPrimary"
     }),
     createRouteAction({
       iconName: "data",
-      key: `${props.evidence.key}-source`,
+      key: `${props.evidence.nodeId}-source`,
       label: t("dashboard.action.viewDataKnowledge"),
       onNavigate,
       route: "data-knowledge",
@@ -171,7 +157,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
     }),
     createRouteAction({
       iconName: "trace",
-      key: `${props.evidence.key}-trace`,
+      key: `${props.evidence.nodeId}-trace`,
       label: t("dashboard.action.viewTrace"),
       onNavigate,
       route: "observability",

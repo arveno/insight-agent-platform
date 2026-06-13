@@ -5,6 +5,7 @@ export type AnalysisMessageRole = MessageRole;
 export type AnalysisMessageStatus = MessageStatus;
 
 export type AnalysisMessage = {
+  analysisTaskId: string | null;
   content: string;
   completedAt: string | null;
   conversationId: string;
@@ -17,8 +18,6 @@ export type AnalysisMessage = {
   runId: string | null;
   sourceEvidenceIds: string[];
   status: AnalysisMessageStatus;
-  supportingItems?: string[];
-  supportingTitle?: string;
   toolCallIds: string[];
   turnId: string;
 };

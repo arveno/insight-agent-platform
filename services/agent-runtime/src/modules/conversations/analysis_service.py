@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import cast
 from uuid import uuid4
 
 from src.infrastructure.database.runtime_foundation import (
@@ -54,6 +55,50 @@ class SubmitAnalysisDraftResult:
     analysisTask: AnalysisTaskRecord
     analysisRun: AnalysisRunRecord
     userMessage: MessageRecord
+
+
+def _bind_analysis_task_owner(
+    node: dict[str, object], analysis_task_id: str
+) -> dict[str, object]:
+    owner = node.get("owner")
+    bound_owner = owner
+
+    if isinstance(owner, dict) and owner.get("type") == "analysisTask":
+        bound_owner = {
+            **owner,
+            "analysisTaskId": analysis_task_id,
+        }
+
+    children = node.get("children")
+    bound_children = children
+
+    if isinstance(children, list):
+        bound_children = [
+            _bind_analysis_task_owner(child, analysis_task_id)
+            if isinstance(child, dict)
+            else child
+            for child in children
+        ]
+
+    return {
+        **node,
+        "owner": bound_owner,
+        "children": bound_children,
+    }
+
+
+def bind_analysis_task_context_pack(
+    context_pack: AnalysisTaskContextPack | None, analysis_task_id: str
+) -> AnalysisTaskContextPack | None:
+    if context_pack is None:
+        return None
+
+    root = _bind_analysis_task_owner(context_pack["root"], analysis_task_id)
+
+    return {
+        **context_pack,
+        "root": cast(object, root),
+    }
 
 
 def _generate_canonical_id(prefix: str) -> str:
@@ -97,15 +142,16 @@ class AnalysisSubmitService:
     def submit_draft(self, command: SubmitAnalysisDraftCommand) -> SubmitAnalysisDraftResult:
         conversation = self._load_or_create_conversation(command)
         now = _utc_timestamp()
+        analysis_task_id = _generate_canonical_id("analysis-task")
 
         analysis_task: AnalysisTaskRecord = {
-            "analysisTaskId": _generate_canonical_id("analysis-task"),
+            "analysisTaskId": analysis_task_id,
             "conversationId": conversation["conversationId"],
             "workspaceId": command.workspaceId,
             "userId": command.userId,
             "businessDomainId": command.businessDomainId,
             "question": command.question,
-            "contextPack": command.contextPack,
+            "contextPack": bind_analysis_task_context_pack(command.contextPack, analysis_task_id),
             "createdAt": now,
             "updatedAt": now,
         }

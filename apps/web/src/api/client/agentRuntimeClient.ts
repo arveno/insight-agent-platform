@@ -1,5 +1,6 @@
 import type {
   AnalysisRun,
+  AnalysisTask,
   Conversation,
   Decision,
   Message,
@@ -137,6 +138,10 @@ export class AgentRuntimeClient {
 
   getConversation(conversationId: string) {
     return this.get<Conversation>(`/conversations/${conversationId}`);
+  }
+
+  getAnalysisTask(analysisTaskId: string) {
+    return this.get<AnalysisTask>(`/analysis-tasks/${analysisTaskId}`);
   }
 
   getAnalysisRun(runId: string) {

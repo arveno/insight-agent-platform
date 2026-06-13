@@ -2,45 +2,32 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://insight-agent-platform/contracts/analysis-task-context-pack.schema.json",
   "title": "AnalysisTaskContextPack",
-  "description": "一次性 DraftContextPack 在用户真正发送问题时固化为 AnalysisTask.contextPack 的 typed snapshot。",
+  "description": "用户提交 AnalysisTask 时固化的树形一次性上下文快照；作为 immutable input snapshot 供 AnalysisRun 消费。",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "sourceType",
-    "sourceId",
-    "sourceTitle",
-    "summary",
-    "chips",
-    "suggestedPrompt"
-  ],
+  "required": ["version", "suggestedPrompt", "traceability", "capturedAt", "root"],
   "properties": {
-    "sourceType": {
-      "description": "一次性上下文来源类型；当前只允许已接通的 Analysis draft 入口。",
-      "type": "string",
-      "enum": ["dashboard", "metric", "report", "evidence", "runTrace"]
-    },
-    "sourceId": {
-      "description": "来源对象的 canonical 标识。",
-      "type": "string"
-    },
-    "sourceTitle": {
-      "description": "来源对象的产品标题。",
-      "type": "string"
-    },
-    "summary": {
-      "description": "草稿态展示和追问的结构化摘要，不替代正式 question。",
-      "type": "string"
-    },
-    "chips": {
-      "description": "用于 Draft Context strip / inspector 的结构化 chip 列表。",
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "version": {
+      "description": "当前 AnalysisTaskContextPack contract 版本；树形输入快照从 version=1 开始。",
+      "type": "integer",
+      "enum": [1]
     },
     "suggestedPrompt": {
-      "description": "进入 Analysis draft mode 时给 composer 的可编辑预填提示。",
+      "description": "进入 Analysis draft mode 时给 composer 的可编辑预填提示；真正 submit 的问题仍以 question 字段为准。",
       "type": "string"
+    },
+    "traceability": {
+      "description": "当前 context tree 可提供的来源追溯深度。",
+      "type": "string",
+      "enum": ["none", "summary_only", "partial_refs", "direct_refs"]
+    },
+    "capturedAt": {
+      "description": "该 contextPack 输入快照被固化的时间。",
+      "type": "string",
+      "format": "date-time"
+    },
+    "root": {
+      "$ref": "./inspector-tree-node.schema.json"
     }
   }
 }

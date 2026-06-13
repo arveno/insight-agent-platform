@@ -6,7 +6,7 @@ import json
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, Protocol, TypedDict, cast
+from typing import Literal, NotRequired, Protocol, TypeAlias, TypedDict, cast
 
 import pymysql  # type: ignore[import-untyped]
 
@@ -28,15 +28,143 @@ class RuntimeFoundationDatabase(Protocol):
         """Execute a JSON_OBJECT query and return the decoded payload."""
 
 
-class AnalysisTaskContextPack(TypedDict):
-    """AnalysisTask.contextPack 的正式 typed object。"""
+class SourceRefReport(TypedDict):
+    type: Literal["report"]
+    reportId: str
 
-    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
-    sourceId: str
-    sourceTitle: str
-    summary: str
-    chips: list[str]
+
+class SourceRefMetric(TypedDict):
+    type: Literal["metric"]
+    metricId: str
+
+
+class SourceRefSourceEvidence(TypedDict):
+    type: Literal["sourceEvidence"]
+    sourceEvidenceId: str
+
+
+class SourceRefAnalysisRun(TypedDict):
+    type: Literal["analysisRun"]
+    runId: str
+
+
+class SourceRefDataTable(TypedDict):
+    type: Literal["dataTable"]
+    tableId: str
+
+
+class SourceRefKnowledgeDocument(TypedDict):
+    type: Literal["knowledgeDocument"]
+    knowledgeDocumentId: str
+
+
+class SourceRefToolCall(TypedDict):
+    type: Literal["toolCall"]
+    toolCallId: str
+
+
+class SourceRefModelCall(TypedDict):
+    type: Literal["modelCall"]
+    modelCallId: str
+
+
+class SourceRefJob(TypedDict):
+    type: Literal["job"]
+    jobId: str
+
+
+SourceRef: TypeAlias = (
+    SourceRefReport
+    | SourceRefMetric
+    | SourceRefSourceEvidence
+    | SourceRefAnalysisRun
+    | SourceRefDataTable
+    | SourceRefKnowledgeDocument
+    | SourceRefToolCall
+    | SourceRefModelCall
+    | SourceRefJob
+)
+
+
+class InspectorOwnerConversationRef(TypedDict):
+    type: Literal["conversation"]
+    conversationId: str
+
+
+class InspectorOwnerAnalysisTaskRef(TypedDict):
+    type: Literal["analysisTask"]
+    analysisTaskId: NotRequired[str]
+
+
+class InspectorOwnerAnalysisRunRef(TypedDict):
+    type: Literal["analysisRun"]
+    runId: str
+
+
+class InspectorOwnerReportRef(TypedDict):
+    type: Literal["report"]
+    reportId: str
+
+
+class InspectorOwnerSourceEvidenceRef(TypedDict):
+    type: Literal["sourceEvidence"]
+    sourceEvidenceId: str
+
+
+InspectorOwnerRef: TypeAlias = (
+    InspectorOwnerConversationRef
+    | InspectorOwnerAnalysisTaskRef
+    | InspectorOwnerAnalysisRunRef
+    | InspectorOwnerReportRef
+    | InspectorOwnerSourceEvidenceRef
+)
+
+
+InspectorNodeRole: TypeAlias = Literal[
+    "inputContext",
+    "runtimeReferencedSource",
+    "runOutput",
+    "reportSection",
+    "evidenceItem",
+    "traceEvent",
+    "toolCall",
+    "modelCall",
+    "decision",
+    "directory",
+]
+
+
+class InspectorTreeTimeRange(TypedDict):
+    key: str
+    label: str
+
+
+class InspectorTreeNode(TypedDict):
+    nodeId: str
+    kind: str
+    role: InspectorNodeRole
+    owner: InspectorOwnerRef
+    title: str
+    summary: NotRequired[str]
+    description: NotRequired[str]
+    value: NotRequired[str]
+    chips: NotRequired[list[str]]
+    timeRange: NotRequired[InspectorTreeTimeRange]
+    capturedAt: NotRequired[str]
+    asOfAt: NotRequired[str]
+    sourceRef: NotRequired[SourceRef]
+    children: NotRequired[list["InspectorTreeNode"]]
+    disabledReason: NotRequired[str]
+
+
+class AnalysisTaskContextPack(TypedDict):
+    """AnalysisTask.contextPack 的正式 tree-shaped input snapshot。"""
+
+    version: Literal[1]
     suggestedPrompt: str
+    traceability: Literal["none", "summary_only", "partial_refs", "direct_refs"]
+    capturedAt: str
+    root: InspectorTreeNode
 
 
 class AnalysisTaskRecord(TypedDict):

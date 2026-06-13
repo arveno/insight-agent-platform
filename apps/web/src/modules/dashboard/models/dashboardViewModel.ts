@@ -1,10 +1,8 @@
+import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
+
 import type {
-  StaticActionViewModel,
-  StaticEvidenceEntranceViewModel,
   StaticPageStateViewModel,
-  StaticPageViewModelBase,
-  StaticReportEntranceViewModel,
-  StaticSummaryItemViewModel
+  StaticPageViewModelBase
 } from "../../../shared/view-model/staticViewModelTypes";
 
 export type DashboardTimeRangeKey =
@@ -24,15 +22,11 @@ export type DashboardTimeRangeViewModel = {
   selectedKey: DashboardTimeRangeKey;
 };
 
-export type DashboardViewModel = StaticPageViewModelBase & {
-  analysisEntrances: StaticActionViewModel[];
-  anomalyCards: StaticSummaryItemViewModel[];
-  businessStatCards: StaticPageViewModelBase["metricCards"];
+export type DashboardSurfaceViewModel = StaticPageViewModelBase & {
+  dashboardId: string;
   dashboardState: StaticPageStateViewModel;
-  dashboardSummary: StaticSummaryItemViewModel[];
-  evidenceEntrances: StaticEvidenceEntranceViewModel[];
-  platformQualitySummary: StaticSummaryItemViewModel[];
-  recentReports: StaticReportEntranceViewModel[];
-  riskSummary: StaticSummaryItemViewModel[];
+  description: string;
+  root: InspectorTreeNode;
   timeRange: DashboardTimeRangeViewModel;
+  title: string;
 };

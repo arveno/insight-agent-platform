@@ -11,7 +11,7 @@ type AnalysisPageProps = PageRouteProps & {
 
 export function AnalysisPage({ routeState, submitIdentity }: AnalysisPageProps) {
   const controller = useAnalysisWorkspaceController({
-    draftContext: routeState?.draftContextPack,
+    draftContext: routeState?.analysisContextPack,
     submitIdentity
   });
 

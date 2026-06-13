@@ -9,13 +9,25 @@ import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
-import type { DashboardViewModel } from "../models/dashboardViewModel";
+import {
+  selectDashboardEvidenceNodes,
+  selectDashboardMetricNodes,
+  selectDashboardMetricSection,
+  selectDashboardQualityNodes,
+  selectDashboardQualitySection,
+  selectDashboardReportNodes,
+  selectDashboardReportEvidenceSection,
+  selectDashboardRiskNodes,
+  selectDashboardRiskSection,
+  selectDashboardRiskSummaryNode
+} from "../models/dashboardSelectors";
+import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 
 export type DashboardSectionsProps = PageRouteProps & {
-  onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
-  selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
-  selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
-  viewModel: DashboardViewModel;
+  onTimeRangeChange: (key: DashboardSurfaceViewModel["timeRange"]["selectedKey"]) => void;
+  selectedTimeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
+  selectedTimeRangeKey: DashboardSurfaceViewModel["timeRange"]["selectedKey"];
+  viewModel: DashboardSurfaceViewModel;
 };
 
 export function DashboardSections({
@@ -26,6 +38,16 @@ export function DashboardSections({
   viewModel
 }: DashboardSectionsProps) {
   const { t } = useI18n();
+  const metricNodes = selectDashboardMetricNodes(viewModel.root);
+  const metricSection = selectDashboardMetricSection(viewModel.root);
+  const riskNodes = selectDashboardRiskNodes(viewModel.root);
+  const riskSection = selectDashboardRiskSection(viewModel.root);
+  const riskSummaryNode = selectDashboardRiskSummaryNode(viewModel.root);
+  const reportNodes = selectDashboardReportNodes(viewModel.root);
+  const reportEvidenceSection = selectDashboardReportEvidenceSection(viewModel.root);
+  const evidenceNodes = selectDashboardEvidenceNodes(viewModel.root);
+  const qualityNodes = selectDashboardQualityNodes(viewModel.root);
+  const qualitySection = selectDashboardQualitySection(viewModel.root);
   const openMetricsAction = createRouteAction({
     iconName: "metrics",
     key: "dashboard-section-metrics",
@@ -59,8 +81,8 @@ export function DashboardSections({
     variant: "moduleEntry"
   });
   const riskItems = [
-    ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
-    ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
+    ...riskNodes.map((item) => ({ isRiskSummary: false, item })),
+    ...(riskSummaryNode ? [{ isRiskSummary: true, item: riskSummaryNode }] : [])
   ];
 
   return (
@@ -71,73 +93,87 @@ export function DashboardSections({
         selectedTimeRange={selectedTimeRange}
         selectedTimeRangeKey={selectedTimeRangeKey}
         viewModel={viewModel}
-      />
-
-      <ContentSection
-        colProps={{ md: 12, xs: 24 }}
-        contentLayout="cards"
-        eyebrow={t("dashboard.metrics.eyebrow")}
-        extra={<NavigationActionButton action={openMetricsAction} />}
-        title={t("dashboard.metrics.title")}
       >
-        {viewModel.businessStatCards.map((metric) => (
-          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
-        ))}
-      </ContentSection>
+        <ContentSection
+          colProps={{ md: 12, xs: 24 }}
+          contentLayout="cards"
+          eyebrow={t("dashboard.metrics.eyebrow")}
+          extra={<NavigationActionButton action={openMetricsAction} />}
+          title={metricSection?.title ?? t("dashboard.metrics.title")}
+        >
+          {metricNodes.map((metric) => (
+            <DashboardMetricOverview
+              key={metric.nodeId}
+              metric={metric}
+              onNavigate={onNavigate}
+              timeRange={selectedTimeRange}
+              viewModel={viewModel}
+            />
+          ))}
+        </ContentSection>
 
-      <ContentSection
-        colProps={{ md: 12, xs: 24 }}
-        contentLayout="cards"
-        eyebrow={t("dashboard.risk.eyebrow")}
-        extra={<NavigationActionButton action={openGovernanceAction} />}
-        title={t("dashboard.risk.title")}
-      >
-        {riskItems.map(({ isRiskSummary, item }) => (
-          <DashboardRiskOverview
-            isRiskSummary={isRiskSummary}
-            item={item}
-            key={item.key}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ContentSection>
+        <ContentSection
+          colProps={{ md: 12, xs: 24 }}
+          contentLayout="cards"
+          eyebrow={t("dashboard.risk.eyebrow")}
+          extra={<NavigationActionButton action={openGovernanceAction} />}
+          title={riskSection?.title ?? t("dashboard.risk.title")}
+        >
+          {riskItems.map(({ isRiskSummary, item }) => (
+            <DashboardRiskOverview
+              isRiskSummary={isRiskSummary}
+              item={item}
+              key={item.nodeId}
+              onNavigate={onNavigate}
+              viewModel={viewModel}
+            />
+          ))}
+        </ContentSection>
 
-      <ContentSection
-        colProps={{ md: 12, xl: 8, xs: 24 }}
-        contentLayout="cards"
-        eyebrow={t("dashboard.reportEvidence.eyebrow")}
-        extra={<NavigationActionButton action={openReportsAction} />}
-        title={t("dashboard.reportEvidence.title")}
-      >
-        {viewModel.recentReports.map((report) => (
-          <DashboardReportEvidenceCard
-            key={report.key}
-            kind="report"
-            onNavigate={onNavigate}
-            report={report}
-          />
-        ))}
-        {viewModel.evidenceEntrances.map((evidence) => (
-          <DashboardReportEvidenceCard
-            evidence={evidence}
-            key={evidence.key}
-            kind="evidence"
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ContentSection>
+        <ContentSection
+          colProps={{ md: 12, xl: 8, xs: 24 }}
+          contentLayout="cards"
+          eyebrow={t("dashboard.reportEvidence.eyebrow")}
+          extra={<NavigationActionButton action={openReportsAction} />}
+          title={reportEvidenceSection?.title ?? t("dashboard.reportEvidence.title")}
+        >
+          {reportNodes.map((report) => (
+            <DashboardReportEvidenceCard
+              key={report.nodeId}
+              kind="report"
+              onNavigate={onNavigate}
+              report={report}
+              viewModel={viewModel}
+            />
+          ))}
+          {evidenceNodes.map((evidence) => (
+            <DashboardReportEvidenceCard
+              evidence={evidence}
+              key={evidence.nodeId}
+              kind="evidence"
+              onNavigate={onNavigate}
+              viewModel={viewModel}
+            />
+          ))}
+        </ContentSection>
 
-      <ContentSection
-        colProps={{ md: 12, xs: 24 }}
-        contentLayout="cards"
-        eyebrow={t("dashboard.quality.eyebrow")}
-        extra={<NavigationActionButton action={openPlatformOperationsAction} />}
-        title={t("dashboard.quality.title")}
-      >
-        {viewModel.platformQualitySummary.map((item) => (
-          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
-        ))}
-      </ContentSection>
+        <ContentSection
+          colProps={{ md: 12, xs: 24 }}
+          contentLayout="cards"
+          eyebrow={t("dashboard.quality.eyebrow")}
+          extra={<NavigationActionButton action={openPlatformOperationsAction} />}
+          title={qualitySection?.title ?? t("dashboard.quality.title")}
+        >
+          {qualityNodes.map((item) => (
+            <DashboardQualityPanel
+              item={item}
+              key={item.nodeId}
+              onNavigate={onNavigate}
+              viewModel={viewModel}
+            />
+          ))}
+        </ContentSection>
+      </DashboardHero>
     </SectionStack>
   );
 }
