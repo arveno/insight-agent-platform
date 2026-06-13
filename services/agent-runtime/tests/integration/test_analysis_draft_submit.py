@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.app.main import create_app
+from src.app.routes.runtime_contracts import AnalysisTaskContextPackModel
 
 
 BLANK_SUBMIT_PAYLOAD = {
@@ -57,6 +58,15 @@ def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
             ],
         },
     }
+
+
+def build_response_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
+    return cast(
+        dict[str, Any],
+        AnalysisTaskContextPackModel.model_validate(
+            build_context_pack(analysis_task_id)
+        ).model_dump(mode="json"),
+    )
 
 CONTEXT_SUBMIT_PAYLOAD = {
     **BLANK_SUBMIT_PAYLOAD,
@@ -168,7 +178,7 @@ def test_submit_analysis_draft_persists_typed_context_pack_snapshot(client: Test
 
     assert response.status_code == 201, response.text
     payload = response.json()
-    assert payload["analysisTask"]["contextPack"] == build_context_pack(
+    assert payload["analysisTask"]["contextPack"] == build_response_context_pack(
         payload["analysisTask"]["analysisTaskId"]
     )
     assert payload["userMessage"]["analysisTaskId"] == payload["analysisTask"]["analysisTaskId"]
@@ -255,7 +265,7 @@ def test_create_analysis_task_binds_to_valid_conversation(client: TestClient) ->
     assert payload["conversationId"] == conversation["conversationId"]
     assert payload["workspaceId"] == conversation["workspaceId"]
     assert payload["userId"] == conversation["userId"]
-    assert payload["contextPack"] == build_context_pack(payload["analysisTaskId"])
+    assert payload["contextPack"] == build_response_context_pack(payload["analysisTaskId"])
 
 
 def test_get_analysis_task_returns_persisted_tree_shaped_context_pack(client: TestClient) -> None:
@@ -273,7 +283,7 @@ def test_get_analysis_task_returns_persisted_tree_shaped_context_pack(client: Te
     assert get_response.status_code == 200, get_response.text
     assert get_response.json() == {
         **created_task,
-        "contextPack": build_context_pack(created_task["analysisTaskId"]),
+        "contextPack": build_response_context_pack(created_task["analysisTaskId"]),
     }
 
 

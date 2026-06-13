@@ -95,6 +95,7 @@ def build_analysis_task() -> AnalysisTaskRecord:
 
     return {
         "analysisTaskId": ANALYSIS_TASK_ID,
+        "conversationId": CONVERSATION_ID,
         "workspaceId": "workspace-northstar-retail-china",
         "userId": "user-zoe",
         "businessDomainId": "business-domain-revenue-quality",
@@ -110,7 +111,6 @@ def build_conversation() -> ConversationRecord:
         "conversationId": CONVERSATION_ID,
         "workspaceId": "workspace-northstar-retail-china",
         "userId": "user-zoe",
-        "analysisTaskId": ANALYSIS_TASK_ID,
         "currentRunId": RUN_ID,
         "title": "收入增速异常",
         "status": "active",
@@ -253,6 +253,7 @@ def build_message_records() -> list[MessageRecord]:
         {
             "messageId": "message-revenue-gap-q2-user",
             "conversationId": CONVERSATION_ID,
+            "analysisTaskId": ANALYSIS_TASK_ID,
             "turnId": "turn-revenue-gap-q2-1",
             "runId": RUN_ID,
             "role": "user",
@@ -267,6 +268,7 @@ def build_message_records() -> list[MessageRecord]:
         {
             "messageId": "message-revenue-gap-q2-assistant",
             "conversationId": CONVERSATION_ID,
+            "analysisTaskId": ANALYSIS_TASK_ID,
             "turnId": "turn-revenue-gap-q2-1",
             "runId": RUN_ID,
             "role": "assistant",

@@ -137,6 +137,7 @@ def build_foundation_assistant_message(
     return {
         "messageId": f"message-{analysis_run['runId']}-assistant",
         "conversationId": conversation["conversationId"],
+        "analysisTaskId": analysis_run["analysisTaskId"],
         "turnId": f"turn-{analysis_run['runId']}-1",
         "runId": analysis_run["runId"],
         "role": "assistant",
