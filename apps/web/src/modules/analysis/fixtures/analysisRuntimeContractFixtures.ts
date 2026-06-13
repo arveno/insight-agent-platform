@@ -139,7 +139,7 @@ function createAnalysisTaskContextPack({
       },
       title,
       summary,
-      chips: ["Input context", timeRangeLabel],
+      chips: ["已附带上下文", timeRangeLabel],
       timeRange: {
         key: timeRangeLabel.toLowerCase().replaceAll(" ", "_"),
         label: timeRangeLabel
@@ -154,8 +154,8 @@ function createAnalysisTaskContextPack({
             analysisTaskId,
             type: "analysisTask"
           },
-          title: `${title} / Primary source`,
-          summary: "Dashboard / Metrics / Reports 入口会把选中 node 或 subtree 固化为 AnalysisTask.contextPack。",
+          title: `${title} · 关键来源`,
+          summary: "当前请求会基于这份来源摘要继续分析。",
           sourceRef
         }
       ]

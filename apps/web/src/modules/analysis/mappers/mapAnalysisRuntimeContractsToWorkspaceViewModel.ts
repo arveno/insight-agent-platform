@@ -181,44 +181,34 @@ function createComposerViewModel(
 ): AnalysisComposerViewModel {
   return mode === "analysis"
     ? {
-        contextHint: "正式 submit 会创建或复用 Conversation，并形成新的 AnalysisTask / AnalysisRun。",
-        helperText:
-          "Context 会固化在 AnalysisTask.contextPack；assistant / report / decision 仍由 runtime delivery 产出。",
+        contextHint: "",
+        helperText: "",
         initialDraft: draft,
         key: "analysis-input",
-        placeholder: "描述要分析的问题、约束和期望结果。",
-        submitLabel: "发起分析",
+        placeholder: "输入你想分析的问题",
+        submitLabel: "发送",
         suggestions: [
           { key: "analysis-suggestion-why", label: "请解释当前异常的主因。" },
           { key: "analysis-suggestion-split", label: "请拆分关键维度继续分析。" }
         ],
-        title: "分析任务输入区"
+        title: "输入你想分析的问题"
       }
     : {
-        contextHint: "继续追问会复用当前 Conversation，并创建新的 AnalysisTask / AnalysisRun。",
-        helperText: "Message 只作为 Inspector anchor；结构化细节统一在右侧 Inspector 查看。",
+        contextHint: "",
+        helperText: "",
         initialDraft: draft,
         key: "follow-up-input",
-        placeholder: "继续追问当前结论，例如要求拆分渠道、时间范围或证据。",
-        submitLabel: "继续追问",
+        placeholder: "输入你想分析的问题",
+        submitLabel: "发送",
         suggestions: [
           { key: "follow-up-suggestion-split", label: "拆分关键维度继续追问" },
           { key: "follow-up-suggestion-next", label: "整理下一步动作" }
         ],
-        title: "后续追问"
+        title: "输入你想分析的问题"
       };
 }
 
-function mapMessages(
-  messages: MessageContract[],
-  sourceEvidence: SourceEvidence[],
-  toolCalls: ToolCall[]
-): AnalysisMessage[] {
-  const evidenceTitleById = new Map(
-    sourceEvidence.map((item) => [item.sourceEvidenceId, item.title] as const)
-  );
-  const toolNameById = new Map(toolCalls.map((item) => [item.toolCallId, item.toolName] as const));
-
+function mapMessages(messages: MessageContract[]): AnalysisMessage[] {
   return messages.map((message) => ({
     analysisTaskId: message.analysisTaskId,
     content: message.content,
@@ -234,27 +224,13 @@ function mapMessages(
     messageId: message.messageId,
     metaText:
       message.role === "system"
-        ? "System message"
-        : message.analysisTaskId
-          ? `analysisTaskId: ${message.analysisTaskId}`
-          : undefined,
+        ? "系统消息"
+        : undefined,
     reportId: message.reportId,
     role: message.role,
     runId: message.runId,
     sourceEvidenceIds: message.sourceEvidenceIds,
     status: message.status,
-    supportingItems:
-      message.role === "assistant"
-        ? message.sourceEvidenceIds
-            .map((sourceEvidenceId) => evidenceTitleById.get(sourceEvidenceId))
-            .filter((item): item is string => Boolean(item))
-        : message.role === "tool"
-          ? message.toolCallIds
-              .map((toolCallId) => toolNameById.get(toolCallId))
-              .filter((item): item is string => Boolean(item))
-          : undefined,
-    supportingTitle:
-      message.role === "assistant" ? "相关证据" : message.role === "tool" ? "相关工具" : undefined,
     toolCallIds: message.toolCallIds,
     turnId: message.turnId
   }));
@@ -388,7 +364,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   input: AnalysisRuntimeContractsWorkspaceInput,
   options?: AnalysisRuntimeContractsWorkspaceOptions
 ): AnalysisWorkspaceViewModel {
-  const messages = mapMessages(input.messages, input.sourceEvidence, input.toolCalls);
+  const messages = mapMessages(input.messages);
   const runEvents = mapRunEvents(input.runEvents);
   const currentRun = mapCurrentRun(input.currentRun, input.modelCalls, input.runEvents);
   const assistantMessage = input.messages.find((message) => message.role === "assistant");
@@ -441,7 +417,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     runEvents,
     sessionSummary: {
       conversationId: input.conversation.conversationId,
-      contextLabel: input.analysisTask.contextPack?.root.title ?? "Blank Context",
+      contextLabel: input.analysisTask.contextPack?.root.title ?? "空白上下文",
       runLabel: `Run: ${input.currentRun.runId}`,
       statusViewModel: currentRun.statusViewModel,
       summary: assistantMessage?.content ?? input.analysisTask.question,
@@ -472,8 +448,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
 
   return {
     contextPanelNote:
-      options?.contextPanelNote ??
-      "当前 Analysis 工作区通过 contracts-backed runtime read surfaces 驱动，Inspector 从 selected subject 生成 roots。",
+      options?.contextPanelNote ?? "点击消息后，右侧会显示对应的分析详情与上下文。",
     modelOptions: options?.modelOptions ?? defaultModelOptions,
     sessions: [session]
   };

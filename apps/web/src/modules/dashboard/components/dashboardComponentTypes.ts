@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
 import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
@@ -7,6 +8,7 @@ type DashboardNavigationProps = {
 };
 
 export type DashboardHeroProps = DashboardNavigationProps & {
+  children?: ReactNode;
   onTimeRangeChange: (key: DashboardSurfaceViewModel["timeRange"]["selectedKey"]) => void;
   selectedTimeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
   selectedTimeRangeKey: DashboardSurfaceViewModel["timeRange"]["selectedKey"];

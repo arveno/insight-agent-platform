@@ -53,54 +53,17 @@ export function AnalysisDraftPane({ controller }: AnalysisDraftPaneProps) {
     >
       <div
         style={{
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          paddingBlock: token.paddingSM,
-          paddingInline: token.paddingLG
-        }}
-      >
-        <Space direction="vertical" size={6} style={{ width: "100%" }}>
-          <Typography.Text strong>Context Draft</Typography.Text>
-          {controller.draftContext ? (
-            <>
-              <Typography.Text type="secondary">
-                {controller.draftContext.root.title}
-              </Typography.Text>
-              {controller.draftContext.root.summary ? (
-                <Typography.Text type="secondary">
-                  {controller.draftContext.root.summary}
-                </Typography.Text>
-              ) : null}
-            </>
-          ) : (
-            <Typography.Text type="secondary">
-              当前没有一次性上下文。直接发送前不会创建 Conversation、AnalysisTask 或 AnalysisRun。
-            </Typography.Text>
-          )}
-        </Space>
-      </div>
-
-      <div
-        style={{
+          alignItems: "center",
+          display: "flex",
           flex: "1 1 auto",
+          justifyContent: "center",
           minHeight: 0,
           overflowY: "auto",
           padding: token.paddingLG
         }}
       >
-        <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>新聊天草稿</Typography.Text>
-          {controller.draftContext ? (
-            <>
-              <Typography.Text>{controller.draftContext.root.title}</Typography.Text>
-              <Typography.Paragraph style={{ marginBottom: 0 }}>
-                {controller.draftContext.root.summary ?? "当前节点没有额外摘要。"}
-              </Typography.Paragraph>
-            </>
-          ) : (
-            <Typography.Paragraph style={{ marginBottom: 0 }}>
-              可以从 Dashboard、Metrics、Reports 或其他带上下文入口进入，也可以直接从空白草稿开始。
-            </Typography.Paragraph>
-          )}
+        <Space align="center" direction="vertical" size={8} style={{ textAlign: "center" }}>
+          <Typography.Text type="secondary">输入问题开始分析</Typography.Text>
           {controller.interactionMessage ? (
             <Typography.Text type="secondary">{controller.interactionMessage}</Typography.Text>
           ) : null}

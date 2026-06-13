@@ -47,7 +47,11 @@ export function useAnalysisShellSlots({
     mainContent: <AnalysisWorkspace controller={controller} />,
     rightAssistPanel: (
       <AnalysisInspectorPanel
-        contextPanelNote={controller.selectedSession ? "Inspector roots are generated from the selected subject." : "Draft context is shown as a tree detail browser."}
+        contextPanelNote={
+          controller.selectedSession
+            ? "点击消息后，右侧会显示对应的分析详情与上下文。"
+            : "右侧会显示当前草稿将要附带的分析详情。"
+        }
         draftContext={controller.draftContext}
         inspectorTreeState={controller.inspectorTreeState}
         onPopInspectorPath={controller.onPopInspectorPath}

@@ -1,6 +1,6 @@
 import type {
-  InspectorTreeNode,
-  SourceRef
+  InspectorOwnerRef,
+  InspectorTreeNode
 } from "@insight-agent/contracts/generated/typescript";
 
 export type AnalysisInspectorRootKey =
@@ -17,6 +17,7 @@ export type AnalysisInspectorRootKey =
 export type AnalysisInspectorRoot = {
   key: AnalysisInspectorRootKey;
   description?: string;
+  owner: InspectorOwnerRef;
   title: string;
   tree: InspectorTreeNode;
 };
@@ -83,29 +84,53 @@ export function findInspectorTreeNode(
   return current;
 }
 
-export function formatSourceRef(sourceRef?: SourceRef): string | null {
-  if (!sourceRef) {
-    return null;
+export function getInspectorNodeDisplayTitle(node: InspectorTreeNode): string {
+  if (node.kind === "directory" && node.children?.length) {
+    return `${node.title} · ${node.children.length} 项`;
   }
 
-  switch (sourceRef.type) {
+  return node.title;
+}
+
+export function getInspectorNodeEyebrow(node: InspectorTreeNode): string | undefined {
+  switch (node.kind) {
     case "analysisRun":
-      return `runId: ${sourceRef.runId}`;
-    case "dataTable":
-      return `tableId: ${sourceRef.tableId}`;
-    case "job":
-      return `jobId: ${sourceRef.jobId}`;
-    case "knowledgeDocument":
-      return `knowledgeDocumentId: ${sourceRef.knowledgeDocumentId}`;
+      return "运行记录";
+    case "decision":
+      return "决策";
     case "metric":
-      return `metricId: ${sourceRef.metricId}`;
+      return "指标";
     case "modelCall":
-      return `modelCallId: ${sourceRef.modelCallId}`;
+      return "模型调用";
+    case "platformQuality":
+      return "平台质量";
     case "report":
-      return `reportId: ${sourceRef.reportId}`;
+      return "报告";
+    case "reportSection":
+      return "报告章节";
+    case "riskSignal":
+      return "风险信号";
+    case "riskSummary":
+      return "风险摘要";
     case "sourceEvidence":
-      return `sourceEvidenceId: ${sourceRef.sourceEvidenceId}`;
+      return "证据";
     case "toolCall":
-      return `toolCallId: ${sourceRef.toolCallId}`;
+      return "工具调用";
+    case "traceEvent":
+      return "运行轨迹";
+    default:
+      return undefined;
   }
+}
+
+export function getInspectorNodeStatusText(node: InspectorTreeNode): string | null {
+  if (node.disabledReason) {
+    return node.disabledReason;
+  }
+
+  if (!node.children?.length && !node.sourceRef) {
+    return "仅摘要";
+  }
+
+  return null;
 }

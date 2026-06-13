@@ -1,14 +1,24 @@
-import { Flex, Select, Space } from "antd";
+import { Flex, Select, Space, theme } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
+import { ContentSlotLayout } from "../../../shared/layout/ContentSlotLayout";
 import { PageIntro } from "../../../shared/layout/containers/PageIntro";
+import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
+import { shellThemeTokens } from "../../../shared/theme/tokens";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
+import {
+  selectDashboardEvidenceNodes,
+  selectDashboardMetricNodes,
+  selectDashboardRiskNodes,
+  selectDashboardRiskSummaryNode
+} from "../models/dashboardSelectors";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
 export function DashboardHero({
+  children,
   onNavigate,
   onTimeRangeChange,
   selectedTimeRange,
@@ -16,7 +26,12 @@ export function DashboardHero({
   viewModel
 }: DashboardHeroProps) {
   const { t } = useI18n();
-  const anomalyCount = viewModel.riskNodes.length + 1;
+  const { token } = theme.useToken();
+  const metricNodes = selectDashboardMetricNodes(viewModel.root);
+  const riskNodes = selectDashboardRiskNodes(viewModel.root);
+  const riskSummaryNode = selectDashboardRiskSummaryNode(viewModel.root);
+  const evidenceNodes = selectDashboardEvidenceNodes(viewModel.root);
+  const anomalyCount = riskNodes.length + (riskSummaryNode ? 1 : 0);
   const heroActions = [
     createRouteAction({
       iconName: "analysis",
@@ -57,7 +72,7 @@ export function DashboardHero({
     {
       key: "metrics",
       title: t("dashboard.hero.fact.metricLabel"),
-      value: `${viewModel.metricNodes.length} ${t("dashboard.hero.fact.metricCountSuffix")}`
+      value: `${metricNodes.length} ${t("dashboard.hero.fact.metricCountSuffix")}`
     },
     {
       key: "risk-anomaly",
@@ -67,7 +82,7 @@ export function DashboardHero({
     {
       key: "evidence",
       title: t("dashboard.hero.fact.evidenceLabel"),
-      value: `${viewModel.evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
+      value: `${evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
     },
     {
       key: "right-context",
@@ -78,9 +93,8 @@ export function DashboardHero({
 
   return (
     <PageIntro
-      colProps={{ md: 12, xl: 6, xs: 24 }}
-      contentLayout="cards"
-      description={t("dashboard.hero.description")}
+      contentLayout="plain"
+      description={viewModel.root.summary ?? viewModel.description}
       eyebrow={t("dashboard.hero.eyebrow")}
       extra={
         <DashboardHeroActions
@@ -91,11 +105,29 @@ export function DashboardHero({
         />
       }
       supportingText={selectedTimeRange.description}
-      title={t("dashboard.hero.title")}
+      title={viewModel.root.title}
     >
-      {heroFacts.map((fact) => (
-        <StatCard key={fact.key} title={fact.title} value={fact.value} />
-      ))}
+      <Space
+        direction="vertical"
+        size={shellThemeTokens.pageSectionGap}
+        style={{ width: "100%" }}
+      >
+        <ContentSlotLayout colProps={{ md: 12, xl: 6, xs: 24 }} layout="cards">
+          {heroFacts.map((fact) => (
+            <StatCard key={fact.key} title={fact.title} value={fact.value} />
+          ))}
+        </ContentSlotLayout>
+        {children ? (
+          <div
+            style={{
+              borderTop: `1px solid ${token.colorBorderSecondary}`,
+              paddingTop: shellThemeTokens.pageSectionGap
+            }}
+          >
+            <SectionStack>{children}</SectionStack>
+          </div>
+        ) : null}
+      </Space>
     </PageIntro>
   );
 }

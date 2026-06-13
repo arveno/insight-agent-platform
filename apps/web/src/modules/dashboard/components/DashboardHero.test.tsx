@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../../shared/test/TestProviders";
@@ -27,6 +27,7 @@ beforeAll(() => {
 
 describe("DashboardHero", () => {
   it("renders the shared page intro copy, actions, time range, and four fact cards", () => {
+    const onNavigate = vi.fn();
     const selectedTimeRange = dashboardStaticViewModel.timeRange.options.find(
       (option) => option.key === dashboardStaticViewModel.timeRange.selectedKey
     )!;
@@ -34,7 +35,7 @@ describe("DashboardHero", () => {
     render(
       <TestProviders>
         <DashboardHero
-          onNavigate={vi.fn()}
+          onNavigate={onNavigate}
           onTimeRangeChange={vi.fn()}
           selectedTimeRange={selectedTimeRange}
           selectedTimeRangeKey={dashboardStaticViewModel.timeRange.selectedKey}
@@ -48,7 +49,7 @@ describe("DashboardHero", () => {
     const eyebrow = screen.getByText("经营工作台");
     const title = screen.getByText("经营状态总览");
     const description = screen.getByText(
-      "将核心指标、风险异常、报告证据和平台质量组织为可追问的业务工作台。"
+      "围绕经营状态、风险信号、报告证据和平台质量继续追问。"
     );
     const metricFact = screen.getByText("核心指标");
     const anomalyFact = screen.getByText("风险异常");
@@ -79,5 +80,50 @@ describe("DashboardHero", () => {
     expect(contextFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(screen.queryByText(dashboardStaticViewModel.lastUpdatedAt)).toBeNull();
     expect(screen.queryByText("关注")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
+    expect(onNavigate).toHaveBeenCalledWith(
+      "analysis",
+      expect.objectContaining({
+        analysisContextPack: expect.objectContaining({
+          root: expect.objectContaining({ nodeId: dashboardStaticViewModel.root.nodeId })
+        })
+      })
+    );
+  });
+
+  it("renders child sections inside the same overview surface", () => {
+    const selectedTimeRange = dashboardStaticViewModel.timeRange.options.find(
+      (option) => option.key === dashboardStaticViewModel.timeRange.selectedKey
+    )!;
+
+    render(
+      <TestProviders>
+        <DashboardHero
+          onTimeRangeChange={vi.fn()}
+          selectedTimeRange={selectedTimeRange}
+          selectedTimeRangeKey={dashboardStaticViewModel.timeRange.selectedKey}
+          viewModel={dashboardStaticViewModel}
+        >
+          <section>
+            <h3>核心指标</h3>
+          </section>
+          <section>
+            <h3>风险异常</h3>
+          </section>
+        </DashboardHero>
+      </TestProviders>
+    );
+
+    const overviewSurface = screen.getByText("经营状态总览").closest(".ant-card") as HTMLElement;
+    const sectionText = Array.from(overviewSurface.querySelectorAll("section")).map((section) =>
+      section.textContent?.replace(/\s+/g, " ").trim()
+    );
+
+    expect(overviewSurface).toBeTruthy();
+    expect(sectionText).toHaveLength(2);
+    expect(sectionText.some((text) => text?.includes("核心指标"))).toBe(true);
+    expect(sectionText.some((text) => text?.includes("风险异常"))).toBe(true);
+    expect(within(overviewSurface).queryByText("Last 30 days")).toBeTruthy();
   });
 });

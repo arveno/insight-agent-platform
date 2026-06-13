@@ -2,7 +2,13 @@ import { Button, Space, Tag, Typography } from "antd";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
 import { ContentCard } from "../../../../shared/ui/cards/ContentCard";
-import { formatSourceRef } from "../../models/inspectorTree";
+import { CardSurface } from "../../../../shared/ui/surfaces/CardSurface";
+import {
+  getInspectorNodeDisplayTitle,
+  getInspectorNodeEyebrow,
+  getInspectorNodeStatusText
+} from "../../models/inspectorTree";
+import { getInspectorDisplayTags } from "./inspectorDisplayTags";
 
 export type InspectorTreeNodePanelProps = {
   node: InspectorTreeNode;
@@ -17,43 +23,63 @@ export function InspectorTreeNodePanel({
   onSelectChild,
   showBack
 }: InspectorTreeNodePanelProps) {
+  const statusText = getInspectorNodeStatusText(node);
+  const hasChildren = Boolean(node.children?.length);
+  const nodeDescription = node.summary ?? node.description;
+  const nodeEyebrow = getInspectorNodeEyebrow(node);
+  const nodeTags = getInspectorDisplayTags(node);
+
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      {showBack ? (
-        <Button onClick={onBack} type="default">
-          返回上一级
-        </Button>
-      ) : null}
-
-      <ContentCard
-        description={node.summary ?? node.description}
-        eyebrow={node.kind}
-        title={node.title}
-      >
-        <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          {node.value ? <Typography.Text>{node.value}</Typography.Text> : null}
-          {node.timeRange ? (
-            <Typography.Text type="secondary">{node.timeRange.label}</Typography.Text>
-          ) : null}
-          {node.chips?.length ? (
+      {hasChildren ? (
+        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+          {nodeTags.length ? (
             <Space size={[8, 8]} wrap>
-              {node.chips.map((chip) => (
-                <Tag key={chip}>{chip}</Tag>
+              {nodeTags.map((tag) => (
+                <Tag key={tag}>{tag}</Tag>
               ))}
             </Space>
           ) : null}
-          {formatSourceRef(node.sourceRef) ? (
-            <Typography.Text type="secondary">{formatSourceRef(node.sourceRef)}</Typography.Text>
-          ) : null}
-          {node.disabledReason ? (
-            <Typography.Text type="secondary">{node.disabledReason}</Typography.Text>
+          {showBack ? (
+            <Button onClick={onBack} type="default">
+              返回上一级
+            </Button>
           ) : null}
         </Space>
-      </ContentCard>
-
-      {node.children?.length ? (
+      ) : (
         <Space direction="vertical" size={12} style={{ width: "100%" }}>
-          {node.children.map((child) => (
+          {showBack ? (
+            <Button onClick={onBack} type="default">
+              返回上一级
+            </Button>
+          ) : null}
+          <CardSurface>
+            <Space direction="vertical" size={8} style={{ width: "100%" }}>
+              {nodeEyebrow ? (
+                <Typography.Text type="secondary">{nodeEyebrow}</Typography.Text>
+              ) : null}
+              {node.value ? <Typography.Text>{node.value}</Typography.Text> : null}
+              {nodeDescription ? (
+                <Typography.Text type="secondary">{nodeDescription}</Typography.Text>
+              ) : null}
+              {nodeTags.length ? (
+                <Space size={[8, 8]} wrap>
+                  {nodeTags.map((tag) => (
+                    <Tag key={tag}>{tag}</Tag>
+                  ))}
+                </Space>
+              ) : null}
+              {statusText ? (
+                <Typography.Text type="secondary">{statusText}</Typography.Text>
+              ) : null}
+            </Space>
+          </CardSurface>
+        </Space>
+      )}
+
+      {hasChildren ? (
+        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+          {node.children!.map((child) => (
             <button
               key={child.nodeId}
               onClick={() => onSelectChild(child.nodeId)}
@@ -69,14 +95,20 @@ export function InspectorTreeNodePanel({
               type="button"
             >
               <ContentCard
-                description={child.summary ?? child.description}
-                eyebrow={child.kind}
-                title={child.title}
+                description={
+                  child.summary ?? child.description ?? getInspectorNodeStatusText(child) ?? undefined
+                }
+                eyebrow={getInspectorNodeEyebrow(child)}
+                title={getInspectorNodeDisplayTitle(child)}
               >
                 {child.value ? (
                   <Typography.Text>{child.value}</Typography.Text>
                 ) : child.chips?.length ? (
                   <Typography.Text type="secondary">{child.chips.join(" / ")}</Typography.Text>
+                ) : getInspectorNodeStatusText(child) ? (
+                  <Typography.Text type="secondary">
+                    {getInspectorNodeStatusText(child)}
+                  </Typography.Text>
                 ) : null}
               </ContentCard>
             </button>

@@ -93,6 +93,13 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
     expect(session.messages.find((message) => message.role === "assistant")?.analysisTaskId).toBe(
       goldenPath.analysisTask.analysisTaskId
     );
+    expect(session.messages.find((message) => message.role === "assistant")?.footerText).toBe(
+      "点击消息查看本次运行。"
+    );
+    expect(session.messages.every((message) => !("supportingItems" in message))).toBe(true);
+    expect(session.messages.every((message) => !message.metaText?.includes("analysisTaskId:"))).toBe(
+      true
+    );
     expect(session.reportPreview?.reportId).toBe(goldenPath.reports[0]?.reportId ?? null);
   });
 

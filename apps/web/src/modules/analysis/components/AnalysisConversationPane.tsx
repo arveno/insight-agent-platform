@@ -62,18 +62,6 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
         }
       }}
     >
-      <div
-        style={{
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          paddingBlock: token.paddingSM,
-          paddingInline: token.paddingLG
-        }}
-      >
-        <Typography.Text type="secondary">
-          {session.sessionSummary.title} · {session.currentRun.status} · {session.currentRun.updatedAtText}
-        </Typography.Text>
-      </div>
-
       <AnalysisMessageList
         messages={controller.messages}
         onSelectMessageAnchor={controller.onSelectMessageAnchor}

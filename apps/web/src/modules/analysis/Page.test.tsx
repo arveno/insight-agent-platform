@@ -151,12 +151,11 @@ describe("AnalysisPage", () => {
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
     expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
-    expect(within(main).getByText("Context Draft")).toBeTruthy();
-    expect(within(main).getByText("新聊天草稿")).toBeTruthy();
-    expect(screen.getByRole("textbox", { name: "新聊天草稿" })).toBeTruthy();
-    expect(
-      screen.getByText("当前没有一次性上下文。直接发送前不会创建 Conversation、AnalysisTask 或 AnalysisRun。")
-    ).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "输入你想分析的问题" })).toBeTruthy();
+    expect(within(main).getByText("输入问题开始分析")).toBeTruthy();
+    expect(within(main).queryByText("当前没有一次性上下文")).toBeNull();
+    expect(within(main).queryByText("Context Draft")).toBeNull();
+    expect(within(main).queryByText("新聊天草稿")).toBeNull();
     expect(screen.queryByText("No analysis runtime selected")).toBeNull();
   });
 
@@ -173,11 +172,16 @@ describe("AnalysisPage", () => {
       </TestProviders>
     );
 
-    expect(screen.getAllByText(draftContext.root.title).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(draftContext.root.summary ?? "").length).toBeGreaterThan(0);
-    expect(
-      (screen.getByRole("textbox", { name: "新聊天草稿" }) as HTMLTextAreaElement).value
-    ).toBe(draftContext.suggestedPrompt);
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
+
+    expect(within(main).queryByText(draftContext.root.title)).toBeNull();
+    expect(within(main).queryByText(draftContext.root.summary ?? "")).toBeNull();
+    expect(screen.queryByText(/^Context$/)).toBeNull();
+    expect(within(main).queryByText("已附带上下文，详情见右侧分析详情。")).toBeNull();
+    expect(within(main).getByText("输入问题开始分析")).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: "输入你想分析的问题" }) as HTMLTextAreaElement).value).toBe(
+      draftContext.suggestedPrompt
+    );
   });
 
   it("loads the runtime-backed conversation shell when a bootstrap conversationId is present", async () => {
@@ -197,15 +201,19 @@ describe("AnalysisPage", () => {
 
     const main = await screen.findByRole("region", { name: "Analysis conversation" });
 
-    expect(within(main).getByText(/收入增速异常 · completed · 更新于/)).toBeTruthy();
     expect(within(main).getByRole("log", { name: "Analysis message list" })).toBeTruthy();
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
+    expect(within(main).queryByText(/收入增速异常 · completed · 更新于/)).toBeNull();
+    expect(within(main).queryByText("相关证据")).toBeNull();
+    expect(within(main).queryByText("相关工具")).toBeNull();
     expect(within(main).getByText(/Stream completed · 更新于/)).toBeTruthy();
     expect(within(main).getByRole("button", { name: "打开聊天工具入口" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "选择模型" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "发送消息" })).toBeTruthy();
+    expect(within(main).queryByText("分析任务")).toBeNull();
+    expect(within(main).queryByText("后续追问")).toBeNull();
+    expect(within(main).getByRole("button", { name: "发送" })).toBeTruthy();
     expect(within(main).queryByText("Message Stream Replay")).toBeNull();
     expect(within(main).queryByText("结果摘要")).toBeNull();
 
@@ -213,7 +221,7 @@ describe("AnalysisPage", () => {
     fireEvent.click(await screen.findByText("Reasoning"));
     expect(screen.getByRole("button", { name: "选择模型" }).textContent).toContain("Reasoning");
 
-    fireEvent.change(screen.getByRole("textbox", { name: "后续追问" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "输入你想分析的问题" }), {
       target: { value: "继续追问华东渠道和最近 7 天的差异。" }
     });
     expect(
@@ -382,7 +390,7 @@ describe("AnalysisPage", () => {
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+    fireEvent.click(screen.getByRole("button", { name: "发送" }));
 
     expect(await screen.findByRole("log", { name: "Analysis message list" })).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/analysis-tasks/submit", {

@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import { ArrowUpOutlined, DownOutlined, PlusOutlined, StopOutlined } from "@ant-design/icons";
-import { Button, Dropdown, Segmented, Space, Typography, theme } from "antd";
+import { Button, Dropdown, Space, Typography, theme } from "antd";
 
 import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
 import type { AnalysisComposerMode, AnalysisComposerViewModel } from "../models/analysisViewModel";
@@ -32,7 +33,7 @@ export function AnalysisComposer({
   modelOptions,
   onComposerAccessoryClick,
   onComposerDraftChange,
-  onComposerModeChange,
+  onComposerModeChange: _onComposerModeChange,
   onComposerStop,
   onSelectModel,
   onSubmitComposer,
@@ -41,6 +42,7 @@ export function AnalysisComposer({
   selectedSessionComposers
 }: AnalysisComposerProps) {
   const { token } = theme.useToken();
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const activeComposer =
     composerMode === "analysis"
       ? selectedSessionComposers.analysis
@@ -49,6 +51,21 @@ export function AnalysisComposer({
     key: option.key,
     label: option.label
   }));
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) {
+      return;
+    }
+
+    const maxHeight = 144;
+    const minHeight = 72;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(minHeight, Math.min(textarea.scrollHeight, maxHeight))}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? "auto" : "hidden";
+  }, [composerDraft]);
 
   return (
     <footer
@@ -72,28 +89,12 @@ export function AnalysisComposer({
           }
         }}
       >
-        <div
-          style={{
-            alignItems: "center",
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: token.marginSM
-          }}
-        >
-          <Segmented
-            onChange={(value) => onComposerModeChange(value as AnalysisComposerMode)}
-            options={[
-              { label: "分析任务", value: "analysis" },
-              { label: "后续追问", value: "follow_up" }
-            ]}
-            value={composerMode}
-          />
-        </div>
         <textarea
           aria-label={activeComposer.title}
+          ref={textareaRef}
           onChange={(event) => onComposerDraftChange(event.target.value)}
           placeholder={activeComposer.placeholder}
-          rows={4}
+          rows={3}
           style={{
             background: "transparent",
             border: "none",
@@ -103,21 +104,21 @@ export function AnalysisComposer({
             fontSize: token.fontSize,
             lineHeight: token.lineHeight,
             marginBottom: token.marginSM,
-            minHeight: 96,
+            maxHeight: 144,
+            minHeight: 72,
             outline: "none",
+            overflowY: "hidden",
             padding: 0,
             resize: "none",
             width: "100%"
           }}
           value={composerDraft}
         />
-        <Space direction="vertical" size={2} style={{ marginBottom: token.marginSM, width: "100%" }}>
-          <Typography.Text type="secondary">{activeComposer.contextHint}</Typography.Text>
-          <Typography.Text type="secondary">{activeComposer.helperText}</Typography.Text>
-          {interactionMessage ? (
+        {interactionMessage ? (
+          <div style={{ marginBottom: token.marginSM }}>
             <Typography.Text type="secondary">{interactionMessage}</Typography.Text>
-          ) : null}
-        </Space>
+          </div>
+        ) : null}
         <div
           style={{
             alignItems: "center",
@@ -151,7 +152,7 @@ export function AnalysisComposer({
               </Button>
             </Dropdown>
             <Button
-              aria-label={composerState === "running" ? "停止生成" : "发送消息"}
+              aria-label={composerState === "running" ? "停止" : "发送"}
               color="default"
               disabled={composerState === "idle" && composerDraft.trim().length === 0}
               icon={composerState === "running" ? <StopOutlined /> : <ArrowUpOutlined />}

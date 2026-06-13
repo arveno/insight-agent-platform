@@ -11,7 +11,6 @@ import type {
 } from "../models/inspectorTree";
 import {
   createContextRootNodeId,
-  createDecisionsRootNodeId,
   createEvidenceRootNodeId,
   createModelCallsRootNodeId,
   createReportsRootNodeId,
@@ -23,6 +22,7 @@ import {
 import type { AnalysisTaskContextPack } from "../models/runtimeContractTypes";
 import { InspectorRootPanel } from "./inspector/InspectorRootPanel";
 import { InspectorTreeNodePanel } from "./inspector/InspectorTreeNodePanel";
+import { getInspectorNodeDisplayTitle } from "../models/inspectorTree";
 
 export type AnalysisInspectorPanelProps = {
   contextPanelNote: string;
@@ -36,7 +36,7 @@ export type AnalysisInspectorPanelProps = {
   workspaceState: AnalysisWorkspaceState;
 };
 
-function createContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
+function createEmptyContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
   return {
     nodeId: createContextRootNodeId(session.analysisTaskId),
     kind: "contextRoot",
@@ -45,10 +45,39 @@ function createContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode
       analysisTaskId: session.analysisTaskId,
       type: "analysisTask"
     },
-    title: "Context",
-    summary: "本次请求上下文属于 AnalysisTask，不属于 Conversation 或 AnalysisRun。",
-    children: session.analysisTaskContextPack ? [session.analysisTaskContextPack.root] : []
+    title: "本次请求上下文",
+    summary: "当前请求没有附带上下文。",
+    disabledReason: "当前没有可展开的上下文详情。"
   };
+}
+
+function getContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
+  return session.analysisTaskContextPack?.root ?? createEmptyContextRoot(session);
+}
+
+function getInspectorPanelDescription(node: InspectorTreeNode): string | undefined {
+  const description = node.summary ?? node.description;
+
+  return description && description.trim().length > 0 ? description : undefined;
+}
+
+function getInspectorRootsViewTitle(
+  draftContext: AnalysisTaskContextPack | undefined,
+  selectedSubject: InspectorSubject | undefined
+): string {
+  if (draftContext) {
+    return "分析详情";
+  }
+
+  if (selectedSubject?.type === "analysisRun") {
+    return "本次运行";
+  }
+
+  if (selectedSubject?.type === "analysisTask") {
+    return "本次分析请求";
+  }
+
+  return "分析详情";
 }
 
 function createRunTraceRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
@@ -111,20 +140,18 @@ function createRunHistoryRoot(session: AnalysisSessionViewModel): InspectorTreeN
 }
 
 function createCollectionRoot(args: {
-  kind: AnalysisInspectorRootKey;
+  kind: "evidence" | "reports" | "tool-calls" | "model-calls";
   nodes: InspectorTreeNode[];
   runId: string;
   summary: string;
   title: string;
 }): InspectorTreeNode {
-  const nodeIdByKind: Record<Exclude<AnalysisInspectorRootKey, "context" | "run-history" | "run-trace" | "runtime-references">, string> =
-    {
-      "decisions": createDecisionsRootNodeId(args.runId),
-      "evidence": createEvidenceRootNodeId(args.runId),
-      "model-calls": createModelCallsRootNodeId(args.runId),
-      "reports": createReportsRootNodeId(args.runId),
-      "tool-calls": createToolCallsRootNodeId(args.runId)
-    };
+  const nodeIdByKind: Record<typeof args.kind, string> = {
+    "evidence": createEvidenceRootNodeId(args.runId),
+    "model-calls": createModelCallsRootNodeId(args.runId),
+    "reports": createReportsRootNodeId(args.runId),
+    "tool-calls": createToolCallsRootNodeId(args.runId)
+  };
 
   return {
     nodeId: nodeIdByKind[args.kind as keyof typeof nodeIdByKind],
@@ -140,11 +167,11 @@ function createCollectionRoot(args: {
   };
 }
 
-function createSessionRoots(
+export function buildAnalysisInspectorRoots(
   session: AnalysisSessionViewModel,
   subject: InspectorSubject | undefined
 ): AnalysisInspectorRoot[] {
-  const contextRoot = createContextRoot(session);
+  const contextRoot = getContextRoot(session);
   const runTraceRoot = createRunTraceRoot(session);
   const reportRoot = createCollectionRoot({
     kind: "reports",
@@ -169,8 +196,8 @@ function createSessionRoots(
               kind: "reportSection",
               role: "reportSection",
               owner: {
-                runId: session.reportPreview!.runId,
-                type: "analysisRun"
+                reportId: session.reportPreview!.reportId,
+                type: "report"
               },
               title: section.title,
               summary: section.content
@@ -203,23 +230,6 @@ function createSessionRoots(
     runId: session.currentRun.runId,
     summary: "本次运行绑定的证据项。",
     title: "生成证据"
-  });
-  const decisionRoot = createCollectionRoot({
-    kind: "decisions",
-    nodes: session.decisions.map((item) => ({
-      nodeId: item.decisionId,
-      kind: "decision",
-      role: "decision",
-      owner: {
-        runId: item.runId,
-        type: "analysisRun"
-      },
-      title: item.title,
-      summary: item.createdAtText
-    })),
-    runId: session.currentRun.runId,
-    summary: "本次运行沉淀的决策结果。",
-    title: "决策结果"
   });
   const toolRoot = createCollectionRoot({
     kind: "tool-calls",
@@ -270,11 +280,13 @@ function createSessionRoots(
     return [
       {
         key: "context",
-        title: "Context",
+        owner: contextRoot.owner,
+        title: contextRoot.title,
         tree: contextRoot
       },
       {
         key: "run-history",
+        owner: runHistoryRoot.owner,
         title: "运行记录",
         tree: runHistoryRoot
       }
@@ -284,26 +296,27 @@ function createSessionRoots(
   return [
     {
       key: "run-trace",
+      owner: runTraceRoot.owner,
       title: "Run Trace",
       tree: runTraceRoot
     },
     {
       key: "context",
-      title: "Context",
+      owner: contextRoot.owner,
+      title: contextRoot.title,
       tree: contextRoot
     },
     ...(session.sourceEvidence.length > 0
-      ? [{ key: "evidence" as const, title: "生成证据", tree: evidenceRoot }]
+      ? [{ key: "evidence" as const, owner: evidenceRoot.owner, title: "生成证据", tree: evidenceRoot }]
       : []),
-    ...(session.reportPreview ? [{ key: "reports" as const, title: "输出报告", tree: reportRoot }] : []),
-    ...(session.decisions.length > 0
-      ? [{ key: "decisions" as const, title: "决策结果", tree: decisionRoot }]
+    ...(session.reportPreview
+      ? [{ key: "reports" as const, owner: reportRoot.owner, title: "输出报告", tree: reportRoot }]
       : []),
     ...(session.toolDetails.length > 0
-      ? [{ key: "tool-calls" as const, title: "Tool Call", tree: toolRoot }]
+      ? [{ key: "tool-calls" as const, owner: toolRoot.owner, title: "Tool Call", tree: toolRoot }]
       : []),
     ...(session.modelDetails.length > 0
-      ? [{ key: "model-calls" as const, title: "Model Call", tree: modelRoot }]
+      ? [{ key: "model-calls" as const, owner: modelRoot.owner, title: "Model Call", tree: modelRoot }]
       : [])
   ];
 }
@@ -320,12 +333,13 @@ export function AnalysisInspectorPanel({
   workspaceState
 }: AnalysisInspectorPanelProps) {
   const roots = selectedSession
-    ? createSessionRoots(selectedSession, selectedInspectorSubject)
+    ? buildAnalysisInspectorRoots(selectedSession, selectedInspectorSubject)
     : draftContext
       ? [
           {
             key: "context" as const,
-            title: "Context",
+            owner: draftContext.root.owner,
+            title: draftContext.root.title,
             tree: draftContext.root
           }
         ]
@@ -338,22 +352,28 @@ export function AnalysisInspectorPanel({
   const selectedNode = activeRoot
     ? findInspectorTreeNode(activeRoot.tree, inspectorTreeState.path)
     : null;
+  const panelTitle = selectedNode
+    ? getInspectorNodeDisplayTitle(selectedNode)
+    : getInspectorRootsViewTitle(draftContext, selectedInspectorSubject);
+  const panelDescription = selectedNode
+    ? getInspectorPanelDescription(selectedNode)
+    : contextPanelNote;
 
   return (
     <SidePanel
-      description={contextPanelNote}
+      description={panelDescription}
       empty={
         workspaceState.kind === "draft"
           ? {
-              description: "当前没有 draft context。可从 Dashboard context draft 进入，或直接空白提问。",
-              title: "Inspector"
+              description: "当前还没有附带上下文，可直接输入问题或从其他入口带入。",
+              title: "分析详情"
             }
           : {
-              description: "当前 subject 没有可展示的 Inspector roots。",
-              title: "Inspector"
+              description: "当前消息没有可展示的分析详情。",
+              title: "分析详情"
             }
       }
-      title="Analysis inspector"
+      title={panelTitle}
     >
       {roots.length === 0 ? null : !activeRoot || !selectedNode ? (
         <InspectorRootPanel onSelectRoot={onSelectInspectorRoot} roots={roots} />

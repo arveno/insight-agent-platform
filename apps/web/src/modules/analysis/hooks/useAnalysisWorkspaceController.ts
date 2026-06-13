@@ -122,33 +122,26 @@ function createInteractionMessage(text: string): string {
 function createDraftComposerViewModels(
   draftContext?: AnalysisContextRouteState
 ): AnalysisWorkspaceController["composerViewModels"] {
-  const contextHint = draftContext
-    ? `当前草稿上下文已选择 ${draftContext.root.title}。`
-    : "当前处于新聊天草稿态，发送前不会创建 Conversation 或 AnalysisRun。";
-  const helperText = draftContext
-    ? "发送后会把当前树形上下文固化为 AnalysisTask.contextPack。"
-    : "可以直接输入问题，或从 Dashboard / Metrics / Reports 带上下文进入。";
-
   return {
     analysis: {
-      contextHint,
-      helperText,
+      contextHint: "",
+      helperText: "",
       initialDraft: draftContext?.suggestedPrompt ?? "",
       key: "draft-analysis",
-      placeholder: "例如：解释最近收入增速变化，并给出下一步建议。",
-      submitLabel: "发送消息",
+      placeholder: "输入你想分析的问题",
+      submitLabel: "发送",
       suggestions: [],
-      title: "新聊天草稿"
+      title: "输入你想分析的问题"
     },
     followUp: {
-      contextHint,
-      helperText: "当前还没有已创建的会话；如需发送，仍会以新的 AnalysisTask 开始。",
+      contextHint: "",
+      helperText: "",
       initialDraft: draftContext?.suggestedPrompt ?? "",
       key: "draft-follow-up",
-      placeholder: "补充你希望一起发送的约束、时间范围或证据线索。",
-      submitLabel: "发送消息",
+      placeholder: "输入你想分析的问题",
+      submitLabel: "发送",
       suggestions: [],
-      title: "草稿补充"
+      title: "输入你想分析的问题"
     }
   };
 }
@@ -213,7 +206,12 @@ function getRootNodeId(
   draftContext: AnalysisContextRouteState | undefined
 ): string | null {
   if (rootKey === "context") {
-    return session ? createContextRootNodeId(session.analysisTaskId) : draftContext?.root.nodeId ?? null;
+    return (
+      session?.analysisTaskContextPack?.root.nodeId ??
+      (session ? createContextRootNodeId(session.analysisTaskId) : null) ??
+      draftContext?.root.nodeId ??
+      null
+    );
   }
 
   if (!session) {
@@ -292,12 +290,7 @@ export function useAnalysisWorkspaceController(
     InspectorSubject | undefined
   >(undefined);
   const [inspectorTreeState, setInspectorTreeState] = useState<AnalysisInspectorTreeState>(() =>
-    options.draftContext
-      ? {
-          path: [options.draftContext.root.nodeId],
-          rootKey: "context"
-        }
-      : { path: [], rootKey: null }
+    options.draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
   );
 
   useEffect(() => {
@@ -363,12 +356,7 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
       setInspectorTreeState(
-        draftContext
-          ? {
-              path: [draftContext.root.nodeId],
-              rootKey: "context"
-            }
-          : { path: [], rootKey: null }
+        draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
       );
       setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
       setFollowUpDraft("");
@@ -431,9 +419,7 @@ export function useAnalysisWorkspaceController(
     messages: selectedSession?.messages ?? [],
     modelOptions,
     onComposerAccessoryClick: () => {
-      setInteractionMessage(
-        createInteractionMessage("当前 issue 只接 submit / Inspector foundation；附件和工具 write path 暂未实现。")
-      );
+      setInteractionMessage(createInteractionMessage("该功能暂不可用。"));
     },
     onComposerDraftChange: (value) => {
       if (composerModeRef.current === "analysis") {
@@ -450,7 +436,7 @@ export function useAnalysisWorkspaceController(
     },
     onComposerStop: () => {
       setComposerState("idle");
-      setInteractionMessage(createInteractionMessage("当前页面未建立真实 streaming cancel，停止动作不可用。"));
+      setInteractionMessage(createInteractionMessage("当前无法停止此次生成。"));
     },
     onPopInspectorPath: () => {
       setInspectorTreeState((current) =>
@@ -475,11 +461,7 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
       setInspectorTreeState({ path: [], rootKey: null });
-      setInteractionMessage(
-        createInteractionMessage(
-          "已进入新聊天草稿态。发送前不会创建 Conversation 或 AnalysisRun；发送后才会进入正式 submit 链路。"
-        )
-      );
+      setInteractionMessage("");
     },
     onSelectInspectorNode: (nodeId) => {
       setInspectorTreeState((current) => ({
@@ -527,10 +509,7 @@ export function useAnalysisWorkspaceController(
           analysisTaskId: message.analysisTaskId,
           runId: message.runId ?? undefined
         });
-        setInspectorTreeState({
-          path: [createContextRootNodeId(message.analysisTaskId)],
-          rootKey: "context"
-        });
+        setInspectorTreeState({ path: [], rootKey: null });
       }
     },
     onSelectModel: (key) => {
@@ -541,7 +520,7 @@ export function useAnalysisWorkspaceController(
       }
 
       setSelectedModelKey(nextModel.key);
-      setInteractionMessage(createInteractionMessage(`已切换模型展示选项为 ${nextModel.label}。`));
+      setInteractionMessage("");
     },
     onSelectSession: (conversationId) => {
       const nextSession = sessions.find((session) => session.conversationId === conversationId);
@@ -562,7 +541,7 @@ export function useAnalysisWorkspaceController(
         path: [createRunTraceRootNodeId(nextSession.currentRun.runId)],
         rootKey: "run-trace"
       });
-      setInteractionMessage(createInteractionMessage(`已切换到真实会话 ${nextSession.conversationId}。`));
+      setInteractionMessage("");
     },
     onSessionSearchChange: setSessionSearchQuery,
     onSubmitComposer: () => {
@@ -571,16 +550,14 @@ export function useAnalysisWorkspaceController(
 
       if (question.length === 0) {
         setComposerState("idle");
-        setInteractionMessage(createInteractionMessage("请输入要提交的 Analysis 问题。"));
+        setInteractionMessage(createInteractionMessage("输入你想分析的问题。"));
         return;
       }
 
       if (!submitIdentity) {
         setComposerState("idle");
         setInteractionMessage(
-          createInteractionMessage(
-            "当前页面未提供 workspaceId / userId / businessDomainId，无法发起 Analysis submit。"
-          )
+          createInteractionMessage("当前环境未配置分析提交能力。")
         );
         return;
       }

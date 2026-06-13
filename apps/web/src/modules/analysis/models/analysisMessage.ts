@@ -18,8 +18,6 @@ export type AnalysisMessage = {
   runId: string | null;
   sourceEvidenceIds: string[];
   status: AnalysisMessageStatus;
-  supportingItems?: string[];
-  supportingTitle?: string;
   toolCallIds: string[];
   turnId: string;
 };

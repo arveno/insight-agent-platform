@@ -59,11 +59,10 @@ describe("useAnalysisShellSlots", () => {
 
     expect(screen.getByRole("navigation", { name: "Analysis session navigation" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Analysis conversation" })).toBeTruthy();
-    expect(screen.getByText("新聊天草稿")).toBeTruthy();
-    expect(screen.getByText("Analysis inspector")).toBeTruthy();
-    expect(screen.getByText("Context Draft")).toBeTruthy();
-    expect(
-      screen.getByText("当前没有一次性上下文。直接发送前不会创建 Conversation、AnalysisTask 或 AnalysisRun。")
-    ).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "输入你想分析的问题" })).toBeTruthy();
+    expect(screen.getAllByText("分析详情").length).toBeGreaterThan(0);
+    expect(screen.getByText("右侧会显示当前草稿将要附带的分析详情。")).toBeTruthy();
+    expect(screen.getByText("输入问题开始分析")).toBeTruthy();
+    expect(screen.queryByText("当前没有一次性上下文")).toBeNull();
   });
 });

@@ -26,12 +26,6 @@ export type DashboardSurfaceViewModel = StaticPageViewModelBase & {
   dashboardId: string;
   dashboardState: StaticPageStateViewModel;
   description: string;
-  evidenceNodes: InspectorTreeNode[];
-  metricNodes: InspectorTreeNode[];
-  qualityNodes: InspectorTreeNode[];
-  reportNodes: InspectorTreeNode[];
-  riskNodes: InspectorTreeNode[];
-  riskSummaryNode: InspectorTreeNode;
   root: InspectorTreeNode;
   timeRange: DashboardTimeRangeViewModel;
   title: string;

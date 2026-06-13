@@ -1,4 +1,4 @@
-import { List, Space, Typography, theme } from "antd";
+import { Space, Typography, theme } from "antd";
 
 import type { AnalysisMessage } from "../models/analysisMessage";
 
@@ -61,22 +61,6 @@ export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisM
       <Space direction="vertical" size={token.marginXS} style={{ width: "100%" }}>
         <Typography.Text type="secondary">{getRoleLabel(message.role)}</Typography.Text>
         <Typography.Paragraph style={{ margin: 0 }}>{message.content}</Typography.Paragraph>
-        {message.supportingItems?.length ? (
-          <div>
-            <Typography.Text style={{ fontWeight: token.fontWeightStrong }}>
-              {message.supportingTitle ?? "支持信息"}
-            </Typography.Text>
-            <List
-              dataSource={message.supportingItems}
-              renderItem={(item) => (
-                <List.Item style={{ paddingInline: 0, paddingTop: token.marginXS }}>
-                  <Typography.Text>{item}</Typography.Text>
-                </List.Item>
-              )}
-              split={false}
-            />
-          </div>
-        ) : null}
         {message.metaText ? (
           <Typography.Text type="secondary">{message.metaText}</Typography.Text>
         ) : null}

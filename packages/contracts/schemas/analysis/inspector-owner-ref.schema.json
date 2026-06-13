@@ -29,42 +29,72 @@
   },
   "anyOf": [
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "conversationId"],
       "properties": {
         "type": {
-          "const": "conversation"
+          "type": "string",
+          "enum": ["conversation"]
+        },
+        "conversationId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type"],
       "properties": {
         "type": {
-          "const": "analysisTask"
+          "type": "string",
+          "enum": ["analysisTask"]
+        },
+        "analysisTaskId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "runId"],
       "properties": {
         "type": {
-          "const": "analysisRun"
+          "type": "string",
+          "enum": ["analysisRun"]
+        },
+        "runId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "reportId"],
       "properties": {
         "type": {
-          "const": "report"
+          "type": "string",
+          "enum": ["report"]
+        },
+        "reportId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "sourceEvidenceId"],
       "properties": {
         "type": {
-          "const": "sourceEvidence"
+          "type": "string",
+          "enum": ["sourceEvidence"]
+        },
+        "sourceEvidenceId": {
+          "type": "string"
         }
       }
     }

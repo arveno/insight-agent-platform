@@ -51,74 +51,128 @@
   },
   "anyOf": [
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "reportId"],
       "properties": {
         "type": {
-          "const": "report"
+          "type": "string",
+          "enum": ["report"]
+        },
+        "reportId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "metricId"],
       "properties": {
         "type": {
-          "const": "metric"
+          "type": "string",
+          "enum": ["metric"]
+        },
+        "metricId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "sourceEvidenceId"],
       "properties": {
         "type": {
-          "const": "sourceEvidence"
+          "type": "string",
+          "enum": ["sourceEvidence"]
+        },
+        "sourceEvidenceId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "runId"],
       "properties": {
         "type": {
-          "const": "analysisRun"
+          "type": "string",
+          "enum": ["analysisRun"]
+        },
+        "runId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "tableId"],
       "properties": {
         "type": {
-          "const": "dataTable"
+          "type": "string",
+          "enum": ["dataTable"]
+        },
+        "tableId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "knowledgeDocumentId"],
       "properties": {
         "type": {
-          "const": "knowledgeDocument"
+          "type": "string",
+          "enum": ["knowledgeDocument"]
+        },
+        "knowledgeDocumentId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "toolCallId"],
       "properties": {
         "type": {
-          "const": "toolCall"
+          "type": "string",
+          "enum": ["toolCall"]
+        },
+        "toolCallId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "modelCallId"],
       "properties": {
         "type": {
-          "const": "modelCall"
+          "type": "string",
+          "enum": ["modelCall"]
+        },
+        "modelCallId": {
+          "type": "string"
         }
       }
     },
     {
+      "type": "object",
+      "additionalProperties": false,
       "required": ["type", "jobId"],
       "properties": {
         "type": {
-          "const": "job"
+          "type": "string",
+          "enum": ["job"]
+        },
+        "jobId": {
+          "type": "string"
         }
       }
     }

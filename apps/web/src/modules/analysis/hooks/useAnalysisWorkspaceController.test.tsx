@@ -19,7 +19,6 @@ import goldenPathExample from "../../../../../../packages/contracts/examples/ana
 
 import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "../mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel";
 import {
-  createContextRootNodeId,
   createRunTraceRootNodeId
 } from "../models/inspectorTree";
 import {
@@ -137,10 +136,22 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.draftContext).toEqual(draftContext);
     expect(result.current.composerDraft).toBe(draftContext.suggestedPrompt);
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+
+    act(() => {
+      result.current.onSelectInspectorRoot("context");
+    });
+
     expect(result.current.inspectorTreeState).toEqual({
       path: [draftContext.root.nodeId],
       rootKey: "context"
     });
+
+    act(() => {
+      result.current.onPopInspectorPath();
+    });
+
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
 
     act(() => {
       result.current.onResetForNewAnalysis();
@@ -303,6 +314,12 @@ describe("useAnalysisWorkspaceController", () => {
     });
 
     act(() => {
+      result.current.onPopInspectorPath();
+    });
+
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+
+    act(() => {
       result.current.onSelectMessageAnchor(userMessage.messageId);
     });
 
@@ -312,8 +329,14 @@ describe("useAnalysisWorkspaceController", () => {
       runId: goldenPath.analysisRun.runId
     });
     expect(result.current.selectedMessageId).toBe(userMessage.messageId);
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+
+    act(() => {
+      result.current.onSelectInspectorRoot("context");
+    });
+
     expect(result.current.inspectorTreeState).toEqual({
-      path: [createContextRootNodeId(goldenPath.analysisTask.analysisTaskId)],
+      path: [goldenPath.analysisTask.contextPack!.root.nodeId],
       rootKey: "context"
     });
 

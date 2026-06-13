@@ -73,7 +73,8 @@ const riskSummaryNode: InspectorTreeNode = {
   title: "风险摘要",
   summary: "最高风险来自收入增速和数据质量摘要。",
   value: "Medium",
-  chips: ["2 项关注", "经营健康度关注"]
+  chips: ["2 项关注", "经营健康度关注"],
+  disabledReason: "当前仅提供风险摘要。"
 };
 
 const weeklyReportNode: InspectorTreeNode = {
@@ -124,9 +125,10 @@ const platformQualityNode: InspectorTreeNode = {
   role: "inputContext",
   owner: dashboardOwner,
   title: "平台质量",
-  summary: "数据质量检查和运维任务只作为摘要入口展示。",
+  summary: "数据质量检查和运维任务会先以摘要形式呈现。",
   value: "2 项需关注",
-  chips: ["Platform quality", "Evidence-ready"]
+  chips: ["Platform quality", "Evidence-ready"],
+  disabledReason: "当前仅提供平台质量摘要。"
 };
 
 const metricDirectoryNode: InspectorTreeNode = {
@@ -135,7 +137,7 @@ const metricDirectoryNode: InspectorTreeNode = {
   role: "directory",
   owner: dashboardOwner,
   title: "核心指标",
-  summary: "围绕当前经营问题最值得优先追问的指标节点。",
+  summary: "围绕当前经营问题最值得优先追问的指标。",
   children: [revenueMetricNode, grossMarginMetricNode]
 };
 
@@ -145,7 +147,7 @@ const riskDirectoryNode: InspectorTreeNode = {
   role: "directory",
   owner: dashboardOwner,
   title: "风险异常",
-  summary: "把异常节点和风险摘要收束为可直接带入 Analysis 的子树。",
+  summary: "聚焦需要继续核查的风险信号与摘要判断。",
   children: [revenueRiskNode, riskSummaryNode]
 };
 
@@ -155,7 +157,7 @@ const reportEvidenceDirectoryNode: InspectorTreeNode = {
   role: "directory",
   owner: dashboardOwner,
   title: "报告与证据",
-  summary: "报告、证据和上下文引用以同一树形入口组织。",
+  summary: "从报告和证据入口继续追问当前经营问题。",
   children: [weeklyReportNode, revenueEvidenceNode, qualityEvidenceNode]
 };
 
@@ -165,7 +167,7 @@ const qualityDirectoryNode: InspectorTreeNode = {
   role: "directory",
   owner: dashboardOwner,
   title: "平台质量",
-  summary: "平台质量节点先作为上下文入口，不展开完整来源详情。",
+  summary: "先查看平台质量摘要，再决定是否继续追问。",
   children: [platformQualityNode]
 };
 
@@ -173,7 +175,6 @@ export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
   dashboardId: "dashboard-main",
   dashboardState: defaultStateCoverage.ready,
   description: "将核心指标、风险异常、报告证据和平台质量组织为可追问的业务工作台。",
-  evidenceNodes: [revenueEvidenceNode, qualityEvidenceNode],
   gapNote: "Dashboard 聚合 ViewModel 已收束为 semantic root tree；UI 只消费 root 或 root-derived selectors。",
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:00:00+08:00",
@@ -198,7 +199,6 @@ export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
     }
   ],
   metricCards: [],
-  metricNodes: [revenueMetricNode, grossMarginMetricNode],
   pageDescriptionKey: "page.dashboard.description",
   pageKey: "dashboard",
   pageTitleKey: "page.dashboard.title",
@@ -209,43 +209,26 @@ export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
     labelKey: "action.dashboardPrimaryAnalysis.label",
     targetRoute: "analysis"
   },
-  qualityNodes: [platformQualityNode],
   readonlyState: defaultReadonlyState,
-  reportNodes: [weeklyReportNode],
   rightAssistSummary: createRightAssistSummary(
     "dashboard-right-assist",
     "page.dashboard.rightAssist.title",
     "page.dashboard.rightAssist.description"
   ),
-  riskNodes: [revenueRiskNode],
-  riskSummaryNode,
   root: {
     nodeId: "dashboard-node-root",
     kind: "dashboardOverview",
     role: "inputContext",
     owner: dashboardOwner,
     title: "经营状态总览",
-    summary: "Dashboard 是第一个 context tree producer；Open in Analysis 会从这里选择 node / subtree。",
+    summary: "围绕经营状态、风险信号、报告证据和平台质量继续追问。",
     chips: ["Last 30 days", "2 个指标", "2 条证据"],
     timeRange: {
       key: "last_30_days",
       label: "Last 30 days"
     },
     capturedAt: "2026-06-03T18:00:00+08:00",
-    children: [
-      {
-        nodeId: "dashboard-node-time-range-last-30-days",
-        kind: "timeRange",
-        role: "directory",
-        owner: dashboardOwner,
-        title: "Last 30 days",
-        summary: "当前展示最近 30 天内的指标摘要、异常和报告入口。"
-      },
-      metricDirectoryNode,
-      riskDirectoryNode,
-      reportEvidenceDirectoryNode,
-      qualityDirectoryNode
-    ]
+    children: [metricDirectoryNode, riskDirectoryNode, reportEvidenceDirectoryNode, qualityDirectoryNode]
   },
   secondaryActions: [
     {
