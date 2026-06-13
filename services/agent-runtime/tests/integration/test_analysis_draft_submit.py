@@ -17,16 +17,50 @@ BLANK_SUBMIT_PAYLOAD = {
     "contextPack": None,
 }
 
+def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
+    owner: dict[str, str] = {"type": "analysisTask"}
+
+    if analysis_task_id is not None:
+        owner["analysisTaskId"] = analysis_task_id
+
+    return {
+        "version": 1,
+        "suggestedPrompt": "请继续分析华东收入增速放缓的主要原因。",
+        "traceability": "direct_refs",
+        "capturedAt": "2026-06-05T03:08:12Z",
+        "root": {
+            "nodeId": "inspector-node-task-context-root",
+            "kind": "dashboardOverview",
+            "role": "inputContext",
+            "owner": owner,
+            "title": "经营状态总览",
+            "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+            "chips": ["Northstar Retail China", "Last 7 days", "3 条证据"],
+            "timeRange": {
+                "key": "last_7_days",
+                "label": "Last 7 days",
+            },
+            "capturedAt": "2026-06-05T03:08:12Z",
+            "children": [
+                {
+                    "nodeId": "inspector-node-task-context-report",
+                    "kind": "report",
+                    "role": "inputContext",
+                    "owner": owner,
+                    "title": "周经营分析报告",
+                    "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+                    "sourceRef": {
+                        "type": "report",
+                        "reportId": "report-weekly-operations-review",
+                    },
+                }
+            ],
+        },
+    }
+
 CONTEXT_SUBMIT_PAYLOAD = {
     **BLANK_SUBMIT_PAYLOAD,
-    "contextPack": {
-        "chips": ["Northstar Retail China", "Last 7 days", "3 条证据"],
-        "sourceId": "report-weekly-operations-review",
-        "sourceTitle": "周经营分析报告",
-        "sourceType": "report",
-        "suggestedPrompt": "请继续分析华东收入增速放缓的主要原因。",
-        "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
-    },
+    "contextPack": build_context_pack(),
 }
 
 
@@ -134,7 +168,9 @@ def test_submit_analysis_draft_persists_typed_context_pack_snapshot(client: Test
 
     assert response.status_code == 201, response.text
     payload = response.json()
-    assert payload["analysisTask"]["contextPack"] == CONTEXT_SUBMIT_PAYLOAD["contextPack"]
+    assert payload["analysisTask"]["contextPack"] == build_context_pack(
+        payload["analysisTask"]["analysisTaskId"]
+    )
     assert payload["userMessage"]["analysisTaskId"] == payload["analysisTask"]["analysisTaskId"]
     assert payload["conversation"]["currentRunId"] == payload["analysisRun"]["runId"]
 
@@ -219,7 +255,26 @@ def test_create_analysis_task_binds_to_valid_conversation(client: TestClient) ->
     assert payload["conversationId"] == conversation["conversationId"]
     assert payload["workspaceId"] == conversation["workspaceId"]
     assert payload["userId"] == conversation["userId"]
-    assert payload["contextPack"] == CONTEXT_SUBMIT_PAYLOAD["contextPack"]
+    assert payload["contextPack"] == build_context_pack(payload["analysisTaskId"])
+
+
+def test_get_analysis_task_returns_persisted_tree_shaped_context_pack(client: TestClient) -> None:
+    conversation = create_conversation(client)
+
+    create_response = client.post(
+        "/analysis-tasks",
+        json=create_analysis_task_payload(conversation_id=conversation["conversationId"]),
+    )
+    assert create_response.status_code == 201, create_response.text
+    created_task = create_response.json()
+
+    get_response = client.get(f"/analysis-tasks/{created_task['analysisTaskId']}")
+
+    assert get_response.status_code == 200, get_response.text
+    assert get_response.json() == {
+        **created_task,
+        "contextPack": build_context_pack(created_task["analysisTaskId"]),
+    }
 
 
 @pytest.mark.parametrize(

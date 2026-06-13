@@ -4,41 +4,35 @@ import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { toRiskBadge } from "../../../shared/utils/viewModelState";
+import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 
-export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCardProps) {
+export function DashboardMetricOverview({
+  metric,
+  onNavigate,
+  timeRange,
+  viewModel
+}: DashboardStatCardProps) {
   const { t } = useI18n();
-  const risk = toRiskBadge(t, metric.risk);
-  const displayRisk = risk?.reason
-    ? { ...risk, reason: t("dashboard.metrics.riskDescription") }
-    : risk;
-  const description =
-    metric.risk.level === "low"
-      ? t("dashboard.metrics.defaultDescription")
-      : t("dashboard.metrics.riskDescription");
+  const isPriorityMetric = metric.nodeId === "dashboard-node-metric-revenue";
+  const description = isPriorityMetric
+    ? t("dashboard.metrics.riskDescription")
+    : t("dashboard.metrics.defaultDescription");
   const metricActions = [
-    ...(metric.risk.level !== "low"
+    ...(isPriorityMetric
       ? [
           createRouteAction({
             iconName: "analysis",
-            key: `${metric.key}-analyze`,
+            key: `${metric.nodeId}-analyze`,
             label: t("dashboard.action.analyzeAnomaly"),
             onNavigate,
             route: "analysis",
             routeState: {
-              draftContextPack: {
-                chips: [
-                  metric.valueText,
-                  metric.trendText ?? "无趋势摘要",
-                  `${metric.evidenceCount ?? 0} 条相关证据`
-                ],
-                sourceId: metric.key,
-                sourceTitle: metric.label,
-                sourceType: "metric",
-                suggestedPrompt: `请分析 Dashboard 中指标 ${metric.label} 的异常表现，并结合相关证据给出下一步建议。`,
-                summary: `${metric.label} 当前值 ${metric.valueText}，趋势 ${metric.trendText ?? "暂无"}。`
-              }
+              analysisContextPack: createDashboardAnalysisContextPack({
+                nodeId: metric.nodeId,
+                suggestedPrompt: `请分析 Dashboard 中指标 ${metric.title} 的异常表现，并结合相关证据给出下一步建议。`,
+                viewModel
+              })
             },
             variant: "contextPrimary"
           })
@@ -46,7 +40,7 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCar
       : []),
     createRouteAction({
       iconName: "data",
-      key: `${metric.key}-source`,
+      key: `${metric.nodeId}-source`,
       label: t("dashboard.action.viewDataKnowledge"),
       onNavigate,
       route: "data-knowledge",
@@ -66,17 +60,25 @@ export function DashboardMetricOverview({ metric, onNavigate }: DashboardStatCar
       }
       meta={
         <Space wrap>
-          <Typography.Text type="secondary">{metric.trendText}</Typography.Text>
-          {typeof metric.evidenceCount === "number" ? (
-            <Typography.Text type="secondary">
-              {metric.evidenceCount} {t("dashboard.common.relatedEvidenceCountSuffix")}
+          <Typography.Text type="secondary">{timeRange.label}</Typography.Text>
+          {metric.chips?.map((chip) => (
+            <Typography.Text key={chip} type="secondary">
+              {chip}
             </Typography.Text>
-          ) : null}
+          ))}
         </Space>
       }
-      risk={displayRisk}
-      title={metric.label}
-      value={metric.valueText}
+      risk={
+        isPriorityMetric
+          ? {
+              label: "中风险",
+              level: "medium",
+              reason: t("dashboard.metrics.riskDescription")
+            }
+          : { label: "低风险", level: "low" }
+      }
+      title={metric.title}
+      value={metric.value ?? "--"}
     />
   );
 }

@@ -41,26 +41,55 @@ RUN_EVENT_TYPE_ENUM = json.loads(RUN_EVENT_SCHEMA_PATH.read_text(encoding="utf-8
 ]["enum"]
 
 
-def build_analysis_task() -> AnalysisTaskRecord:
-    context_pack: AnalysisTaskContextPack = {
-        "metricId": "metric-recognized-revenue",
-        "timeRange": "2026 Q2",
-        "threshold": "收入增速 < -2%",
-        "trend": "华东区域收入增速低于阈值",
-        "tableIds": ["table-sales-order", "table-refund-order"],
-        "knowledgeDocumentIds": [
-            "knowledge-document-channel-weekly-17",
-            "knowledge-document-inventory-east-04",
-        ],
+def build_context_pack() -> AnalysisTaskContextPack:
+    return {
+        "version": 1,
+        "suggestedPrompt": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+        "traceability": "direct_refs",
+        "capturedAt": "2026-06-05T11:08:12+08:00",
+        "root": {
+            "nodeId": "inspector-node-task-context-root",
+            "kind": "dashboardOverview",
+            "role": "inputContext",
+            "owner": {
+                "type": "analysisTask",
+                "analysisTaskId": ANALYSIS_TASK_ID,
+            },
+            "title": "经营状态总览",
+            "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+            "chips": ["Revenue quality", "2026 Q2", "收入增速 < -2%"],
+            "timeRange": {"key": "this_quarter", "label": "2026 Q2"},
+            "capturedAt": "2026-06-05T11:08:12+08:00",
+            "children": [
+                {
+                    "nodeId": "inspector-node-task-context-metric",
+                    "kind": "metric",
+                    "role": "inputContext",
+                    "owner": {
+                        "type": "analysisTask",
+                        "analysisTaskId": ANALYSIS_TASK_ID,
+                    },
+                    "title": "确认收入",
+                    "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+                    "value": "收入增速 < -2%",
+                    "sourceRef": {
+                        "type": "metric",
+                        "metricId": "metric-recognized-revenue",
+                    },
+                }
+            ],
+        },
     }
 
+
+def build_analysis_task() -> AnalysisTaskRecord:
     return {
         "analysisTaskId": ANALYSIS_TASK_ID,
         "workspaceId": "workspace-northstar-retail-china",
         "userId": "user-zoe",
         "businessDomainId": "business-domain-revenue-quality",
         "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
-        "contextPack": context_pack,
+        "contextPack": build_context_pack(),
         "createdAt": "2026-06-05T11:08:12+08:00",
         "updatedAt": "2026-06-05T11:08:12+08:00",
     }

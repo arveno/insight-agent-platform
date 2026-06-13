@@ -32,7 +32,7 @@ describe("DashboardPage", () => {
       </TestProviders>
     );
 
-    expect(screen.getByText("Last 30 days")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
     expect(screen.getByText("当前展示最近 30 天内的指标摘要、异常和报告入口。")).toBeTruthy();
 
     fireEvent.mouseDown(screen.getByRole("combobox", { name: "Dashboard time range" }));
@@ -53,7 +53,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("季度收入证据摘要")).toBeTruthy();
     expect(screen.getByText("数据质量与任务证据")).toBeTruthy();
 
-    expect(screen.getByText("季度收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
+    expect(screen.getByText("零售收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
     expect(screen.getByText("收入增速异常").closest(".ant-col")?.className).toContain(
       "ant-col-md-12"
     );

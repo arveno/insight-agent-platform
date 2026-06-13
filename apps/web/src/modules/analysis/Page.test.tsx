@@ -3,6 +3,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type {
   AnalysisRun,
+  AnalysisTask,
+  AnalysisTaskContextPack,
   Conversation,
   Decision,
   Message,
@@ -20,6 +22,7 @@ import { AnalysisPage } from "./Page";
 
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
+  analysisTask: AnalysisTask;
   conversation: Conversation;
   decisions: Decision[];
   messageStream: MessageStream[];
@@ -31,6 +34,30 @@ type GoldenPathExample = {
   toolCalls: ToolCall[];
 };
 
+function createDraftContext(): AnalysisTaskContextPack {
+  return {
+    capturedAt: "2026-06-12T10:28:00+08:00",
+    root: {
+      nodeId: "draft-context-root",
+      kind: "report",
+      role: "inputContext",
+      owner: {
+        type: "analysisTask"
+      },
+      title: "周经营分析报告",
+      summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+      chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
+      sourceRef: {
+        reportId: "report-weekly-operations-review",
+        type: "report"
+      }
+    },
+    suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
+    traceability: "direct_refs",
+    version: 1
+  };
+}
+
 function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -41,6 +68,10 @@ function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
 
     if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}`)) {
       return Response.json(goldenPath.analysisRun);
+    }
+
+    if (url.endsWith(`/analysis-tasks/${goldenPath.analysisTask.analysisTaskId}`)) {
+      return Response.json(goldenPath.analysisTask);
     }
 
     if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}/messages`)) {
@@ -120,40 +151,33 @@ describe("AnalysisPage", () => {
     const main = screen.getByRole("region", { name: "Analysis conversation" });
 
     expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
-    expect(within(main).getByText("Draft Context")).toBeTruthy();
+    expect(within(main).getByText("Context Draft")).toBeTruthy();
     expect(within(main).getByText("新聊天草稿")).toBeTruthy();
     expect(screen.getByRole("textbox", { name: "新聊天草稿" })).toBeTruthy();
+    expect(
+      screen.getByText("当前没有一次性上下文。直接发送前不会创建 Conversation、AnalysisTask 或 AnalysisRun。")
+    ).toBeTruthy();
     expect(screen.queryByText("No analysis runtime selected")).toBeNull();
   });
 
-  it("hydrates one-shot DraftContextPack into the draft composer and structured context strip", () => {
+  it("hydrates tree-shaped analysis context into the draft composer and draft strip", () => {
+    const draftContext = createDraftContext();
+
     render(
       <TestProviders>
         <AnalysisPage
           routeState={{
-            draftContextPack: {
-              chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
-              sourceId: "report-weekly-operations-review",
-              sourceTitle: "周经营分析报告",
-              sourceType: "report",
-              suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
-              summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
-            }
+            analysisContextPack: draftContext
           }}
         />
       </TestProviders>
     );
 
-    expect(screen.getByText("report · 周经营分析报告")).toBeTruthy();
-    expect(screen.getByText("sourceId: report-weekly-operations-review")).toBeTruthy();
-    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.getAllByText(draftContext.root.title).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(draftContext.root.summary ?? "").length).toBeGreaterThan(0);
     expect(
-      (
-        screen.getByRole("textbox", { name: "新聊天草稿" }) as HTMLTextAreaElement
-      ).value
-    ).toBe("请继续分析华东收入增速放缓的主要原因。");
+      (screen.getByRole("textbox", { name: "新聊天草稿" }) as HTMLTextAreaElement).value
+    ).toBe(draftContext.suggestedPrompt);
   });
 
   it("loads the runtime-backed conversation shell when a bootstrap conversationId is present", async () => {
@@ -173,28 +197,17 @@ describe("AnalysisPage", () => {
 
     const main = await screen.findByRole("region", { name: "Analysis conversation" });
 
-    expect(screen.queryByRole("heading", { name: "分析" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "查看观测" })).toBeNull();
-    expect(main.getAttribute("style")).toContain("height: 100%");
-    expect(
-      within(main).getAllByText("来自 Analysis conversation · 收入增速异常 · Current scope")
-    ).toHaveLength(2);
+    expect(within(main).getByText(/收入增速异常 · completed · 更新于/)).toBeTruthy();
     expect(within(main).getByRole("log", { name: "Analysis message list" })).toBeTruthy();
     expect(within(main).getByText("System")).toBeTruthy();
     expect(within(main).getByText("User")).toBeTruthy();
     expect(within(main).getByText("Assistant")).toBeTruthy();
-    expect(within(main).getByText("Message Stream Replay")).toBeTruthy();
+    expect(within(main).getByText(/Stream completed · 更新于/)).toBeTruthy();
     expect(within(main).getByRole("button", { name: "打开聊天工具入口" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "选择模型" })).toBeTruthy();
     expect(within(main).getByRole("button", { name: "发送消息" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "Run Trace" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "Tool / Model" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "Evidence" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "Report" })).toBeTruthy();
-    expect(within(main).getByRole("button", { name: "Decision" })).toBeTruthy();
-    expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
-    expect(within(main).queryByText("报告生成入口")).toBeNull();
+    expect(within(main).queryByText("Message Stream Replay")).toBeNull();
+    expect(within(main).queryByText("结果摘要")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "选择模型" }));
     fireEvent.click(await screen.findByText("Reasoning"));
@@ -209,10 +222,11 @@ describe("AnalysisPage", () => {
       )
     ).toBeNull();
 
-    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 
-  it("submits a draft through POST /analysis-tasks/submit and switches to the runtime conversation without fake artifacts", async () => {
+  it("submits a tree-shaped context pack through POST /analysis-tasks/submit and switches into the runtime conversation", async () => {
+    const draftContext = createDraftContext();
     const submitPayload = {
       analysisRun: {
         analysisTaskId: "analysis-task-201-submit",
@@ -245,7 +259,16 @@ describe("AnalysisPage", () => {
       analysisTask: {
         analysisTaskId: "analysis-task-201-submit",
         businessDomainId: "business-domain-revenue-quality",
-        contextPack: null,
+        contextPack: {
+          ...draftContext,
+          root: {
+            ...draftContext.root,
+            owner: {
+              analysisTaskId: "analysis-task-201-submit",
+              type: "analysisTask"
+            }
+          }
+        },
         conversationId: "conversation-201-submit",
         createdAt: "2026-06-12T10:30:00+08:00",
         question: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
@@ -292,6 +315,10 @@ describe("AnalysisPage", () => {
 
       if (url.endsWith("/analysis-runs/analysis-run-201-submit")) {
         return Response.json(submitPayload.analysisRun);
+      }
+
+      if (url.endsWith("/analysis-tasks/analysis-task-201-submit")) {
+        return Response.json(submitPayload.analysisTask);
       }
 
       if (url.endsWith("/conversations/conversation-201-submit/messages")) {
@@ -342,25 +369,16 @@ describe("AnalysisPage", () => {
 
     render(
       <TestProviders>
-        {(
-          <AnalysisPage
-            routeState={{
-              draftContextPack: {
-                chips: ["Northstar Retail China", "Last 7 days"],
-                sourceId: "dashboard-overview",
-                sourceTitle: "Dashboard overview",
-                sourceType: "dashboard",
-                suggestedPrompt: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
-              summary: "围绕最近 7 天的 Dashboard 总览继续分析。"
-            }
+        <AnalysisPage
+          routeState={{
+            analysisContextPack: draftContext
           }}
           submitIdentity={{
             businessDomainId: "business-domain-revenue-quality",
             userId: "user-zoe",
             workspaceId: "workspace-northstar-retail-china"
           }}
-          />
-        )}
+        />
       </TestProviders>
     );
 
@@ -370,15 +388,8 @@ describe("AnalysisPage", () => {
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/analysis-tasks/submit", {
       body: JSON.stringify({
         businessDomainId: "business-domain-revenue-quality",
-        contextPack: {
-          chips: ["Northstar Retail China", "Last 7 days"],
-          sourceId: "dashboard-overview",
-          sourceTitle: "Dashboard overview",
-          sourceType: "dashboard",
-          suggestedPrompt: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
-          summary: "围绕最近 7 天的 Dashboard 总览继续分析。"
-        },
-        question: "解释华东区域收入增速放缓的主要原因，并给出下一步建议。",
+        contextPack: draftContext,
+        question: draftContext.suggestedPrompt,
         userId: "user-zoe",
         workspaceId: "workspace-northstar-retail-china"
       }),
@@ -392,6 +403,6 @@ describe("AnalysisPage", () => {
     expect(screen.getByText("解释华东区域收入增速放缓的主要原因，并给出下一步建议。")).toBeTruthy();
     expect(screen.queryByText("Assistant")).toBeNull();
     expect(screen.queryByText(/write path 暂未实现/)).toBeNull();
-    expect(screen.queryByText("结果摘要")).toBeTruthy();
+    expect(screen.queryByText("结果摘要")).toBeNull();
   });
 });

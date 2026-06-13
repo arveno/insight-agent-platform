@@ -30,7 +30,7 @@
       "type": "string"
     },
     "contextPack": {
-      "description": "blank draft submit 时必须显式传 null；context draft submit 时必须传 typed DraftContextPack snapshot。",
+      "description": "blank draft submit 时必须显式传 null；context draft submit 时必须传 tree-shaped AnalysisTaskContextPack immutable snapshot。",
       "anyOf": [
         {
           "$ref": "./analysis-task-context-pack.schema.json"

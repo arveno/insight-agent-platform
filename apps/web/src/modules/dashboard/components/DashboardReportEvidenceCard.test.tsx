@@ -16,7 +16,8 @@ describe("DashboardReportEvidenceCard", () => {
         <DashboardReportEvidenceCard
           kind="report"
           onNavigate={onNavigate}
-          report={dashboardStaticViewModel.recentReports[0]}
+          report={dashboardStaticViewModel.reportNodes[0]!}
+          viewModel={dashboardStaticViewModel}
         />
       </TestProviders>
     );
@@ -24,7 +25,7 @@ describe("DashboardReportEvidenceCard", () => {
     expect(screen.getByText("最近报告")).toBeTruthy();
     expect(screen.getByText("周经营分析报告")).toBeTruthy();
     expect(screen.getByText("建议先核对相关证据，再带上下文继续分析。")).toBeTruthy();
-    expect(screen.getByText("更新时间：2026-06-03T17:30:00+08:00")).toBeTruthy();
+    expect(screen.getByText("更新时间 2026-06-03T17:30:00+08:00")).toBeTruthy();
     expect(screen.getByText("5 条证据")).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看报告" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看建议" })).toBeTruthy();
@@ -37,9 +38,10 @@ describe("DashboardReportEvidenceCard", () => {
     render(
       <TestProviders>
         <DashboardReportEvidenceCard
-          evidence={dashboardStaticViewModel.evidenceEntrances[0]}
+          evidence={dashboardStaticViewModel.evidenceNodes[0]!}
           kind="evidence"
           onNavigate={onNavigate}
+          viewModel={dashboardStaticViewModel}
         />
       </TestProviders>
     );

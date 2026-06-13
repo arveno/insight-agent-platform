@@ -1,75 +1,180 @@
+import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
+
+import { createDraftAnalysisTaskOwnerRef } from "../../../shared/navigation/analysisContextPack";
 import {
   createRightAssistSummary,
   defaultPermissionSummary,
   defaultReadonlyState,
   defaultStateCoverage,
-  readyStatus,
-  sharedEvidenceEntrances,
-  warningRisk
+  readyStatus
 } from "../../../shared/view-model/staticStateFixtures";
-import type { DashboardViewModel } from "../models/dashboardViewModel";
+import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 
-export const dashboardStaticViewModel: DashboardViewModel = {
-  analysisEntrances: [
-    {
-      descriptionKey: "action.dashboardOpenAnalysis.description",
-      intent: "primary",
-      key: "dashboard-open-analysis",
-      labelKey: "action.dashboardOpenAnalysis.label",
-      targetRoute: "analysis"
-    }
-  ],
-  anomalyCards: [
-    {
-      description: "收入增速低于阈值，建议进入 Analysis 做异常追问。",
-      key: "revenue-growth-anomaly",
-      label: "收入增速异常",
-      linkTo: "analysis",
-      risk: warningRisk,
-      status: readyStatus,
-      value: "-3.2%"
-    }
-  ],
-  businessStatCards: [
-    {
-      evidenceCount: 4,
-      key: "quarterly-revenue",
-      label: "季度收入",
-      risk: {
-        level: "medium",
-        reason: "低于目标区间，需要查看 Metrics 阈值。",
-        title: "中风险"
-      },
-      status: readyStatus,
-      trendText: "环比 -3.2%",
-      valueText: "¥12.8M"
-    },
-    {
-      evidenceCount: 3,
-      key: "gross-margin",
-      label: "毛利率",
-      risk: {
-        level: "low",
-        title: "低风险"
-      },
-      status: readyStatus,
-      trendText: "环比 +1.1%",
-      valueText: "48.6%"
-    }
-  ],
+const dashboardOwner = createDraftAnalysisTaskOwnerRef();
+
+const revenueMetricNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-metric-revenue",
+  kind: "metric",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "零售收入",
+  summary: "季度收入低于目标区间，需要继续拆解区域、渠道与确认节奏。",
+  value: "¥12.8M",
+  chips: ["环比 -3.2%", "4 条证据"],
+  timeRange: {
+    key: "last_30_days",
+    label: "Last 30 days"
+  },
+  sourceRef: {
+    type: "metric",
+    metricId: "metric-recognized-revenue"
+  }
+};
+
+const grossMarginMetricNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-metric-gross-margin",
+  kind: "metric",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "毛利率",
+  summary: "毛利率维持低风险，但需要和收入异常一起复核促销结构影响。",
+  value: "48.6%",
+  chips: ["环比 +1.1%", "3 条证据"],
+  timeRange: {
+    key: "last_30_days",
+    label: "Last 30 days"
+  },
+  sourceRef: {
+    type: "metric",
+    metricId: "metric-gross-margin"
+  }
+};
+
+const revenueRiskNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-risk-revenue-growth",
+  kind: "riskSignal",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "收入增速异常",
+  summary: "收入增速低于阈值，建议进入 Analysis 做异常追问。",
+  value: "-3.2%",
+  chips: ["Medium", "Dashboard anomaly"],
+  sourceRef: {
+    type: "metric",
+    metricId: "metric-recognized-revenue"
+  }
+};
+
+const riskSummaryNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-risk-summary",
+  kind: "riskSummary",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "风险摘要",
+  summary: "最高风险来自收入增速和数据质量摘要。",
+  value: "Medium",
+  chips: ["2 项关注", "经营健康度关注"]
+};
+
+const weeklyReportNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-report-weekly-business",
+  kind: "report",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "周经营分析报告",
+  summary: "建议先核对相关证据，再带上下文继续分析。",
+  chips: ["5 条证据", "更新时间 2026-06-03T17:30:00+08:00"],
+  sourceRef: {
+    type: "report",
+    reportId: "report-weekly-business"
+  }
+};
+
+const revenueEvidenceNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-evidence-revenue-summary",
+  kind: "sourceEvidence",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "零售收入证据摘要",
+  summary: "来自核心收入指标、报告段落和数据质量摘要的证据入口。",
+  chips: ["Metric / Report", "High"],
+  sourceRef: {
+    type: "sourceEvidence",
+    sourceEvidenceId: "source-evidence-q2-revenue"
+  }
+};
+
+const qualityEvidenceNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-evidence-quality-job",
+  kind: "sourceEvidence",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "数据质量与任务证据",
+  summary: "来自数据质量检查和任务日志的证据入口。",
+  chips: ["DataQualityCheck / Job", "Medium"],
+  sourceRef: {
+    type: "sourceEvidence",
+    sourceEvidenceId: "source-evidence-quality-job"
+  }
+};
+
+const platformQualityNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-platform-quality",
+  kind: "platformQuality",
+  role: "inputContext",
+  owner: dashboardOwner,
+  title: "平台质量",
+  summary: "数据质量检查和运维任务只作为摘要入口展示。",
+  value: "2 项需关注",
+  chips: ["Platform quality", "Evidence-ready"]
+};
+
+const metricDirectoryNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-directory-metrics",
+  kind: "directory",
+  role: "directory",
+  owner: dashboardOwner,
+  title: "核心指标",
+  summary: "围绕当前经营问题最值得优先追问的指标节点。",
+  children: [revenueMetricNode, grossMarginMetricNode]
+};
+
+const riskDirectoryNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-directory-risks",
+  kind: "directory",
+  role: "directory",
+  owner: dashboardOwner,
+  title: "风险异常",
+  summary: "把异常节点和风险摘要收束为可直接带入 Analysis 的子树。",
+  children: [revenueRiskNode, riskSummaryNode]
+};
+
+const reportEvidenceDirectoryNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-directory-report-evidence",
+  kind: "directory",
+  role: "directory",
+  owner: dashboardOwner,
+  title: "报告与证据",
+  summary: "报告、证据和上下文引用以同一树形入口组织。",
+  children: [weeklyReportNode, revenueEvidenceNode, qualityEvidenceNode]
+};
+
+const qualityDirectoryNode: InspectorTreeNode = {
+  nodeId: "dashboard-node-directory-platform-quality",
+  kind: "directory",
+  role: "directory",
+  owner: dashboardOwner,
+  title: "平台质量",
+  summary: "平台质量节点先作为上下文入口，不展开完整来源详情。",
+  children: [platformQualityNode]
+};
+
+export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
+  dashboardId: "dashboard-main",
   dashboardState: defaultStateCoverage.ready,
-  dashboardSummary: [
-    {
-      description: "汇总经营指标、风险、报告和平台质量。",
-      key: "business-health",
-      label: "经营健康度",
-      risk: warningRisk,
-      status: readyStatus,
-      value: "关注"
-    }
-  ],
-  evidenceEntrances: sharedEvidenceEntrances,
-  gapNote: "Dashboard 聚合 ViewModel 为 Surface Contract 标记的 Gap；这里只提供静态展示输入。",
+  description: "将核心指标、风险异常、报告证据和平台质量组织为可追问的业务工作台。",
+  evidenceNodes: [revenueEvidenceNode, qualityEvidenceNode],
+  gapNote: "Dashboard 聚合 ViewModel 已收束为 semantic root tree；UI 只消费 root 或 root-derived selectors。",
   implementationStatus: "gap",
   lastUpdatedAt: "2026-06-03T18:00:00+08:00",
   mainSections: [
@@ -93,53 +198,55 @@ export const dashboardStaticViewModel: DashboardViewModel = {
     }
   ],
   metricCards: [],
+  metricNodes: [revenueMetricNode, grossMarginMetricNode],
   pageDescriptionKey: "page.dashboard.description",
   pageKey: "dashboard",
   pageTitleKey: "page.dashboard.title",
   permissionSummary: defaultPermissionSummary,
-  platformQualitySummary: [
-    {
-      description: "数据质量检查和运维任务只作为摘要入口展示。",
-      key: "platform-quality",
-      label: "平台质量",
-      linkTo: "platform-operations",
-      risk: warningRisk,
-      status: readyStatus,
-      value: "2 项需关注"
-    }
-  ],
   primaryAction: {
     intent: "primary",
     key: "dashboard-primary-analysis",
     labelKey: "action.dashboardPrimaryAnalysis.label",
     targetRoute: "analysis"
   },
+  qualityNodes: [platformQualityNode],
   readonlyState: defaultReadonlyState,
-  recentReports: [
-    {
-      evidenceCount: 5,
-      key: "weekly-business-report",
-      reportId: "report-weekly-business",
-      status: readyStatus,
-      title: "周经营分析报告",
-      updatedAt: "2026-06-03T17:30:00+08:00"
-    }
-  ],
+  reportNodes: [weeklyReportNode],
   rightAssistSummary: createRightAssistSummary(
     "dashboard-right-assist",
     "page.dashboard.rightAssist.title",
     "page.dashboard.rightAssist.description"
   ),
-  riskSummary: [
-    {
-      description: "最高风险来自收入增速和数据质量摘要。",
-      key: "dashboard-risk-summary",
-      label: "风险摘要",
-      risk: warningRisk,
-      status: readyStatus,
-      value: "Medium"
-    }
-  ],
+  riskNodes: [revenueRiskNode],
+  riskSummaryNode,
+  root: {
+    nodeId: "dashboard-node-root",
+    kind: "dashboardOverview",
+    role: "inputContext",
+    owner: dashboardOwner,
+    title: "经营状态总览",
+    summary: "Dashboard 是第一个 context tree producer；Open in Analysis 会从这里选择 node / subtree。",
+    chips: ["Last 30 days", "2 个指标", "2 条证据"],
+    timeRange: {
+      key: "last_30_days",
+      label: "Last 30 days"
+    },
+    capturedAt: "2026-06-03T18:00:00+08:00",
+    children: [
+      {
+        nodeId: "dashboard-node-time-range-last-30-days",
+        kind: "timeRange",
+        role: "directory",
+        owner: dashboardOwner,
+        title: "Last 30 days",
+        summary: "当前展示最近 30 天内的指标摘要、异常和报告入口。"
+      },
+      metricDirectoryNode,
+      riskDirectoryNode,
+      reportEvidenceDirectoryNode,
+      qualityDirectoryNode
+    ]
+  },
   secondaryActions: [
     {
       intent: "navigation",
@@ -155,16 +262,7 @@ export const dashboardStaticViewModel: DashboardViewModel = {
     }
   ],
   stateCoverage: defaultStateCoverage,
-  summaryCards: [
-    {
-      description: "经营总览只展示摘要，不计算指标。",
-      key: "dashboard-summary-card",
-      label: "总览状态",
-      risk: warningRisk,
-      status: readyStatus,
-      value: "静态样例"
-    }
-  ],
+  summaryCards: [],
   timeRange: {
     options: [
       {
@@ -189,5 +287,6 @@ export const dashboardStaticViewModel: DashboardViewModel = {
       }
     ],
     selectedKey: "last_30_days"
-  }
+  },
+  title: "经营状态总览"
 };

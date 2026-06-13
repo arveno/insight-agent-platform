@@ -1,5 +1,6 @@
 import type {
   AnalysisRunContract,
+  AnalysisTask,
   ConversationContract,
   Decision,
   MessageContract,
@@ -15,17 +16,16 @@ import type { AnalysisMessage } from "../models/analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "../models/analysisRun";
 import type {
   AnalysisComposerViewModel,
-  AnalysisContextPackViewModel,
   AnalysisDecisionViewModel,
-  AnalysisModelDetailViewModel,
-  AnalysisResultSummaryViewModel,
-  AnalysisSurfaceState,
-  AnalysisSessionViewModel,
   AnalysisMessageStreamViewModel,
+  AnalysisModelDetailViewModel,
+  AnalysisSessionViewModel,
+  AnalysisSurfaceState,
   AnalysisWorkspaceViewModel
 } from "../models/analysisViewModel";
 
 export type AnalysisRuntimeContractsWorkspaceInput = {
+  analysisTask: AnalysisTask;
   conversation: ConversationContract;
   currentRun: AnalysisRunContract;
   decisions: Decision[];
@@ -39,7 +39,6 @@ export type AnalysisRuntimeContractsWorkspaceInput = {
 };
 
 export type AnalysisRuntimeContractsWorkspaceOptions = {
-  contextPack?: Partial<AnalysisContextPackViewModel>;
   contextPanelNote?: string;
   followUpComposerDraft?: string;
   inputComposerDraft?: string;
@@ -176,28 +175,6 @@ function mapRunEventStatusToViewModel(status: RunEventContract["status"]): Share
   }
 }
 
-function createContextPack(
-  conversation: ConversationContract,
-  options?: AnalysisRuntimeContractsWorkspaceOptions
-): AnalysisContextPackViewModel {
-  const contextPack = options?.contextPack;
-  const sourceObject = contextPack?.sourceObject ?? conversation.title;
-  const sourceRoute = contextPack?.sourceRoute ?? "Analysis conversation";
-  const timeRange = contextPack?.timeRange ?? "Current scope";
-  const workspace = contextPack?.workspace ?? conversation.workspaceId;
-
-  return {
-    sourceObject,
-    sourceRoute,
-    stripText: contextPack?.stripText ?? `来自 ${sourceRoute} · ${sourceObject} · ${timeRange}`,
-    systemText:
-      contextPack?.systemText ??
-      `当前会话挂载在 ${conversation.conversationId}，真实业务接入后由 Conversation / Message / AnalysisRun contracts 驱动。`,
-    timeRange,
-    workspace
-  };
-}
-
 function createComposerViewModel(
   mode: "analysis" | "follow_up",
   draft: string
@@ -206,7 +183,7 @@ function createComposerViewModel(
     ? {
         contextHint: "正式 submit 会创建或复用 Conversation，并形成新的 AnalysisTask / AnalysisRun。",
         helperText:
-          "发送后进入 runtime conversation；assistant / report / decision 仍由后续 runtime delivery 链路产生。",
+          "Context 会固化在 AnalysisTask.contextPack；assistant / report / decision 仍由 runtime delivery 产出。",
         initialDraft: draft,
         key: "analysis-input",
         placeholder: "描述要分析的问题、约束和期望结果。",
@@ -219,7 +196,7 @@ function createComposerViewModel(
       }
     : {
         contextHint: "继续追问会复用当前 Conversation，并创建新的 AnalysisTask / AnalysisRun。",
-        helperText: "当前页面通过 canonical POST /analysis-tasks/submit 进入正式 write path。",
+        helperText: "Message 只作为 Inspector anchor；结构化细节统一在右侧 Inspector 查看。",
         initialDraft: draft,
         key: "follow-up-input",
         placeholder: "继续追问当前结论，例如要求拆分渠道、时间范围或证据。",
@@ -234,7 +211,6 @@ function createComposerViewModel(
 
 function mapMessages(
   messages: MessageContract[],
-  contextPack: AnalysisContextPackViewModel,
   sourceEvidence: SourceEvidence[],
   toolCalls: ToolCall[]
 ): AnalysisMessage[] {
@@ -244,14 +220,24 @@ function mapMessages(
   const toolNameById = new Map(toolCalls.map((item) => [item.toolCallId, item.toolName] as const));
 
   return messages.map((message) => ({
+    analysisTaskId: message.analysisTaskId,
     content: message.content,
     completedAt: message.completedAt,
     conversationId: message.conversationId,
     createdAt: message.createdAt,
     footerText:
-      message.role === "assistant" && message.runId ? "完整执行过程见右侧 Run Trace。" : undefined,
+      message.role === "assistant" && message.runId
+        ? "点击消息查看本次运行。"
+        : message.role === "user" && message.analysisTaskId
+          ? "点击消息查看本次请求上下文。"
+          : undefined,
     messageId: message.messageId,
-    metaText: message.role === "system" ? contextPack.stripText : undefined,
+    metaText:
+      message.role === "system"
+        ? "System message"
+        : message.analysisTaskId
+          ? `analysisTaskId: ${message.analysisTaskId}`
+          : undefined,
     reportId: message.reportId,
     role: message.role,
     runId: message.runId,
@@ -290,7 +276,7 @@ function mapMessageStream(
     replayText: orderedStream.map((event) => event.delta).join(""),
     runId: lastEvent.runId,
     status: lastEvent.status,
-    updatedAtText: formatUpdatedAtText(lastEvent.occurredAt),
+    updatedAtText: formatUpdatedAtText(lastEvent.occurredAt)
   };
 }
 
@@ -362,9 +348,7 @@ function summarizeToolOutput(toolCall: ToolCall): string {
     return `权限 ${toolCall.permission}，无结构化输出摘要。`;
   }
 
-  const prioritizedKeys = ["conclusion", "summary", "result", "message"];
-
-  for (const key of prioritizedKeys) {
+  for (const key of ["conclusion", "summary", "result", "message"]) {
     const value = toolCall.output[key];
 
     if (typeof value === "string" && value.trim().length > 0) {
@@ -400,46 +384,22 @@ function mapDecisions(decisions: Decision[]): AnalysisDecisionViewModel[] {
   }));
 }
 
-function createResultSummary(
-  reports: Report[],
-  sourceEvidence: SourceEvidence[],
-  assistantMessage: MessageContract | undefined
-): AnalysisResultSummaryViewModel {
-  const report = reports[0];
-
-  return {
-    actionSuggestions: report?.sections.map((section) => section.title).slice(0, 3) ?? [],
-    conclusion: assistantMessage?.content ?? report?.summary ?? "当前尚无助手结论。",
-    evidenceSummary:
-      sourceEvidence.length > 0
-        ? `引用 ${sourceEvidence.length} 条 SourceEvidence。`
-        : "当前尚未绑定 SourceEvidence。",
-    findingBullets: sourceEvidence.map((item) => item.snippet).slice(0, 3),
-    key: `result-${report?.reportId ?? "pending"}`,
-    statusViewModel: report
-      ? { labelKey: "state.success.default.title", status: "success" }
-      : { labelKey: "state.loading.default.title", status: "loading" },
-    title: report?.title ?? "结果摘要"
-  };
-}
-
 export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   input: AnalysisRuntimeContractsWorkspaceInput,
   options?: AnalysisRuntimeContractsWorkspaceOptions
 ): AnalysisWorkspaceViewModel {
-  const contextPack = createContextPack(input.conversation, options);
-  const messages = mapMessages(input.messages, contextPack, input.sourceEvidence, input.toolCalls);
+  const messages = mapMessages(input.messages, input.sourceEvidence, input.toolCalls);
   const runEvents = mapRunEvents(input.runEvents);
   const currentRun = mapCurrentRun(input.currentRun, input.modelCalls, input.runEvents);
   const assistantMessage = input.messages.find((message) => message.role === "assistant");
-  const resultSummary = createResultSummary(input.reports, input.sourceEvidence, assistantMessage);
   const report = input.reports[0];
   const messageStream = mapMessageStream(input.messageStream);
   const modelDetails = mapModelDetails(input.modelCalls);
   const decisions = mapDecisions(input.decisions);
 
   const session: AnalysisSessionViewModel = {
-    contextPack,
+    analysisTaskContextPack: input.analysisTask.contextPack,
+    analysisTaskId: input.analysisTask.analysisTaskId,
     conversationId: input.conversation.conversationId,
     currentRun,
     decisions,
@@ -450,14 +410,17 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     ),
     inputComposer: createComposerViewModel(
       "analysis",
-      options?.inputComposerDraft ?? assistantMessage?.content ?? input.conversation.title
+      options?.inputComposerDraft ??
+        input.analysisTask.contextPack?.suggestedPrompt ??
+        assistantMessage?.content ??
+        input.analysisTask.question
     ),
-    messages,
     messageStream,
     messageStreamState: resolveSurfaceState(
       options?.surfaceStates?.messageStream,
       input.messageStream.length
     ),
+    messages,
     modelDetails,
     modelDetailsState: resolveSurfaceState(options?.surfaceStates?.modelDetails, modelDetails.length),
     reportPreview: report
@@ -475,14 +438,13 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
         }
       : undefined,
     reportPreviewState: resolveSurfaceState(options?.surfaceStates?.reportPreview, report ? 1 : 0),
-    resultSummary,
     runEvents,
     sessionSummary: {
       conversationId: input.conversation.conversationId,
-      contextLabel: contextPack.sourceRoute,
+      contextLabel: input.analysisTask.contextPack?.root.title ?? "Blank Context",
       runLabel: `Run: ${input.currentRun.runId}`,
       statusViewModel: currentRun.statusViewModel,
-      summary: resultSummary.conclusion,
+      summary: assistantMessage?.content ?? input.analysisTask.question,
       title: input.conversation.title,
       updatedAtText: formatUpdatedAtText(input.conversation.updatedAt)
     },
@@ -511,7 +473,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   return {
     contextPanelNote:
       options?.contextPanelNote ??
-      "当前 Analysis 工作区通过 contracts-backed runtime read surfaces 驱动，UI 只消费 mapper 后的 ViewModel。",
+      "当前 Analysis 工作区通过 contracts-backed runtime read surfaces 驱动，Inspector 从 selected subject 生成 roots。",
     modelOptions: options?.modelOptions ?? defaultModelOptions,
     sessions: [session]
   };

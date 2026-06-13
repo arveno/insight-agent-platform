@@ -140,16 +140,13 @@ Code
 - `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
 - `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
 
-建议能力卡片类型：
+Inspector subject roots / tree node kinds：
 
-- `RunSummary`
-- `TraceSummary`
-- `Evidence`
-- `Source`
-- `Report`
-- `Feedback`
-- `Metric`
-- `ModelTool`
+- Inspector roots 由 selected subject 生成。
+- root view 展示 subject roots。
+- child view 展示 selected root 或 tree node detail。
+- 主导航是 tree node drill-down，不是固定能力卡片菜单。
+- Inspector roots / tree nodes 当前至少覆盖 `Context`、`Run Trace`、`Evidence`、`Report`、`Decision`、`Tool Call`、`Model Call` 等语义节点。
 
 ## 4. Page Composition Rules
 

@@ -80,6 +80,7 @@ export async function loadAnalysisRuntimeWorkspace(
       client.getAnalysisRun(runId),
       client.listConversationMessages(conversation.conversationId)
     ]);
+    const analysisTask = await client.getAnalysisTask(currentRun.analysisTaskId);
     const latestAssistantMessage = messageList.items
       .filter((message) => message.role === "assistant")
       .at(-1);
@@ -102,6 +103,7 @@ export async function loadAnalysisRuntimeWorkspace(
       kind: "ready",
       viewModel: mapAnalysisRuntimeContractsToWorkspaceViewModel(
         {
+          analysisTask,
           conversation,
           currentRun,
           decisions: decisions.items,

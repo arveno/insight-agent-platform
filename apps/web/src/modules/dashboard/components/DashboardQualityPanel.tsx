@@ -5,16 +5,16 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { toRiskBadge } from "../../../shared/utils/viewModelState";
+import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardQualityCardProps } from "./dashboardComponentTypes";
 
-export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCardProps) {
+export function DashboardQualityPanel({ item, onNavigate, viewModel }: DashboardQualityCardProps) {
   const { t } = useI18n();
-  const risk = toRiskBadge(t, item.risk);
+  const risk = { label: "中风险", level: "medium" as const };
   const qualityActions = [
     createRouteAction({
       iconName: "operations",
-      key: `${item.key}-operations`,
+      key: `${item.nodeId}-operations`,
       label: t("dashboard.action.viewPlatformOperations"),
       onNavigate,
       route: "platform-operations",
@@ -22,7 +22,7 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
     }),
     createRouteAction({
       iconName: "operations",
-      key: `${item.key}-job-quality`,
+      key: `${item.nodeId}-job-quality`,
       label: t("dashboard.action.viewJobDataQuality"),
       onNavigate,
       route: "platform-operations",
@@ -30,25 +30,22 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
     }),
     createRouteAction({
       iconName: "analysis",
-      key: `${item.key}-platform-anomaly`,
+      key: `${item.nodeId}-platform-anomaly`,
       label: t("dashboard.action.viewPlatformAnomaly"),
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: {
-          chips: [item.value, risk?.label ?? "风险待确认", t("dashboard.quality.itemEyebrow")],
-          sourceId: item.key,
-          sourceTitle: item.label,
-          sourceType: "evidence",
-          suggestedPrompt: `请基于 ${item.label} 的平台质量摘要，解释当前异常风险与后续排查重点。`,
-          summary: item.description ?? `${item.label} 当前值 ${item.value}。`
-        }
+        analysisContextPack: createDashboardAnalysisContextPack({
+          nodeId: item.nodeId,
+          suggestedPrompt: `请基于 ${item.title} 的平台质量摘要，解释当前异常风险与后续排查重点。`,
+          viewModel
+        })
       },
       variant: "contextPrimary"
     }),
     createRouteAction({
       iconName: "data",
-      key: `${item.key}-source`,
+      key: `${item.nodeId}-source`,
       label: t("dashboard.action.viewDataKnowledge"),
       onNavigate,
       route: "data-knowledge",
@@ -58,7 +55,7 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
 
   return (
     <ContentCard
-      description={item.description}
+      description={item.summary}
       eyebrow={t("dashboard.quality.itemEyebrow")}
       footerActions={
         <Flex gap={12} wrap>
@@ -68,7 +65,7 @@ export function DashboardQualityPanel({ item, onNavigate }: DashboardQualityCard
         </Flex>
       }
       tagSlot={risk ? <RiskBadge {...risk} /> : null}
-      title={item.label}
+      title={item.title}
     >
       <Typography.Text>{item.value}</Typography.Text>
     </ContentCard>

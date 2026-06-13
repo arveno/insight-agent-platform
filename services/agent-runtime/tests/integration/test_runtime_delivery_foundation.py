@@ -9,22 +9,51 @@ from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
 
+def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
+    owner: dict[str, str] = {"type": "analysisTask"}
+
+    if analysis_task_id is not None:
+        owner["analysisTaskId"] = analysis_task_id
+
+    return {
+        "version": 1,
+        "suggestedPrompt": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
+        "traceability": "direct_refs",
+        "capturedAt": "2026-06-05T03:08:12Z",
+        "root": {
+            "nodeId": "inspector-node-task-context-root",
+            "kind": "dashboardOverview",
+            "role": "inputContext",
+            "owner": owner,
+            "title": "经营状态总览",
+            "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+            "chips": ["Revenue quality", "2026 Q2", "收入增速 < -2%"],
+            "timeRange": {"key": "this_quarter", "label": "2026 Q2"},
+            "capturedAt": "2026-06-05T03:08:12Z",
+            "children": [
+                {
+                    "nodeId": "inspector-node-task-context-metric",
+                    "kind": "metric",
+                    "role": "inputContext",
+                    "owner": owner,
+                    "title": "确认收入",
+                    "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+                    "value": "收入增速 < -2%",
+                    "sourceRef": {
+                        "type": "metric",
+                        "metricId": "metric-recognized-revenue",
+                    },
+                }
+            ],
+        },
+    }
+
 TASK_PAYLOAD = {
     "workspaceId": "workspace-northstar-retail-china",
     "userId": "user-zoe",
     "businessDomainId": "business-domain-revenue-quality",
     "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
-    "contextPack": {
-        "metricId": "metric-recognized-revenue",
-        "timeRange": "2026 Q2",
-        "threshold": "收入增速 < -2%",
-        "trend": "华东区域收入增速低于阈值",
-        "tableIds": ["table-sales-order", "table-refund-order"],
-        "knowledgeDocumentIds": [
-            "knowledge-document-channel-weekly-17",
-            "knowledge-document-inventory-east-04",
-        ],
-    },
+    "contextPack": build_context_pack(),
     "title": "收入增速异常",
 }
 

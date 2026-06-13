@@ -5,6 +5,7 @@ export type AnalysisMessageRole = MessageRole;
 export type AnalysisMessageStatus = MessageStatus;
 
 export type AnalysisMessage = {
+  analysisTaskId: string | null;
   content: string;
   completedAt: string | null;
   conversationId: string;

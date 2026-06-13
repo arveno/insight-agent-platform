@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/source-ref.schema.json",
+  "title": "SourceRef",
+  "description": "Inspector tree 中引用业务来源对象的 canonical source identity；同一 sourceRef 可在不同 owner / role 下多次出现。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "report",
+        "metric",
+        "sourceEvidence",
+        "analysisRun",
+        "dataTable",
+        "knowledgeDocument",
+        "toolCall",
+        "modelCall",
+        "job"
+      ]
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "sourceEvidenceId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "tableId": {
+      "type": "string"
+    },
+    "knowledgeDocumentId": {
+      "type": "string"
+    },
+    "toolCallId": {
+      "type": "string"
+    },
+    "modelCallId": {
+      "type": "string"
+    },
+    "jobId": {
+      "type": "string"
+    }
+  },
+  "anyOf": [
+    {
+      "required": ["type", "reportId"],
+      "properties": {
+        "type": {
+          "const": "report"
+        }
+      }
+    },
+    {
+      "required": ["type", "metricId"],
+      "properties": {
+        "type": {
+          "const": "metric"
+        }
+      }
+    },
+    {
+      "required": ["type", "sourceEvidenceId"],
+      "properties": {
+        "type": {
+          "const": "sourceEvidence"
+        }
+      }
+    },
+    {
+      "required": ["type", "runId"],
+      "properties": {
+        "type": {
+          "const": "analysisRun"
+        }
+      }
+    },
+    {
+      "required": ["type", "tableId"],
+      "properties": {
+        "type": {
+          "const": "dataTable"
+        }
+      }
+    },
+    {
+      "required": ["type", "knowledgeDocumentId"],
+      "properties": {
+        "type": {
+          "const": "knowledgeDocument"
+        }
+      }
+    },
+    {
+      "required": ["type", "toolCallId"],
+      "properties": {
+        "type": {
+          "const": "toolCall"
+        }
+      }
+    },
+    {
+      "required": ["type", "modelCallId"],
+      "properties": {
+        "type": {
+          "const": "modelCall"
+        }
+      }
+    },
+    {
+      "required": ["type", "jobId"],
+      "properties": {
+        "type": {
+          "const": "job"
+        }
+      }
+    }
+  ]
+}

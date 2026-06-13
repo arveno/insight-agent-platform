@@ -5,6 +5,10 @@ import type {
   StaticStatusViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
+import {
+  createAnalysisContextPackFromTree,
+  createDraftAnalysisTaskOwnerRef
+} from "../../../shared/navigation/analysisContextPack";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
@@ -63,20 +67,33 @@ function buildAnalysisAction(
     onNavigate,
     route: "analysis",
     routeState: {
-      draftContextPack: {
-        chips: [
-          metric.businessDomain,
-          metric.timeRange,
-          `当前值 ${metric.currentValue}`,
-          metric.trend,
-          `风险 ${metric.analysisContext.riskLevel}`
-        ],
-        sourceId: metric.metricId,
-        sourceTitle: metric.metricName,
-        sourceType: "metric",
+      analysisContextPack: createAnalysisContextPackFromTree({
+        capturedAt: "2026-06-03T18:00:00+08:00",
+        root: {
+          nodeId: `metrics-node-${metric.metricId}`,
+          kind: "metric",
+          role: "inputContext",
+          owner: createDraftAnalysisTaskOwnerRef(),
+          title: metric.metricName,
+          summary: `当前值 ${metric.currentValue}，阈值 ${metric.analysisContext.threshold}，趋势 ${metric.trend}，可结合公式、血缘和证据继续分析。`,
+          value: metric.currentValue,
+          chips: [
+            metric.businessDomain,
+            metric.timeRange,
+            metric.trend,
+            `风险 ${metric.analysisContext.riskLevel}`
+          ],
+          timeRange: {
+            key: metric.timeRange.toLowerCase().replaceAll(" ", "_"),
+            label: metric.timeRange
+          },
+          sourceRef: {
+            type: "metric",
+            metricId: metric.metricId
+          }
+        },
         suggestedPrompt: `请基于 ${metric.metricName} 在 ${metric.timeRange} 的表现，解释 ${metric.trend} 的主要原因，并给出下一步建议。`,
-        summary: `当前值 ${metric.currentValue}，阈值 ${metric.analysisContext.threshold}，趋势 ${metric.trend}，可结合公式、血缘和证据继续分析。`
-      }
+      })
     },
     title: t("action.metricOpenAnalysis.description"),
     variant: "contextPrimary"

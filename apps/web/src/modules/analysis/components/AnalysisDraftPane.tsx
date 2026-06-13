@@ -1,6 +1,4 @@
-import { Space, Tag, Typography, theme } from "antd";
-
-import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { Space, Typography, theme } from "antd";
 import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
 import type { AnalysisWorkspaceController } from "../hooks/useAnalysisWorkspaceController";
 
@@ -61,17 +59,17 @@ export function AnalysisDraftPane({ controller }: AnalysisDraftPaneProps) {
         }}
       >
         <Space direction="vertical" size={6} style={{ width: "100%" }}>
-          <Typography.Text strong>Draft Context</Typography.Text>
+          <Typography.Text strong>Context Draft</Typography.Text>
           {controller.draftContext ? (
             <>
               <Typography.Text type="secondary">
-                {controller.draftContext.sourceType} · {controller.draftContext.sourceTitle}
+                {controller.draftContext.root.title}
               </Typography.Text>
-              <Space size={[8, 8]} wrap>
-                {controller.draftContext.chips.map((chip) => (
-                  <Tag key={chip}>{chip}</Tag>
-                ))}
-              </Space>
+              {controller.draftContext.root.summary ? (
+                <Typography.Text type="secondary">
+                  {controller.draftContext.root.summary}
+                </Typography.Text>
+              ) : null}
             </>
           ) : (
             <Typography.Text type="secondary">
@@ -81,31 +79,32 @@ export function AnalysisDraftPane({ controller }: AnalysisDraftPaneProps) {
         </Space>
       </div>
 
-      <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: token.paddingLG }}>
-        <ContentCard
-          description="发送前保持草稿态；只有用户真正发送后，DraftContextPack 才会固化为一次 AnalysisTask 输入快照。"
-          title="新聊天草稿"
-        >
-          <Space direction="vertical" size={8} style={{ width: "100%" }}>
-            {controller.draftContext ? (
-              <>
-                <Typography.Text style={{ fontWeight: 600 }}>
-                  {controller.draftContext.sourceTitle}
-                </Typography.Text>
-                <Typography.Paragraph style={{ marginBottom: 0 }}>
-                  {controller.draftContext.summary}
-                </Typography.Paragraph>
-                <Typography.Text type="secondary">
-                  sourceId: {controller.draftContext.sourceId}
-                </Typography.Text>
-              </>
-            ) : (
+      <div
+        style={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          overflowY: "auto",
+          padding: token.paddingLG
+        }}
+      >
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Text strong>新聊天草稿</Typography.Text>
+          {controller.draftContext ? (
+            <>
+              <Typography.Text>{controller.draftContext.root.title}</Typography.Text>
               <Typography.Paragraph style={{ marginBottom: 0 }}>
-                可以从 Dashboard、Metrics、Reports、Evidence 或 Run Trace 带上下文进入，也可以直接从空白草稿开始。
+                {controller.draftContext.root.summary ?? "当前节点没有额外摘要。"}
               </Typography.Paragraph>
-            )}
-          </Space>
-        </ContentCard>
+            </>
+          ) : (
+            <Typography.Paragraph style={{ marginBottom: 0 }}>
+              可以从 Dashboard、Metrics、Reports 或其他带上下文入口进入，也可以直接从空白草稿开始。
+            </Typography.Paragraph>
+          )}
+          {controller.interactionMessage ? (
+            <Typography.Text type="secondary">{controller.interactionMessage}</Typography.Text>
+          ) : null}
+        </Space>
       </div>
 
       <AnalysisComposer

@@ -5,6 +5,7 @@ import { PageIntro } from "../../../shared/layout/containers/PageIntro";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
+import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
 export function DashboardHero({
@@ -15,7 +16,7 @@ export function DashboardHero({
   viewModel
 }: DashboardHeroProps) {
   const { t } = useI18n();
-  const anomalyCount = viewModel.anomalyCards.length + viewModel.riskSummary.length;
+  const anomalyCount = viewModel.riskNodes.length + 1;
   const heroActions = [
     createRouteAction({
       iconName: "analysis",
@@ -24,18 +25,10 @@ export function DashboardHero({
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: {
-          chips: [
-            selectedTimeRange.label,
-            `${viewModel.businessStatCards.length} 个指标`,
-            `${viewModel.evidenceEntrances.length} 条证据`
-          ],
-          sourceId: "dashboard-overview",
-          sourceTitle: t("dashboard.hero.title"),
-          sourceType: "dashboard",
+        analysisContextPack: createDashboardAnalysisContextPack({
           suggestedPrompt: `请基于 Dashboard 当前 ${selectedTimeRange.label} 的概览，解释最值得优先追问的经营问题。`,
-          summary: selectedTimeRange.description
-        }
+          viewModel
+        })
       },
       variant: "globalPrimary"
     }),
@@ -64,7 +57,7 @@ export function DashboardHero({
     {
       key: "metrics",
       title: t("dashboard.hero.fact.metricLabel"),
-      value: `${viewModel.businessStatCards.length} ${t("dashboard.hero.fact.metricCountSuffix")}`
+      value: `${viewModel.metricNodes.length} ${t("dashboard.hero.fact.metricCountSuffix")}`
     },
     {
       key: "risk-anomaly",
@@ -74,7 +67,7 @@ export function DashboardHero({
     {
       key: "evidence",
       title: t("dashboard.hero.fact.evidenceLabel"),
-      value: `${viewModel.evidenceEntrances.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
+      value: `${viewModel.evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
     },
     {
       key: "right-context",

@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type {
   AnalysisRun,
+  AnalysisTask,
+  AnalysisTaskContextPack,
   Conversation,
   Decision,
   Message,
@@ -17,12 +19,17 @@ import goldenPathExample from "../../../../../../packages/contracts/examples/ana
 
 import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "../mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel";
 import {
+  createContextRootNodeId,
+  createRunTraceRootNodeId
+} from "../models/inspectorTree";
+import {
   useAnalysisWorkspaceController,
   type UseAnalysisWorkspaceControllerOptions
 } from "./useAnalysisWorkspaceController";
 
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
+  analysisTask: AnalysisTask;
   conversation: Conversation;
   decisions: Decision[];
   messageStream: MessageStream[];
@@ -33,6 +40,58 @@ type GoldenPathExample = {
   sourceEvidence: SourceEvidence[];
   toolCalls: ToolCall[];
 };
+
+function createDraftContext(): AnalysisTaskContextPack {
+  return {
+    capturedAt: "2026-06-12T10:28:00+08:00",
+    root: {
+      nodeId: "draft-context-root",
+      kind: "report",
+      role: "inputContext",
+      owner: {
+        type: "analysisTask"
+      },
+      title: "周经营分析报告",
+      summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+      chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
+      sourceRef: {
+        reportId: "report-weekly-operations-review",
+        type: "report"
+      },
+      children: [
+        {
+          nodeId: "draft-context-root-primary-source",
+          kind: "reportSection",
+          role: "inputContext",
+          owner: {
+            type: "analysisTask"
+          },
+          title: "关键经营摘要",
+          summary: "把周报中的关键证据节点固定为 AnalysisTask 输入。"
+        }
+      ]
+    },
+    suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
+    traceability: "direct_refs",
+    version: 1
+  };
+}
+
+function createGoldenPathWorkspaceViewModel(goldenPath: GoldenPathExample) {
+  return mapAnalysisRuntimeContractsToWorkspaceViewModel({
+    analysisTask: goldenPath.analysisTask,
+    conversation: goldenPath.conversation,
+    currentRun: goldenPath.analysisRun,
+    decisions: goldenPath.decisions,
+    messageStream: goldenPath.messageStream,
+    messages: goldenPath.messages,
+    modelCalls: goldenPath.modelCalls,
+    reports: goldenPath.reports,
+    runEvents: goldenPath.runEvents,
+    sourceEvidence: goldenPath.sourceEvidence,
+    toolCalls: goldenPath.toolCalls
+  });
+}
 
 describe("useAnalysisWorkspaceController", () => {
   it("enters draft mode when no runtime bootstrap id is available", async () => {
@@ -54,25 +113,20 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.selectedConversationId).toBeNull();
     expect(result.current.selectedSession).toBeUndefined();
     expect(result.current.messages).toEqual([]);
-    expect(result.current.runEvents).toEqual([]);
     expect(result.current.currentRun).toBeUndefined();
-    expect(result.current.activeInspectorPanel).toBe("draft-context");
+    expect(result.current.selectedInspectorSubject).toBeUndefined();
+    expect(result.current.selectedMessageId).toBeNull();
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
     expect(result.current.composerMode).toBe("analysis");
   });
 
-  it("hydrates DraftContextPack into the editable draft and clears it on new chat reset", async () => {
+  it("hydrates tree-shaped draft context and clears it on new-analysis reset", async () => {
+    const draftContext = createDraftContext();
     const loader = vi.fn();
     const { result } = renderHook(() =>
       useAnalysisWorkspaceController({
         bootstrap: {},
-        draftContext: {
-          chips: ["Northstar Retail China", "Last 7 days"],
-          sourceId: "report-weekly-operations-review",
-          sourceTitle: "周经营分析报告",
-          sourceType: "report",
-          suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
-          summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
-        },
+        draftContext,
         loader
       })
     );
@@ -81,8 +135,12 @@ describe("useAnalysisWorkspaceController", () => {
       expect(result.current.workspaceState.kind).toBe("draft");
     });
 
-    expect(result.current.draftContext?.sourceId).toBe("report-weekly-operations-review");
-    expect(result.current.composerDraft).toBe("请继续分析华东收入增速放缓的主要原因。");
+    expect(result.current.draftContext).toEqual(draftContext);
+    expect(result.current.composerDraft).toBe(draftContext.suggestedPrompt);
+    expect(result.current.inspectorTreeState).toEqual({
+      path: [draftContext.root.nodeId],
+      rootKey: "context"
+    });
 
     act(() => {
       result.current.onResetForNewAnalysis();
@@ -91,23 +149,13 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.workspaceState.kind).toBe("draft");
     expect(result.current.draftContext).toBeUndefined();
     expect(result.current.composerDraft).toBe("");
-    expect(result.current.activeInspectorPanel).toBe("draft-context");
+    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
   });
 
-  it("submits a draft through the canonical submit endpoint and loads the created runtime workspace", async () => {
+  it("submits the canonical tree-shaped draft context and loads the created runtime workspace", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
-    const viewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
-      conversation: goldenPath.conversation,
-      currentRun: goldenPath.analysisRun,
-      decisions: goldenPath.decisions,
-      messageStream: goldenPath.messageStream,
-      messages: goldenPath.messages,
-      modelCalls: goldenPath.modelCalls,
-      reports: goldenPath.reports,
-      runEvents: goldenPath.runEvents,
-      sourceEvidence: goldenPath.sourceEvidence,
-      toolCalls: goldenPath.toolCalls
-    });
+    const draftContext = createDraftContext();
+    const viewModel = createGoldenPathWorkspaceViewModel(goldenPath);
     const loader = vi.fn().mockResolvedValue({
       kind: "ready",
       viewModel
@@ -118,14 +166,7 @@ describe("useAnalysisWorkspaceController", () => {
     });
     const options: UseAnalysisWorkspaceControllerOptions = {
       bootstrap: {},
-      draftContext: {
-        chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
-        sourceId: "report-weekly-operations-review",
-        sourceTitle: "周经营分析报告",
-        sourceType: "report",
-        suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
-        summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
-      },
+      draftContext,
       loader,
       submitIdentity: {
         businessDomainId: "business-domain-revenue-quality",
@@ -148,15 +189,8 @@ describe("useAnalysisWorkspaceController", () => {
       expect(submitter).toHaveBeenCalledWith({
         businessDomainId: "business-domain-revenue-quality",
         conversationId: undefined,
-        draftContext: {
-          chips: ["Northstar Retail China", "Last 7 days", "3 条证据"],
-          sourceId: "report-weekly-operations-review",
-          sourceTitle: "周经营分析报告",
-          sourceType: "report",
-          suggestedPrompt: "请继续分析华东收入增速放缓的主要原因。",
-          summary: "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。"
-        },
-        question: "请继续分析华东收入增速放缓的主要原因。",
+        draftContext,
+        question: draftContext.suggestedPrompt,
         userId: "user-zoe",
         workspaceId: "workspace-northstar-retail-china"
       });
@@ -174,12 +208,22 @@ describe("useAnalysisWorkspaceController", () => {
     });
 
     expect(result.current.selectedConversationId).toBe(goldenPath.conversation.conversationId);
-    expect(result.current.messages).toEqual(viewModel.sessions[0]?.messages ?? []);
     expect(result.current.currentRun?.runId).toBe(goldenPath.analysisRun.runId);
-    expect(result.current.interactionMessage).toBe("");
+    expect(result.current.selectedInspectorSubject).toEqual({
+      type: "analysisRun",
+      analysisTaskId: goldenPath.analysisTask.analysisTaskId,
+      runId: goldenPath.analysisRun.runId
+    });
+    expect(result.current.selectedMessageId).toBe(
+      goldenPath.messages.find((message) => message.role === "assistant")?.messageId ?? null
+    );
+    expect(result.current.inspectorTreeState).toEqual({
+      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      rootKey: "run-trace"
+    });
   });
 
-  it("keeps draft mode and shows an honest error when canonical submit fails", async () => {
+  it("keeps draft mode and exposes the submit error when canonical submit fails", async () => {
     const loader = vi.fn();
     const submitter = vi
       .fn()
@@ -212,32 +256,20 @@ describe("useAnalysisWorkspaceController", () => {
       expect(submitter).toHaveBeenCalled();
     });
 
+    expect(loader).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(result.current.workspaceState.kind).toBe("draft");
+      expect(result.current.messages).toEqual([]);
+      expect(result.current.currentRun).toBeUndefined();
+      expect(result.current.interactionMessage).toContain(
+        "Conversation.workspaceId does not match request.workspaceId"
+      );
     });
-
-    expect(loader).not.toHaveBeenCalled();
-    expect(result.current.messages).toEqual([]);
-    expect(result.current.currentRun).toBeUndefined();
-    expect(result.current.interactionMessage).toContain(
-      "Conversation.workspaceId does not match request.workspaceId"
-    );
   });
 
-  it("loads real runtime data through the controller-owned loader and centralizes selection state", async () => {
+  it("switches inspector subject between assistant-run and user-task message anchors", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
-    const viewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
-      conversation: goldenPath.conversation,
-      currentRun: goldenPath.analysisRun,
-      decisions: goldenPath.decisions,
-      messageStream: goldenPath.messageStream,
-      messages: goldenPath.messages,
-      modelCalls: goldenPath.modelCalls,
-      reports: goldenPath.reports,
-      runEvents: goldenPath.runEvents,
-      sourceEvidence: goldenPath.sourceEvidence,
-      toolCalls: goldenPath.toolCalls
-    });
+    const viewModel = createGoldenPathWorkspaceViewModel(goldenPath);
     const loader = vi.fn().mockResolvedValue({
       kind: "ready",
       viewModel
@@ -256,48 +288,48 @@ describe("useAnalysisWorkspaceController", () => {
       expect(result.current.workspaceState.kind).toBe("ready");
     });
 
-    expect(loader).toHaveBeenCalledWith({
-      conversationId: goldenPath.conversation.conversationId,
+    const assistantMessage = goldenPath.messages.find((message) => message.role === "assistant")!;
+    const userMessage = goldenPath.messages.find((message) => message.role === "user")!;
+
+    expect(result.current.selectedInspectorSubject).toEqual({
+      type: "analysisRun",
+      analysisTaskId: goldenPath.analysisTask.analysisTaskId,
       runId: goldenPath.analysisRun.runId
     });
-    expect(result.current.sessions).toHaveLength(1);
-    expect(result.current.visibleSessions).toHaveLength(1);
-    expect(result.current.selectedConversationId).toBe(goldenPath.conversation.conversationId);
-    expect(result.current.selectedSession?.conversationId).toBe(
-      goldenPath.conversation.conversationId
-    );
-    expect(result.current.sessionSearchQuery).toBe("");
-    expect(result.current.messages.map((message) => message.role)).toEqual([
-      "system",
-      "user",
-      "assistant"
-    ]);
-    expect(result.current.messages[0]?.conversationId).toBe(goldenPath.conversation.conversationId);
-    expect(result.current.messages[2]?.runId).toBe(goldenPath.analysisRun.runId);
-    expect(result.current.currentRun?.runId).toBe(goldenPath.analysisRun.runId);
-    expect(result.current.currentRun?.status).toBe("completed");
-    expect(result.current.runEvents).toHaveLength(goldenPath.runEvents.length);
-    expect(result.current.selectedRunEventId).toBe(goldenPath.runEvents[0]?.eventId ?? null);
-    expect(result.current.selectedRunEvent?.eventId).toBe(goldenPath.runEvents[0]?.eventId);
-    expect(result.current.isRunTraceDetailOpen).toBe(false);
-    expect(result.current.activeInspectorPanel).toBe("run-trace");
-
-    act(() => {
-      result.current.onSelectRunEvent(goldenPath.runEvents[1]!.eventId);
+    expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
+    expect(result.current.inspectorTreeState).toEqual({
+      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      rootKey: "run-trace"
     });
 
-    expect(result.current.selectedRunEventId).toBe(goldenPath.runEvents[1]!.eventId);
-    expect(result.current.selectedRunEvent?.eventId).toBe(goldenPath.runEvents[1]!.eventId);
-    expect(result.current.isRunTraceDetailOpen).toBe(true);
-
     act(() => {
-      result.current.onCloseRunTraceDetail();
-      result.current.onOpenInspectorPanel("report-preview");
-      result.current.onComposerDraftChange("继续分析收入异常。");
+      result.current.onSelectMessageAnchor(userMessage.messageId);
     });
 
-    expect(result.current.isRunTraceDetailOpen).toBe(false);
-    expect(result.current.activeInspectorPanel).toBe("report-preview");
-    expect(result.current.composerDraft).toBe("继续分析收入异常。");
+    expect(result.current.selectedInspectorSubject).toEqual({
+      type: "analysisTask",
+      analysisTaskId: goldenPath.analysisTask.analysisTaskId,
+      runId: goldenPath.analysisRun.runId
+    });
+    expect(result.current.selectedMessageId).toBe(userMessage.messageId);
+    expect(result.current.inspectorTreeState).toEqual({
+      path: [createContextRootNodeId(goldenPath.analysisTask.analysisTaskId)],
+      rootKey: "context"
+    });
+
+    act(() => {
+      result.current.onSelectMessageAnchor(assistantMessage.messageId);
+    });
+
+    expect(result.current.selectedInspectorSubject).toEqual({
+      type: "analysisRun",
+      analysisTaskId: goldenPath.analysisTask.analysisTaskId,
+      runId: goldenPath.analysisRun.runId
+    });
+    expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
+    expect(result.current.inspectorTreeState).toEqual({
+      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      rootKey: "run-trace"
+    });
   });
 });

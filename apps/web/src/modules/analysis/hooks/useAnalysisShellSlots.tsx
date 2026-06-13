@@ -21,11 +21,10 @@ export function useAnalysisShellSlots({
   onBackToRoot,
   routeState,
   userId,
-  workspaceId,
-  workspaceName
+  workspaceId
 }: UseAnalysisShellSlotsParams): ShellRegionSlots {
   const controller = useAnalysisWorkspaceController({
-    draftContext: routeState?.draftContextPack,
+    draftContext: routeState?.analysisContextPack,
     submitIdentity: {
       businessDomainId,
       userId,
@@ -48,29 +47,15 @@ export function useAnalysisShellSlots({
     mainContent: <AnalysisWorkspace controller={controller} />,
     rightAssistPanel: (
       <AnalysisInspectorPanel
-        activeInspectorPanel={controller.activeInspectorPanel}
-        currentRun={controller.currentRun}
-        decisions={controller.selectedSession?.decisions ?? []}
-        decisionsState={controller.selectedSession?.decisionsState ?? "empty"}
+        contextPanelNote={controller.selectedSession ? "Inspector roots are generated from the selected subject." : "Draft context is shown as a tree detail browser."}
         draftContext={controller.draftContext}
-        isRunTraceDetailOpen={controller.isRunTraceDetailOpen}
-        messageStream={controller.selectedSession?.messageStream}
-        messageStreamState={controller.selectedSession?.messageStreamState ?? "empty"}
-        modelDetails={controller.selectedSession?.modelDetails ?? []}
-        modelDetailsState={controller.selectedSession?.modelDetailsState ?? "empty"}
-        onCloseRunTraceDetail={controller.onCloseRunTraceDetail}
-        onOpenInspectorPanel={controller.onOpenInspectorPanel}
-        onSelectRunEvent={controller.onSelectRunEvent}
-        reportPreview={controller.selectedSession?.reportPreview}
-        reportPreviewState={controller.selectedSession?.reportPreviewState ?? "empty"}
-        runEvents={controller.runEvents}
-        selectedRunEvent={controller.selectedRunEvent}
-        selectedRunEventId={controller.selectedRunEventId}
-        sourceEvidence={controller.selectedSession?.sourceEvidence ?? []}
-        sourceEvidenceState={controller.selectedSession?.sourceEvidenceState ?? "empty"}
-        toolDetails={controller.selectedSession?.toolDetails ?? []}
-        toolDetailsState={controller.selectedSession?.toolDetailsState ?? "empty"}
-        workspaceName={workspaceName}
+        inspectorTreeState={controller.inspectorTreeState}
+        onPopInspectorPath={controller.onPopInspectorPath}
+        onSelectInspectorNode={controller.onSelectInspectorNode}
+        onSelectInspectorRoot={controller.onSelectInspectorRoot}
+        selectedInspectorSubject={controller.selectedInspectorSubject}
+        selectedSession={controller.selectedSession}
+        workspaceState={controller.workspaceState}
       />
     )
   };

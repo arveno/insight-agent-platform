@@ -60,8 +60,10 @@ describe("useAnalysisShellSlots", () => {
     expect(screen.getByRole("navigation", { name: "Analysis session navigation" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Analysis conversation" })).toBeTruthy();
     expect(screen.getByText("新聊天草稿")).toBeTruthy();
-    expect(screen.getByLabelText("Analysis inspector")).toBeTruthy();
-    expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("当前没有一次性 DraftContextPack。刷新页面后也不会恢复之前的前端草稿上下文。")).toBeTruthy();
+    expect(screen.getByText("Analysis inspector")).toBeTruthy();
+    expect(screen.getByText("Context Draft")).toBeTruthy();
+    expect(
+      screen.getByText("当前没有一次性上下文。直接发送前不会创建 Conversation、AnalysisTask 或 AnalysisRun。")
+    ).toBeTruthy();
   });
 });

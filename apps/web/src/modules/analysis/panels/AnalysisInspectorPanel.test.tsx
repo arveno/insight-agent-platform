@@ -2,9 +2,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../../shared/test/TestProviders";
-import type { AnalysisRunEvent } from "../models/analysisRun";
 import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
-
+import { createContextRootNodeId } from "../models/inspectorTree";
 import { AnalysisInspectorPanel } from "./AnalysisInspectorPanel";
 
 afterEach(cleanup);
@@ -33,117 +32,81 @@ beforeAll(() => {
 });
 
 describe("AnalysisInspectorPanel", () => {
-  it("uses controller-owned run trace selection and drawer state", () => {
-    const session = analysisStaticViewModel.sessions[0];
-    const selectedRunEvent = session.runEvents[0] as AnalysisRunEvent;
-    const onSelectRunEvent = vi.fn();
-    const onCloseRunTraceDetail = vi.fn();
-
-    const { rerender } = render(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          activeInspectorPanel="run-trace"
-          currentRun={session.currentRun}
-          decisions={session.decisions}
-          decisionsState={session.decisionsState}
-          isRunTraceDetailOpen={false}
-          messageStream={session.messageStream}
-          messageStreamState={session.messageStreamState}
-          modelDetails={session.modelDetails}
-          modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={onCloseRunTraceDetail}
-          onOpenInspectorPanel={() => undefined}
-          onSelectRunEvent={onSelectRunEvent}
-          reportPreview={session.reportPreview}
-          reportPreviewState={session.reportPreviewState}
-          runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
-          sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={selectedRunEvent}
-          selectedRunEventId={selectedRunEvent.eventId}
-          toolDetails={session.toolDetails}
-          toolDetailsState={session.toolDetailsState}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. run.created" }));
-
-    expect(onSelectRunEvent).toHaveBeenCalledWith("event-analysis-q2-revenue-gap-user-input");
-    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
-
-    rerender(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          activeInspectorPanel="run-trace"
-          currentRun={session.currentRun}
-          decisions={session.decisions}
-          decisionsState={session.decisionsState}
-          isRunTraceDetailOpen
-          messageStream={session.messageStream}
-          messageStreamState={session.messageStreamState}
-          modelDetails={session.modelDetails}
-          modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={onCloseRunTraceDetail}
-          onOpenInspectorPanel={() => undefined}
-          onSelectRunEvent={onSelectRunEvent}
-          reportPreview={session.reportPreview}
-          reportPreviewState={session.reportPreviewState}
-          runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
-          sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={selectedRunEvent}
-          selectedRunEventId={selectedRunEvent.eventId}
-          toolDetails={session.toolDetails}
-          toolDetailsState={session.toolDetailsState}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByRole("dialog", { name: "Trace Event Detail" })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "关闭详情" }));
-
-    expect(onCloseRunTraceDetail).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders independent report and decision content instead of hiding them in assistant messages", () => {
-    const session = analysisStaticViewModel.sessions[0];
+  it("renders subject-scoped roots for an analysis task instead of a fixed capability menu", () => {
+    const session = analysisStaticViewModel.sessions[0]!;
+    const onSelectInspectorRoot = vi.fn();
 
     render(
       <TestProviders>
         <AnalysisInspectorPanel
-          activeInspectorPanel="report-preview"
-          currentRun={session.currentRun}
-          decisions={session.decisions}
-          decisionsState={session.decisionsState}
-          isRunTraceDetailOpen={false}
-          messageStream={session.messageStream}
-          messageStreamState={session.messageStreamState}
-          modelDetails={session.modelDetails}
-          modelDetailsState={session.modelDetailsState}
-          onCloseRunTraceDetail={() => undefined}
-          onOpenInspectorPanel={() => undefined}
-          onSelectRunEvent={() => undefined}
-          reportPreview={session.reportPreview}
-          reportPreviewState={session.reportPreviewState}
-          runEvents={session.runEvents}
-          sourceEvidenceState={session.sourceEvidenceState}
-          sourceEvidence={session.sourceEvidence}
-          selectedRunEvent={session.runEvents[0]}
-          selectedRunEventId={session.runEvents[0]?.eventId ?? null}
-          toolDetails={session.toolDetails}
-          toolDetailsState={session.toolDetailsState}
-          workspaceName="Northstar Retail China"
+          contextPanelNote="Inspector roots are generated from the selected subject."
+          draftContext={undefined}
+          inspectorTreeState={{ path: [], rootKey: null }}
+          onPopInspectorPath={() => undefined}
+          onSelectInspectorNode={() => undefined}
+          onSelectInspectorRoot={onSelectInspectorRoot}
+          selectedInspectorSubject={{
+            type: "analysisTask",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
         />
       </TestProviders>
     );
 
-    expect(screen.getAllByText("Report Preview").length).toBeGreaterThan(0);
-    expect(screen.getByText(session.reportPreview?.title ?? "")).toBeTruthy();
-    expect(screen.getByText("Decision")).toBeTruthy();
-    expect(screen.getByText(session.decisions[0]?.title ?? "")).toBeTruthy();
+    expect(screen.getByText("Context")).toBeTruthy();
+    expect(screen.getByText("运行记录")).toBeTruthy();
+    expect(screen.queryByText("Run Trace")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /运行记录/ }));
+
+    expect(onSelectInspectorRoot).toHaveBeenCalledWith("run-history");
+  });
+
+  it("drills into context tree nodes and uses only internal path-pop back behavior", () => {
+    const session = analysisStaticViewModel.sessions[0]!;
+    const contextRoot = session.analysisTaskContextPack!.root;
+    const childNode = contextRoot.children?.[0];
+    const onPopInspectorPath = vi.fn();
+    const onSelectInspectorNode = vi.fn();
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          contextPanelNote="Inspector roots are generated from the selected subject."
+          draftContext={undefined}
+          inspectorTreeState={{
+            path: [createContextRootNodeId(session.analysisTaskId), contextRoot.nodeId],
+            rootKey: "context"
+          }}
+          onPopInspectorPath={onPopInspectorPath}
+          onSelectInspectorNode={onSelectInspectorNode}
+          onSelectInspectorRoot={() => undefined}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByRole("button", { name: "返回上一级" })).toBeTruthy();
+    expect(screen.getByText(contextRoot.title)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Home" })).toBeNull();
+
+    if (!childNode) {
+      throw new Error("Expected fixture context root to include a child node.");
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(childNode.title) }));
+    expect(onSelectInspectorNode).toHaveBeenCalledWith(childNode.nodeId);
+
+    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
+    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
   });
 });

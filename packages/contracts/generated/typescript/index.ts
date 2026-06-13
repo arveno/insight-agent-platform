@@ -36,12 +36,11 @@ export interface AnalysisRun {
 
 /** Generated from packages/contracts/schemas/analysis/analysis-task-context-pack.schema.json */
 export interface AnalysisTaskContextPack {
-  sourceType: "dashboard" | "metric" | "report" | "evidence" | "runTrace";
-  sourceId: string;
-  sourceTitle: string;
-  summary: string;
-  chips: Array<string>;
+  version: 1;
   suggestedPrompt: string;
+  traceability: "none" | "summary_only" | "partial_refs" | "direct_refs";
+  capturedAt: string;
+  root: InspectorTreeNode;
 }
 
 /** Generated from packages/contracts/schemas/analysis/analysis-task.schema.json */
@@ -100,6 +99,35 @@ export interface ExecutionAttempt {
   releasedAt?: string | null;
   failureCode?: string | null;
   failureMessage?: string | null;
+}
+
+/** Generated from packages/contracts/schemas/analysis/inspector-owner-ref.schema.json */
+export interface InspectorOwnerRef {
+  type: "conversation" | "analysisTask" | "analysisRun" | "report" | "sourceEvidence";
+  conversationId?: string;
+  analysisTaskId?: string;
+  runId?: string;
+  reportId?: string;
+  sourceEvidenceId?: string;
+}
+
+/** Generated from packages/contracts/schemas/analysis/inspector-tree-node.schema.json */
+export interface InspectorTreeNode {
+  nodeId: string;
+  kind: string;
+  role: "inputContext" | "runtimeReferencedSource" | "runOutput" | "reportSection" | "evidenceItem" | "traceEvent" | "toolCall" | "modelCall" | "decision" | "directory";
+  owner: InspectorOwnerRef;
+  title: string;
+  summary?: string;
+  description?: string;
+  value?: string;
+  chips?: Array<string>;
+  timeRange?: { key: string; label: string; };
+  capturedAt?: string;
+  asOfAt?: string;
+  sourceRef?: SourceRef;
+  children?: Array<InspectorTreeNode>;
+  disabledReason?: string;
 }
 
 /** Generated from packages/contracts/schemas/analysis/message-stream.schema.json */
@@ -186,6 +214,20 @@ export interface SourceEvidence {
   metadata?: Record<string, unknown>;
   confidence: number;
   createdAt: string;
+}
+
+/** Generated from packages/contracts/schemas/analysis/source-ref.schema.json */
+export interface SourceRef {
+  type: "report" | "metric" | "sourceEvidence" | "analysisRun" | "dataTable" | "knowledgeDocument" | "toolCall" | "modelCall" | "job";
+  reportId?: string;
+  metricId?: string;
+  sourceEvidenceId?: string;
+  runId?: string;
+  tableId?: string;
+  knowledgeDocumentId?: string;
+  toolCallId?: string;
+  modelCallId?: string;
+  jobId?: string;
 }
 
 /** Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json */

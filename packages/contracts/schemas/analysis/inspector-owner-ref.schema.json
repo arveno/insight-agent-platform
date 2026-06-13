@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/inspector-owner-ref.schema.json",
+  "title": "InspectorOwnerRef",
+  "description": "Inspector tree node occurrence 的 owner；表示该节点在当前树中的归属对象。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["conversation", "analysisTask", "analysisRun", "report", "sourceEvidence"]
+    },
+    "conversationId": {
+      "type": "string"
+    },
+    "analysisTaskId": {
+      "type": "string"
+    },
+    "runId": {
+      "type": "string"
+    },
+    "reportId": {
+      "type": "string"
+    },
+    "sourceEvidenceId": {
+      "type": "string"
+    }
+  },
+  "anyOf": [
+    {
+      "required": ["type", "conversationId"],
+      "properties": {
+        "type": {
+          "const": "conversation"
+        }
+      }
+    },
+    {
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "const": "analysisTask"
+        }
+      }
+    },
+    {
+      "required": ["type", "runId"],
+      "properties": {
+        "type": {
+          "const": "analysisRun"
+        }
+      }
+    },
+    {
+      "required": ["type", "reportId"],
+      "properties": {
+        "type": {
+          "const": "report"
+        }
+      }
+    },
+    {
+      "required": ["type", "sourceEvidenceId"],
+      "properties": {
+        "type": {
+          "const": "sourceEvidence"
+        }
+      }
+    }
+  ]
+}

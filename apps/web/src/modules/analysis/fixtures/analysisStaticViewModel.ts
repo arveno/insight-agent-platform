@@ -5,12 +5,7 @@ import { analysisRuntimeContractSessionFixtures } from "./analysisRuntimeContrac
 
 const workspaceViewModels = analysisRuntimeContractSessionFixtures.map((fixture) =>
   mapAnalysisRuntimeContractsToWorkspaceViewModel(fixture.input, {
-    contextPack: {
-      sourceObject: fixture.presentation.sourceObject,
-      sourceRoute: fixture.presentation.sourceRoute,
-      timeRange: fixture.presentation.timeRange,
-      workspace: fixture.presentation.workspaceName
-    },
+    contextPanelNote: `${fixture.presentation.sourceRoute} · ${fixture.presentation.sourceObject} · ${fixture.presentation.timeRange}`,
     followUpComposerDraft: fixture.drafts.followUp,
     inputComposerDraft: fixture.drafts.input
   })

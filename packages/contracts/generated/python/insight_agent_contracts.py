@@ -37,12 +37,11 @@ class AnalysisRun(TypedDict):
 
 # Generated from packages/contracts/schemas/analysis/analysis-task-context-pack.schema.json
 class AnalysisTaskContextPack(TypedDict):
-    sourceType: Literal["dashboard", "metric", "report", "evidence", "runTrace"]
-    sourceId: str
-    sourceTitle: str
-    summary: str
-    chips: list[str]
+    version: Literal[1]
     suggestedPrompt: str
+    traceability: Literal["none", "summary_only", "partial_refs", "direct_refs"]
+    capturedAt: str
+    root: InspectorTreeNode
 
 # Generated from packages/contracts/schemas/analysis/analysis-task.schema.json
 class AnalysisTask(TypedDict):
@@ -97,6 +96,33 @@ class ExecutionAttempt(TypedDict):
     releasedAt: NotRequired[str | None]
     failureCode: NotRequired[str | None]
     failureMessage: NotRequired[str | None]
+
+# Generated from packages/contracts/schemas/analysis/inspector-owner-ref.schema.json
+class InspectorOwnerRef(TypedDict):
+    type: Literal["conversation", "analysisTask", "analysisRun", "report", "sourceEvidence"]
+    conversationId: NotRequired[str]
+    analysisTaskId: NotRequired[str]
+    runId: NotRequired[str]
+    reportId: NotRequired[str]
+    sourceEvidenceId: NotRequired[str]
+
+# Generated from packages/contracts/schemas/analysis/inspector-tree-node.schema.json
+class InspectorTreeNode(TypedDict):
+    nodeId: str
+    kind: str
+    role: Literal["inputContext", "runtimeReferencedSource", "runOutput", "reportSection", "evidenceItem", "traceEvent", "toolCall", "modelCall", "decision", "directory"]
+    owner: InspectorOwnerRef
+    title: str
+    summary: NotRequired[str]
+    description: NotRequired[str]
+    value: NotRequired[str]
+    chips: NotRequired[list[str]]
+    timeRange: NotRequired[dict[str, Any]]
+    capturedAt: NotRequired[str]
+    asOfAt: NotRequired[str]
+    sourceRef: NotRequired[SourceRef]
+    children: NotRequired[list[InspectorTreeNode]]
+    disabledReason: NotRequired[str]
 
 # Generated from packages/contracts/schemas/analysis/message-stream.schema.json
 class MessageStream(TypedDict):
@@ -178,6 +204,19 @@ class SourceEvidence(TypedDict):
     metadata: NotRequired[dict[str, Any]]
     confidence: float
     createdAt: str
+
+# Generated from packages/contracts/schemas/analysis/source-ref.schema.json
+class SourceRef(TypedDict):
+    type: Literal["report", "metric", "sourceEvidence", "analysisRun", "dataTable", "knowledgeDocument", "toolCall", "modelCall", "job"]
+    reportId: NotRequired[str]
+    metricId: NotRequired[str]
+    sourceEvidenceId: NotRequired[str]
+    runId: NotRequired[str]
+    tableId: NotRequired[str]
+    knowledgeDocumentId: NotRequired[str]
+    toolCallId: NotRequired[str]
+    modelCallId: NotRequired[str]
+    jobId: NotRequired[str]
 
 # Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json
 class SubmitAnalysisDraftRequest(TypedDict):
@@ -481,4 +520,4 @@ class Workspace(TypedDict):
     name: NotRequired[str]
     createdAt: NotRequired[str]
 
-__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]

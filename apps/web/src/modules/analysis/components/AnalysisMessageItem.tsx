@@ -28,10 +28,12 @@ function getTone(role: AnalysisMessage["role"]): "assistant" | "system" | "user"
 }
 
 export type AnalysisMessageItemProps = {
+  isSelected: boolean;
   message: AnalysisMessage;
+  onSelect?: () => void;
 };
 
-export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
+export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisMessageItemProps) {
   const { token } = theme.useToken();
   const tone = getTone(message.role);
   const backgroundByTone = {
@@ -45,12 +47,12 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
     user: token.colorBorder
   };
 
-  return (
+  const content = (
     <div
       style={{
         alignSelf: message.role === "user" ? "flex-end" : "flex-start",
         background: backgroundByTone[tone],
-        border: `1px solid ${borderByTone[tone]}`,
+        border: `1px solid ${isSelected ? token.colorPrimary : borderByTone[tone]}`,
         borderRadius: token.borderRadiusLG,
         maxWidth: "78%",
         padding: token.paddingLG
@@ -83,5 +85,27 @@ export function AnalysisMessageItem({ message }: AnalysisMessageItemProps) {
         ) : null}
       </Space>
     </div>
+  );
+
+  if (!onSelect) {
+    return content;
+  }
+
+  return (
+    <button
+      onClick={onSelect}
+      style={{
+        alignSelf: message.role === "user" ? "flex-end" : "flex-start",
+        background: "transparent",
+        border: 0,
+        cursor: "pointer",
+        display: "flex",
+        padding: 0,
+        textAlign: "left"
+      }}
+      type="button"
+    >
+      {content}
+    </button>
   );
 }

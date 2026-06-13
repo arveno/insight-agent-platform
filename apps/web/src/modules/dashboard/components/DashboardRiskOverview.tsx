@@ -5,60 +5,58 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { toRiskBadge } from "../../../shared/utils/viewModelState";
+import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardRiskCardProps } from "./dashboardComponentTypes";
 
 export function DashboardRiskOverview({
   isRiskSummary = false,
   item,
-  onNavigate
+  onNavigate,
+  viewModel
 }: DashboardRiskCardProps) {
   const { t } = useI18n();
-  const risk = toRiskBadge(t, item.risk);
+  const risk = {
+    label: item.value ?? "风险待确认",
+    level: "medium" as const
+  };
   const eyebrow = isRiskSummary
     ? t("dashboard.risk.summaryEyebrow")
     : t("dashboard.risk.anomalyEyebrow");
-  const description = isRiskSummary ? item.description : t("dashboard.risk.anomalyDescription");
+  const description = isRiskSummary ? item.summary : t("dashboard.risk.anomalyDescription");
   const riskActions = [
     createRouteAction({
       iconName: "analysis",
-      key: `${item.key}-context-analysis`,
+      key: `${item.nodeId}-context-analysis`,
       label: t("dashboard.action.analyzeWithContext"),
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: {
-          chips: [item.value, risk?.label ?? "风险待确认", eyebrow],
-          sourceId: item.key,
-          sourceTitle: item.label,
-          sourceType: isRiskSummary ? "dashboard" : "runTrace",
-          suggestedPrompt: `请基于 Dashboard 中的${item.label}，解释当前风险信号，并给出下一步核查建议。`,
-          summary: item.description ?? `${item.label} 当前值为 ${item.value}。`
-        }
+        analysisContextPack: createDashboardAnalysisContextPack({
+          nodeId: item.nodeId,
+          suggestedPrompt: `请基于 Dashboard 中的${item.title}，解释当前风险信号，并给出下一步核查建议。`,
+          viewModel
+        })
       },
       variant: "contextPrimary"
     }),
     createRouteAction({
       iconName: "analysis",
-      key: `${item.key}-detail`,
+      key: `${item.nodeId}-detail`,
       label: t("dashboard.action.viewAnomaly"),
       onNavigate,
       route: "analysis",
       routeState: {
-        draftContextPack: {
-          chips: [item.value, risk?.label ?? "风险待确认", "Dashboard"],
-          sourceId: item.key,
-          sourceTitle: item.label,
-          sourceType: "runTrace",
-          suggestedPrompt: `请继续拆解 ${item.label} 的异常信号，并说明需要优先验证的证据。`,
-          summary: item.description ?? `${item.label} 当前值为 ${item.value}。`
-        }
+        analysisContextPack: createDashboardAnalysisContextPack({
+          nodeId: item.nodeId,
+          suggestedPrompt: `请继续拆解 ${item.title} 的异常信号，并说明需要优先验证的证据。`,
+          viewModel
+        })
       },
       variant: "objectDetail"
     }),
     createRouteAction({
       iconName: "trace",
-      key: `${item.key}-trace`,
+      key: `${item.nodeId}-trace`,
       label: t("dashboard.action.viewTrace"),
       onNavigate,
       route: "observability",
@@ -78,7 +76,7 @@ export function DashboardRiskOverview({
         </Flex>
       }
       tagSlot={risk ? <RiskBadge {...risk} /> : null}
-      title={item.label}
+      title={item.title}
     >
       {isRiskSummary ? null : <Typography.Text>{item.value}</Typography.Text>}
     </ContentCard>

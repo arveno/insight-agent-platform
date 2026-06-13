@@ -9,13 +9,13 @@ import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
-import type { DashboardViewModel } from "../models/dashboardViewModel";
+import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 
 export type DashboardSectionsProps = PageRouteProps & {
-  onTimeRangeChange: (key: DashboardViewModel["timeRange"]["selectedKey"]) => void;
-  selectedTimeRange: DashboardViewModel["timeRange"]["options"][number];
-  selectedTimeRangeKey: DashboardViewModel["timeRange"]["selectedKey"];
-  viewModel: DashboardViewModel;
+  onTimeRangeChange: (key: DashboardSurfaceViewModel["timeRange"]["selectedKey"]) => void;
+  selectedTimeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
+  selectedTimeRangeKey: DashboardSurfaceViewModel["timeRange"]["selectedKey"];
+  viewModel: DashboardSurfaceViewModel;
 };
 
 export function DashboardSections({
@@ -59,8 +59,8 @@ export function DashboardSections({
     variant: "moduleEntry"
   });
   const riskItems = [
-    ...viewModel.anomalyCards.map((item) => ({ isRiskSummary: false, item })),
-    ...viewModel.riskSummary.map((item) => ({ isRiskSummary: true, item }))
+    ...viewModel.riskNodes.map((item) => ({ isRiskSummary: false, item })),
+    { isRiskSummary: true, item: viewModel.riskSummaryNode }
   ];
 
   return (
@@ -80,8 +80,14 @@ export function DashboardSections({
         extra={<NavigationActionButton action={openMetricsAction} />}
         title={t("dashboard.metrics.title")}
       >
-        {viewModel.businessStatCards.map((metric) => (
-          <DashboardMetricOverview key={metric.key} metric={metric} onNavigate={onNavigate} />
+        {viewModel.metricNodes.map((metric) => (
+          <DashboardMetricOverview
+            key={metric.nodeId}
+            metric={metric}
+            onNavigate={onNavigate}
+            timeRange={selectedTimeRange}
+            viewModel={viewModel}
+          />
         ))}
       </ContentSection>
 
@@ -96,8 +102,9 @@ export function DashboardSections({
           <DashboardRiskOverview
             isRiskSummary={isRiskSummary}
             item={item}
-            key={item.key}
+            key={item.nodeId}
             onNavigate={onNavigate}
+            viewModel={viewModel}
           />
         ))}
       </ContentSection>
@@ -109,20 +116,22 @@ export function DashboardSections({
         extra={<NavigationActionButton action={openReportsAction} />}
         title={t("dashboard.reportEvidence.title")}
       >
-        {viewModel.recentReports.map((report) => (
+        {viewModel.reportNodes.map((report) => (
           <DashboardReportEvidenceCard
-            key={report.key}
+            key={report.nodeId}
             kind="report"
             onNavigate={onNavigate}
             report={report}
+            viewModel={viewModel}
           />
         ))}
-        {viewModel.evidenceEntrances.map((evidence) => (
+        {viewModel.evidenceNodes.map((evidence) => (
           <DashboardReportEvidenceCard
             evidence={evidence}
-            key={evidence.key}
+            key={evidence.nodeId}
             kind="evidence"
             onNavigate={onNavigate}
+            viewModel={viewModel}
           />
         ))}
       </ContentSection>
@@ -134,8 +143,13 @@ export function DashboardSections({
         extra={<NavigationActionButton action={openPlatformOperationsAction} />}
         title={t("dashboard.quality.title")}
       >
-        {viewModel.platformQualitySummary.map((item) => (
-          <DashboardQualityPanel item={item} key={item.key} onNavigate={onNavigate} />
+        {viewModel.qualityNodes.map((item) => (
+          <DashboardQualityPanel
+            item={item}
+            key={item.nodeId}
+            onNavigate={onNavigate}
+            viewModel={viewModel}
+          />
         ))}
       </ContentSection>
     </SectionStack>

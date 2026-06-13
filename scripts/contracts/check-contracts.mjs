@@ -222,6 +222,9 @@ const contractsCoreObjects = new Set(
 
 const nonCoreSchemaTitles = new Set([
   "AnalysisTaskContextPack",
+  "InspectorOwnerRef",
+  "InspectorTreeNode",
+  "SourceRef",
   "SubmitAnalysisDraftRequest",
   "SubmitAnalysisDraftResponse"
 ]);

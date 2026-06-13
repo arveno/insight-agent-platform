@@ -1,5 +1,6 @@
 import type {
   AnalysisRun as AnalysisRunContract,
+  AnalysisTask,
   AnalysisTaskContextPack,
   Conversation as ConversationContract,
   Decision,
@@ -15,6 +16,7 @@ import type {
 } from "@insight-agent/contracts/generated/typescript";
 
 export type {
+  AnalysisTask,
   AnalysisTaskContextPack,
   AnalysisRunContract,
   ConversationContract,

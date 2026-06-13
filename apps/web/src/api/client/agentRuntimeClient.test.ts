@@ -7,6 +7,33 @@ afterEach(() => {
 });
 
 describe("AgentRuntimeClient", () => {
+  it("reads the persisted analysis task surface by canonical analysisTaskId", async () => {
+    const analysisTask = {
+      analysisTaskId: "analysis-task-123",
+      businessDomainId: "business-domain-revenue-quality",
+      contextPack: null,
+      conversationId: "conversation-123",
+      createdAt: "2026-06-12T10:30:00+08:00",
+      question: "解释华东区域收入增速放缓的主要原因。",
+      updatedAt: "2026-06-12T10:30:00+08:00",
+      userId: "user-zoe",
+      workspaceId: "workspace-northstar-retail-china"
+    };
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(analysisTask));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new AgentRuntimeClient("http://runtime.test");
+
+    const result = await client.getAnalysisTask("analysis-task-123");
+
+    expect(result).toEqual(analysisTask);
+    expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/analysis-tasks/analysis-task-123", {
+      headers: {
+        Accept: "application/json"
+      },
+      method: "GET"
+    });
+  });
+
   it("submits the canonical draft endpoint and returns the persisted submit chain", async () => {
     const persistedSubmitChain = {
       analysisRun: { runId: "analysis-run-123" },

@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TestProviders } from "../../../shared/test/TestProviders";
 import type { AnalysisMessage } from "../models/analysisMessage";
@@ -17,6 +17,7 @@ const customMessages: AnalysisMessage[] = [
     messageId: "message-assistant-only",
     reportId: null,
     role: "assistant",
+    analysisTaskId: "analysis-task-custom",
     runId: "analysis-custom",
     sourceEvidenceIds: [],
     status: "completed",
@@ -27,9 +28,15 @@ const customMessages: AnalysisMessage[] = [
 
 describe("AnalysisMessageList", () => {
   it("renders from messages instead of hardcoded system/user/assistant items", () => {
+    const onSelectMessageAnchor = vi.fn();
+
     render(
       <TestProviders>
-        <AnalysisMessageList messages={customMessages} />
+        <AnalysisMessageList
+          messages={customMessages}
+          onSelectMessageAnchor={onSelectMessageAnchor}
+          selectedMessageId={null}
+        />
       </TestProviders>
     );
 
