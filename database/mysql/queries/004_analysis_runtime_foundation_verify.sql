@@ -5,6 +5,10 @@ SELECT CONCAT(
     FROM information_schema.tables
     WHERE table_schema = DATABASE()
       AND table_name IN (
+        'users',
+        'workspaces',
+        'workspace_memberships',
+        'auth_sessions',
         'analysis_tasks',
         'conversations',
         'analysis_runs',
@@ -21,6 +25,18 @@ SELECT CONCAT(
       )
   )
 ) AS check_line;
+
+SELECT CONCAT('users.row_count=', COUNT(*)) AS check_line
+FROM users;
+
+SELECT CONCAT('workspaces.row_count=', COUNT(*)) AS check_line
+FROM workspaces;
+
+SELECT CONCAT('workspace_memberships.row_count=', COUNT(*)) AS check_line
+FROM workspace_memberships;
+
+SELECT CONCAT('auth_sessions.row_count=', COUNT(*)) AS check_line
+FROM auth_sessions;
 
 SELECT CONCAT('analysis_tasks.row_count=', COUNT(*)) AS check_line
 FROM analysis_tasks;
@@ -60,6 +76,30 @@ FROM messages;
 
 SELECT CONCAT('message_streams.row_count=', COUNT(*)) AS check_line
 FROM message_streams;
+
+SELECT CONCAT('user.userId=', user_id) AS check_line
+FROM users
+WHERE user_id = 'user-zoe';
+
+SELECT CONCAT('workspace.primary.workspaceId=', workspace_id) AS check_line
+FROM workspaces
+WHERE workspace_id = 'workspace-northstar-retail-china';
+
+SELECT CONCAT('workspace.secondary.workspaceId=', workspace_id) AS check_line
+FROM workspaces
+WHERE workspace_id = 'workspace-northstar-retail-sea';
+
+SELECT CONCAT('membership.primary.role=', role) AS check_line
+FROM workspace_memberships
+WHERE membership_id = 'membership-user-zoe-northstar-retail-china';
+
+SELECT CONCAT('membership.secondary.role=', role) AS check_line
+FROM workspace_memberships
+WHERE membership_id = 'membership-user-zoe-northstar-retail-sea';
+
+SELECT CONCAT('authSession.currentWorkspaceId=', current_workspace_id) AS check_line
+FROM auth_sessions
+WHERE auth_session_id = 'auth-session-user-zoe-china';
 
 SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks

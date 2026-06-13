@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/me-response.schema.json",
+  "title": "MeResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["user", "authSession", "currentWorkspaceContext"],
+  "properties": {
+    "user": {
+      "$ref": "./user.schema.json"
+    },
+    "authSession": {
+      "$ref": "./auth-session.schema.json"
+    },
+    "currentWorkspaceContext": {
+      "anyOf": [
+        {
+          "$ref": "./current-workspace-context.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

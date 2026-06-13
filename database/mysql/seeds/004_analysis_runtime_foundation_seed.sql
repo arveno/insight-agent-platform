@@ -1,3 +1,110 @@
+INSERT INTO users (
+  user_id,
+  email,
+  display_name,
+  password_hash,
+  created_at,
+  updated_at
+) VALUES (
+  'user-zoe',
+  'zoe@northstar.example.com',
+  'Zoe',
+  '$argon2id$v=19$m=65536,t=3,p=4$c2VlZC16b2Utc2FsdA$2E0Tq4Y5vC4n4m4n0k8n4uJfY5h7b6K2q0k8hQ1sV7A',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  email = VALUES(email),
+  display_name = VALUES(display_name),
+  password_hash = VALUES(password_hash),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO workspaces (
+  workspace_id,
+  name,
+  created_at,
+  updated_at
+) VALUES
+(
+  'workspace-northstar-retail-china',
+  'Northstar Retail China',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'workspace-northstar-retail-sea',
+  'Northstar Retail SEA',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO workspace_memberships (
+  membership_id,
+  user_id,
+  workspace_id,
+  role,
+  created_at,
+  updated_at
+) VALUES
+(
+  'membership-user-zoe-northstar-retail-china',
+  'user-zoe',
+  'workspace-northstar-retail-china',
+  'analyst',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'membership-user-zoe-northstar-retail-sea',
+  'user-zoe',
+  'workspace-northstar-retail-sea',
+  'viewer',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  user_id = VALUES(user_id),
+  workspace_id = VALUES(workspace_id),
+  role = VALUES(role),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO auth_sessions (
+  auth_session_id,
+  user_id,
+  current_workspace_id,
+  session_token_hash,
+  expires_at,
+  created_at,
+  updated_at,
+  last_accessed_at,
+  revoked_at
+) VALUES (
+  'auth-session-user-zoe-china',
+  'user-zoe',
+  'workspace-northstar-retail-china',
+  '8c9f0fd0a44f0c2d6bc1f1b7a4a9f8f6d5d3ed4f6210c2b8fc6f0c58e5c74193',
+  '2026-07-15T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00',
+  NULL
+)
+ON DUPLICATE KEY UPDATE
+  user_id = VALUES(user_id),
+  current_workspace_id = VALUES(current_workspace_id),
+  session_token_hash = VALUES(session_token_hash),
+  expires_at = VALUES(expires_at),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at),
+  last_accessed_at = VALUES(last_accessed_at),
+  revoked_at = VALUES(revoked_at);
+
 INSERT INTO analysis_tasks (
   analysis_task_id,
   conversation_id,

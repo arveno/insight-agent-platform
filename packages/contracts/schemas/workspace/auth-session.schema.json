@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/auth-session.schema.json",
+  "title": "AuthSession",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authSessionId",
+    "userId",
+    "currentWorkspaceId",
+    "expiresAt",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "authSessionId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "currentWorkspaceId": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lastAccessedAt": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

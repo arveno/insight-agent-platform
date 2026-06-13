@@ -4,19 +4,10 @@
   "title": "Role",
   "type": "object",
   "additionalProperties": false,
+  "required": ["role"],
   "properties": {
-    "roleId": {
+    "role": {
       "type": "string"
-    },
-    "workspaceId": {
-      "type": "string"
-    },
-    "name": {
-      "type": "string"
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time"
     }
   }
 }

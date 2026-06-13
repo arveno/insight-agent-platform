@@ -225,6 +225,44 @@ export const runtimeSchemaPaths = [
 ];
 
 export const requiredFieldsBySchema = {
+  "workspace/user.schema.json": ["userId", "email", "displayName", "createdAt", "updatedAt"],
+  "workspace/workspace.schema.json": ["workspaceId", "name", "createdAt", "updatedAt"],
+  "workspace/role.schema.json": ["role"],
+  "workspace/workspace-membership.schema.json": [
+    "membershipId",
+    "userId",
+    "workspaceId",
+    "role",
+    "createdAt",
+    "updatedAt"
+  ],
+  "workspace/workspace-list-item.schema.json": ["membership", "workspace"],
+  "workspace/auth-session.schema.json": [
+    "authSessionId",
+    "userId",
+    "currentWorkspaceId",
+    "expiresAt",
+    "createdAt",
+    "updatedAt"
+  ],
+  "workspace/current-workspace-context.schema.json": [
+    "membershipId",
+    "userId",
+    "workspaceId",
+    "role"
+  ],
+  "workspace/login-request.schema.json": ["email", "password"],
+  "workspace/login-response.schema.json": [
+    "user",
+    "authSession",
+    "currentWorkspaceContext",
+    "memberships"
+  ],
+  "workspace/me-response.schema.json": ["user", "authSession", "currentWorkspaceContext"],
+  "workspace/workspace-list-response.schema.json": ["items"],
+  "workspace/select-workspace-request.schema.json": ["workspaceId"],
+  "workspace/select-workspace-response.schema.json": ["authSession", "currentWorkspaceContext"],
+  "workspace/logout-response.schema.json": ["success"],
   "analysis/analysis-task-context-pack.schema.json": [
     "version",
     "suggestedPrompt",

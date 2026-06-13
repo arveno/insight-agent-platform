@@ -430,12 +430,22 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
 
     verify_result = run_runtime_foundation_command("query-verify")
     assert verify_result.returncode == 0, verify_result.stderr
+    assert "users.row_count=1" in verify_result.stdout
+    assert "workspaces.row_count=2" in verify_result.stdout
+    assert "workspace_memberships.row_count=2" in verify_result.stdout
+    assert "auth_sessions.row_count=1" in verify_result.stdout
+    assert "user.userId=user-zoe" in verify_result.stdout
+    assert "workspace.primary.workspaceId=workspace-northstar-retail-china" in verify_result.stdout
+    assert "workspace.secondary.workspaceId=workspace-northstar-retail-sea" in verify_result.stdout
+    assert "membership.primary.role=analyst" in verify_result.stdout
+    assert "membership.secondary.role=viewer" in verify_result.stdout
+    assert "authSession.currentWorkspaceId=workspace-northstar-retail-china" in verify_result.stdout
     assert "analysis-task-revenue-gap-q2" in verify_result.stdout
     assert "conversation-revenue-gap-q2" in verify_result.stdout
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
     assert "metric-recognized-revenue" in verify_result.stdout
-    assert "tables=13" in verify_result.stdout
+    assert "tables=17" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
     assert "tool_calls.row_count=0" in verify_result.stdout
@@ -450,6 +460,98 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())
     assert execution_attempt_repository.list_by_run_id(RUN_ID) == []
+
+
+def test_identity_workspace_foundation_seeded_records_are_queryable(
+    runtime_foundation_env: None,
+) -> None:
+    seed_result = run_runtime_foundation_command("seed")
+    assert seed_result.returncode == 0, seed_result.stderr
+
+    from src.infrastructure.database.runtime_foundation import (
+        AuthSessionRepository,
+        CurrentWorkspaceContextRepository,
+        RuntimeFoundationMysqlCli,
+        UserRepository,
+        WorkspaceMembershipRepository,
+        WorkspaceRepository,
+    )
+
+    database = RuntimeFoundationMysqlCli()
+    user_repository = UserRepository(database)
+    workspace_repository = WorkspaceRepository(database)
+    workspace_membership_repository = WorkspaceMembershipRepository(database)
+    auth_session_repository = AuthSessionRepository(database)
+    current_workspace_context_repository = CurrentWorkspaceContextRepository(database)
+
+    assert user_repository.get_by_user_id("user-zoe") == {
+        "userId": "user-zoe",
+        "email": "zoe@northstar.example.com",
+        "displayName": "Zoe",
+        "createdAt": "2026-06-05T11:08:12+08:00",
+        "updatedAt": "2026-06-05T11:08:12+08:00",
+    }
+    assert workspace_repository.get_by_workspace_id("workspace-northstar-retail-china") == {
+        "workspaceId": "workspace-northstar-retail-china",
+        "name": "Northstar Retail China",
+        "createdAt": "2026-06-05T11:08:12+08:00",
+        "updatedAt": "2026-06-05T11:08:12+08:00",
+    }
+    assert workspace_repository.get_by_workspace_id("workspace-northstar-retail-sea") == {
+        "workspaceId": "workspace-northstar-retail-sea",
+        "name": "Northstar Retail SEA",
+        "createdAt": "2026-06-05T11:08:12+08:00",
+        "updatedAt": "2026-06-05T11:08:12+08:00",
+    }
+    assert workspace_membership_repository.list_by_user_id("user-zoe") == [
+        {
+            "membershipId": "membership-user-zoe-northstar-retail-china",
+            "userId": "user-zoe",
+            "workspaceId": "workspace-northstar-retail-china",
+            "role": "analyst",
+            "createdAt": "2026-06-05T11:08:12+08:00",
+            "updatedAt": "2026-06-05T11:08:12+08:00",
+        },
+        {
+            "membershipId": "membership-user-zoe-northstar-retail-sea",
+            "userId": "user-zoe",
+            "workspaceId": "workspace-northstar-retail-sea",
+            "role": "viewer",
+            "createdAt": "2026-06-05T11:08:12+08:00",
+            "updatedAt": "2026-06-05T11:08:12+08:00",
+        },
+    ]
+    assert auth_session_repository.get_by_auth_session_id("auth-session-user-zoe-china") == {
+        "authSessionId": "auth-session-user-zoe-china",
+        "userId": "user-zoe",
+        "currentWorkspaceId": "workspace-northstar-retail-china",
+        "expiresAt": "2026-07-15T11:08:12+08:00",
+        "createdAt": "2026-06-05T11:08:12+08:00",
+        "updatedAt": "2026-06-05T11:08:12+08:00",
+        "lastAccessedAt": "2026-06-05T11:08:12+08:00",
+    }
+    assert current_workspace_context_repository.get_by_auth_session_id(
+        "auth-session-user-zoe-china"
+    ) == {
+        "membershipId": "membership-user-zoe-northstar-retail-china",
+        "userId": "user-zoe",
+        "workspaceId": "workspace-northstar-retail-china",
+        "role": "analyst",
+    }
+
+    password_row = database.query_json_object(
+        """
+SELECT JSON_OBJECT(
+  'passwordHash', password_hash
+)
+FROM users
+WHERE user_id = 'user-zoe'
+LIMIT 1;
+"""
+    )
+    assert password_row == {
+        "passwordHash": "$argon2id$v=19$m=65536,t=3,p=4$c2VlZC16b2Utc2FsdA$2E0Tq4Y5vC4n4m4n0k8n4uJfY5h7b6K2q0k8hQ1sV7A"
+    }
 
 
 def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_env: None) -> None:

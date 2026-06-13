@@ -493,6 +493,16 @@ class Report(TypedDict):
     sourceEvidence: NotRequired[list[str]]
     createdAt: str
 
+# Generated from packages/contracts/schemas/workspace/auth-session.schema.json
+class AuthSession(TypedDict):
+    authSessionId: str
+    userId: str
+    currentWorkspaceId: str | None
+    expiresAt: str
+    createdAt: str
+    updatedAt: str
+    lastAccessedAt: NotRequired[str | None]
+
 # Generated from packages/contracts/schemas/workspace/business-domain.schema.json
 class BusinessDomain(TypedDict):
     businessDomainId: NotRequired[str]
@@ -500,24 +510,79 @@ class BusinessDomain(TypedDict):
     name: NotRequired[str]
     createdAt: NotRequired[str]
 
+# Generated from packages/contracts/schemas/workspace/current-workspace-context.schema.json
+class CurrentWorkspaceContext(TypedDict):
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+
+# Generated from packages/contracts/schemas/workspace/login-request.schema.json
+class LoginRequest(TypedDict):
+    email: str
+    password: str
+
+# Generated from packages/contracts/schemas/workspace/login-response.schema.json
+class LoginResponse(TypedDict):
+    user: User
+    authSession: AuthSession
+    currentWorkspaceContext: CurrentWorkspaceContext | None
+    memberships: list[WorkspaceMembership]
+
+# Generated from packages/contracts/schemas/workspace/logout-response.schema.json
+class LogoutResponse(TypedDict):
+    success: bool
+
+# Generated from packages/contracts/schemas/workspace/me-response.schema.json
+class MeResponse(TypedDict):
+    user: User
+    authSession: AuthSession
+    currentWorkspaceContext: CurrentWorkspaceContext | None
+
 # Generated from packages/contracts/schemas/workspace/role.schema.json
 class Role(TypedDict):
-    roleId: NotRequired[str]
-    workspaceId: NotRequired[str]
-    name: NotRequired[str]
-    createdAt: NotRequired[str]
+    role: str
+
+# Generated from packages/contracts/schemas/workspace/select-workspace-request.schema.json
+class SelectWorkspaceRequest(TypedDict):
+    workspaceId: str
+
+# Generated from packages/contracts/schemas/workspace/select-workspace-response.schema.json
+class SelectWorkspaceResponse(TypedDict):
+    authSession: AuthSession
+    currentWorkspaceContext: CurrentWorkspaceContext
 
 # Generated from packages/contracts/schemas/workspace/user.schema.json
 class User(TypedDict):
-    userId: NotRequired[str]
-    workspaceId: NotRequired[str]
-    displayName: NotRequired[str]
-    createdAt: NotRequired[str]
+    userId: str
+    email: str
+    displayName: str
+    createdAt: str
+    updatedAt: str
+
+# Generated from packages/contracts/schemas/workspace/workspace-list-item.schema.json
+class WorkspaceListItem(TypedDict):
+    membership: WorkspaceMembership
+    workspace: Workspace
+
+# Generated from packages/contracts/schemas/workspace/workspace-list-response.schema.json
+class WorkspaceListResponse(TypedDict):
+    items: list[WorkspaceListItem]
+
+# Generated from packages/contracts/schemas/workspace/workspace-membership.schema.json
+class WorkspaceMembership(TypedDict):
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+    createdAt: str
+    updatedAt: str
 
 # Generated from packages/contracts/schemas/workspace/workspace.schema.json
 class Workspace(TypedDict):
-    workspaceId: NotRequired[str]
-    name: NotRequired[str]
-    createdAt: NotRequired[str]
+    workspaceId: str
+    name: str
+    createdAt: str
+    updatedAt: str
 
-__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "BusinessDomain", "Role", "User", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "AuthSession", "BusinessDomain", "CurrentWorkspaceContext", "LoginRequest", "LoginResponse", "LogoutResponse", "MeResponse", "Role", "SelectWorkspaceRequest", "SelectWorkspaceResponse", "User", "WorkspaceListItem", "WorkspaceListResponse", "WorkspaceMembership", "Workspace"]

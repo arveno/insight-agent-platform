@@ -1,18 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://insight-agent-platform/contracts/user.schema.json",
-  "title": "User",
+  "$id": "https://insight-agent-platform/contracts/workspace-membership.schema.json",
+  "title": "WorkspaceMembership",
   "type": "object",
   "additionalProperties": false,
-  "required": ["userId", "email", "displayName", "createdAt", "updatedAt"],
+  "required": ["membershipId", "userId", "workspaceId", "role", "createdAt", "updatedAt"],
   "properties": {
+    "membershipId": {
+      "type": "string"
+    },
     "userId": {
       "type": "string"
     },
-    "email": {
+    "workspaceId": {
       "type": "string"
     },
-    "displayName": {
+    "role": {
       "type": "string"
     },
     "createdAt": {

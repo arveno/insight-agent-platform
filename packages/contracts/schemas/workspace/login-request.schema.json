@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/login-request.schema.json",
+  "title": "LoginRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["email", "password"],
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    }
+  }
+}

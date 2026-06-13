@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/select-workspace-response.schema.json",
+  "title": "SelectWorkspaceResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authSession", "currentWorkspaceContext"],
+  "properties": {
+    "authSession": {
+      "$ref": "./auth-session.schema.json"
+    },
+    "currentWorkspaceContext": {
+      "$ref": "./current-workspace-context.schema.json"
+    }
+  }
+}
