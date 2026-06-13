@@ -122,6 +122,9 @@ Code
 - Inspector roots view 不显示 Back。
 - 任何已进入的 root detail 或 child detail 都显示 `返回上一级`。
 - `返回上一级` 只在 Inspector 内部 pop tree path；如果当前为 root detail，则返回 roots view。
+- user message 不作为 Inspector 主锚点。
+- assistant message / current AnalysisRun 是 Inspector 主锚点。
+- submit 成功拿到真实 `runId` 后，Inspector 自动选中当前 `analysisRun(runId)` 并进入 `Run Trace` detail。
 - 本切片不提供 Home button。
 - Inspector 不得依赖 browser back。
 - 最终来源详情层可以提供 `Open full source` 次级动作；在此之前，Inspector 主导航应停留在 Analysis 页面内部。
@@ -129,7 +132,7 @@ Code
 - 如果没有 stable href，`Open full source` 必须禁用并给出诚实原因，不能伪造可打开入口。
 - default Inspector view 固定如下：
   - assistant message selected -> `Run Trace`
-  - user submit message selected -> `AnalysisTask roots`
+  - user submit message selected -> no Inspector anchor change
   - blank draft -> empty / draft context
   - Dashboard context draft -> `Context roots`
 

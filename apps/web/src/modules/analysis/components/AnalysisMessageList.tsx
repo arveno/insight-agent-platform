@@ -37,7 +37,7 @@ export function AnalysisMessageList({
             key={message.messageId}
             message={message}
             onSelect={
-              message.role === "assistant" || (message.role === "user" && message.analysisTaskId)
+              message.role === "assistant" && message.runId && message.analysisTaskId
                 ? () => onSelectMessageAnchor(message.messageId)
                 : undefined
             }

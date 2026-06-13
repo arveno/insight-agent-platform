@@ -36,6 +36,7 @@ export type AnalysisMessageItemProps = {
 export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisMessageItemProps) {
   const { token } = theme.useToken();
   const tone = getTone(message.role);
+  const isInteractive = Boolean(onSelect);
   const backgroundByTone = {
     assistant: token.colorBgContainer,
     system: token.colorFillAlter,
@@ -52,7 +53,7 @@ export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisM
       style={{
         alignSelf: message.role === "user" ? "flex-end" : "flex-start",
         background: backgroundByTone[tone],
-        border: `1px solid ${isSelected ? token.colorPrimary : borderByTone[tone]}`,
+        border: `1px solid ${isInteractive && isSelected ? token.colorPrimary : borderByTone[tone]}`,
         borderRadius: token.borderRadiusLG,
         maxWidth: "78%",
         padding: token.paddingLG
@@ -71,7 +72,7 @@ export function AnalysisMessageItem({ isSelected, message, onSelect }: AnalysisM
     </div>
   );
 
-  if (!onSelect) {
+  if (!isInteractive) {
     return content;
   }
 

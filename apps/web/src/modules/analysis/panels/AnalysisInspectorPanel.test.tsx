@@ -201,6 +201,12 @@ describe("AnalysisInspectorPanel", () => {
 
   it("renders run roots with the task-owned context entry title instead of Context", () => {
     const session = analysisStaticViewModel.sessions[0]!;
+    const runRoots = buildAnalysisInspectorRoots(session, {
+      type: "analysisRun",
+      analysisTaskId: session.analysisTaskId,
+      runId: session.currentRun.runId
+    });
+    const contextRoot = runRoots.find((root) => root.key === "context");
 
     render(
       <TestProviders>
@@ -227,6 +233,10 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText(session.analysisTaskContextPack!.root.title)).toBeTruthy();
     expect(screen.queryByText(/^Context$/)).toBeNull();
     expect(screen.queryByText("零售收入")).toBeNull();
+    expect(contextRoot?.owner).toEqual({
+      analysisTaskId: session.analysisTaskId,
+      type: "analysisTask"
+    });
   });
 
   it("shows back for root detail and child detail, while roots view has no back", () => {

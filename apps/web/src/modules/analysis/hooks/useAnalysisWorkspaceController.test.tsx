@@ -276,7 +276,7 @@ describe("useAnalysisWorkspaceController", () => {
     });
   });
 
-  it("switches inspector subject between assistant-run and user-task message anchors", async () => {
+  it("keeps assistant messages as the only inspector anchor and ignores user messages", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
     const viewModel = createGoldenPathWorkspaceViewModel(goldenPath);
     const loader = vi.fn().mockResolvedValue({
@@ -322,11 +322,11 @@ describe("useAnalysisWorkspaceController", () => {
     });
 
     expect(result.current.selectedInspectorSubject).toEqual({
-      type: "analysisTask",
+      type: "analysisRun",
       analysisTaskId: goldenPath.analysisTask.analysisTaskId,
       runId: goldenPath.analysisRun.runId
     });
-    expect(result.current.selectedMessageId).toBe(userMessage.messageId);
+    expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
 
     act(() => {
