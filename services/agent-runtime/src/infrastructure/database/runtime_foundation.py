@@ -38,6 +38,17 @@ class UserRecord(TypedDict):
     updatedAt: str
 
 
+class UserAuthenticationRecord(TypedDict):
+    """User identity record with DB-only password hash for login verification."""
+
+    userId: str
+    email: str
+    displayName: str
+    passwordHash: str
+    createdAt: str
+    updatedAt: str
+
+
 class WorkspaceRecord(TypedDict):
     """Workspace contract-shaped read record."""
 
@@ -64,6 +75,13 @@ class WorkspaceMembershipRecord(TypedDict):
     updatedAt: str
 
 
+class WorkspaceListItemRecord(TypedDict):
+    """Workspace list item record composed from membership and workspace objects."""
+
+    membership: WorkspaceMembershipRecord
+    workspace: WorkspaceRecord
+
+
 class AuthSessionRecord(TypedDict):
     """AuthSession contract-shaped read record."""
 
@@ -74,6 +92,20 @@ class AuthSessionRecord(TypedDict):
     createdAt: str
     updatedAt: str
     lastAccessedAt: str | None
+
+
+class AuthSessionStateRecord(TypedDict):
+    """AuthSession DB state record including internal security fields."""
+
+    authSessionId: str
+    userId: str
+    currentWorkspaceId: str | None
+    sessionTokenHash: str
+    expiresAt: str
+    createdAt: str
+    updatedAt: str
+    lastAccessedAt: str | None
+    revokedAt: str | None
 
 
 class CurrentWorkspaceContextRecord(TypedDict):
@@ -665,6 +697,41 @@ ON DUPLICATE KEY UPDATE
 """
 
 
+def _auth_session_upsert_sql(auth_session: AuthSessionStateRecord) -> str:
+    return f"""
+INSERT INTO auth_sessions (
+  auth_session_id,
+  user_id,
+  current_workspace_id,
+  session_token_hash,
+  expires_at,
+  created_at,
+  updated_at,
+  last_accessed_at,
+  revoked_at
+) VALUES (
+  {_sql_literal(auth_session["authSessionId"])},
+  {_sql_literal(auth_session["userId"])},
+  {_sql_literal(auth_session["currentWorkspaceId"])},
+  {_sql_literal(auth_session["sessionTokenHash"])},
+  {_sql_literal(auth_session["expiresAt"])},
+  {_sql_literal(auth_session["createdAt"])},
+  {_sql_literal(auth_session["updatedAt"])},
+  {_sql_literal(auth_session["lastAccessedAt"])},
+  {_sql_literal(auth_session["revokedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  user_id = VALUES(user_id),
+  current_workspace_id = VALUES(current_workspace_id),
+  session_token_hash = VALUES(session_token_hash),
+  expires_at = VALUES(expires_at),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at),
+  last_accessed_at = VALUES(last_accessed_at),
+  revoked_at = VALUES(revoked_at);
+"""
+
+
 def _run_event_insert_sql(run_event: RunEventRecord) -> str:
     return f"""
 INSERT INTO run_events (
@@ -1236,6 +1303,25 @@ LIMIT 1;
             raise KeyError(user_id)
         return cast(UserRecord, payload)
 
+    def get_authentication_by_email(self, email: str) -> UserAuthenticationRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'userId', user_id,
+  'email', email,
+  'displayName', display_name,
+  'passwordHash', password_hash,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM users
+WHERE email = {_sql_literal(email)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(email)
+        return cast(UserAuthenticationRecord, payload)
+
 
 class WorkspaceRepository:
     """Repository boundary for Workspace foundation read surfaces."""
@@ -1307,6 +1393,30 @@ SELECT JSON_OBJECT(
         items = _require_array(payload.get("items"), "WorkspaceMembership.items")
         return cast(list[WorkspaceMembershipRecord], items)
 
+    def get_by_user_id_and_workspace_id(
+        self,
+        user_id: str,
+        workspace_id: str,
+    ) -> WorkspaceMembershipRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'membershipId', membership_id,
+  'userId', user_id,
+  'workspaceId', workspace_id,
+  'role', role,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM workspace_memberships
+WHERE user_id = {_sql_literal(user_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(workspace_id)
+        return cast(WorkspaceMembershipRecord, payload)
+
 
 class AuthSessionRepository:
     """Repository boundary for AuthSession foundation read surfaces."""
@@ -1314,16 +1424,33 @@ class AuthSessionRepository:
     def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
 
+    def create(self, auth_session: AuthSessionStateRecord) -> None:
+        self._database.execute_sql(_auth_session_upsert_sql(auth_session))
+
     def get_by_auth_session_id(self, auth_session_id: str) -> AuthSessionRecord:
+        auth_session_state = self.get_state_by_auth_session_id(auth_session_id)
+        return {
+            "authSessionId": auth_session_state["authSessionId"],
+            "userId": auth_session_state["userId"],
+            "currentWorkspaceId": auth_session_state["currentWorkspaceId"],
+            "expiresAt": auth_session_state["expiresAt"],
+            "createdAt": auth_session_state["createdAt"],
+            "updatedAt": auth_session_state["updatedAt"],
+            "lastAccessedAt": auth_session_state["lastAccessedAt"],
+        }
+
+    def get_state_by_auth_session_id(self, auth_session_id: str) -> AuthSessionStateRecord:
         sql = f"""
 SELECT JSON_OBJECT(
   'authSessionId', auth_session_id,
   'userId', user_id,
   'currentWorkspaceId', current_workspace_id,
+  'sessionTokenHash', session_token_hash,
   'expiresAt', expires_at,
   'createdAt', created_at,
   'updatedAt', updated_at,
-  'lastAccessedAt', last_accessed_at
+  'lastAccessedAt', last_accessed_at,
+  'revokedAt', revoked_at
 )
 FROM auth_sessions
 WHERE auth_session_id = {_sql_literal(auth_session_id)}
@@ -1332,7 +1459,56 @@ LIMIT 1;
         payload = self._database.query_json_object(sql)
         if payload is None:
             raise KeyError(auth_session_id)
-        return cast(AuthSessionRecord, payload)
+        return cast(AuthSessionStateRecord, payload)
+
+    def get_state_by_session_token_hash(self, session_token_hash: str) -> AuthSessionStateRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'authSessionId', auth_session_id,
+  'userId', user_id,
+  'currentWorkspaceId', current_workspace_id,
+  'sessionTokenHash', session_token_hash,
+  'expiresAt', expires_at,
+  'createdAt', created_at,
+  'updatedAt', updated_at,
+  'lastAccessedAt', last_accessed_at,
+  'revokedAt', revoked_at
+)
+FROM auth_sessions
+WHERE session_token_hash = {_sql_literal(session_token_hash)}
+ORDER BY id DESC
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(session_token_hash)
+        return cast(AuthSessionStateRecord, payload)
+
+    def update_current_workspace(
+        self,
+        *,
+        auth_session_id: str,
+        current_workspace_id: str | None,
+        updated_at: str,
+    ) -> None:
+        self._database.execute_sql(
+            f"""
+UPDATE auth_sessions
+SET current_workspace_id = {_sql_literal(current_workspace_id)},
+    updated_at = {_sql_literal(updated_at)}
+WHERE auth_session_id = {_sql_literal(auth_session_id)};
+"""
+        )
+
+    def revoke(self, *, auth_session_id: str, revoked_at: str, updated_at: str) -> None:
+        self._database.execute_sql(
+            f"""
+UPDATE auth_sessions
+SET revoked_at = {_sql_literal(revoked_at)},
+    updated_at = {_sql_literal(updated_at)}
+WHERE auth_session_id = {_sql_literal(auth_session_id)};
+"""
+        )
 
 
 class CurrentWorkspaceContextRepository:
@@ -1340,6 +1516,28 @@ class CurrentWorkspaceContextRepository:
 
     def __init__(self, database: RuntimeFoundationDatabase) -> None:
         self._database = database
+
+    def get_by_user_id_and_workspace_id(
+        self,
+        user_id: str,
+        workspace_id: str,
+    ) -> CurrentWorkspaceContextRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'membershipId', membership_id,
+  'userId', user_id,
+  'workspaceId', workspace_id,
+  'role', role
+)
+FROM workspace_memberships
+WHERE user_id = {_sql_literal(user_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(workspace_id)
+        return cast(CurrentWorkspaceContextRecord, payload)
 
     def get_by_auth_session_id(self, auth_session_id: str) -> CurrentWorkspaceContextRecord:
         sql = f"""

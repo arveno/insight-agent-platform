@@ -550,7 +550,10 @@ LIMIT 1;
 """
     )
     assert password_row == {
-        "passwordHash": "$argon2id$v=19$m=65536,t=3,p=4$c2VlZC16b2Utc2FsdA$2E0Tq4Y5vC4n4m4n0k8n4uJfY5h7b6K2q0k8hQ1sV7A"
+        "passwordHash": (
+            "pbkdf2_sha256$600000$seed-zoe-salt$"
+            "7c7b38dc1ada2333ddd8a68c6cece3b1a435180355abbbcd0a5fc3b14ae036d2"
+        )
     }
 
 

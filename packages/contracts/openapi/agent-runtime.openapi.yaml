@@ -18,6 +18,106 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /auth/login:
+    post:
+      summary: 登录并创建会话
+      description: >
+        使用 email/password 验证用户身份，创建新的 opaque cookie session，
+        并返回当前 user、authSession、currentWorkspaceContext 与 memberships。
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: zoe@northstar.example.com
+              password: zoe-password
+      responses:
+        "200":
+          description: 登录成功并建立有效 session。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+  /auth/logout:
+    post:
+      summary: 注销并失效当前会话
+      description: >
+        失效当前 opaque cookie session，并清理浏览器端 session cookie。
+      operationId: logout
+      responses:
+        "200":
+          description: 当前会话已成功注销。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+              example:
+                success: true
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+  /auth/me:
+    get:
+      summary: 读取当前登录身份
+      description: >
+        从服务端 session 解析当前 user、authSession 与 currentWorkspaceContext。
+      operationId: getAuthMe
+      responses:
+        "200":
+          description: 当前登录身份与当前 workspace 上下文。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+  /workspaces:
+    get:
+      summary: 读取当前用户的 workspace 列表
+      description: >
+        返回当前登录 user 的 workspace memberships，并携带每个 workspace 的 canonical name。
+      operationId: listWorkspaces
+      responses:
+        "200":
+          description: 当前用户的 workspace 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceListResponse"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+  /auth/select-workspace:
+    post:
+      summary: 选择当前会话的 workspace
+      description: >
+        仅允许把当前 session 切换到当前 user 已有 membership 的 workspace，
+        并返回更新后的 authSession 与 currentWorkspaceContext。
+      operationId: selectWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectWorkspaceRequest"
+            example:
+              workspaceId: workspace-northstar-retail-sea
+      responses:
+        "200":
+          description: 当前 session 的 workspace 已成功切换。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectWorkspaceResponse"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+        "403":
+          $ref: "#/components/responses/RuntimeForbidden"
   /analysis-tasks:
     post:
       summary: 创建分析输入任务
@@ -1241,6 +1341,24 @@ components:
           example:
             errorCode: INVALID_STATE
             message: AnalysisRun must be created/intake before dispatch.
+    RuntimeUnauthorized:
+      description: Authentication session is missing, invalid, expired, or revoked.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuntimeErrorResponse"
+          example:
+            errorCode: UNAUTHORIZED
+            message: Authentication session is missing or invalid.
+    RuntimeForbidden:
+      description: Authenticated user does not have access to the requested workspace.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RuntimeErrorResponse"
+          example:
+            errorCode: FORBIDDEN
+            message: "Workspace membership not found: workspace-forbidden-test"
   parameters:
     RunId:
       name: runId
@@ -1345,6 +1463,8 @@ components:
             - NOT_FOUND
             - MISMATCH
             - INVALID_STATE
+            - UNAUTHORIZED
+            - FORBIDDEN
         message:
           type: string
     CreateAnalysisTaskRequest:

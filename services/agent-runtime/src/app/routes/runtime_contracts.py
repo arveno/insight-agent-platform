@@ -22,8 +22,141 @@ class RuntimeRequestErrorResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    errorCode: Literal["NOT_FOUND", "MISMATCH", "INVALID_STATE"]
+    errorCode: Literal["NOT_FOUND", "MISMATCH", "INVALID_STATE", "UNAUTHORIZED", "FORBIDDEN"]
     message: str
+
+
+class UserResponse(BaseModel):
+    """User contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    userId: str
+    email: str
+    displayName: str
+    createdAt: str
+    updatedAt: str
+
+
+class WorkspaceResponse(BaseModel):
+    """Workspace contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspaceId: str
+    name: str
+    createdAt: str
+    updatedAt: str
+
+
+class WorkspaceMembershipResponse(BaseModel):
+    """WorkspaceMembership contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+    createdAt: str
+    updatedAt: str
+
+
+class WorkspaceListItemResponse(BaseModel):
+    """Workspace list item composed from membership and workspace contracts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    membership: WorkspaceMembershipResponse
+    workspace: WorkspaceResponse
+
+
+class AuthSessionResponse(BaseModel):
+    """AuthSession contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    authSessionId: str
+    userId: str
+    currentWorkspaceId: str | None
+    expiresAt: str
+    createdAt: str
+    updatedAt: str
+    lastAccessedAt: str | None = None
+
+
+class CurrentWorkspaceContextResponse(BaseModel):
+    """CurrentWorkspaceContext contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+
+
+class LoginRequest(BaseModel):
+    """POST /auth/login request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    """POST /auth/login response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user: UserResponse
+    authSession: AuthSessionResponse
+    currentWorkspaceContext: CurrentWorkspaceContextResponse | None
+    memberships: list[WorkspaceMembershipResponse]
+
+
+class MeResponse(BaseModel):
+    """GET /auth/me response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user: UserResponse
+    authSession: AuthSessionResponse
+    currentWorkspaceContext: CurrentWorkspaceContextResponse | None
+
+
+class WorkspaceListResponse(BaseModel):
+    """GET /workspaces response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[WorkspaceListItemResponse]
+
+
+class SelectWorkspaceRequest(BaseModel):
+    """POST /auth/select-workspace request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspaceId: str
+
+
+class SelectWorkspaceResponse(BaseModel):
+    """POST /auth/select-workspace response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    authSession: AuthSessionResponse
+    currentWorkspaceContext: CurrentWorkspaceContextResponse
+
+
+class LogoutResponse(BaseModel):
+    """POST /auth/logout response contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    success: bool
 
 
 class SourceRefReportModel(BaseModel):
@@ -713,7 +846,14 @@ ROUTE_STUB_ERROR = RuntimeRouteStubErrorResponse(
 def runtime_error_response(
     *,
     status_code: int,
-    error_code: Literal["NOT_IMPLEMENTED", "NOT_FOUND", "MISMATCH", "INVALID_STATE"],
+    error_code: Literal[
+        "NOT_IMPLEMENTED",
+        "NOT_FOUND",
+        "MISMATCH",
+        "INVALID_STATE",
+        "UNAUTHORIZED",
+        "FORBIDDEN",
+    ],
     message: str,
 ) -> JSONResponse:
     """Return the canonical structured runtime error payload."""
