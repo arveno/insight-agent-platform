@@ -117,6 +117,19 @@ def test_openapi_declares_identity_workspace_component_schemas() -> None:
         assert f"    {component_name}:" in openapi_source
 
 
+def test_openapi_declares_auth_and_workspace_foundation_paths() -> None:
+    openapi_source = OPENAPI_PATH.read_text(encoding="utf-8")
+
+    for path in [
+        "/auth/login:",
+        "/auth/logout:",
+        "/auth/me:",
+        "/auth/select-workspace:",
+        "/workspaces:",
+    ]:
+        assert f"  {path}" in openapi_source
+
+
 def test_workspace_list_contract_composes_membership_and_workspace_objects() -> None:
     workspace_list_item_schema = load_schema("workspace/workspace-list-item.schema.json")
     assert workspace_list_item_schema["properties"] == {
