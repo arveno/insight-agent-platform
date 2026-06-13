@@ -38,6 +38,10 @@ def test_identity_contract_schemas_define_workspace_membership_and_auth_foundati
             "createdAt",
             "updatedAt",
         },
+        "workspace/workspace-list-item.schema.json": {
+            "membership",
+            "workspace",
+        },
         "workspace/auth-session.schema.json": {
             "authSessionId",
             "userId",
@@ -68,7 +72,7 @@ def test_identity_contract_schemas_define_workspace_membership_and_auth_foundati
             "currentWorkspaceContext",
         },
         "workspace/workspace-list-response.schema.json": {
-            "memberships",
+            "items",
         },
         "workspace/select-workspace-request.schema.json": {
             "workspaceId",
@@ -97,6 +101,7 @@ def test_openapi_declares_identity_workspace_component_schemas() -> None:
         "Workspace",
         "Role",
         "WorkspaceMembership",
+        "WorkspaceListItem",
         "AuthSession",
         "CurrentWorkspaceContext",
         "LoginRequest",
@@ -110,3 +115,19 @@ def test_openapi_declares_identity_workspace_component_schemas() -> None:
 
     for component_name in expected_component_names:
         assert f"    {component_name}:" in openapi_source
+
+
+def test_workspace_list_contract_composes_membership_and_workspace_objects() -> None:
+    workspace_list_item_schema = load_schema("workspace/workspace-list-item.schema.json")
+    assert workspace_list_item_schema["properties"] == {
+        "membership": {"$ref": "./workspace-membership.schema.json"},
+        "workspace": {"$ref": "./workspace.schema.json"},
+    }
+
+    workspace_list_response_schema = load_schema("workspace/workspace-list-response.schema.json")
+    assert workspace_list_response_schema["properties"] == {
+        "items": {
+            "type": "array",
+            "items": {"$ref": "./workspace-list-item.schema.json"},
+        }
+    }

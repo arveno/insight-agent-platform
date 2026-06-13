@@ -525,7 +525,7 @@ def test_identity_workspace_foundation_seeded_records_are_queryable(
         "authSessionId": "auth-session-user-zoe-china",
         "userId": "user-zoe",
         "currentWorkspaceId": "workspace-northstar-retail-china",
-        "expiresAt": "2026-06-12T11:08:12+08:00",
+        "expiresAt": "2026-07-15T11:08:12+08:00",
         "createdAt": "2026-06-05T11:08:12+08:00",
         "updatedAt": "2026-06-05T11:08:12+08:00",
         "lastAccessedAt": "2026-06-05T11:08:12+08:00",

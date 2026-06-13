@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/workspace-list-item.schema.json",
+  "title": "WorkspaceListItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["membership", "workspace"],
+  "properties": {
+    "membership": {
+      "$ref": "./workspace-membership.schema.json"
+    },
+    "workspace": {
+      "$ref": "./workspace.schema.json"
+    }
+  }
+}

@@ -616,9 +616,15 @@ export interface User {
   updatedAt: string;
 }
 
+/** Generated from packages/contracts/schemas/workspace/workspace-list-item.schema.json */
+export interface WorkspaceListItem {
+  membership: WorkspaceMembership;
+  workspace: Workspace;
+}
+
 /** Generated from packages/contracts/schemas/workspace/workspace-list-response.schema.json */
 export interface WorkspaceListResponse {
-  memberships: Array<WorkspaceMembership>;
+  items: Array<WorkspaceListItem>;
 }
 
 /** Generated from packages/contracts/schemas/workspace/workspace-membership.schema.json */

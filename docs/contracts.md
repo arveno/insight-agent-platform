@@ -30,6 +30,7 @@ CurrentWorkspaceContext
 LoginRequest
 LoginResponse
 MeResponse
+WorkspaceListItem
 WorkspaceListResponse
 SelectWorkspaceRequest
 SelectWorkspaceResponse

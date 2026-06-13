@@ -560,9 +560,14 @@ class User(TypedDict):
     createdAt: str
     updatedAt: str
 
+# Generated from packages/contracts/schemas/workspace/workspace-list-item.schema.json
+class WorkspaceListItem(TypedDict):
+    membership: WorkspaceMembership
+    workspace: Workspace
+
 # Generated from packages/contracts/schemas/workspace/workspace-list-response.schema.json
 class WorkspaceListResponse(TypedDict):
-    memberships: list[WorkspaceMembership]
+    items: list[WorkspaceListItem]
 
 # Generated from packages/contracts/schemas/workspace/workspace-membership.schema.json
 class WorkspaceMembership(TypedDict):
@@ -580,4 +585,4 @@ class Workspace(TypedDict):
     createdAt: str
     updatedAt: str
 
-__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "AuthSession", "BusinessDomain", "CurrentWorkspaceContext", "LoginRequest", "LoginResponse", "LogoutResponse", "MeResponse", "Role", "SelectWorkspaceRequest", "SelectWorkspaceResponse", "User", "WorkspaceListResponse", "WorkspaceMembership", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "AuthSession", "BusinessDomain", "CurrentWorkspaceContext", "LoginRequest", "LoginResponse", "LogoutResponse", "MeResponse", "Role", "SelectWorkspaceRequest", "SelectWorkspaceResponse", "User", "WorkspaceListItem", "WorkspaceListResponse", "WorkspaceMembership", "Workspace"]

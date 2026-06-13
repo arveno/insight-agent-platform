@@ -89,7 +89,7 @@ INSERT INTO auth_sessions (
   'user-zoe',
   'workspace-northstar-retail-china',
   '8c9f0fd0a44f0c2d6bc1f1b7a4a9f8f6d5d3ed4f6210c2b8fc6f0c58e5c74193',
-  '2026-06-12T11:08:12+08:00',
+  '2026-07-15T11:08:12+08:00',
   '2026-06-05T11:08:12+08:00',
   '2026-06-05T11:08:12+08:00',
   '2026-06-05T11:08:12+08:00',

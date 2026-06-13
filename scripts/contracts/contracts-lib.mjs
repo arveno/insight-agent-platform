@@ -236,6 +236,7 @@ export const requiredFieldsBySchema = {
     "createdAt",
     "updatedAt"
   ],
+  "workspace/workspace-list-item.schema.json": ["membership", "workspace"],
   "workspace/auth-session.schema.json": [
     "authSessionId",
     "userId",
@@ -258,7 +259,7 @@ export const requiredFieldsBySchema = {
     "memberships"
   ],
   "workspace/me-response.schema.json": ["user", "authSession", "currentWorkspaceContext"],
-  "workspace/workspace-list-response.schema.json": ["memberships"],
+  "workspace/workspace-list-response.schema.json": ["items"],
   "workspace/select-workspace-request.schema.json": ["workspaceId"],
   "workspace/select-workspace-response.schema.json": ["authSession", "currentWorkspaceContext"],
   "workspace/logout-response.schema.json": ["success"],

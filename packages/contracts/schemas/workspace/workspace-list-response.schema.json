@@ -4,12 +4,12 @@
   "title": "WorkspaceListResponse",
   "type": "object",
   "additionalProperties": false,
-  "required": ["memberships"],
+  "required": ["items"],
   "properties": {
-    "memberships": {
+    "items": {
       "type": "array",
       "items": {
-        "$ref": "./workspace-membership.schema.json"
+        "$ref": "./workspace-list-item.schema.json"
       }
     }
   }

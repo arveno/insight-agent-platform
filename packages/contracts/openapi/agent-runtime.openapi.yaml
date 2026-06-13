@@ -1279,6 +1279,8 @@ components:
       $ref: "../schemas/workspace/role.schema.json"
     WorkspaceMembership:
       $ref: "../schemas/workspace/workspace-membership.schema.json"
+    WorkspaceListItem:
+      $ref: "../schemas/workspace/workspace-list-item.schema.json"
     AuthSession:
       $ref: "../schemas/workspace/auth-session.schema.json"
     CurrentWorkspaceContext:
