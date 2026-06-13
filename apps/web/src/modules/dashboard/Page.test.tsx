@@ -114,7 +114,17 @@ describe("DashboardPage", () => {
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-metric-revenue" })
+          root: expect.objectContaining({
+            chips: expect.arrayContaining(["环比 -3.2%", "4 条证据"]),
+            nodeId: "dashboard-node-metric-revenue",
+            sourceRef: {
+              metricId: "metric-recognized-revenue",
+              type: "metric"
+            },
+            summary: "季度收入低于目标区间，需要继续拆解区域、渠道与确认节奏。",
+            title: "零售收入",
+            value: "¥12.8M"
+          })
         })
       })
     );
@@ -144,7 +154,16 @@ describe("DashboardPage", () => {
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-report-weekly-business" })
+          root: expect.objectContaining({
+            chips: expect.arrayContaining(["5 条证据", "更新时间 2026-06-03T17:30:00+08:00"]),
+            nodeId: "dashboard-node-report-weekly-business",
+            sourceRef: {
+              reportId: "report-weekly-business",
+              type: "report"
+            },
+            summary: "建议先核对相关证据，再带上下文继续分析。",
+            title: "周经营分析报告"
+          })
         })
       })
     );
@@ -159,7 +178,16 @@ describe("DashboardPage", () => {
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-evidence-revenue-summary" })
+          root: expect.objectContaining({
+            chips: expect.arrayContaining(["Metric / Report", "High"]),
+            nodeId: "dashboard-node-evidence-revenue-summary",
+            sourceRef: {
+              sourceEvidenceId: "source-evidence-q2-revenue",
+              type: "sourceEvidence"
+            },
+            summary: "来自核心收入指标、报告段落和数据质量摘要的证据入口。",
+            title: "零售收入证据摘要"
+          })
         })
       })
     );

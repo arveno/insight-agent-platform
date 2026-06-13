@@ -17,12 +17,15 @@ import {
   createRunHistoryRootNodeId,
   createRunTraceRootNodeId,
   createToolCallsRootNodeId,
-  findInspectorTreeNode
+  findInspectorTreePathNodes
 } from "../models/inspectorTree";
 import type { AnalysisTaskContextPack } from "../models/runtimeContractTypes";
 import { InspectorRootPanel } from "./inspector/InspectorRootPanel";
 import { InspectorTreeNodePanel } from "./inspector/InspectorTreeNodePanel";
-import { getInspectorNodeDisplayTitle } from "../models/inspectorTree";
+import {
+  buildInspectorNodePresentation,
+  getInspectorPresentationTitle
+} from "./inspector/buildInspectorNodePresentation";
 
 export type AnalysisInspectorPanelProps = {
   contextPanelNote: string;
@@ -53,12 +56,6 @@ function createEmptyContextRoot(session: AnalysisSessionViewModel): InspectorTre
 
 function getContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
   return session.analysisTaskContextPack?.root ?? createEmptyContextRoot(session);
-}
-
-function getInspectorPanelDescription(node: InspectorTreeNode): string | undefined {
-  const description = node.summary ?? node.description;
-
-  return description && description.trim().length > 0 ? description : undefined;
 }
 
 function getInspectorRootsViewTitle(
@@ -349,15 +346,19 @@ export function AnalysisInspectorPanel({
     inspectorTreeState.rootKey === null
       ? null
       : roots.find((root) => root.key === inspectorTreeState.rootKey) ?? null;
-  const selectedNode = activeRoot
-    ? findInspectorTreeNode(activeRoot.tree, inspectorTreeState.path)
+  const selectedPathNodes = activeRoot
+    ? findInspectorTreePathNodes(activeRoot.tree, inspectorTreeState.path)
     : null;
-  const panelTitle = selectedNode
-    ? getInspectorNodeDisplayTitle(selectedNode)
+  const selectedNode = selectedPathNodes?.at(-1) ?? null;
+  const selectedNodePresentation = selectedNode
+    ? buildInspectorNodePresentation(selectedNode, selectedPathNodes?.slice(0, -1) ?? [])
+    : null;
+  const panelTitle = selectedNodePresentation
+    ? getInspectorPresentationTitle(selectedNodePresentation, {
+        includeChildCount: selectedNode?.kind === "directory"
+      })
     : getInspectorRootsViewTitle(draftContext, selectedInspectorSubject);
-  const panelDescription = selectedNode
-    ? getInspectorPanelDescription(selectedNode)
-    : contextPanelNote;
+  const panelDescription = selectedNodePresentation?.description ?? contextPanelNote;
 
   return (
     <SidePanel
@@ -379,6 +380,7 @@ export function AnalysisInspectorPanel({
         <InspectorRootPanel onSelectRoot={onSelectInspectorRoot} roots={roots} />
       ) : (
         <InspectorTreeNodePanel
+          ancestors={selectedPathNodes?.slice(0, -1) ?? []}
           node={selectedNode}
           onBack={onPopInspectorPath}
           onSelectChild={onSelectInspectorNode}

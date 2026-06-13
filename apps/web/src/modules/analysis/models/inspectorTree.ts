@@ -84,12 +84,29 @@ export function findInspectorTreeNode(
   return current;
 }
 
-export function getInspectorNodeDisplayTitle(node: InspectorTreeNode): string {
-  if (node.kind === "directory" && node.children?.length) {
-    return `${node.title} · ${node.children.length} 项`;
+export function findInspectorTreePathNodes(
+  root: InspectorTreeNode,
+  path: string[]
+): InspectorTreeNode[] | null {
+  if (path.length === 0 || root.nodeId !== path[0]) {
+    return null;
   }
 
-  return node.title;
+  const nodes: InspectorTreeNode[] = [root];
+  let current: InspectorTreeNode = root;
+
+  for (const nodeId of path.slice(1)) {
+    const nextNode = current.children?.find((child) => child.nodeId === nodeId) ?? null;
+
+    if (!nextNode) {
+      return null;
+    }
+
+    nodes.push(nextNode);
+    current = nextNode;
+  }
+
+  return nodes;
 }
 
 export function getInspectorNodeEyebrow(node: InspectorTreeNode): string | undefined {
