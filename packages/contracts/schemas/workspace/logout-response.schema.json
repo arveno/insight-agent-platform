@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/logout-response.schema.json",
+  "title": "LogoutResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["success"],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    }
+  }
+}

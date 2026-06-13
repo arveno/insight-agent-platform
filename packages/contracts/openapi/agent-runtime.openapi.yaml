@@ -1271,6 +1271,32 @@ components:
         type: string
       description: Message 的 canonical messageId。
   schemas:
+    User:
+      $ref: "../schemas/workspace/user.schema.json"
+    Workspace:
+      $ref: "../schemas/workspace/workspace.schema.json"
+    Role:
+      $ref: "../schemas/workspace/role.schema.json"
+    WorkspaceMembership:
+      $ref: "../schemas/workspace/workspace-membership.schema.json"
+    AuthSession:
+      $ref: "../schemas/workspace/auth-session.schema.json"
+    CurrentWorkspaceContext:
+      $ref: "../schemas/workspace/current-workspace-context.schema.json"
+    LoginRequest:
+      $ref: "../schemas/workspace/login-request.schema.json"
+    LoginResponse:
+      $ref: "../schemas/workspace/login-response.schema.json"
+    MeResponse:
+      $ref: "../schemas/workspace/me-response.schema.json"
+    WorkspaceListResponse:
+      $ref: "../schemas/workspace/workspace-list-response.schema.json"
+    SelectWorkspaceRequest:
+      $ref: "../schemas/workspace/select-workspace-request.schema.json"
+    SelectWorkspaceResponse:
+      $ref: "../schemas/workspace/select-workspace-response.schema.json"
+    LogoutResponse:
+      $ref: "../schemas/workspace/logout-response.schema.json"
     HealthResponse:
       type: object
       description: 健康检查响应体。

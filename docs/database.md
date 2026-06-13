@@ -126,7 +126,7 @@ Migration 命名建议：
 ```text
 workspaces
 users
-workspace_members
+workspace_memberships
 roles
 permissions
 role_permissions
@@ -136,9 +136,9 @@ business_domains
 关系：
 
 ```text
-workspace 1 - n workspace_members
-user 1 - n workspace_members
-workspace_member n - 1 role
+workspace 1 - n workspace_memberships
+user 1 - n workspace_memberships
+workspace_membership n - 1 role
 role n - n permissions，通过 role_permissions 关联
 workspace 1 - n business_domains
 ```

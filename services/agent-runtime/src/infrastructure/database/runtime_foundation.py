@@ -28,6 +28,63 @@ class RuntimeFoundationDatabase(Protocol):
         """Execute a JSON_OBJECT query and return the decoded payload."""
 
 
+class UserRecord(TypedDict):
+    """User contract-shaped read record."""
+
+    userId: str
+    email: str
+    displayName: str
+    createdAt: str
+    updatedAt: str
+
+
+class WorkspaceRecord(TypedDict):
+    """Workspace contract-shaped read record."""
+
+    workspaceId: str
+    name: str
+    createdAt: str
+    updatedAt: str
+
+
+class RoleRecord(TypedDict):
+    """Role contract-shaped read record."""
+
+    role: str
+
+
+class WorkspaceMembershipRecord(TypedDict):
+    """WorkspaceMembership contract-shaped read record."""
+
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+    createdAt: str
+    updatedAt: str
+
+
+class AuthSessionRecord(TypedDict):
+    """AuthSession contract-shaped read record."""
+
+    authSessionId: str
+    userId: str
+    currentWorkspaceId: str | None
+    expiresAt: str
+    createdAt: str
+    updatedAt: str
+    lastAccessedAt: str | None
+
+
+class CurrentWorkspaceContextRecord(TypedDict):
+    """CurrentWorkspaceContext contract-shaped read record."""
+
+    membershipId: str
+    userId: str
+    workspaceId: str
+    role: str
+
+
 class SourceRefReport(TypedDict):
     type: Literal["report"]
     reportId: str
@@ -1153,6 +1210,156 @@ class RuntimeFoundationPyMySqlDatabase:
 
         parsed = json.loads(raw_payload)
         return _require_mapping(parsed, "query-json")
+
+
+class UserRepository:
+    """Repository boundary for User identity foundation read surfaces."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def get_by_user_id(self, user_id: str) -> UserRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'userId', user_id,
+  'email', email,
+  'displayName', display_name,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM users
+WHERE user_id = {_sql_literal(user_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(user_id)
+        return cast(UserRecord, payload)
+
+
+class WorkspaceRepository:
+    """Repository boundary for Workspace foundation read surfaces."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def get_by_workspace_id(self, workspace_id: str) -> WorkspaceRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'workspaceId', workspace_id,
+  'name', name,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM workspaces
+WHERE workspace_id = {_sql_literal(workspace_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(workspace_id)
+        return cast(WorkspaceRecord, payload)
+
+
+class WorkspaceMembershipRepository:
+    """Repository boundary for WorkspaceMembership foundation read surfaces."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def list_by_user_id(self, user_id: str) -> list[WorkspaceMembershipRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'membershipId', membership_id,
+          'userId', user_id,
+          'workspaceId', workspace_id,
+          'role', role,
+          'createdAt', created_at,
+          'updatedAt', updated_at
+        )
+      )
+      FROM (
+        SELECT
+          membership_id,
+          user_id,
+          workspace_id,
+          role,
+          created_at,
+          updated_at
+        FROM workspace_memberships
+        WHERE user_id = {_sql_literal(user_id)}
+        ORDER BY workspace_id ASC, id ASC
+      ) ordered_workspace_memberships
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "WorkspaceMembership.items")
+        return cast(list[WorkspaceMembershipRecord], items)
+
+
+class AuthSessionRepository:
+    """Repository boundary for AuthSession foundation read surfaces."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def get_by_auth_session_id(self, auth_session_id: str) -> AuthSessionRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'authSessionId', auth_session_id,
+  'userId', user_id,
+  'currentWorkspaceId', current_workspace_id,
+  'expiresAt', expires_at,
+  'createdAt', created_at,
+  'updatedAt', updated_at,
+  'lastAccessedAt', last_accessed_at
+)
+FROM auth_sessions
+WHERE auth_session_id = {_sql_literal(auth_session_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(auth_session_id)
+        return cast(AuthSessionRecord, payload)
+
+
+class CurrentWorkspaceContextRepository:
+    """Repository boundary for resolving the current workspace context from an auth session."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def get_by_auth_session_id(self, auth_session_id: str) -> CurrentWorkspaceContextRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'membershipId', workspace_memberships.membership_id,
+  'userId', workspace_memberships.user_id,
+  'workspaceId', workspace_memberships.workspace_id,
+  'role', workspace_memberships.role
+)
+FROM auth_sessions
+INNER JOIN workspace_memberships
+  ON workspace_memberships.user_id = auth_sessions.user_id
+ AND workspace_memberships.workspace_id = auth_sessions.current_workspace_id
+WHERE auth_sessions.auth_session_id = {_sql_literal(auth_session_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(auth_session_id)
+        return cast(CurrentWorkspaceContextRecord, payload)
 
 
 class AnalysisTaskRepository:

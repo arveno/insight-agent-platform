@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/select-workspace-request.schema.json",
+  "title": "SelectWorkspaceRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["workspaceId"],
+  "properties": {
+    "workspaceId": {
+      "type": "string"
+    }
+  }
+}

@@ -24,6 +24,16 @@
 Workspace
 User
 Role
+WorkspaceMembership
+AuthSession
+CurrentWorkspaceContext
+LoginRequest
+LoginResponse
+MeResponse
+WorkspaceListResponse
+SelectWorkspaceRequest
+SelectWorkspaceResponse
+LogoutResponse
 BusinessDomain
 DataSource
 DataTable
@@ -89,7 +99,8 @@ metadata.xxxId || xxxId
 ```text
 workspaceId
 userId
-roleId
+membershipId
+authSessionId
 businessDomainId
 dataSourceId
 tableId
@@ -142,7 +153,8 @@ riskRuleId
 ```text
 workspaceId
 userId
-roleId
+membershipId
+authSessionId
 permissionPolicyId
 ```
 
@@ -151,16 +163,15 @@ permissionPolicyId
 ```text
 tenantId
 organizationId
-workspaceMembershipId
 ```
 
 边界规则：
 
-- `tenantId / organizationId / workspaceMembershipId` 当前属于产品和架构审查范围；如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts` schema。
+- `tenantId / organizationId` 当前属于产品和架构审查范围；如进入 `API / mapper / ViewModel / Action / Inspector` 共享链路，必须先补齐 `docs/contracts.md` 与 `packages/contracts` schema。
 - 所有核心业务对象默认必须归属 `workspaceId`。
 - 如果未来某对象是全局资源，例如 `Model Provider`、`Tool Template`、`Prompt Template`，必须显式建模为 global resource，不得默认跨 `Workspace` 混用。
 - 不得出现 `workspaceId || tenantId`、`organizationId || workspaceId`、`userId || memberId` 等兜底式混用。
-- 在当前 schema 现状下，不得把 `tenantId`、`organizationId` 或 `workspaceMembershipId` 写入“已进入 packages/contracts 的 canonical ID 列表”。
+- 在当前 schema 现状下，不得把 `tenantId` 或 `organizationId` 写入“已进入 packages/contracts 的 canonical ID 列表”。
 
 当前已正式进入 contracts 的 Analysis conversation / message canonical ID：
 
@@ -323,7 +334,7 @@ AnalysisRun.reports:
 当前已知风险：
 
 - `docs/contracts.md` 的 canonical ID 列表需要持续补齐已进入 `packages/contracts` 的对象，例如 `modelConfigId`、`routingPolicyId`、`promptVersionId`、`toolDefinitionId`、`ragStrategyId`。
-- `tenantId / organizationId / workspaceMembershipId` 当前仍是候选 ID，不能在共享链路中直接升格为 canonical ID。
+- `tenantId / organizationId` 当前仍是候选 ID，不能在共享链路中直接升格为 canonical ID。
 - `product-experience.html` 已在原型中暴露出 `findingId`、`conversationId`、`messageId`、`turnId`、`messageStreamId`、`runId`、`reportId`、`sourceEvidenceId`、`metricId`、`modelConfigId` 等产品对象 ID。
 - `conversationId / messageId / turnId / messageStreamId` 已正式进入 contracts；`findingId` 如后续进入共享链路，仍必须先完成 contracts 文档与 schema 审查。
 - `product-experience.html` 中出现的 `findingId` 等候选对象 ID 不代表其已经成为正式 contract。

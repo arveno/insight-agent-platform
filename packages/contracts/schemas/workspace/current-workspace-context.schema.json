@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/current-workspace-context.schema.json",
+  "title": "CurrentWorkspaceContext",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["membershipId", "userId", "workspaceId", "role"],
+  "properties": {
+    "membershipId": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "workspaceId": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    }
+  }
+}

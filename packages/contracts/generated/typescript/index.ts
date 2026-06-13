@@ -538,6 +538,17 @@ export interface Report {
   createdAt: string;
 }
 
+/** Generated from packages/contracts/schemas/workspace/auth-session.schema.json */
+export interface AuthSession {
+  authSessionId: string;
+  userId: string;
+  currentWorkspaceId: string | null;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  lastAccessedAt?: string | null;
+}
+
 /** Generated from packages/contracts/schemas/workspace/business-domain.schema.json */
 export interface BusinessDomain {
   businessDomainId?: string;
@@ -546,25 +557,84 @@ export interface BusinessDomain {
   createdAt?: string;
 }
 
+/** Generated from packages/contracts/schemas/workspace/current-workspace-context.schema.json */
+export interface CurrentWorkspaceContext {
+  membershipId: string;
+  userId: string;
+  workspaceId: string;
+  role: string;
+}
+
+/** Generated from packages/contracts/schemas/workspace/login-request.schema.json */
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/** Generated from packages/contracts/schemas/workspace/login-response.schema.json */
+export interface LoginResponse {
+  user: User;
+  authSession: AuthSession;
+  currentWorkspaceContext: CurrentWorkspaceContext | null;
+  memberships: Array<WorkspaceMembership>;
+}
+
+/** Generated from packages/contracts/schemas/workspace/logout-response.schema.json */
+export interface LogoutResponse {
+  success: boolean;
+}
+
+/** Generated from packages/contracts/schemas/workspace/me-response.schema.json */
+export interface MeResponse {
+  user: User;
+  authSession: AuthSession;
+  currentWorkspaceContext: CurrentWorkspaceContext | null;
+}
+
 /** Generated from packages/contracts/schemas/workspace/role.schema.json */
 export interface Role {
-  roleId?: string;
-  workspaceId?: string;
-  name?: string;
-  createdAt?: string;
+  role: string;
+}
+
+/** Generated from packages/contracts/schemas/workspace/select-workspace-request.schema.json */
+export interface SelectWorkspaceRequest {
+  workspaceId: string;
+}
+
+/** Generated from packages/contracts/schemas/workspace/select-workspace-response.schema.json */
+export interface SelectWorkspaceResponse {
+  authSession: AuthSession;
+  currentWorkspaceContext: CurrentWorkspaceContext;
 }
 
 /** Generated from packages/contracts/schemas/workspace/user.schema.json */
 export interface User {
-  userId?: string;
-  workspaceId?: string;
-  displayName?: string;
-  createdAt?: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Generated from packages/contracts/schemas/workspace/workspace-list-response.schema.json */
+export interface WorkspaceListResponse {
+  memberships: Array<WorkspaceMembership>;
+}
+
+/** Generated from packages/contracts/schemas/workspace/workspace-membership.schema.json */
+export interface WorkspaceMembership {
+  membershipId: string;
+  userId: string;
+  workspaceId: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Generated from packages/contracts/schemas/workspace/workspace.schema.json */
 export interface Workspace {
-  workspaceId?: string;
-  name?: string;
-  createdAt?: string;
+  workspaceId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 }
