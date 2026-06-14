@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { Alert, Button, Card, Col, Flex, Row, Space, Tag, Typography } from "antd";
 
-import type { AuthWorkspaceOptionViewModel } from "../../../app/providers/authViewModel";
+type WorkspaceSelectionOptionViewModel = {
+  membershipId: string;
+  name: string;
+  role: string;
+  workspaceId: string;
+};
 
 type WorkspaceSelectionPageProps = {
   currentWorkspaceId?: string | null;
   displayName: string;
   onSelectWorkspace: (workspaceId: string) => Promise<void>;
-  workspaces: AuthWorkspaceOptionViewModel[];
+  workspaces: WorkspaceSelectionOptionViewModel[];
 };
 
 export function WorkspaceSelectionPage({
