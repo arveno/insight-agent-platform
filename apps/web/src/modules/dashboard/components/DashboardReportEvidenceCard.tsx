@@ -11,13 +11,13 @@ import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAn
 import type { DashboardReportEvidenceCardProps } from "./dashboardComponentTypes";
 
 const sourceTypeKeyByLabel: Record<string, I18nMessageKey> = {
-  "数据质量检查 / 任务": "evidence.sourceType.dataQualityJob",
-  "指标 / 报告": "evidence.sourceType.metricReport"
+  "DataQualityCheck / Job": "evidence.sourceType.dataQualityJob",
+  "Metric / Report": "evidence.sourceType.metricReport"
 };
 
 const confidenceKeyByText: Record<string, I18nMessageKey> = {
-  "High risk": "evidence.confidence.high",
-  "Medium risk": "evidence.confidence.medium"
+  High: "evidence.confidence.high",
+  Medium: "evidence.confidence.medium"
 };
 
 const summaryKeyByEvidenceKey: Record<string, I18nMessageKey> = {

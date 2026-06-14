@@ -21,8 +21,6 @@ type DashboardLoaders = {
   metricsLoader?: () => Promise<Metric[]>;
 };
 
-const dashboardMetricsInFlight = new Map<string, Promise<Metric[]>>();
-
 export type DashboardContextTreeViewport = {
   activeNodeId: string;
   expandedNodeIds: string[];
@@ -75,27 +73,6 @@ function createDashboardContextTreeViewport(
   };
 }
 
-function loadDashboardMetricsSingleFlight(
-  workspaceId: string,
-  metricsLoader: () => Promise<Metric[]>
-): Promise<Metric[]> {
-  const inFlightRequest = dashboardMetricsInFlight.get(workspaceId);
-
-  if (inFlightRequest) {
-    return inFlightRequest;
-  }
-
-  const nextRequest = metricsLoader().finally(() => {
-    if (dashboardMetricsInFlight.get(workspaceId) === nextRequest) {
-      dashboardMetricsInFlight.delete(workspaceId);
-    }
-  });
-
-  dashboardMetricsInFlight.set(workspaceId, nextRequest);
-
-  return nextRequest;
-}
-
 export function useDashboardOverviewState(
   workspaceBinding?: CurrentWorkspaceBinding,
   loaders: DashboardLoaders = {}
@@ -120,7 +97,7 @@ export function useDashboardOverviewState(
     setState("loading");
     setErrorMessage(undefined);
 
-    void loadDashboardMetricsSingleFlight(resolvedWorkspaceBinding.workspaceId, metricsLoader)
+    void metricsLoader()
       .then((metrics) => {
         if (cancelled) {
           return;
@@ -189,12 +166,10 @@ export function DashboardPage({
 }
 
 export function useDashboardShellSlots({
-  metricsLoader,
   onNavigate,
   workspaceId,
   workspaceName
 }: {
-  metricsLoader?: () => Promise<Metric[]>;
   onNavigate?: PageRouteProps["onNavigate"];
   workspaceId?: string;
   workspaceName?: string;
@@ -203,7 +178,7 @@ export function useDashboardShellSlots({
   const controller = useDashboardOverviewState({
     workspaceId: workspaceId ?? currentWorkspaceBinding.workspaceId,
     workspaceName: workspaceName ?? currentWorkspaceBinding.workspaceName
-  }, { metricsLoader });
+  });
 
   return {
     mainContent: <DashboardPageContent controller={controller} onNavigate={onNavigate} />,

@@ -5,13 +5,12 @@ import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { getDashboardNodeRiskBadge } from "../models/dashboardNodeState";
 import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardQualityCardProps } from "./dashboardComponentTypes";
 
 export function DashboardQualityPanel({ item, onNavigate, viewModel }: DashboardQualityCardProps) {
   const { t } = useI18n();
-  const risk = getDashboardNodeRiskBadge(item, item.summary);
+  const risk = { label: "中风险", level: "medium" as const };
   const qualityActions = [
     createRouteAction({
       iconName: "operations",
