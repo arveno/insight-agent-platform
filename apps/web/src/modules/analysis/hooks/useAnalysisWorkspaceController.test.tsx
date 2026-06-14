@@ -180,9 +180,7 @@ describe("useAnalysisWorkspaceController", () => {
       draftContext,
       loader,
       submitIdentity: {
-        businessDomainId: "business-domain-revenue-quality",
-        userId: "user-zoe",
-        workspaceId: "workspace-northstar-retail-china"
+        businessDomainId: "business-domain-revenue-quality"
       },
       submitter
     };
@@ -201,9 +199,7 @@ describe("useAnalysisWorkspaceController", () => {
         businessDomainId: "business-domain-revenue-quality",
         conversationId: undefined,
         draftContext,
-        question: draftContext.suggestedPrompt,
-        userId: "user-zoe",
-        workspaceId: "workspace-northstar-retail-china"
+        question: draftContext.suggestedPrompt
       });
     });
 
@@ -243,9 +239,7 @@ describe("useAnalysisWorkspaceController", () => {
       bootstrap: {},
       loader,
       submitIdentity: {
-        businessDomainId: "business-domain-revenue-quality",
-        userId: "user-zoe",
-        workspaceId: "workspace-northstar-retail-china"
+        businessDomainId: "business-domain-revenue-quality"
       },
       submitter
     };

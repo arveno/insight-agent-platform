@@ -34,10 +34,7 @@ function AnalysisShellSlotHarness() {
   const slots = useAnalysisShellSlots({
     businessDomainId: "business-domain-revenue-quality",
     onBackToRoot: vi.fn(),
-    onNavigate: vi.fn(),
-    userId: "user-zoe",
-    workspaceId: "workspace-northstar-retail-china",
-    workspaceName: "Northstar Retail China"
+    onNavigate: vi.fn()
   });
 
   return (

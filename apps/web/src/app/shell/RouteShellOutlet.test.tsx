@@ -41,7 +41,6 @@ describe("RouteShellOutlet", () => {
       <TestProviders>
         <RouteShellOutlet
           activeRoute="dashboard"
-          currentUserId="user-zoe"
           defaultMainContent={<div>default main</div>}
           header={<div>header</div>}
           leftNavMode="root"
@@ -76,7 +75,6 @@ describe("RouteShellOutlet", () => {
       <TestProviders>
         <RouteShellOutlet
           activeRoute="reports"
-          currentUserId="user-zoe"
           defaultMainContent={<div>default main</div>}
           header={<div>header</div>}
           leftNavMode="reports"

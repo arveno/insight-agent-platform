@@ -1,63 +1,32 @@
 import type { ReactNode } from "react";
-import { CheckOutlined, DownOutlined } from "@ant-design/icons";
-import { Button, Dropdown, Flex, Space, Typography, theme } from "antd";
-import type { ItemType } from "antd/es/menu/interface";
+import { Button, Flex, Space, Tag, Typography, theme } from "antd";
 
 import { shellThemeTokens } from "../../shared/theme/tokens";
 
-export type HeaderBarWorkspaceOption = {
-  name: string;
-  workspaceId: string;
-};
-
 export type HeaderBarProps = {
+  currentUserEmail?: ReactNode;
+  currentUserName: ReactNode;
+  currentUserRole: ReactNode;
   currentWorkspaceName: ReactNode;
   feedback?: ReactNode;
-  manageWorkspaceLabel: ReactNode;
-  onOpenWorkspaceManagement?: () => void;
-  onSelectWorkspace?: (workspaceId: string) => void;
-  selectedWorkspaceId: string;
-  workspaceMenuLabel: ReactNode;
-  workspaces: HeaderBarWorkspaceOption[];
+  logoutLabel: ReactNode;
+  onLogout?: () => void;
+  onOpenWorkspaceSelection?: () => void;
+  workspaceSwitchLabel: ReactNode;
 };
 
-/**
- * Header 内容区边界。
- *
- * HeaderBar 只承接当前 workspace 的静态选择入口；
- * 不实现真实搜索、权限决策、偏好持久化、用户管理或 API 数据刷新。
- */
 export function HeaderBar({
+  currentUserEmail,
+  currentUserName,
+  currentUserRole,
   currentWorkspaceName,
   feedback,
-  manageWorkspaceLabel,
-  onOpenWorkspaceManagement,
-  onSelectWorkspace,
-  selectedWorkspaceId,
-  workspaceMenuLabel,
-  workspaces
+  logoutLabel,
+  onLogout,
+  onOpenWorkspaceSelection,
+  workspaceSwitchLabel
 }: HeaderBarProps) {
   const { token } = theme.useToken();
-  const items: ItemType[] = [
-    {
-      disabled: true,
-      key: "workspace-menu-title",
-      label: <Typography.Text type="secondary">{workspaceMenuLabel}</Typography.Text>
-    },
-    ...workspaces.map((workspace) => ({
-      icon:
-        workspace.workspaceId === selectedWorkspaceId ? (
-          <CheckOutlined style={{ color: token.colorPrimary }} />
-        ) : undefined,
-      key: workspace.workspaceId,
-      label: workspace.name
-    })),
-    { type: "divider" },
-    {
-      key: "workspace-management",
-      label: manageWorkspaceLabel
-    }
-  ];
 
   return (
     <Flex
@@ -69,45 +38,37 @@ export function HeaderBar({
         paddingInline: shellThemeTokens.headerPaddingInline
       }}
     >
-      <Dropdown
-        menu={{
-          items,
-          onClick: ({ key }) => {
-            if (key === "workspace-management") {
-              onOpenWorkspaceManagement?.();
-              return;
-            }
-
-            onSelectWorkspace?.(String(key));
-          }
-        }}
-        placement="bottomLeft"
-        trigger={["click"]}
-      >
-        <Button
-          size="small"
-          style={{
-            borderRadius: shellThemeTokens.borderRadiusSM,
-            color: token.colorText,
-            height: "auto",
-            paddingBlock: 4,
-            paddingInline: 0
-          }}
-          type="text"
-        >
-          <Space size={4}>
-            <Typography.Text>{currentWorkspaceName}</Typography.Text>
-            <DownOutlined
-              style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
-            />
-          </Space>
+      <Space direction="vertical" size={2}>
+        <Space align="center" size={8} wrap>
+          <Typography.Text>{currentWorkspaceName}</Typography.Text>
+          <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+            {currentUserRole}
+          </Tag>
+        </Space>
+        {feedback ? (
+          <Typography.Text
+            style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+          >
+            {feedback}
+          </Typography.Text>
+        ) : null}
+      </Space>
+      <Space align="center" size={12}>
+        <Space direction="vertical" size={0}>
+          <Typography.Text style={{ lineHeight: 1.2 }}>{currentUserName}</Typography.Text>
+          <Typography.Text
+            style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM, lineHeight: 1.2 }}
+          >
+            {currentUserEmail}
+          </Typography.Text>
+        </Space>
+        <Button onClick={onOpenWorkspaceSelection} type="default">
+          {workspaceSwitchLabel}
         </Button>
-      </Dropdown>
-      {feedback ? (
-        <Typography.Text style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-          {feedback}
-        </Typography.Text>
-      ) : null}
+        <Button onClick={onLogout} type="text">
+          {logoutLabel}
+        </Button>
+      </Space>
     </Flex>
   );
 }

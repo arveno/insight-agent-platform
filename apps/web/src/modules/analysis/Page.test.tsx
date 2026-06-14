@@ -382,9 +382,7 @@ describe("AnalysisPage", () => {
             analysisContextPack: draftContext
           }}
           submitIdentity={{
-            businessDomainId: "business-domain-revenue-quality",
-            userId: "user-zoe",
-            workspaceId: "workspace-northstar-retail-china"
+            businessDomainId: "business-domain-revenue-quality"
           }}
         />
       </TestProviders>
@@ -397,10 +395,9 @@ describe("AnalysisPage", () => {
       body: JSON.stringify({
         businessDomainId: "business-domain-revenue-quality",
         contextPack: draftContext,
-        question: draftContext.suggestedPrompt,
-        userId: "user-zoe",
-        workspaceId: "workspace-northstar-retail-china"
+        question: draftContext.suggestedPrompt
       }),
+      credentials: "include",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json"

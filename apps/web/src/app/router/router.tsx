@@ -28,6 +28,23 @@ import type {
 type Translate = (key: I18nMessageKey) => string;
 type RoutedPageComponent = ComponentType<PageRouteProps>;
 
+const routePathByRoute: Record<StaticRouteKey, string> = {
+  analysis: "/analysis",
+  dashboard: "/dashboard",
+  "data-knowledge": "/data-knowledge",
+  evaluation: "/evaluation",
+  feedback: "/feedback",
+  governance: "/governance",
+  memory: "/memory",
+  metrics: "/metrics",
+  "model-tools": "/model-tools",
+  observability: "/observability",
+  "platform-operations": "/platform-operations",
+  reports: "/reports",
+  settings: "/settings",
+  workspace: "/workspace"
+};
+
 const routeIconByRoute: Record<StaticRouteKey, IconName> = {
   analysis: "analysis",
   dashboard: "dashboard",
@@ -65,6 +82,24 @@ export const webCompositionRoutes: Record<StaticRouteKey, RoutedPageComponent> =
   settings: SettingsPage,
   workspace: WorkspacePage
 };
+
+export const defaultProtectedRoute: StaticRouteKey = "dashboard";
+
+export function buildRoutePath(route: StaticRouteKey): string {
+  return routePathByRoute[route];
+}
+
+export function resolveRouteFromPath(pathname: string): StaticRouteKey | null {
+  const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
+
+  if (normalizedPathname === "/") {
+    return defaultProtectedRoute;
+  }
+
+  const match = Object.entries(routePathByRoute).find(([, path]) => path === normalizedPathname);
+
+  return (match?.[0] as StaticRouteKey | undefined) ?? null;
+}
 
 function translateNavigationLabel(t: Translate, key: string): string {
   return t(key as I18nMessageKey);

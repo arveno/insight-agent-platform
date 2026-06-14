@@ -10,8 +10,6 @@ export type SubmitAnalysisDraftInput = {
   conversationId?: string | null;
   draftContext?: AnalysisContextRouteState;
   question: string;
-  userId: string;
-  workspaceId: string;
 };
 
 export async function submitAnalysisDraft(
@@ -22,8 +20,6 @@ export async function submitAnalysisDraft(
     ...(input.conversationId ? { conversationId: input.conversationId } : {}),
     businessDomainId: input.businessDomainId,
     contextPack: (input.draftContext as AnalysisTaskContextPack | undefined) ?? null,
-    question: input.question,
-    userId: input.userId,
-    workspaceId: input.workspaceId
+    question: input.question
   });
 }

@@ -178,33 +178,26 @@ describe("AppShell", () => {
     expect(screen.queryByText("技术对接")).toBeNull();
   });
 
-  it("switches the static workspace selector and shows simulated refresh feedback", async () => {
+  it("renders the authenticated header identity and workspace actions", () => {
     render(
       <AppProviders>
         <AppShell />
       </AppProviders>
     );
 
-    const workspaceButton = screen.getByRole("button", { name: /Northstar Retail China/ });
-
-    fireEvent.click(workspaceButton);
-    fireEvent.click(await screen.findByText("East Retail Demo"));
-
-    expect(screen.getByRole("button", { name: /East Retail Demo/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /当前工作区/ })).toBeNull();
-    expect(screen.getByText("已模拟刷新当前工作区。")).toBeTruthy();
+    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.getAllByText("Ada Chen").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("analyst").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "切换工作区" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "退出登录" })).toBeTruthy();
   });
 
   it("enters analysis mode in draft state when no runtime bootstrap id is available", () => {
     render(
       <AppProviders>
-        <AppShell />
+        <AppShell currentRoute="analysis" />
       </AppProviders>
     );
-
-    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
-
-    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
@@ -217,7 +210,7 @@ describe("AppShell", () => {
     expect(within(analysisNavigation).queryByText("毛利率波动分析")).toBeNull();
     expect(within(analysisNavigation).queryByText("库存异常定位")).toBeNull();
     expect(within(analysisNavigation).getByText("暂无匹配会话")).toBeTruthy();
-    expect(screen.getByText("新聊天草稿")).toBeTruthy();
+    expect(screen.getByText("输入问题开始分析")).toBeTruthy();
     expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText("No analysis runtime selected")).toBeNull();
   });
@@ -233,13 +226,9 @@ describe("AppShell", () => {
 
     render(
       <AppProviders>
-        <AppShell />
+        <AppShell currentRoute="analysis" />
       </AppProviders>
     );
-
-    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
-
-    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
@@ -289,13 +278,9 @@ describe("AppShell", () => {
 
     render(
       <AppProviders>
-        <AppShell />
+        <AppShell currentRoute="analysis" />
       </AppProviders>
     );
-
-    const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
-
-    fireEvent.click(within(rootNavigation).getByRole("button", { name: /分析/ }));
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"

@@ -33,7 +33,6 @@ type SelectedWorkspace = {
 
 export type RouteShellOutletProps = {
   activeRoute: StaticRouteKey;
-  currentUserId: string;
   routeState?: AppRouteState;
   defaultMainContent: ReactNode;
   header?: ReactNode;
@@ -78,7 +77,6 @@ function ModuleRouteShellLayout({
 }
 
 function AnalysisRouteShell({
-  currentUserId,
   defaultMainContent,
   header,
   leftNavMode,
@@ -94,10 +92,7 @@ function AnalysisRouteShell({
     businessDomainId: selectedBusinessDomainId,
     onBackToRoot,
     onNavigate,
-    routeState,
-    userId: currentUserId,
-    workspaceId: selectedWorkspace.workspaceId,
-    workspaceName: selectedWorkspace.name
+    routeState
   });
 
   return (
