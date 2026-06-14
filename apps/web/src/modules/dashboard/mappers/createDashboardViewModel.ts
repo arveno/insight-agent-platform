@@ -28,7 +28,7 @@ function createMetricDirectory(metrics: Metric[]): {
   metricNodes: InspectorTreeNode[];
 } {
   const metricContextPacks: Record<string, AnalysisTaskContextPack> = {};
-  const metricNodes = metrics.slice(0, 2).map((metric) => {
+  const metricNodes = metrics.map((metric) => {
     const contextPack = buildMetricAnalysisContextPack(metric);
     metricContextPacks[contextPack.root.nodeId] = contextPack;
 

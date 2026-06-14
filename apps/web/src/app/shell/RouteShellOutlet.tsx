@@ -7,6 +7,7 @@ import type {
 } from "../../shared/navigation/navigationTypes";
 import type { ShellRegionSlots } from "../../shared/layout/ShellRegionSlots";
 import { useAnalysisShellSlots } from "../../modules/analysis/hooks/useAnalysisShellSlots";
+import { useDashboardShellSlots } from "../../modules/dashboard/Page";
 import { useDataKnowledgeShellSlots } from "../../modules/data-knowledge/hooks/useDataKnowledgeShellSlots";
 import { useMetricsShellSlots } from "../../modules/metrics/hooks/useMetricsShellSlots";
 import { useReportsShellSlots } from "../../modules/reports/hooks/useReportsShellSlots";
@@ -14,6 +15,7 @@ import { useReportsShellSlots } from "../../modules/reports/hooks/useReportsShel
 import { AppShellLayout } from "./AppShellLayout";
 
 export const moduleShellRoutes = [
+  "dashboard",
   "analysis",
   "reports",
   "data-knowledge",
@@ -103,6 +105,34 @@ function AnalysisRouteShell({
       renderLeftNav={renderLeftNav}
       rootLeftNavContent={rootLeftNavContent}
       routeKey="analysis"
+      slots={slots}
+    />
+  );
+}
+
+function DashboardRouteShell({
+  defaultMainContent,
+  header,
+  leftNavMode,
+  onNavigate,
+  renderLeftNav,
+  rootLeftNavContent,
+  selectedWorkspace
+}: RouteShellOutletProps) {
+  const slots = useDashboardShellSlots({
+    onNavigate,
+    workspaceId: selectedWorkspace.workspaceId,
+    workspaceName: selectedWorkspace.name
+  });
+
+  return (
+    <ModuleRouteShellLayout
+      defaultMainContent={defaultMainContent}
+      header={header}
+      leftNavMode={leftNavMode}
+      renderLeftNav={renderLeftNav}
+      rootLeftNavContent={rootLeftNavContent}
+      routeKey="dashboard"
       slots={slots}
     />
   );
@@ -214,6 +244,8 @@ function DefaultRouteShell({
 
 export function RouteShellOutlet(props: RouteShellOutletProps) {
   switch (props.activeRoute) {
+    case "dashboard":
+      return <DashboardRouteShell {...props} />;
     case "analysis":
       return <AnalysisRouteShell {...props} />;
     case "reports":

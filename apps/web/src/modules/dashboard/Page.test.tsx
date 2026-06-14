@@ -4,7 +4,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
 import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
+import { createDashboardViewModel } from "./mappers/createDashboardViewModel";
 import { DashboardPage } from "./Page";
+import { DashboardInspectorPanel } from "./sections/DashboardSections";
 
 afterEach(cleanup);
 
@@ -26,6 +28,10 @@ beforeAll(() => {
 
 describe("DashboardPage", () => {
   const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
+  const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
+    workspaceId: "workspace-northstar-retail-china",
+    workspaceName: "Northstar Retail China"
+  });
 
   it("renders the default time range and updates the shared-metric summary without navigation", async () => {
     const onNavigate = vi.fn();
@@ -188,5 +194,53 @@ describe("DashboardPage", () => {
         })
       })
     );
+  });
+
+  it("renders the dashboard context tree with the selected metric detail", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-recognized-revenue"
+          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("Dashboard Context")).toBeTruthy();
+    expect(screen.getByText("Context Tree")).toBeTruthy();
+    expect(screen.getByText("Selected Node")).toBeTruthy();
+    expect(screen.getByText("Last 30 days · Northstar Retail China")).toBeTruthy();
+    expect(screen.getByText("指标 · Last 30 days")).toBeTruthy();
+    expect(screen.getByText("当前值：¥12.8M")).toBeTruthy();
+    expect(screen.getByText("SourceRef：metric-recognized-revenue")).toBeTruthy();
+  });
+
+  it("renders directory nodes as source-free selected detail and notifies tree selection", () => {
+    const onSelectNode = vi.fn();
+
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="dashboard-node-directory-risks"
+          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={onSelectNode}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("SourceRef：目录节点")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("报告与证据"));
+
+    expect(onSelectNode).toHaveBeenCalledWith("dashboard-node-directory-report-evidence");
   });
 });

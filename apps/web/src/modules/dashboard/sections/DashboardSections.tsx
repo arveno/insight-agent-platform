@@ -1,9 +1,14 @@
+import type { DataNode } from "antd/es/tree";
+import { Flex, Space, Tag, Tree, Typography } from "antd";
+
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentSection } from "../../../shared/layout/sections/ContentSection";
+import { SidePanel } from "../../../shared/layout/panels/SidePanel";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import { findInspectorTreeNodeById } from "../../../shared/navigation/analysisContextPack";
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
@@ -28,6 +33,16 @@ export type DashboardSectionsProps = PageRouteProps & {
   selectedTimeRange: DashboardSurfaceViewModel["timeRange"]["options"][number];
   selectedTimeRangeKey: DashboardSurfaceViewModel["timeRange"]["selectedKey"];
   viewModel: DashboardSurfaceViewModel;
+};
+
+export type DashboardInspectorPanelProps = {
+  activeNodeId: string;
+  expandedNodeIds: string[];
+  onExpandNodes: (nodeIds: string[]) => void;
+  onSelectNode: (nodeId: string) => void;
+  selectedTimeRangeLabel: string;
+  viewModel: DashboardSurfaceViewModel;
+  workspaceName: string;
 };
 
 export function DashboardSections({
@@ -175,5 +190,186 @@ export function DashboardSections({
         </ContentSection>
       </DashboardHero>
     </SectionStack>
+  );
+}
+
+const dashboardKindLabels: Record<string, string> = {
+  dashboardOverview: "总览",
+  directory: "目录",
+  metric: "指标",
+  platformQuality: "平台质量",
+  report: "报告",
+  riskSignal: "风险异常",
+  riskSummary: "风险摘要",
+  sourceEvidence: "证据"
+};
+
+const riskTagColors: Record<string, string> = {
+  critical: "red",
+  high: "orange",
+  low: "green",
+  medium: "gold"
+};
+
+function detectRiskLevel(node: DashboardSurfaceViewModel["root"]): keyof typeof riskTagColors | null {
+  const signature = [node.value, ...(node.chips ?? [])].join(" ").toLowerCase();
+
+  if (signature.includes("critical")) {
+    return "critical";
+  }
+
+  if (signature.includes("high")) {
+    return "high";
+  }
+
+  if (signature.includes("medium")) {
+    return "medium";
+  }
+
+  if (signature.includes("low")) {
+    return "low";
+  }
+
+  return null;
+}
+
+function resolveTreeValue(node: DashboardSurfaceViewModel["root"]): string | null {
+  if (node.value) {
+    return node.value;
+  }
+
+  if (node.children) {
+    return `${node.children.length}`;
+  }
+
+  return null;
+}
+
+function resolveSourceTypeTag(node: DashboardSurfaceViewModel["root"]) {
+  if (!node.sourceRef) {
+    return null;
+  }
+
+  return <Tag>{node.sourceRef.type}</Tag>;
+}
+
+function resolveSourceRefSummary(node: DashboardSurfaceViewModel["root"]): string {
+  if (!node.sourceRef) {
+    return "目录节点";
+  }
+
+  switch (node.sourceRef.type) {
+    case "metric":
+      return node.sourceRef.metricId ?? node.sourceRef.type;
+    case "report":
+      return node.sourceRef.reportId ?? node.sourceRef.type;
+    case "sourceEvidence":
+      return node.sourceRef.sourceEvidenceId ?? node.sourceRef.type;
+    case "analysisRun":
+      return node.sourceRef.runId ?? node.sourceRef.type;
+    case "dataTable":
+      return node.sourceRef.tableId ?? node.sourceRef.type;
+    case "knowledgeDocument":
+      return node.sourceRef.knowledgeDocumentId ?? node.sourceRef.type;
+    case "toolCall":
+      return node.sourceRef.toolCallId ?? node.sourceRef.type;
+    case "modelCall":
+      return node.sourceRef.modelCallId ?? node.sourceRef.type;
+    case "job":
+      return node.sourceRef.jobId ?? node.sourceRef.type;
+  }
+}
+
+function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRangeLabel: string) {
+  return `${dashboardKindLabels[node.kind] ?? node.kind} · ${node.timeRange?.label ?? selectedTimeRangeLabel}`;
+}
+
+function renderTreeNodeTitle(node: DashboardSurfaceViewModel["root"]) {
+  const value = resolveTreeValue(node);
+  const riskLevel = detectRiskLevel(node);
+
+  return (
+    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+      <Flex align="center" gap={8} justify="space-between" wrap>
+        <Typography.Text strong>{node.title}</Typography.Text>
+        {resolveSourceTypeTag(node)}
+      </Flex>
+      <Flex align="center" gap={8} wrap>
+        {value ? <Typography.Text type="secondary">{value}</Typography.Text> : null}
+        {riskLevel ? (
+          <Tag color={riskTagColors[riskLevel]}>{`${riskLevel[0].toUpperCase()}${riskLevel.slice(1)} risk`}</Tag>
+        ) : null}
+      </Flex>
+    </Space>
+  );
+}
+
+function buildDashboardTreeData(nodes: DashboardSurfaceViewModel["root"]["children"]): DataNode[] {
+  return (nodes ?? []).map((node) => ({
+    children: buildDashboardTreeData(node.children),
+    key: node.nodeId,
+    title: renderTreeNodeTitle(node)
+  }));
+}
+
+function renderSelectedNodeChips(node: DashboardSurfaceViewModel["root"]) {
+  if (!node.chips?.length) {
+    return null;
+  }
+
+  return (
+    <Space size={[8, 8]} wrap>
+      {node.chips.map((chip) => (
+        <Tag key={chip}>{chip}</Tag>
+      ))}
+    </Space>
+  );
+}
+
+export function DashboardInspectorPanel({
+  activeNodeId,
+  expandedNodeIds,
+  onExpandNodes,
+  onSelectNode,
+  selectedTimeRangeLabel,
+  viewModel,
+  workspaceName
+}: DashboardInspectorPanelProps) {
+  const selectedNode = findInspectorTreeNodeById(viewModel.root, activeNodeId) ?? viewModel.root;
+
+  return (
+    <SidePanel
+      description={`${selectedTimeRangeLabel} · ${workspaceName}`}
+      title="Dashboard Context"
+    >
+      <Space direction="vertical" size={20} style={{ width: "100%" }}>
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Text strong>Context Tree</Typography.Text>
+          <Tree
+            expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
+            onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
+            onSelect={(_, info) => onSelectNode(String(info.node.key))}
+            selectedKeys={[selectedNode.nodeId]}
+            treeData={buildDashboardTreeData(viewModel.root.children)}
+          />
+        </Space>
+
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Typography.Text strong>Selected Node</Typography.Text>
+          <Typography.Text strong>{selectedNode.title}</Typography.Text>
+          <Typography.Text type="secondary">
+            {resolveNodeMeta(selectedNode, selectedTimeRangeLabel)}
+          </Typography.Text>
+          {selectedNode.value ? (
+            <Typography.Text>{`当前值：${selectedNode.value}`}</Typography.Text>
+          ) : null}
+          {selectedNode.summary ? (
+            <Typography.Text>{`摘要：${selectedNode.summary}`}</Typography.Text>
+          ) : null}
+          {renderSelectedNodeChips(selectedNode)}
+          <Typography.Text>{`SourceRef：${resolveSourceRefSummary(selectedNode)}`}</Typography.Text>
+        </Space>
+      </Space>
+    </SidePanel>
   );
 }
