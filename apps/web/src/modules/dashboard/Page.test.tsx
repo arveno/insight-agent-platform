@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import type { Metric } from "@insight-agent/contracts/generated/typescript";
 
 import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
 import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
@@ -28,10 +30,65 @@ beforeAll(() => {
 
 describe("DashboardPage", () => {
   const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
-  const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
+  const dashboardInspectorMetrics: Metric[] = [
+    ...runtimeMetricsFixtures,
+    {
+      businessDomainId: "business-domain-supply-chain-efficiency",
+      contextSources: [
+        {
+          createdAt: "2026-06-12T10:30:00+08:00",
+          metricContextSourceId: "metric-context-source-inventory-table",
+          metricId: "metric-inventory-turnover",
+          role: "primary_table",
+          sourceId: "table-inventory-daily",
+          sourceType: "dataTable",
+          summary: "提供库存结余和出库周转明细。",
+          title: "库存日表",
+          updatedAt: "2026-06-12T10:30:00+08:00"
+        }
+      ],
+      createdAt: "2026-06-12T10:30:00+08:00",
+      currentValue: "5.1 turns",
+      description: "库存周转速度。",
+      formulaSummary: "库存周转 = 销售成本 / 平均库存",
+      metricId: "metric-inventory-turnover",
+      name: "库存周转",
+      ownerTeam: "Supply Chain",
+      period: "Last 30 days",
+      riskLevel: "high",
+      status: "attention",
+      thresholdSummary: "库存周转 < 5.5 turns 进入关注",
+      trendDirection: "down",
+      trendValue: "-1.3%",
+      unit: "turns",
+      updatedAt: "2026-06-12T10:30:00+08:00",
+      workspaceId: "workspace-northstar-retail-china"
+    }
+  ];
+  const dashboardViewModel = createDashboardViewModel(dashboardInspectorMetrics, {
     workspaceId: "workspace-northstar-retail-china",
     workspaceName: "Northstar Retail China"
   });
+
+  function DashboardInspectorHarness() {
+    const [activeNodeId, setActiveNodeId] = useState("metric-context-metric-recognized-revenue");
+    const [expandedNodeIds, setExpandedNodeIds] = useState([
+      "dashboard-node-root",
+      "dashboard-node-directory-metrics"
+    ]);
+
+    return (
+      <DashboardInspectorPanel
+        activeNodeId={activeNodeId}
+        expandedNodeIds={expandedNodeIds}
+        onExpandNodes={(nodeIds) => setExpandedNodeIds(["dashboard-node-root", ...nodeIds])}
+        onSelectNode={setActiveNodeId}
+        selectedTimeRangeLabel="Last 30 days"
+        viewModel={dashboardViewModel}
+        workspaceName="Northstar Retail China"
+      />
+    );
+  }
 
   it("renders the default time range and updates the shared-metric summary without navigation", async () => {
     const onNavigate = vi.fn();
@@ -196,7 +253,7 @@ describe("DashboardPage", () => {
     );
   });
 
-  it("renders the dashboard context tree with the selected metric detail", () => {
+  it("renders a simplified Chinese dashboard context directory", () => {
     render(
       <TestProviders>
         <DashboardInspectorPanel
@@ -211,36 +268,46 @@ describe("DashboardPage", () => {
       </TestProviders>
     );
 
-    expect(screen.getByText("Dashboard Context")).toBeTruthy();
-    expect(screen.getByText("Context Tree")).toBeTruthy();
-    expect(screen.getByText("Selected Node")).toBeTruthy();
+    expect(screen.getByText("上下文目录")).toBeTruthy();
+    expect(screen.getByText("当前节点")).toBeTruthy();
     expect(screen.getByText("Last 30 days · Northstar Retail China")).toBeTruthy();
+    expect(screen.getByText("核心指标 4")).toBeTruthy();
+    expect(screen.getByText("风险异常 2")).toBeTruthy();
+    expect(screen.getByText("报告与证据 3")).toBeTruthy();
+    expect(screen.getByText("平台质量 1")).toBeTruthy();
     expect(screen.getByText("指标 · Last 30 days")).toBeTruthy();
-    expect(screen.getByText("当前值：¥12.8M")).toBeTruthy();
-    expect(screen.getByText("SourceRef：metric-recognized-revenue")).toBeTruthy();
+    expect(screen.getByText("¥12.8M · 下降 3.2%")).toBeTruthy();
+    expect(screen.getByText("Medium risk · Attention")).toBeTruthy();
+    expect(screen.getByText("来源引用")).toBeTruthy();
+    expect(screen.getByText("metric-recognized-revenue")).toBeTruthy();
+    expect(screen.queryByText("Dashboard Context")).toBeNull();
+    expect(screen.queryByText("Context Tree")).toBeNull();
+    expect(screen.queryByText("Selected Node")).toBeNull();
+    expect(screen.queryByText(/^metric$/)).toBeNull();
+    expect(screen.queryByText(/SourceRef:/)).toBeNull();
   });
 
-  it("renders directory nodes as source-free selected detail and notifies tree selection", () => {
-    const onSelectNode = vi.fn();
-
+  it("expands collapsed groups and updates the current-node detail on selection", () => {
     render(
       <TestProviders>
-        <DashboardInspectorPanel
-          activeNodeId="dashboard-node-directory-risks"
-          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
-          onExpandNodes={vi.fn()}
-          onSelectNode={onSelectNode}
-          selectedTimeRangeLabel="Last 30 days"
-          viewModel={dashboardViewModel}
-          workspaceName="Northstar Retail China"
-        />
+        <DashboardInspectorHarness />
       </TestProviders>
     );
 
-    expect(screen.getByText("SourceRef：目录节点")).toBeTruthy();
+    expect(screen.queryByText("确认收入 风险摘要")).toBeNull();
 
-    fireEvent.click(screen.getByText("报告与证据"));
+    const riskDirectory = screen.getByText("风险异常 2").closest(".ant-tree-treenode");
+    const riskSwitcher = riskDirectory?.querySelector(".ant-tree-switcher") as HTMLElement | null;
 
-    expect(onSelectNode).toHaveBeenCalledWith("dashboard-node-directory-report-evidence");
+    expect(riskSwitcher).toBeTruthy();
+    fireEvent.click(riskSwitcher!);
+
+    expect(screen.getByText("确认收入 风险摘要")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("确认收入 风险摘要"));
+
+    expect(screen.getByText("当前节点")).toBeTruthy();
+    expect(screen.getByText("风险信号 · Last 30 days")).toBeTruthy();
+    expect(screen.getByText("确认收入 当前 下降 3.2%，建议进入 Analysis 继续追问。")).toBeTruthy();
   });
 });

@@ -23,6 +23,17 @@ import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 const dashboardOwner = createDraftAnalysisTaskOwnerRef();
 const defaultTimestamp = "2026-06-05T11:08:12+08:00";
 
+function humanizeMetricStatus(status: Metric["status"]): string {
+  switch (status) {
+    case "attention":
+      return "Attention";
+    case "healthy":
+      return "Healthy";
+    default:
+      return status;
+  }
+}
+
 function createMetricDirectory(metrics: Metric[]): {
   metricContextPacks: Record<string, AnalysisTaskContextPack>;
   metricNodes: InspectorTreeNode[];
@@ -30,9 +41,15 @@ function createMetricDirectory(metrics: Metric[]): {
   const metricContextPacks: Record<string, AnalysisTaskContextPack> = {};
   const metricNodes = metrics.map((metric) => {
     const contextPack = buildMetricAnalysisContextPack(metric);
+    const metricNode: InspectorTreeNode = {
+      ...contextPack.root,
+      description: humanizeMetricStatus(metric.status),
+      summary: `${metric.thresholdSummary}，可结合公式和上下文来源继续分析。`
+    };
+
     metricContextPacks[contextPack.root.nodeId] = contextPack;
 
-    return contextPack.root;
+    return metricNode;
   });
 
   return { metricContextPacks, metricNodes };

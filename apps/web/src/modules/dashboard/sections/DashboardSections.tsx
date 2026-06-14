@@ -1,5 +1,5 @@
 import type { DataNode } from "antd/es/tree";
-import { Flex, Space, Tag, Tree, Typography } from "antd";
+import { Flex, Space, Tree, Typography } from "antd";
 
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
@@ -194,25 +194,29 @@ export function DashboardSections({
 }
 
 const dashboardKindLabels: Record<string, string> = {
-  dashboardOverview: "总览",
+  dashboardOverview: "经营总览",
   directory: "目录",
   metric: "指标",
   platformQuality: "平台质量",
   report: "报告",
-  riskSignal: "风险异常",
+  riskSignal: "风险信号",
   riskSummary: "风险摘要",
   sourceEvidence: "证据"
 };
 
-const riskTagColors: Record<string, string> = {
-  critical: "red",
-  high: "orange",
-  low: "green",
-  medium: "gold"
+const riskLabels: Record<"critical" | "high" | "low" | "medium", string> = {
+  critical: "Critical risk",
+  high: "High risk",
+  low: "Low risk",
+  medium: "Medium risk"
 };
 
-function detectRiskLevel(node: DashboardSurfaceViewModel["root"]): keyof typeof riskTagColors | null {
-  const signature = [node.value, ...(node.chips ?? [])].join(" ").toLowerCase();
+function detectRiskLevel(
+  node: DashboardSurfaceViewModel["root"]
+): keyof typeof riskLabels | null {
+  const signature = [node.value, node.summary, node.description, ...(node.chips ?? [])]
+    .join(" ")
+    .toLowerCase();
 
   if (signature.includes("critical")) {
     return "critical";
@@ -235,6 +239,10 @@ function detectRiskLevel(node: DashboardSurfaceViewModel["root"]): keyof typeof 
 
 function resolveTreeValue(node: DashboardSurfaceViewModel["root"]): string | null {
   if (node.value) {
+    if (/^(low|medium|high|critical)$/i.test(node.value)) {
+      return null;
+    }
+
     return node.value;
   }
 
@@ -242,15 +250,33 @@ function resolveTreeValue(node: DashboardSurfaceViewModel["root"]): string | nul
     return `${node.children.length}`;
   }
 
+  const countChip = node.chips?.find((chip) => /[0-9]+\s*(条证据|项关注)/.test(chip));
+
+  if (countChip) {
+    return countChip;
+  }
+
   return null;
 }
 
-function resolveSourceTypeTag(node: DashboardSurfaceViewModel["root"]) {
-  if (!node.sourceRef) {
+function resolveSelectedTrend(node: DashboardSurfaceViewModel["root"]): string | null {
+  return (
+    node.chips?.find((chip) => /^(上升|下降|持平)\s+/.test(chip)) ?? null
+  );
+}
+
+function resolveStatusLabel(node: DashboardSurfaceViewModel["root"]): string | null {
+  if (!node.description) {
     return null;
   }
 
-  return <Tag>{node.sourceRef.type}</Tag>;
+  return node.description;
+}
+
+function resolveRiskLabel(node: DashboardSurfaceViewModel["root"]): string | null {
+  const level = detectRiskLevel(node);
+
+  return level ? riskLabels[level] : null;
 }
 
 function resolveSourceRefSummary(node: DashboardSurfaceViewModel["root"]): string {
@@ -284,23 +310,31 @@ function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRa
   return `${dashboardKindLabels[node.kind] ?? node.kind} · ${node.timeRange?.label ?? selectedTimeRangeLabel}`;
 }
 
-function renderTreeNodeTitle(node: DashboardSurfaceViewModel["root"]) {
+function resolveTreeSecondary(node: DashboardSurfaceViewModel["root"]): string | null {
   const value = resolveTreeValue(node);
-  const riskLevel = detectRiskLevel(node);
+  const risk = resolveRiskLabel(node);
+  const status = resolveStatusLabel(node);
+  const parts = [value, risk ?? status].filter((part): part is string => Boolean(part));
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  return parts.join(" · ");
+}
+
+function renderTreeNodeTitle(node: DashboardSurfaceViewModel["root"]) {
+  if (node.children?.length) {
+    return <Typography.Text strong>{`${node.title} ${node.children.length}`}</Typography.Text>;
+  }
+
+  const secondary = resolveTreeSecondary(node);
 
   return (
-    <Space direction="vertical" size={4} style={{ width: "100%" }}>
-      <Flex align="center" gap={8} justify="space-between" wrap>
-        <Typography.Text strong>{node.title}</Typography.Text>
-        {resolveSourceTypeTag(node)}
-      </Flex>
-      <Flex align="center" gap={8} wrap>
-        {value ? <Typography.Text type="secondary">{value}</Typography.Text> : null}
-        {riskLevel ? (
-          <Tag color={riskTagColors[riskLevel]}>{`${riskLevel[0].toUpperCase()}${riskLevel.slice(1)} risk`}</Tag>
-        ) : null}
-      </Flex>
-    </Space>
+    <Flex align="baseline" gap={12} justify="space-between" style={{ width: "100%" }} wrap>
+      <Typography.Text>{node.title}</Typography.Text>
+      {secondary ? <Typography.Text type="secondary">{secondary}</Typography.Text> : null}
+    </Flex>
   );
 }
 
@@ -312,18 +346,27 @@ function buildDashboardTreeData(nodes: DashboardSurfaceViewModel["root"]["childr
   }));
 }
 
-function renderSelectedNodeChips(node: DashboardSurfaceViewModel["root"]) {
-  if (!node.chips?.length) {
+function resolveSelectedValueLine(node: DashboardSurfaceViewModel["root"]): string | null {
+  const value = resolveTreeValue(node);
+  const trend = resolveSelectedTrend(node);
+
+  if (value && trend) {
+    return `${value} · ${trend}`;
+  }
+
+  return value ?? trend;
+}
+
+function resolveSelectedRiskStatusLine(node: DashboardSurfaceViewModel["root"]): string | null {
+  const risk = resolveRiskLabel(node);
+  const status = resolveStatusLabel(node);
+  const parts = [risk, status].filter((part): part is string => Boolean(part));
+
+  if (parts.length === 0) {
     return null;
   }
 
-  return (
-    <Space size={[8, 8]} wrap>
-      {node.chips.map((chip) => (
-        <Tag key={chip}>{chip}</Tag>
-      ))}
-    </Space>
-  );
+  return parts.join(" · ");
 }
 
 export function DashboardInspectorPanel({
@@ -340,34 +383,36 @@ export function DashboardInspectorPanel({
   return (
     <SidePanel
       description={`${selectedTimeRangeLabel} · ${workspaceName}`}
-      title="Dashboard Context"
+      title="上下文目录"
     >
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
-        <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>Context Tree</Typography.Text>
-          <Tree
-            expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
-            onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
-            onSelect={(_, info) => onSelectNode(String(info.node.key))}
-            selectedKeys={[selectedNode.nodeId]}
-            treeData={buildDashboardTreeData(viewModel.root.children)}
-          />
-        </Space>
+        <Tree
+          expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
+          onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
+          onSelect={(_, info) => onSelectNode(String(info.node.key))}
+          selectedKeys={[selectedNode.nodeId]}
+          treeData={buildDashboardTreeData(viewModel.root.children)}
+        />
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
-          <Typography.Text strong>Selected Node</Typography.Text>
+          <Typography.Text strong>当前节点</Typography.Text>
           <Typography.Text strong>{selectedNode.title}</Typography.Text>
           <Typography.Text type="secondary">
             {resolveNodeMeta(selectedNode, selectedTimeRangeLabel)}
           </Typography.Text>
-          {selectedNode.value ? (
-            <Typography.Text>{`当前值：${selectedNode.value}`}</Typography.Text>
+          {resolveSelectedValueLine(selectedNode) ? (
+            <Typography.Text>{resolveSelectedValueLine(selectedNode)}</Typography.Text>
+          ) : null}
+          {resolveSelectedRiskStatusLine(selectedNode) ? (
+            <Typography.Text>{resolveSelectedRiskStatusLine(selectedNode)}</Typography.Text>
           ) : null}
           {selectedNode.summary ? (
-            <Typography.Text>{`摘要：${selectedNode.summary}`}</Typography.Text>
+            <Typography.Text type="secondary">{selectedNode.summary}</Typography.Text>
           ) : null}
-          {renderSelectedNodeChips(selectedNode)}
-          <Typography.Text>{`SourceRef：${resolveSourceRefSummary(selectedNode)}`}</Typography.Text>
+          <Space direction="vertical" size={2}>
+            <Typography.Text type="secondary">来源引用</Typography.Text>
+            <Typography.Text type="secondary">{resolveSourceRefSummary(selectedNode)}</Typography.Text>
+          </Space>
         </Space>
       </Space>
     </SidePanel>
