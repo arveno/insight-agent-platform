@@ -4,6 +4,11 @@ import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import {
+  getDashboardNodeContextLabel,
+  getDashboardNodeRiskBadge,
+  getDashboardNodeStatusTag
+} from "../models/dashboardNodeState";
 import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 
 export function DashboardMetricOverview({
@@ -17,6 +22,7 @@ export function DashboardMetricOverview({
   const description = isPriorityMetric
     ? t("dashboard.metrics.riskDescription")
     : t("dashboard.metrics.defaultDescription");
+  const metricContextLabel = getDashboardNodeContextLabel(metric);
   const metricContextPack = viewModel.metricContextPacks[metric.nodeId];
 
   if (!metricContextPack) {
@@ -58,22 +64,13 @@ export function DashboardMetricOverview({
       meta={
         <Space wrap>
           <Typography.Text type="secondary">{timeRange.label}</Typography.Text>
-          {metric.chips?.map((chip) => (
-            <Typography.Text key={chip} type="secondary">
-              {chip}
-            </Typography.Text>
-          ))}
+          {metricContextLabel ? (
+            <Typography.Text type="secondary">{metricContextLabel}</Typography.Text>
+          ) : null}
         </Space>
       }
-      risk={
-        isPriorityMetric
-          ? {
-              label: "中风险",
-              level: "medium",
-              reason: t("dashboard.metrics.riskDescription")
-            }
-          : { label: "低风险", level: "low" }
-      }
+      risk={getDashboardNodeRiskBadge(metric, metric.summary)}
+      status={getDashboardNodeStatusTag(metric)}
       title={metric.title}
       value={metric.value ?? "--"}
     />

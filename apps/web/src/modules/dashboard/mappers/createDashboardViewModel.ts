@@ -15,6 +15,7 @@ import {
 } from "../../../shared/view-model/staticStateFixtures";
 import {
   buildMetricAnalysisContextPack,
+  formatMetricBusinessDomainLabel,
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
@@ -22,17 +23,6 @@ import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 
 const dashboardOwner = createDraftAnalysisTaskOwnerRef();
 const defaultTimestamp = "2026-06-05T11:08:12+08:00";
-
-function humanizeMetricStatus(status: Metric["status"]): string {
-  switch (status) {
-    case "attention":
-      return "Attention";
-    case "healthy":
-      return "Healthy";
-    default:
-      return status;
-  }
-}
 
 function createMetricDirectory(metrics: Metric[]): {
   metricContextPacks: Record<string, AnalysisTaskContextPack>;
@@ -43,7 +33,12 @@ function createMetricDirectory(metrics: Metric[]): {
     const contextPack = buildMetricAnalysisContextPack(metric);
     const metricNode: InspectorTreeNode = {
       ...contextPack.root,
-      description: humanizeMetricStatus(metric.status),
+      chips: [
+        formatMetricBusinessDomainLabel(metric.businessDomainId),
+        formatMetricTrendLabel(metric),
+        metric.riskLevel
+      ],
+      description: metric.status,
       summary: `${metric.thresholdSummary}，可结合公式和上下文来源继续分析。`
     };
 
@@ -80,7 +75,8 @@ function createRiskNodes(primaryMetric: Metric | undefined): {
   return {
     riskNodes: [
       {
-        chips: [primaryMetric.riskLevel, primaryMetric.period],
+        chips: [formatMetricTrendLabel(primaryMetric), primaryMetric.riskLevel],
+        description: primaryMetric.status,
         kind: "riskSignal",
         nodeId: "dashboard-node-risk-primary-metric",
         owner: dashboardOwner,
@@ -95,14 +91,15 @@ function createRiskNodes(primaryMetric: Metric | undefined): {
       }
     ],
     riskSummaryNode: {
-      chips: ["1 项关注", `风险 ${primaryMetric.riskLevel}`],
+      chips: ["1 项关注", primaryMetric.riskLevel],
+      description: primaryMetric.status,
       kind: "riskSummary",
       nodeId: "dashboard-node-risk-summary",
       owner: dashboardOwner,
       role: "inputContext",
       summary: `最高优先级关注来自 ${primaryMetric.name}。`,
       title: "风险摘要",
-      value: primaryMetric.riskLevel
+      value: "1 项关注"
     }
   };
 }
@@ -123,7 +120,7 @@ function createReportEvidenceNodes(workspaceName: string): InspectorTreeNode[] {
       title: "周经营分析报告"
     },
     {
-      chips: ["Metric / Report", "High"],
+      chips: ["指标 / 报告", "High risk"],
       kind: "sourceEvidence",
       nodeId: "dashboard-node-evidence-revenue-summary",
       owner: dashboardOwner,
@@ -136,7 +133,7 @@ function createReportEvidenceNodes(workspaceName: string): InspectorTreeNode[] {
       title: "季度收入证据摘要"
     },
     {
-      chips: ["DataQualityCheck / Job", "Medium"],
+      chips: ["数据质量检查 / 任务", "Medium risk"],
       kind: "sourceEvidence",
       nodeId: "dashboard-node-evidence-quality-job",
       owner: dashboardOwner,
@@ -154,7 +151,7 @@ function createReportEvidenceNodes(workspaceName: string): InspectorTreeNode[] {
 function createQualityNodes(): InspectorTreeNode[] {
   return [
     {
-      chips: ["Platform quality", "Evidence-ready"],
+      chips: ["medium"],
       disabledReason: "当前仅提供平台质量摘要。",
       kind: "platformQuality",
       nodeId: "dashboard-node-platform-quality",

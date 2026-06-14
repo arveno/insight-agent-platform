@@ -1,11 +1,16 @@
-import { Flex, Typography } from "antd";
+import { Flex, Space, Typography } from "antd";
 
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
+import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
+import {
+  getDashboardNodeRiskBadge,
+  getDashboardNodeStatusTag
+} from "../models/dashboardNodeState";
 import type { DashboardRiskCardProps } from "./dashboardComponentTypes";
 
 export function DashboardRiskOverview({
@@ -15,10 +20,8 @@ export function DashboardRiskOverview({
   viewModel
 }: DashboardRiskCardProps) {
   const { t } = useI18n();
-  const risk = {
-    label: item.value ?? "风险待确认",
-    level: "medium" as const
-  };
+  const risk = getDashboardNodeRiskBadge(item);
+  const status = getDashboardNodeStatusTag(item);
   const eyebrow = isRiskSummary
     ? t("dashboard.risk.summaryEyebrow")
     : t("dashboard.risk.anomalyEyebrow");
@@ -75,7 +78,14 @@ export function DashboardRiskOverview({
           ))}
         </Flex>
       }
-      tagSlot={risk ? <RiskBadge {...risk} /> : null}
+      tagSlot={
+        risk || status ? (
+          <Space wrap>
+            {status ? <StatusTag {...status} /> : null}
+            {risk ? <RiskBadge {...risk} /> : null}
+          </Space>
+        ) : null
+      }
       title={item.title}
     >
       {isRiskSummary ? null : <Typography.Text>{item.value}</Typography.Text>}

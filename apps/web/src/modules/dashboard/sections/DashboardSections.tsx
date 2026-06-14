@@ -15,6 +15,13 @@ import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
 import {
+  getDashboardNodeKindLabel,
+  getDashboardNodeRiskLabel,
+  getDashboardNodeSourceTypeLabel,
+  getDashboardNodeStatusLabel,
+  getDashboardNodeTrendLabel
+} from "../models/dashboardNodeState";
+import {
   selectDashboardEvidenceNodes,
   selectDashboardMetricNodes,
   selectDashboardMetricSection,
@@ -193,56 +200,8 @@ export function DashboardSections({
   );
 }
 
-const dashboardKindLabels: Record<string, string> = {
-  dashboardOverview: "经营总览",
-  directory: "目录",
-  metric: "指标",
-  platformQuality: "平台质量",
-  report: "报告",
-  riskSignal: "风险信号",
-  riskSummary: "风险摘要",
-  sourceEvidence: "证据"
-};
-
-const riskLabels: Record<"critical" | "high" | "low" | "medium", string> = {
-  critical: "Critical risk",
-  high: "High risk",
-  low: "Low risk",
-  medium: "Medium risk"
-};
-
-function detectRiskLevel(
-  node: DashboardSurfaceViewModel["root"]
-): keyof typeof riskLabels | null {
-  const signature = [node.value, node.summary, node.description, ...(node.chips ?? [])]
-    .join(" ")
-    .toLowerCase();
-
-  if (signature.includes("critical")) {
-    return "critical";
-  }
-
-  if (signature.includes("high")) {
-    return "high";
-  }
-
-  if (signature.includes("medium")) {
-    return "medium";
-  }
-
-  if (signature.includes("low")) {
-    return "low";
-  }
-
-  return null;
-}
-
 function resolveTreeValue(node: DashboardSurfaceViewModel["root"]): string | null {
   if (node.value) {
-    if (/^(low|medium|high|critical)$/i.test(node.value)) {
-      return null;
-    }
-
     return node.value;
   }
 
@@ -250,33 +209,7 @@ function resolveTreeValue(node: DashboardSurfaceViewModel["root"]): string | nul
     return `${node.children.length}`;
   }
 
-  const countChip = node.chips?.find((chip) => /[0-9]+\s*(条证据|项关注)/.test(chip));
-
-  if (countChip) {
-    return countChip;
-  }
-
   return null;
-}
-
-function resolveSelectedTrend(node: DashboardSurfaceViewModel["root"]): string | null {
-  return (
-    node.chips?.find((chip) => /^(上升|下降|持平)\s+/.test(chip)) ?? null
-  );
-}
-
-function resolveStatusLabel(node: DashboardSurfaceViewModel["root"]): string | null {
-  if (!node.description) {
-    return null;
-  }
-
-  return node.description;
-}
-
-function resolveRiskLabel(node: DashboardSurfaceViewModel["root"]): string | null {
-  const level = detectRiskLevel(node);
-
-  return level ? riskLabels[level] : null;
 }
 
 function resolveSourceRefSummary(node: DashboardSurfaceViewModel["root"]): string {
@@ -286,41 +219,53 @@ function resolveSourceRefSummary(node: DashboardSurfaceViewModel["root"]): strin
 
   switch (node.sourceRef.type) {
     case "metric":
-      return node.sourceRef.metricId ?? node.sourceRef.type;
+      return node.sourceRef.metricId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "report":
-      return node.sourceRef.reportId ?? node.sourceRef.type;
+      return node.sourceRef.reportId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "sourceEvidence":
-      return node.sourceRef.sourceEvidenceId ?? node.sourceRef.type;
+      return (
+        node.sourceRef.sourceEvidenceId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type
+      );
     case "analysisRun":
-      return node.sourceRef.runId ?? node.sourceRef.type;
+      return node.sourceRef.runId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "dataTable":
-      return node.sourceRef.tableId ?? node.sourceRef.type;
+      return node.sourceRef.tableId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "knowledgeDocument":
-      return node.sourceRef.knowledgeDocumentId ?? node.sourceRef.type;
+      return (
+        node.sourceRef.knowledgeDocumentId ??
+        getDashboardNodeSourceTypeLabel(node) ??
+        node.sourceRef.type
+      );
     case "toolCall":
-      return node.sourceRef.toolCallId ?? node.sourceRef.type;
+      return node.sourceRef.toolCallId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "modelCall":
-      return node.sourceRef.modelCallId ?? node.sourceRef.type;
+      return node.sourceRef.modelCallId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
     case "job":
-      return node.sourceRef.jobId ?? node.sourceRef.type;
+      return node.sourceRef.jobId ?? getDashboardNodeSourceTypeLabel(node) ?? node.sourceRef.type;
   }
 }
 
 function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRangeLabel: string) {
-  return `${dashboardKindLabels[node.kind] ?? node.kind} · ${node.timeRange?.label ?? selectedTimeRangeLabel}`;
+  return `${getDashboardNodeKindLabel(node)} · ${node.timeRange?.label ?? selectedTimeRangeLabel}`;
 }
 
-function resolveTreeSecondary(node: DashboardSurfaceViewModel["root"]): string | null {
+function resolveSelectedValueLine(node: DashboardSurfaceViewModel["root"]): string | null {
   const value = resolveTreeValue(node);
-  const risk = resolveRiskLabel(node);
-  const status = resolveStatusLabel(node);
-  const parts = [value, risk ?? status].filter((part): part is string => Boolean(part));
+  const trendLabel = getDashboardNodeTrendLabel(node);
 
-  if (parts.length === 0) {
-    return null;
+  if (value && trendLabel) {
+    return `${value} · ${trendLabel}`;
   }
 
-  return parts.join(" · ");
+  return value ?? trendLabel ?? null;
+}
+
+function resolveSelectedRiskStatusLine(node: DashboardSurfaceViewModel["root"]): string | null {
+  const riskLabel = getDashboardNodeRiskLabel(node);
+  const statusLabel = getDashboardNodeStatusLabel(node);
+  const parts = [riskLabel, statusLabel].filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function renderTreeNodeTitle(node: DashboardSurfaceViewModel["root"]) {
@@ -328,12 +273,18 @@ function renderTreeNodeTitle(node: DashboardSurfaceViewModel["root"]) {
     return <Typography.Text strong>{`${node.title} ${node.children.length}`}</Typography.Text>;
   }
 
-  const secondary = resolveTreeSecondary(node);
+  const secondaryParts = [
+    resolveTreeValue(node),
+    getDashboardNodeTrendLabel(node),
+    getDashboardNodeRiskLabel(node) ?? getDashboardNodeStatusLabel(node)
+  ].filter((part): part is string => Boolean(part));
 
   return (
     <Flex align="baseline" gap={12} justify="space-between" style={{ width: "100%" }} wrap>
       <Typography.Text>{node.title}</Typography.Text>
-      {secondary ? <Typography.Text type="secondary">{secondary}</Typography.Text> : null}
+      {secondaryParts.length > 0 ? (
+        <Typography.Text type="secondary">{secondaryParts.join(" · ")}</Typography.Text>
+      ) : null}
     </Flex>
   );
 }
@@ -344,29 +295,6 @@ function buildDashboardTreeData(nodes: DashboardSurfaceViewModel["root"]["childr
     key: node.nodeId,
     title: renderTreeNodeTitle(node)
   }));
-}
-
-function resolveSelectedValueLine(node: DashboardSurfaceViewModel["root"]): string | null {
-  const value = resolveTreeValue(node);
-  const trend = resolveSelectedTrend(node);
-
-  if (value && trend) {
-    return `${value} · ${trend}`;
-  }
-
-  return value ?? trend;
-}
-
-function resolveSelectedRiskStatusLine(node: DashboardSurfaceViewModel["root"]): string | null {
-  const risk = resolveRiskLabel(node);
-  const status = resolveStatusLabel(node);
-  const parts = [risk, status].filter((part): part is string => Boolean(part));
-
-  if (parts.length === 0) {
-    return null;
-  }
-
-  return parts.join(" · ");
 }
 
 export function DashboardInspectorPanel({
@@ -386,13 +314,15 @@ export function DashboardInspectorPanel({
       title="上下文目录"
     >
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
-        <Tree
-          expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
-          onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
-          onSelect={(_, info) => onSelectNode(String(info.node.key))}
-          selectedKeys={[selectedNode.nodeId]}
-          treeData={buildDashboardTreeData(viewModel.root.children)}
-        />
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Tree
+            expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
+            onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
+            onSelect={(_, info) => onSelectNode(String(info.node.key))}
+            selectedKeys={[selectedNode.nodeId]}
+            treeData={buildDashboardTreeData(viewModel.root.children)}
+          />
+        </Space>
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
           <Typography.Text strong>当前节点</Typography.Text>
