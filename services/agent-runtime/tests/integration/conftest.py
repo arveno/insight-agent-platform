@@ -8,10 +8,13 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from src.app.config import get_settings
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts/migration/runtime_foundation.sh"
+LOGIN_EMAIL = "zoe@northstar.example.com"
+LOGIN_PASSWORD = "zoe-password"
 
 RUNTIME_FOUNDATION_TABLES = (
     "auth_sessions",
@@ -92,6 +95,34 @@ def truncate_runtime_foundation_tables(env_overrides: dict[str, str]) -> None:
         input_text=truncate_sql,
     )
     assert truncate_result.returncode == 0, truncate_result.stderr
+
+
+def seed_runtime_foundation() -> None:
+    seed_result = run_runtime_foundation_command("seed")
+    assert seed_result.returncode == 0, seed_result.stderr
+
+
+def login_client(
+    client: TestClient,
+    *,
+    workspace_id: str | None = None,
+) -> dict[str, object]:
+    login_response = client.post(
+        "/auth/login",
+        json={"email": LOGIN_EMAIL, "password": LOGIN_PASSWORD},
+    )
+    assert login_response.status_code == 200, login_response.text
+
+    login_payload = login_response.json()
+    current_workspace_id = login_payload["authSession"]["currentWorkspaceId"]
+    if workspace_id is not None and workspace_id != current_workspace_id:
+        select_workspace_response = client.post(
+            "/auth/select-workspace",
+            json={"workspaceId": workspace_id},
+        )
+        assert select_workspace_response.status_code == 200, select_workspace_response.text
+
+    return login_payload
 
 
 @pytest.fixture(scope="session")

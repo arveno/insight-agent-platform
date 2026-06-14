@@ -1591,6 +1591,36 @@ LIMIT 1;
             raise KeyError(analysis_task_id)
         return cast(AnalysisTaskRecord, payload)
 
+    def get_by_analysis_task_id_and_owner(
+        self,
+        analysis_task_id: str,
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> AnalysisTaskRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'analysisTaskId', analysis_task_id,
+  'conversationId', conversation_id,
+  'workspaceId', workspace_id,
+  'userId', user_id,
+  'businessDomainId', business_domain_id,
+  'question', question,
+  'contextPack', context_pack_json,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM analysis_tasks
+WHERE analysis_task_id = {_sql_literal(analysis_task_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+  AND user_id = {_sql_literal(user_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(analysis_task_id)
+        return cast(AnalysisTaskRecord, payload)
+
 
 class ConversationRepository:
     """Repository boundary for Conversation foundation persistence."""
@@ -1622,6 +1652,35 @@ LIMIT 1;
             raise KeyError(conversation_id)
         return cast(ConversationRecord, payload)
 
+    def get_by_conversation_id_and_owner(
+        self,
+        conversation_id: str,
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> ConversationRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'conversationId', conversation_id,
+  'workspaceId', workspace_id,
+  'userId', user_id,
+  'currentRunId', current_run_id,
+  'title', title,
+  'status', status,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM conversations
+WHERE conversation_id = {_sql_literal(conversation_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+  AND user_id = {_sql_literal(user_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(conversation_id)
+        return cast(ConversationRecord, payload)
+
     def get_by_current_run_id(self, run_id: str) -> ConversationRecord:
         sql = f"""
 SELECT JSON_OBJECT(
@@ -1636,6 +1695,36 @@ SELECT JSON_OBJECT(
 )
 FROM conversations
 WHERE current_run_id = {_sql_literal(run_id)}
+ORDER BY id DESC
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(run_id)
+        return cast(ConversationRecord, payload)
+
+    def get_by_current_run_id_and_owner(
+        self,
+        run_id: str,
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> ConversationRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'conversationId', conversation_id,
+  'workspaceId', workspace_id,
+  'userId', user_id,
+  'currentRunId', current_run_id,
+  'title', title,
+  'status', status,
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM conversations
+WHERE current_run_id = {_sql_literal(run_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+  AND user_id = {_sql_literal(user_id)}
 ORDER BY id DESC
 LIMIT 1;
 """
@@ -1686,6 +1775,53 @@ SELECT JSON_OBJECT(
 )
 FROM analysis_runs
 WHERE run_id = {_sql_literal(run_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(run_id)
+        return _coerce_analysis_run_retryable(payload)
+
+    def get_by_run_id_and_owner(
+        self,
+        run_id: str,
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> AnalysisRunRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'runId', run_id,
+  'workspaceId', workspace_id,
+  'userId', user_id,
+  'analysisTaskId', analysis_task_id,
+  'status', status,
+  'phase', phase,
+  'outcome', outcome,
+  'waitingFor', waiting_for,
+  'createdAt', created_at,
+  'validatingAt', validating_at,
+  'queuedAt', queued_at,
+  'startedAt', started_at,
+  'waitingSince', waiting_since,
+  'timeoutAt', timeout_at,
+  'cancelRequestedAt', cancel_requested_at,
+  'cancellingAt', cancelling_at,
+  'completedAt', completed_at,
+  'failedAt', failed_at,
+  'cancelledAt', cancelled_at,
+  'expiredAt', expired_at,
+  'rejectedAt', rejected_at,
+  'terminalReason', terminal_reason,
+  'failureCode', failure_code,
+  'retryable', retryable,
+  'retryOfRunId', retry_of_run_id,
+  'originalRunId', original_run_id
+)
+FROM analysis_runs
+WHERE run_id = {_sql_literal(run_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+  AND user_id = {_sql_literal(user_id)}
 LIMIT 1;
 """
         payload = self._database.query_json_object(sql)
@@ -2241,6 +2377,38 @@ SELECT JSON_OBJECT(
 )
 FROM messages
 WHERE message_id = {_sql_literal(message_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(message_id)
+        return cast(MessageRecord, payload)
+
+    def get_by_message_id_and_conversation_id(
+        self,
+        message_id: str,
+        *,
+        conversation_id: str,
+    ) -> MessageRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'messageId', message_id,
+  'conversationId', conversation_id,
+  'analysisTaskId', analysis_task_id,
+  'turnId', turn_id,
+  'runId', run_id,
+  'role', role,
+  'content', content,
+  'status', status,
+  'sourceEvidenceIds', source_evidence_ids_json,
+  'toolCallIds', tool_call_ids_json,
+  'reportId', report_id,
+  'createdAt', created_at,
+  'completedAt', completed_at
+)
+FROM messages
+WHERE message_id = {_sql_literal(message_id)}
+  AND conversation_id = {_sql_literal(conversation_id)}
 LIMIT 1;
 """
         payload = self._database.query_json_object(sql)

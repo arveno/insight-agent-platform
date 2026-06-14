@@ -221,8 +221,6 @@ class SourceRef(TypedDict):
 # Generated from packages/contracts/schemas/analysis/submit-analysis-draft-request.schema.json
 class SubmitAnalysisDraftRequest(TypedDict):
     conversationId: NotRequired[str]
-    workspaceId: str
-    userId: str
     businessDomainId: str
     question: str
     contextPack: AnalysisTaskContextPack | None

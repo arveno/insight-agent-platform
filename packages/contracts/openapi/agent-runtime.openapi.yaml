@@ -134,8 +134,6 @@ paths:
               $ref: "#/components/schemas/CreateAnalysisTaskRequest"
             example:
               conversationId: conversation-0c948fb61b8b4dfc95d81568c41c5a3f
-              workspaceId: workspace-northstar-retail-china
-              userId: user-zoe
               businessDomainId: business-domain-revenue-quality
               question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
               contextPack:
@@ -235,6 +233,8 @@ paths:
                           metricId: metric-recognized-revenue
                 createdAt: "2026-06-05T03:08:12Z"
                 updatedAt: "2026-06-05T03:08:12Z"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
@@ -328,8 +328,6 @@ paths:
             schema:
               $ref: "#/components/schemas/SubmitAnalysisDraftRequest"
             example:
-              workspaceId: workspace-northstar-retail-china
-              userId: user-zoe
               businessDomainId: business-domain-revenue-quality
               question: 解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。
               contextPack:
@@ -479,6 +477,8 @@ paths:
                   reportId: null
                   createdAt: "2026-06-05T03:08:12Z"
                   completedAt: "2026-06-05T03:08:12Z"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
@@ -497,8 +497,6 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateConversationRequest"
             example:
-              workspaceId: workspace-northstar-retail-china
-              userId: user-zoe
               title: 收入增速异常
       responses:
         "201":
@@ -516,6 +514,8 @@ paths:
                 status: active
                 createdAt: "2026-06-05T03:08:20Z"
                 updatedAt: "2026-06-05T03:08:20Z"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
@@ -542,6 +542,8 @@ paths:
                 status: active
                 createdAt: "2026-06-05T03:08:20Z"
                 updatedAt: "2026-06-05T03:08:30Z"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
   /conversations/{conversationId}/messages:
@@ -706,8 +708,6 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateAnalysisRunRequest"
             example:
-              workspaceId: workspace-northstar-retail-china
-              userId: user-zoe
               analysisTaskId: analysis-task-6d7a1a7097b34752ae5d5cb9b390bc0e
       responses:
         "201":
@@ -743,6 +743,8 @@ paths:
                 retryable: true
                 retryOfRunId: null
                 originalRunId: null
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
         "409":
@@ -1472,17 +1474,11 @@ components:
       additionalProperties: false
       required:
         - conversationId
-        - workspaceId
-        - userId
         - businessDomainId
         - question
         - contextPack
       properties:
         conversationId:
-          type: string
-        workspaceId:
-          type: string
-        userId:
           type: string
         businessDomainId:
           type: string
@@ -1499,28 +1495,16 @@ components:
       type: object
       additionalProperties: false
       required:
-        - workspaceId
-        - userId
         - title
       properties:
-        workspaceId:
-          type: string
-        userId:
-          type: string
         title:
           type: string
     CreateAnalysisRunRequest:
       type: object
       additionalProperties: false
       required:
-        - workspaceId
-        - userId
         - analysisTaskId
       properties:
-        workspaceId:
-          type: string
-        userId:
-          type: string
         analysisTaskId:
           type: string
     SubmitAnalysisDraftRequest:

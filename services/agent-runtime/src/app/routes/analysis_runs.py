@@ -1,10 +1,14 @@
 """AnalysisRun HTTP boundary for lifecycle-owned foundation APIs."""
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Path, status
+from fastapi import APIRouter, Depends, Path, status
 from fastapi.responses import JSONResponse
 
+from src.app.auth import (
+    AuthenticatedRequestContext,
+    authenticated_request_context_dependency,
+)
 from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     AnalysisRunResponse,
@@ -58,6 +62,10 @@ from src.modules.analysis_runs.lifecycle_service import (
 )
 
 router = APIRouter(prefix="/analysis-runs", tags=["analysis-runs"])
+AuthenticatedContext = Annotated[
+    AuthenticatedRequestContext,
+    Depends(authenticated_request_context_dependency),
+]
 
 NOT_IMPLEMENTED_RESPONSE: dict[int | str, dict[str, Any]] = {
     501: {
@@ -143,24 +151,12 @@ def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
     )
 
 
-def _validate_conversation_chain(
-    *,
-    request: CreateAnalysisRunRequest,
-    conversation: ConversationRecord,
-) -> JSONResponse | None:
-    if conversation["workspaceId"] != request.workspaceId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="Conversation.workspaceId does not match request.workspaceId",
-        )
-    if conversation["userId"] != request.userId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="Conversation.userId does not match request.userId",
-        )
-    return None
+def _get_owned_run(run_id: str, context: AuthenticatedRequestContext) -> AnalysisRunRecord:
+    return _analysis_run_repository().get_by_run_id_and_owner(
+        run_id,
+        workspace_id=context.workspaceId,
+        user_id=context.userId,
+    )
 
 
 @router.post(
@@ -169,11 +165,18 @@ def _validate_conversation_chain(
     status_code=status.HTTP_201_CREATED,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord | JSONResponse:
+def create_analysis_run(
+    request: CreateAnalysisRunRequest,
+    context: AuthenticatedContext,
+) -> AnalysisRunRecord | JSONResponse:
     """Create a real AnalysisRun and attach it to the Conversation resolved from AnalysisTask."""
 
     try:
-        analysis_task = _analysis_task_repository().get_by_analysis_task_id(request.analysisTaskId)
+        analysis_task = _analysis_task_repository().get_by_analysis_task_id_and_owner(
+            request.analysisTaskId,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -181,21 +184,12 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
             message=f"AnalysisTask not found: {request.analysisTaskId}",
         )
 
-    if analysis_task["workspaceId"] != request.workspaceId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="AnalysisTask.workspaceId does not match request.workspaceId",
-        )
-    if analysis_task["userId"] != request.userId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="AnalysisTask.userId does not match request.userId",
-        )
-
     try:
-        conversation = _conversation_repository().get_by_conversation_id(analysis_task["conversationId"])
+        conversation = _conversation_repository().get_by_conversation_id_and_owner(
+            analysis_task["conversationId"],
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -203,18 +197,11 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
             message=f"Conversation not found: {analysis_task['conversationId']}",
         )
 
-    conversation_chain_error = _validate_conversation_chain(
-        request=request,
-        conversation=conversation,
-    )
-    if conversation_chain_error is not None:
-        return conversation_chain_error
-
     now = utc_timestamp()
     analysis_run: AnalysisRunRecord = {
         "runId": generate_canonical_id("analysis-run"),
-        "workspaceId": request.workspaceId,
-        "userId": request.userId,
+        "workspaceId": context.workspaceId,
+        "userId": context.userId,
         "analysisTaskId": request.analysisTaskId,
         "status": "created",
         "phase": "intake",
@@ -255,11 +242,14 @@ def create_analysis_run(request: CreateAnalysisRunRequest) -> AnalysisRunRecord 
 
 
 @router.get("/{runId}", response_model=AnalysisRunResponse, responses=FOUNDATION_ERROR_RESPONSE)
-def get_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+def get_analysis_run(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
     """Load a persisted AnalysisRun by canonical runId."""
 
     try:
-        return _analysis_run_repository().get_by_run_id(run_id)
+        return _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -274,12 +264,16 @@ def get_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | J
     status_code=status.HTTP_202_ACCEPTED,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def dispatch_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+def dispatch_analysis_run(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
     """Advance a created/intake AnalysisRun to queued/queueing and create an ExecutionAttempt."""
 
     lifecycle_service = _analysis_run_lifecycle_service()
 
     try:
+        _get_owned_run(run_id, context)
         return lifecycle_service.dispatch(run_id)
     except KeyError:
         return runtime_error_response(
@@ -300,11 +294,14 @@ def dispatch_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecor
     response_model=RunEventListResponse,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def list_analysis_run_events(run_id: str = Path(alias="runId")) -> dict[str, object] | JSONResponse:
+def list_analysis_run_events(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
     """Return persisted RunEvents for a real AnalysisRun ordered by sequence."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -321,12 +318,13 @@ def list_analysis_run_events(run_id: str = Path(alias="runId")) -> dict[str, obj
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_analysis_run_tool_calls(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted ToolCall records for a real AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -343,12 +341,13 @@ def list_analysis_run_tool_calls(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_analysis_run_model_calls(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted ModelCall records for a real AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -365,12 +364,13 @@ def list_analysis_run_model_calls(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_analysis_run_source_evidence(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted SourceEvidence records for a real AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -387,12 +387,13 @@ def list_analysis_run_source_evidence(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_analysis_run_reports(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted Report records for a real AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -409,12 +410,13 @@ def list_analysis_run_reports(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_analysis_run_decisions(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted Decision records for a real AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -430,12 +432,16 @@ def list_analysis_run_decisions(
     response_model=ExecutionAttemptListResponse,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def list_execution_attempts(run_id: str = Path(alias="runId")) -> dict[str, object] | JSONResponse:
+def list_execution_attempts(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
     """Return persisted ExecutionAttempts for a real AnalysisRun."""
 
     lifecycle_service = _analysis_run_lifecycle_service()
 
     try:
+        _get_owned_run(run_id, context)
         return {"items": lifecycle_service.list_execution_attempts(run_id)}
     except KeyError:
         return runtime_error_response(
@@ -642,10 +648,20 @@ def complete_analysis_run_delivery(
 
 
 @router.get("/{runId}/approvals", responses=NOT_IMPLEMENTED_RESPONSE)
-def list_approval_requests(run_id: str = Path(alias="runId")) -> JSONResponse:
+def list_approval_requests(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> JSONResponse:
     """Reserve the ApprovalRequest read boundary without faking approval state."""
 
-    _ = run_id
+    try:
+        _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
     return not_implemented_route_stub_response()
 
 
@@ -655,12 +671,13 @@ def list_approval_requests(run_id: str = Path(alias="runId")) -> JSONResponse:
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def get_analysis_run_conversation(
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> ConversationRecord | JSONResponse:
     """Resolve the current Conversation bound to a persisted AnalysisRun."""
 
     try:
-        _analysis_run_repository().get_by_run_id(run_id)
+        _get_owned_run(run_id, context)
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -669,7 +686,11 @@ def get_analysis_run_conversation(
         )
 
     try:
-        return _conversation_repository().get_by_current_run_id(run_id)
+        return _conversation_repository().get_by_current_run_id_and_owner(
+            run_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -686,6 +707,7 @@ def get_analysis_run_conversation(
 )
 def cancel_analysis_run(
     request: CancelAnalysisRunRequest,
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> AnalysisRunRecord | JSONResponse:
     """Cancel a queued/running/waiting AnalysisRun without faking delivery side effects."""
@@ -693,6 +715,7 @@ def cancel_analysis_run(
     lifecycle_service = _analysis_run_lifecycle_service()
 
     try:
+        _get_owned_run(run_id, context)
         return lifecycle_service.cancel_analysis_run(run_id, request.reason)
     except KeyError:
         return runtime_error_response(
@@ -714,12 +737,16 @@ def cancel_analysis_run(
     status_code=status.HTTP_202_ACCEPTED,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def retry_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord | JSONResponse:
+def retry_analysis_run(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> AnalysisRunRecord | JSONResponse:
     """Create a new retry AnalysisRun from an allowed terminal source run."""
 
     lifecycle_service = _analysis_run_lifecycle_service()
 
     try:
+        _get_owned_run(run_id, context)
         return lifecycle_service.retry_analysis_run(run_id)
     except AnalysisRunConversationNotFoundError:
         return runtime_error_response(
@@ -744,10 +771,19 @@ def retry_analysis_run(run_id: str = Path(alias="runId")) -> AnalysisRunRecord |
 @router.post("/{runId}/approvals/{approvalId}/decision", responses=NOT_IMPLEMENTED_RESPONSE)
 def decide_approval_request(
     _request: ApprovalDecisionRequest,
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
     approval_id: str = Path(alias="approvalId"),
 ) -> JSONResponse:
     """Reserve the approval decision boundary without performing a real workflow transition."""
 
-    _ = (run_id, approval_id)
+    try:
+        _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+    _ = approval_id
     return not_implemented_route_stub_response()

@@ -1,10 +1,14 @@
 """AnalysisTask HTTP boundary for real runtime foundation success paths."""
 
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
+from src.app.auth import (
+    AuthenticatedRequestContext,
+    authenticated_request_context_dependency,
+)
 from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     AnalysisTaskResponse,
@@ -32,6 +36,10 @@ from src.modules.conversations.analysis_service import (
 )
 
 router = APIRouter(prefix="/analysis-tasks", tags=["analysis-tasks"])
+AuthenticatedContext = Annotated[
+    AuthenticatedRequestContext,
+    Depends(authenticated_request_context_dependency),
+]
 
 FOUNDATION_ERROR_RESPONSE: dict[int | str, dict[str, Any]] = {
     404: {
@@ -75,12 +83,17 @@ def _submit_service() -> AnalysisSubmitService:
     status_code=status.HTTP_201_CREATED,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskRecord | JSONResponse:
+def create_analysis_task(
+    request: CreateAnalysisTaskRequest,
+    context: AuthenticatedContext,
+) -> AnalysisTaskRecord | JSONResponse:
     """Create the formal AnalysisTask input object through the MySQL repository."""
 
     try:
-        conversation = ConversationRepository(_runtime_foundation_database()).get_by_conversation_id(
-            request.conversationId
+        ConversationRepository(_runtime_foundation_database()).get_by_conversation_id_and_owner(
+            request.conversationId,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
         )
     except KeyError as error:
         return runtime_error_response(
@@ -89,27 +102,13 @@ def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskReco
             message=f"Conversation not found: {error.args[0]}",
         )
 
-    if conversation["workspaceId"] != request.workspaceId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="Conversation.workspaceId does not match request.workspaceId",
-        )
-
-    if conversation["userId"] != request.userId:
-        return runtime_error_response(
-            status_code=409,
-            error_code="MISMATCH",
-            message="Conversation.userId does not match request.userId",
-        )
-
     now = utc_timestamp()
     analysis_task_id = generate_canonical_id("analysis-task")
     analysis_task: AnalysisTaskRecord = {
         "analysisTaskId": analysis_task_id,
         "conversationId": request.conversationId,
-        "workspaceId": request.workspaceId,
-        "userId": request.userId,
+        "workspaceId": context.workspaceId,
+        "userId": context.userId,
         "businessDomainId": request.businessDomainId,
         "question": request.question,
         "contextPack": bind_analysis_task_context_pack(
@@ -130,11 +129,18 @@ def create_analysis_task(request: CreateAnalysisTaskRequest) -> AnalysisTaskReco
     response_model=AnalysisTaskResponse,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def get_analysis_task(analysisTaskId: str) -> AnalysisTaskRecord | JSONResponse:
+def get_analysis_task(
+    analysisTaskId: str,
+    context: AuthenticatedContext,
+) -> AnalysisTaskRecord | JSONResponse:
     """Read one persisted AnalysisTask including its immutable context snapshot."""
 
     try:
-        return _analysis_task_repository().get_by_analysis_task_id(analysisTaskId)
+        return _analysis_task_repository().get_by_analysis_task_id_and_owner(
+            analysisTaskId,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError as error:
         return runtime_error_response(
             status_code=404,
@@ -151,6 +157,7 @@ def get_analysis_task(analysisTaskId: str) -> AnalysisTaskRecord | JSONResponse:
 )
 def submit_analysis_draft(
     request: SubmitAnalysisDraftRequest,
+    context: AuthenticatedContext,
 ) -> SubmitAnalysisDraftResponse | JSONResponse:
     """Submit Analysis draft through the canonical single-track orchestration entry."""
 
@@ -164,8 +171,8 @@ def submit_analysis_draft(
                 conversationId=request.conversationId,
                 question=request.question,
                 title=request.title,
-                userId=request.userId,
-                workspaceId=request.workspaceId,
+                userId=context.userId,
+                workspaceId=context.workspaceId,
             )
         )
     except KeyError as error:

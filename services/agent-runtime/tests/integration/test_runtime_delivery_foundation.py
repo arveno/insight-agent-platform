@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
+from tests.integration.conftest import login_client, seed_runtime_foundation
 
 def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
     owner: dict[str, str] = {"type": "analysisTask"}
@@ -49,8 +50,6 @@ def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
     }
 
 TASK_PAYLOAD = {
-    "workspaceId": "workspace-northstar-retail-china",
-    "userId": "user-zoe",
     "businessDomainId": "business-domain-revenue-quality",
     "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
     "contextPack": build_context_pack(),
@@ -68,17 +67,15 @@ def response_json_dict(payload: object) -> dict[str, Any]:
 @pytest.fixture()
 def client(runtime_foundation_env: None) -> Iterator[TestClient]:
     get_settings.cache_clear()
+    seed_runtime_foundation()
     with TestClient(create_app()) as test_client:
+        login_client(test_client)
         yield test_client
 
 
 def create_analysis_task(client: TestClient) -> dict[str, Any]:
     payload = deepcopy(TASK_PAYLOAD)
-    conversation = create_conversation(
-        client,
-        workspace_id=payload["workspaceId"],
-        user_id=payload["userId"],
-    )
+    conversation = create_conversation(client)
     payload["conversationId"] = conversation["conversationId"]
     response = client.post("/analysis-tasks", json=payload)
     assert response.status_code == 201, response.text
@@ -93,17 +90,10 @@ def get_conversation(client: TestClient, conversation_id: str) -> dict[str, Any]
 
 def create_conversation(
     client: TestClient,
-    *,
-    workspace_id: str,
-    user_id: str,
 ) -> dict[str, Any]:
     response = client.post(
         "/conversations",
-        json={
-            "workspaceId": workspace_id,
-            "userId": user_id,
-            "title": TASK_PAYLOAD["title"],
-        },
+        json={"title": TASK_PAYLOAD["title"]},
     )
     assert response.status_code == 201, response.text
     return response_json_dict(response.json())
@@ -111,18 +101,11 @@ def create_conversation(
 
 def create_analysis_run(
     client: TestClient,
-    *,
-    workspace_id: str,
-    user_id: str,
     analysis_task_id: str,
 ) -> dict[str, Any]:
     response = client.post(
         "/analysis-runs",
-        json={
-            "workspaceId": workspace_id,
-            "userId": user_id,
-            "analysisTaskId": analysis_task_id,
-        },
+        json={"analysisTaskId": analysis_task_id},
     )
     assert response.status_code == 201, response.text
     return response_json_dict(response.json())
@@ -143,12 +126,7 @@ def get_run_events(client: TestClient, run_id: str) -> list[dict[str, Any]]:
 def create_running_execution_run(client: TestClient) -> dict[str, Any]:
     analysis_task = create_analysis_task(client)
     conversation = get_conversation(client, analysis_task["conversationId"])
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
 
     dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
     assert dispatch_response.status_code == 202

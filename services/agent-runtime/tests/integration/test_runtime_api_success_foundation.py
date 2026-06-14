@@ -26,6 +26,7 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRecord,
     SourceEvidenceRepository,
 )
+from tests.integration.conftest import login_client, seed_runtime_foundation
 
 def build_context_pack(analysis_task_id: str | None = None) -> dict[str, Any]:
     owner: dict[str, str] = {"type": "analysisTask"}
@@ -75,9 +76,9 @@ def build_response_context_pack(analysis_task_id: str | None = None) -> dict[str
         ).model_dump(mode="json"),
     )
 
+DEFAULT_WORKSPACE_ID = "workspace-northstar-retail-china"
+USER_ID = "user-zoe"
 TASK_PAYLOAD = {
-    "workspaceId": "workspace-northstar-retail-china",
-    "userId": "user-zoe",
     "businessDomainId": "business-domain-revenue-quality",
     "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
     "contextPack": build_context_pack(),
@@ -110,21 +111,11 @@ def response_json_dict(payload: object) -> dict[str, Any]:
 def create_analysis_task(
     client: TestClient,
     *,
-    workspace_id: str | None = None,
-    user_id: str | None = None,
     conversation_id: str | None = None,
 ) -> dict[str, Any]:
     payload = deepcopy(TASK_PAYLOAD)
-    if workspace_id is not None:
-        payload["workspaceId"] = workspace_id
-    if user_id is not None:
-        payload["userId"] = user_id
     if conversation_id is None:
-        conversation = create_conversation(
-            client,
-            workspace_id=payload["workspaceId"],
-            user_id=payload["userId"],
-        )
+        conversation = create_conversation(client)
         conversation_id = conversation["conversationId"]
     payload["conversationId"] = conversation_id
 
@@ -153,17 +144,10 @@ def get_execution_attempts(client: TestClient, run_id: str) -> dict[str, Any]:
 
 def create_conversation(
     client: TestClient,
-    *,
-    workspace_id: str,
-    user_id: str,
 ) -> dict[str, Any]:
     response = client.post(
         "/conversations",
-        json={
-            "workspaceId": workspace_id,
-            "userId": user_id,
-            "title": TASK_PAYLOAD["title"],
-        },
+        json={"title": TASK_PAYLOAD["title"]},
     )
     assert response.status_code == 201, response.text
     return response_json_dict(response.json())
@@ -171,18 +155,11 @@ def create_conversation(
 
 def create_analysis_run(
     client: TestClient,
-    *,
-    workspace_id: str,
-    user_id: str,
     analysis_task_id: str,
 ) -> dict[str, Any]:
     response = client.post(
         "/analysis-runs",
-        json={
-            "workspaceId": workspace_id,
-            "userId": user_id,
-            "analysisTaskId": analysis_task_id,
-        },
+        json={"analysisTaskId": analysis_task_id},
     )
     assert response.status_code == 201, response.text
     return response_json_dict(response.json())
@@ -191,12 +168,7 @@ def create_analysis_run(
 def create_dispatched_run(client: TestClient) -> dict[str, Any]:
     analysis_task = create_analysis_task(client)
     conversation = get_conversation(client, analysis_task["conversationId"])
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
     dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
     assert dispatch_response.status_code == 202
     dispatched_run = response_json_dict(dispatch_response.json())
@@ -219,12 +191,7 @@ def seed_analysis_run_state(
 ) -> dict[str, Any]:
     analysis_task = create_analysis_task(client)
     conversation = get_conversation(client, analysis_task["conversationId"])
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
 
     updated_run = build_analysis_run_state(
         analysis_run,
@@ -445,7 +412,9 @@ def build_decision_record(run_id: str, workspace_id: str) -> DecisionRecord:
 @pytest.fixture()
 def client(runtime_foundation_env: None) -> Iterator[TestClient]:
     get_settings.cache_clear()
+    seed_runtime_foundation()
     with TestClient(create_app()) as test_client:
+        login_client(test_client)
         yield test_client
 
 
@@ -454,8 +423,8 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
     conversation = get_conversation(client, analysis_task["conversationId"])
     assert analysis_task["analysisTaskId"].startswith("analysis-task-")
     assert analysis_task["conversationId"] == conversation["conversationId"]
-    assert analysis_task["workspaceId"] == TASK_PAYLOAD["workspaceId"]
-    assert analysis_task["userId"] == TASK_PAYLOAD["userId"]
+    assert analysis_task["workspaceId"] == DEFAULT_WORKSPACE_ID
+    assert analysis_task["userId"] == USER_ID
     assert analysis_task["businessDomainId"] == TASK_PAYLOAD["businessDomainId"]
     assert analysis_task["question"] == TASK_PAYLOAD["question"]
     assert analysis_task["contextPack"] == build_response_context_pack(
@@ -466,12 +435,7 @@ def test_runtime_api_success_foundation_flow(client: TestClient) -> None:
     assert conversation["currentRunId"] is None
     assert conversation["status"] == "active"
 
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
     assert analysis_run["runId"].startswith("analysis-run-")
     assert analysis_run["analysisTaskId"] == analysis_task["analysisTaskId"]
     assert analysis_run["status"] == "created"
@@ -553,12 +517,7 @@ def test_dispatch_analysis_run_creates_execution_attempt_and_returns_real_record
 ) -> None:
     analysis_task = create_analysis_task(client)
     conversation = get_conversation(client, analysis_task["conversationId"])
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
 
     list_events_before_dispatch_payload = get_run_events(client, analysis_run["runId"])
     assert [item["eventType"] for item in list_events_before_dispatch_payload["items"]] == [
@@ -706,12 +665,7 @@ def test_dispatch_analysis_run_rejects_repeat_dispatch_for_non_created_run(
     client: TestClient,
 ) -> None:
     analysis_task = create_analysis_task(client)
-    analysis_run = create_analysis_run(
-        client,
-        workspace_id=analysis_task["workspaceId"],
-        user_id=analysis_task["userId"],
-        analysis_task_id=analysis_task["analysisTaskId"],
-    )
+    analysis_run = create_analysis_run(client, analysis_task["analysisTaskId"])
 
     first_dispatch_response = client.post(f"/analysis-runs/{analysis_run['runId']}/dispatch")
     assert first_dispatch_response.status_code == 202
@@ -1320,8 +1274,6 @@ def test_create_conversation_rejects_legacy_analysis_task_binding_field(
     response = client.post(
         "/conversations",
         json={
-            "workspaceId": TASK_PAYLOAD["workspaceId"],
-            "userId": TASK_PAYLOAD["userId"],
             "analysisTaskId": "analysis-task-missing",
             "title": TASK_PAYLOAD["title"],
         },
@@ -1340,8 +1292,6 @@ def test_create_analysis_run_rejects_legacy_conversation_binding_field(
     mismatch_response = client.post(
         "/analysis-runs",
         json={
-            "workspaceId": analysis_task["workspaceId"],
-            "userId": analysis_task["userId"],
             "analysisTaskId": analysis_task["analysisTaskId"],
             "conversationId": analysis_task["conversationId"],
         },
@@ -1352,39 +1302,22 @@ def test_create_analysis_run_rejects_legacy_conversation_binding_field(
     assert mismatch_response.json()["detail"][0]["loc"] == ["body", "conversationId"]
 
 
-@pytest.mark.parametrize(
-    ("field_name", "field_value", "expected_message"),
-    [
-        (
-            "workspaceId",
-            "workspace-south",
-            "AnalysisTask.workspaceId does not match request.workspaceId",
-        ),
-        ("userId", "user-luca", "AnalysisTask.userId does not match request.userId"),
-    ],
-)
-def test_create_analysis_run_returns_mismatch_when_analysis_task_scope_conflicts(
+@pytest.mark.parametrize(("field_name", "field_value"), [("workspaceId", "workspace-south"), ("userId", "user-luca")])
+def test_create_analysis_run_rejects_client_supplied_identity_fields(
     client: TestClient,
     field_name: str,
     field_value: str,
-    expected_message: str,
 ) -> None:
     analysis_task = create_analysis_task(client)
 
-    payload = {
-        "workspaceId": analysis_task["workspaceId"],
-        "userId": analysis_task["userId"],
-        "analysisTaskId": analysis_task["analysisTaskId"],
-    }
+    payload = {"analysisTaskId": analysis_task["analysisTaskId"]}
     payload[field_name] = field_value
 
     response = client.post("/analysis-runs", json=payload)
 
-    assert response.status_code == 409
-    assert response.json() == {
-        "errorCode": "MISMATCH",
-        "message": expected_message,
-    }
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "extra_forbidden"
+    assert response.json()["detail"][0]["loc"] == ["body", field_name]
 
 
 def test_get_endpoints_return_not_found_for_unknown_ids(client: TestClient) -> None:

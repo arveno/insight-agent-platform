@@ -2,11 +2,15 @@
 
 import json
 from collections.abc import Iterator
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Header, Path, status
+from fastapi import APIRouter, Depends, Header, Path, status
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from src.app.auth import (
+    AuthenticatedRequestContext,
+    authenticated_request_context_dependency,
+)
 from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     ConversationResponse,
@@ -30,6 +34,10 @@ from src.infrastructure.database.runtime_foundation import (
 )
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+AuthenticatedContext = Annotated[
+    AuthenticatedRequestContext,
+    Depends(authenticated_request_context_dependency),
+]
 
 NOT_IMPLEMENTED_RESPONSE: dict[int | str, dict[str, Any]] = {
     501: {
@@ -60,6 +68,7 @@ def _runtime_foundation_database() -> RuntimeFoundationPyMySqlDatabase:
         password=settings.mysql_password,
     )
 
+
 def _conversation_repository() -> ConversationRepository:
     return ConversationRepository(_runtime_foundation_database())
 
@@ -78,14 +87,17 @@ def _message_stream_repository() -> MessageStreamRepository:
     status_code=status.HTTP_201_CREATED,
     responses=FOUNDATION_ERROR_RESPONSE,
 )
-def create_conversation(request: CreateConversationRequest) -> ConversationRecord | JSONResponse:
+def create_conversation(
+    request: CreateConversationRequest,
+    context: AuthenticatedContext,
+) -> ConversationRecord | JSONResponse:
     """Create a new Conversation thread container without prebinding a singular AnalysisTask."""
 
     now = utc_timestamp()
     conversation: ConversationRecord = {
         "conversationId": generate_canonical_id("conversation"),
-        "workspaceId": request.workspaceId,
-        "userId": request.userId,
+        "workspaceId": context.workspaceId,
+        "userId": context.userId,
         "currentRunId": None,
         "title": request.title,
         "status": "active",
@@ -100,12 +112,17 @@ def create_conversation(request: CreateConversationRequest) -> ConversationRecor
     "/{conversationId}", response_model=ConversationResponse, responses=FOUNDATION_ERROR_RESPONSE
 )
 def get_conversation(
+    context: AuthenticatedContext,
     conversation_id: str = Path(alias="conversationId"),
 ) -> ConversationRecord | JSONResponse:
     """Load a persisted Conversation by canonical conversationId."""
 
     try:
-        return _conversation_repository().get_by_conversation_id(conversation_id)
+        return _conversation_repository().get_by_conversation_id_and_owner(
+            conversation_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -120,12 +137,17 @@ def get_conversation(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def list_conversation_messages(
+    context: AuthenticatedContext,
     conversation_id: str = Path(alias="conversationId"),
 ) -> dict[str, object] | JSONResponse:
     """Return persisted Message records for a real Conversation."""
 
     try:
-        _conversation_repository().get_by_conversation_id(conversation_id)
+        _conversation_repository().get_by_conversation_id_and_owner(
+            conversation_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -138,10 +160,24 @@ def list_conversation_messages(
 
 @router.get("/{conversationId}/messages/{messageId}", responses=NOT_IMPLEMENTED_RESPONSE)
 def get_conversation_message(
+    context: AuthenticatedContext,
     conversation_id: str = Path(alias="conversationId"),
     message_id: str = Path(alias="messageId"),
 ) -> JSONResponse:
     """Expose the single-message boundary without creating a second success path."""
+
+    try:
+        _conversation_repository().get_by_conversation_id_and_owner(
+            conversation_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Conversation not found: {conversation_id}",
+        )
 
     _ = (conversation_id, message_id)
     return not_implemented_route_stub_response()
@@ -153,6 +189,7 @@ def get_conversation_message(
     responses=FOUNDATION_ERROR_RESPONSE,
 )
 def stream_conversation_message(
+    context: AuthenticatedContext,
     conversation_id: str = Path(alias="conversationId"),
     message_id: str = Path(alias="messageId"),
     accept: str | None = Header(default=None),
@@ -160,7 +197,11 @@ def stream_conversation_message(
     """Serve MessageStream replay as JSON or SSE from the same persisted record chain."""
 
     try:
-        _conversation_repository().get_by_conversation_id(conversation_id)
+        _conversation_repository().get_by_conversation_id_and_owner(
+            conversation_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
@@ -169,18 +210,15 @@ def stream_conversation_message(
         )
 
     try:
-        message = _message_repository().get_by_message_id(message_id)
+        message = _message_repository().get_by_message_id_and_conversation_id(
+            message_id,
+            conversation_id=conversation_id,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=404,
             error_code="NOT_FOUND",
             message=f"Message not found: {message_id}",
-        )
-    if message["conversationId"] != conversation_id:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"Message not found in Conversation: {message_id}",
         )
 
     message_streams = _message_stream_repository().list_by_message_id(message_id)
