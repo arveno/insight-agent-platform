@@ -3,6 +3,7 @@ import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes
 import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import { MetricsPageContent } from "../Page";
 import { MetricsListNav } from "../navigation/MetricsListNav";
+import { MetricsInspectorPanel } from "../sections/MetricsSections";
 
 import { useMetricsOverviewState } from "./useMetricsOverviewState";
 
@@ -27,6 +28,9 @@ export function useMetricsShellSlots({
 
   return {
     leftNav: <MetricsListNav controller={controller} onBack={onBackToRoot} />,
-    mainContent: <MetricsPageContent controller={controller} onNavigate={onNavigate} />
+    mainContent: <MetricsPageContent controller={controller} onNavigate={onNavigate} />,
+    rightAssistPanel: controller.viewModel ? (
+      <MetricsInspectorPanel viewModel={controller.viewModel} />
+    ) : null
   };
 }

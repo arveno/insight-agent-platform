@@ -1,6 +1,15 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../api/adapters/loadWorkspaceMetrics", async () => {
+  const fixtures = await import("../../shared/test/fixtures/runtimeMetrics");
+
+  return {
+    loadWorkspaceMetric: vi.fn(async (metricId: string) => fixtures.findRuntimeMetric(metricId)),
+    loadWorkspaceMetrics: vi.fn(async () => fixtures.runtimeMetricsFixtures)
+  };
+});
+
 import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
 import {
   findRuntimeMetric,
@@ -8,6 +17,7 @@ import {
 } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
 import type { MetricsOverviewController } from "./hooks/useMetricsOverviewState";
+import { useMetricsShellSlots } from "./hooks/useMetricsShellSlots";
 import { createMetricsViewModel } from "./mappers/createMetricsViewModel";
 import { MetricsPage, MetricsPageContent } from "./Page";
 
@@ -51,35 +61,56 @@ function createController(selectedMetricKey = "metric-gross-margin"): MetricsOve
   };
 }
 
+function MetricsShellSlotHarness({ onNavigate = vi.fn() }: { onNavigate?: ReturnType<typeof vi.fn> }) {
+  const slots = useMetricsShellSlots({
+    onBackToRoot: vi.fn(),
+    onNavigate
+  });
+
+  return (
+    <>
+      {slots.leftNav}
+      {slots.mainContent}
+      {slots.rightAssistPanel}
+    </>
+  );
+}
+
 describe("MetricsPage", () => {
   const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
   const metricLoader = vi.fn(async (metricId: string) => findRuntimeMetric(metricId));
 
-  it("renders metrics as overview plus selected metric detail instead of flat capability sections", async () => {
+  it("renders the selected metric detail and inspector summaries without changing the existing page structure", async () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <MetricsPage metricLoader={metricLoader} metricsLoader={metricsLoader} onNavigate={onNavigate} />
+        <MetricsShellSlotHarness onNavigate={onNavigate} />
       </TestProviders>
     );
 
-    expect(await screen.findByText("指标总览")).toBeTruthy();
-    expect(screen.getByText("当前指标详情：确认收入")).toBeTruthy();
+    expect(await screen.findByText("当前指标详情：确认收入")).toBeTruthy();
+    expect(screen.getByText("指标总览")).toBeTruthy();
+    expect(screen.getByText("指标关系链")).toBeTruthy();
     expect(screen.getByText("业务定义")).toBeTruthy();
-    expect(screen.getByText("当前摘要")).toBeTruthy();
     expect(screen.getByText("公式摘要")).toBeTruthy();
     expect(screen.getByText("阈值 / 风险摘要")).toBeTruthy();
     expect(screen.getByText("上下文来源摘要")).toBeTruthy();
-    expect(screen.getByText("动作")).toBeTruthy();
-    expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
-    expect(screen.getByText("当前指标目录属于当前 Workspace。")).toBeTruthy();
+    expect(screen.getAllByText("已满足确认条件的收入金额。").length).toBeGreaterThan(0);
+    expect(screen.getByText("¥12.8M")).toBeTruthy();
+    expect(screen.getAllByText("Last 30 days").length).toBeGreaterThan(0);
+    expect(screen.getByText("下降 3.2%")).toBeTruthy();
+    expect(screen.getAllByText("确认收入 = 已预订收入 - 退款金额").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("收入增速 < -2% 进入关注").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("销售订单汇总表").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("周经营分析报告").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Metrics 当前阶段只读展示共享指标语义和上下文摘要，不提供新增、编辑或真实计算。")
+      screen.getByText("当前快照用于解释指标关系和上下文来源；后续会接入事实数据计算。")
     ).toBeTruthy();
-    expect(screen.queryByText("指标目录")).toBeNull();
-    expect(screen.queryByText("公式与阈值")).toBeNull();
-    expect(screen.queryByText("趋势与异常")).toBeNull();
+    expect(screen.getByText("风险分布")).toBeTruthy();
+    expect(screen.getByText("业务域分布")).toBeTruthy();
+    expect(screen.getByText("来源类型摘要")).toBeTruthy();
+    expect(screen.getByText("只读边界")).toBeTruthy();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -91,7 +122,7 @@ describe("MetricsPage", () => {
     );
 
     expect(screen.getByText("当前指标详情：毛利率")).toBeTruthy();
-    expect(screen.getByText("收入扣除销售成本后保留的利润比例。")).toBeTruthy();
+    expect(screen.getAllByText("收入扣除销售成本后保留的利润比例。").length).toBeGreaterThan(0);
     expect(screen.queryByText("当前指标详情：确认收入")).toBeNull();
   });
 
