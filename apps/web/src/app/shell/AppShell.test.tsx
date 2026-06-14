@@ -15,6 +15,7 @@ import type {
 } from "@insight-agent/contracts/generated/typescript";
 import goldenPathExample from "../../../../../packages/contracts/examples/analysis-runtime/golden-path.json";
 
+import type { AuthSessionViewModel } from "../providers/authViewModel";
 import { AppProviders } from "../providers/AppProviders";
 import { AppShell } from "./AppShell";
 
@@ -57,6 +58,57 @@ type GoldenPathExample = {
   sourceEvidence: SourceEvidence[];
   toolCalls: ToolCall[];
 };
+
+const testAppShellSession: AuthSessionViewModel & {
+  currentWorkspace: NonNullable<AuthSessionViewModel["currentWorkspace"]>;
+} = {
+  currentWorkspace: {
+    membershipId: "membership-test-user-ada-northstar-retail-china",
+    name: "Northstar Retail China",
+    role: "analyst",
+    workspaceId: "workspace-northstar-retail-china"
+  },
+  user: {
+    displayName: "Ada Chen",
+    email: "ada@northstar.example.com",
+    userId: "user-ada"
+  },
+  workspaces: [
+    {
+      membershipId: "membership-test-user-ada-northstar-retail-china",
+      name: "Northstar Retail China",
+      role: "analyst",
+      workspaceId: "workspace-northstar-retail-china"
+    },
+    {
+      membershipId: "membership-test-user-ada-east-retail-demo",
+      name: "East Retail Demo",
+      role: "viewer",
+      workspaceId: "workspace-east-retail-demo"
+    },
+    {
+      membershipId: "membership-test-user-ada-global-ops-sandbox",
+      name: "Global Ops Sandbox",
+      role: "viewer",
+      workspaceId: "workspace-global-ops-sandbox"
+    }
+  ]
+};
+
+type AppShellComponentProps = Parameters<typeof AppShell>[0];
+
+function renderAppShell(overrides: Partial<AppShellComponentProps> = {}) {
+  const props: AppShellComponentProps = {
+    session: testAppShellSession,
+    ...overrides
+  };
+
+  return render(
+    <AppProviders>
+      <AppShell {...props} />
+    </AppProviders>
+  );
+}
 
 function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -145,11 +197,7 @@ beforeAll(() => {
 
 describe("AppShell", () => {
   it("renders primary entries separately from capability preview entries", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const navigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
@@ -179,11 +227,7 @@ describe("AppShell", () => {
   });
 
   it("renders the authenticated header identity and workspace actions", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(screen.getAllByText("Ada Chen").length).toBeGreaterThan(0);
@@ -193,11 +237,7 @@ describe("AppShell", () => {
   });
 
   it("enters analysis mode in draft state when no runtime bootstrap id is available", () => {
-    render(
-      <AppProviders>
-        <AppShell currentRoute="analysis" />
-      </AppProviders>
-    );
+    renderAppShell({ currentRoute: "analysis" });
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
@@ -224,11 +264,7 @@ describe("AppShell", () => {
       `/?conversationId=${encodeURIComponent(goldenPath.conversation.conversationId)}`
     );
 
-    render(
-      <AppProviders>
-        <AppShell currentRoute="analysis" />
-      </AppProviders>
-    );
+    renderAppShell({ currentRoute: "analysis" });
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
@@ -276,11 +312,7 @@ describe("AppShell", () => {
       `/?conversationId=${encodeURIComponent(goldenPath.conversation.conversationId)}`
     );
 
-    render(
-      <AppProviders>
-        <AppShell currentRoute="analysis" />
-      </AppProviders>
-    );
+    renderAppShell({ currentRoute: "analysis" });
 
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
@@ -310,11 +342,7 @@ describe("AppShell", () => {
   });
 
   it("enters reports navigation mode and keeps report selection in local UI state", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
@@ -354,11 +382,7 @@ describe("AppShell", () => {
   });
 
   it("enters metrics secondary navigation mode and updates the selected metric detail", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
@@ -403,11 +427,7 @@ describe("AppShell", () => {
   });
 
   it("enters data knowledge secondary navigation mode and updates the selected asset detail", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
@@ -463,11 +483,7 @@ describe("AppShell", () => {
   });
 
   it("keeps the selected relationship node within one asset and resets only after switching assets", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
@@ -497,11 +513,7 @@ describe("AppShell", () => {
   });
 
   it("opens platform operations without the old inspector and keeps the page readonly", () => {
-    render(
-      <AppProviders>
-        <AppShell />
-      </AppProviders>
-    );
+    renderAppShell();
 
     const rootNavigation = screen.getByRole("navigation", { name: "Shell navigation" });
 
