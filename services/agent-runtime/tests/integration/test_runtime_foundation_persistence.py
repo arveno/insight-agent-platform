@@ -41,11 +41,12 @@ RUN_ID = "analysis-q2-revenue-gap"
 
 
 def run_runtime_foundation_command(
-    *args: str, check: bool = True
+    *args: str, check: bool = True, input_text: str | None = None
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(RUNTIME_FOUNDATION_SCRIPT), *args],
         cwd=REPO_ROOT,
+        input=input_text,
         text=True,
         capture_output=True,
         check=check,
@@ -428,18 +429,46 @@ def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) 
     seed_result = run_runtime_foundation_command("seed")
     assert seed_result.returncode == 0, seed_result.stderr
 
+    extra_session_result = run_runtime_foundation_command(
+        "exec-sql",
+        input_text="""
+INSERT INTO auth_sessions (
+  auth_session_id,
+  user_id,
+  current_workspace_id,
+  session_token_hash,
+  expires_at,
+  created_at,
+  updated_at,
+  last_accessed_at,
+  revoked_at
+) VALUES (
+  'auth-session-user-zoe-sea-extra',
+  'user-zoe',
+  'workspace-northstar-retail-sea',
+  'e5ff6ea34f7cdb6edf1f7bc3c2fa56a2244887f0d5d618c0db6d76b8f9fbe5e2',
+  '2099-01-01T00:00:00Z',
+  '2026-06-14T10:00:00Z',
+  '2026-06-14T10:00:00Z',
+  '2026-06-14T10:00:00Z',
+  NULL
+);
+""",
+    )
+    assert extra_session_result.returncode == 0, extra_session_result.stderr
+
     verify_result = run_runtime_foundation_command("query-verify")
     assert verify_result.returncode == 0, verify_result.stderr
     assert "users.row_count=1" in verify_result.stdout
     assert "workspaces.row_count=2" in verify_result.stdout
     assert "workspace_memberships.row_count=2" in verify_result.stdout
-    assert "auth_sessions.row_count=1" in verify_result.stdout
+    assert "auth_sessions.seedUser.exists=1" in verify_result.stdout
+    assert "auth_sessions.validSeedUserSession.exists=1" in verify_result.stdout
     assert "user.userId=user-zoe" in verify_result.stdout
     assert "workspace.primary.workspaceId=workspace-northstar-retail-china" in verify_result.stdout
     assert "workspace.secondary.workspaceId=workspace-northstar-retail-sea" in verify_result.stdout
     assert "membership.primary.role=analyst" in verify_result.stdout
     assert "membership.secondary.role=viewer" in verify_result.stdout
-    assert "authSession.currentWorkspaceId=workspace-northstar-retail-china" in verify_result.stdout
     assert "analysis-task-revenue-gap-q2" in verify_result.stdout
     assert "conversation-revenue-gap-q2" in verify_result.stdout
     assert "analysis-q2-revenue-gap" in verify_result.stdout

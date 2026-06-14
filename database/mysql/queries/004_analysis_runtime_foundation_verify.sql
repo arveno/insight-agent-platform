@@ -35,8 +35,64 @@ FROM workspaces;
 SELECT CONCAT('workspace_memberships.row_count=', COUNT(*)) AS check_line
 FROM workspace_memberships;
 
-SELECT CONCAT('auth_sessions.row_count=', COUNT(*)) AS check_line
-FROM auth_sessions;
+SELECT CONCAT(
+  'auth_sessions.seedUser.exists=',
+  EXISTS(
+    SELECT 1
+    FROM auth_sessions
+    WHERE user_id = 'user-zoe'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'auth_sessions.validSeedUserSession.exists=',
+  EXISTS(
+    SELECT 1
+    FROM auth_sessions
+    INNER JOIN workspace_memberships
+      ON workspace_memberships.user_id = auth_sessions.user_id
+     AND workspace_memberships.workspace_id = auth_sessions.current_workspace_id
+    WHERE auth_sessions.user_id = 'user-zoe'
+      AND auth_sessions.current_workspace_id IS NOT NULL
+      AND auth_sessions.revoked_at IS NULL
+      AND (
+        CASE
+          WHEN auth_sessions.expires_at LIKE '%Z' THEN
+            STR_TO_DATE(
+              REPLACE(REPLACE(auth_sessions.expires_at, 'T', ' '), 'Z', ''),
+              '%Y-%m-%d %H:%i:%s'
+            )
+          WHEN auth_sessions.expires_at REGEXP '[+-][0-9]{2}:[0-9]{2}$' THEN
+            CASE SUBSTRING(auth_sessions.expires_at, 20, 1)
+              WHEN '+' THEN DATE_SUB(
+                STR_TO_DATE(
+                  SUBSTRING(auth_sessions.expires_at, 1, 19),
+                  '%Y-%m-%dT%H:%i:%s'
+                ),
+                INTERVAL (
+                  CAST(SUBSTRING(auth_sessions.expires_at, 21, 2) AS UNSIGNED) * 60
+                  + CAST(SUBSTRING(auth_sessions.expires_at, 24, 2) AS UNSIGNED)
+                ) MINUTE
+              )
+              ELSE DATE_ADD(
+                STR_TO_DATE(
+                  SUBSTRING(auth_sessions.expires_at, 1, 19),
+                  '%Y-%m-%dT%H:%i:%s'
+                ),
+                INTERVAL (
+                  CAST(SUBSTRING(auth_sessions.expires_at, 21, 2) AS UNSIGNED) * 60
+                  + CAST(SUBSTRING(auth_sessions.expires_at, 24, 2) AS UNSIGNED)
+                ) MINUTE
+              )
+            END
+          ELSE STR_TO_DATE(
+            REPLACE(auth_sessions.expires_at, 'T', ' '),
+            '%Y-%m-%d %H:%i:%s'
+          )
+        END
+      ) > UTC_TIMESTAMP()
+  )
+) AS check_line;
 
 SELECT CONCAT('analysis_tasks.row_count=', COUNT(*)) AS check_line
 FROM analysis_tasks;
@@ -96,10 +152,6 @@ WHERE membership_id = 'membership-user-zoe-northstar-retail-china';
 SELECT CONCAT('membership.secondary.role=', role) AS check_line
 FROM workspace_memberships
 WHERE membership_id = 'membership-user-zoe-northstar-retail-sea';
-
-SELECT CONCAT('authSession.currentWorkspaceId=', current_workspace_id) AS check_line
-FROM auth_sessions
-WHERE auth_session_id = 'auth-session-user-zoe-china';
 
 SELECT CONCAT('analysisTaskId=', analysis_task_id) AS check_line
 FROM analysis_tasks

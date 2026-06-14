@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
+import { DesktopOutlined, DownOutlined, MoonOutlined, SunOutlined } from "@ant-design/icons";
+import { Avatar, Button, Divider, Flex, Popover, Segmented, Space, Tag, Typography, theme } from "antd";
 
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../providers/AppThemeProvider";
 import type { AuthSessionViewModel } from "../providers/authViewModel";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import { useI18n } from "../../shared/i18n/I18nProvider";
-import { localeOptions } from "../../shared/i18n/localeTypes";
 import type { AppLocale } from "../../shared/i18n/localeTypes";
 import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
@@ -27,7 +27,7 @@ type AppShellProps = {
   currentRoute?: StaticRouteKey;
   onLogout?: () => void;
   onNavigate?: (route: StaticRouteKey, routeState?: AppRouteState) => void;
-  onOpenWorkspaceSelection?: () => void;
+  onSelectWorkspace?: (workspaceId: string) => Promise<void>;
   routeState?: AppRouteState;
   session: AuthSessionViewModel & {
     currentWorkspace: NonNullable<AuthSessionViewModel["currentWorkspace"]>;
@@ -38,7 +38,7 @@ export function AppShell({
   currentRoute,
   onLogout,
   onNavigate,
-  onOpenWorkspaceSelection,
+  onSelectWorkspace,
   routeState,
   session
 }: AppShellProps) {
@@ -94,57 +94,68 @@ export function AppShell({
   const userPreferenceContent = (
     <Space
       direction="vertical"
-      size={shellThemeTokens.shellSectionGap}
+      size={12}
       style={{ minWidth: shellThemeTokens.popoverMinWidth }}
     >
-      <Space direction="vertical" size={4}>
+      <Space direction="vertical" size={4} style={{ width: "100%" }}>
         <Typography.Text style={shellTypographyStyles.cardTitle}>
           {session.user.displayName}
         </Typography.Text>
         <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-          {session.currentWorkspace.role}
-        </Typography.Text>
-        <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
           {session.user.email}
         </Typography.Text>
+        <Tag color="blue" style={{ marginInlineEnd: 0, width: "fit-content" }}>
+          {session.currentWorkspace.role}
+        </Tag>
       </Space>
       <Divider style={{ margin: 0 }} />
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
-        <Space direction="vertical" size={6} style={{ width: "100%" }}>
+      <Space direction="vertical" size={10} style={{ width: "100%" }}>
+        <Flex align="center" justify="space-between" gap={12}>
           <Typography.Text type="secondary">{t("language")}</Typography.Text>
           <Segmented
-            block
+            options={[
+              { label: "简中", value: "zh-CN" },
+              { label: "EN", value: "en-US" }
+            ]}
             onChange={(value) => setLocale(value as AppLocale)}
-            options={localeOptions}
+            size="small"
             value={locale}
           />
-        </Space>
-        <Space direction="vertical" size={6} style={{ width: "100%" }}>
+        </Flex>
+        <Flex align="center" justify="space-between" gap={12}>
           <Typography.Text type="secondary">{t("theme")}</Typography.Text>
           <Segmented
-            block
             onChange={(value) => setThemeMode(value as ThemeMode)}
             options={[
-              { label: t("themeMode.system"), value: "system" },
-              { label: t("themeMode.light"), value: "light" },
-              { label: t("themeMode.dark"), value: "dark" }
+              {
+                label: <DesktopOutlined aria-label={t("themeMode.system")} />,
+                value: "system"
+              },
+              { label: <SunOutlined aria-label={t("themeMode.light")} />, value: "light" },
+              { label: <MoonOutlined aria-label={t("themeMode.dark")} />, value: "dark" }
             ]}
+            size="small"
             value={themeMode}
           />
-        </Space>
+        </Flex>
+        <Button
+          block
+          onClick={() => void onLogout?.()}
+          style={{ justifyContent: "flex-start" }}
+          type="text"
+        >
+          退出登录
+        </Button>
       </Space>
     </Space>
   );
   const header = (
     <HeaderBar
-      currentUserEmail={session.user.email}
-      currentUserName={session.user.displayName}
       currentUserRole={session.currentWorkspace.role}
+      currentWorkspaceId={session.currentWorkspace.workspaceId}
       currentWorkspaceName={session.currentWorkspace.name}
-      logoutLabel="退出登录"
-      onLogout={onLogout}
-      onOpenWorkspaceSelection={onOpenWorkspaceSelection}
-      workspaceSwitchLabel="切换工作区"
+      onSelectWorkspace={onSelectWorkspace}
+      workspaces={session.workspaces}
     />
   );
   const rootLeftNavContent = (
@@ -196,28 +207,49 @@ export function AppShell({
         <Popover
           content={userPreferenceContent}
           placement="topLeft"
-          title={t("userMenu")}
+          styles={{
+            body: {
+              background: token.colorBgElevated,
+              border: `${shellThemeTokens.surfaceBorderWidth}px solid ${token.colorBorderSecondary}`,
+              boxShadow: token.boxShadowSecondary
+            }
+          }}
           trigger="click"
         >
           <Button
+            aria-label={t("userMenu")}
             block
             style={{
+              alignItems: "center",
               ...shellTypographyStyles.buttonLabel,
+              display: "inline-flex",
               height: "auto",
-              justifyContent: "flex-start",
+              justifyContent: "space-between",
               paddingBlock: shellThemeTokens.userButtonPaddingBlock,
               paddingInline: shellThemeTokens.userButtonPaddingInline
             }}
             type="default"
           >
-            <Space direction="vertical" size={2} style={{ width: "100%" }}>
-              <Typography.Text style={shellTypographyStyles.cardTitle}>
+            <Flex align="center" gap={10} style={{ minWidth: 0 }}>
+              <Avatar
+                size={28}
+                style={{
+                  background: token.colorFillSecondary,
+                  color: token.colorText
+                }}
+              >
+                {session.user.displayName.slice(0, 1).toUpperCase()}
+              </Avatar>
+              <Typography.Text ellipsis style={{ ...shellTypographyStyles.cardTitle, minWidth: 0 }}>
                 {session.user.displayName}
               </Typography.Text>
-              <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+            </Flex>
+            <Flex align="center" gap={8}>
+              <Tag color="blue" style={{ marginInlineEnd: 0 }}>
                 {session.currentWorkspace.role}
-              </Typography.Text>
-            </Space>
+              </Tag>
+              <DownOutlined />
+            </Flex>
           </Button>
         </Popover>
       </div>

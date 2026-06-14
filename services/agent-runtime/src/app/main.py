@@ -1,6 +1,7 @@
 """Agent Runtime FastAPI 入口模块。"""
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.auth import AuthContextResolutionError
 from src.app.config import get_settings
@@ -16,6 +17,15 @@ def create_app() -> FastAPI:
     """创建最小 FastAPI 应用。"""
     settings = get_settings()
     application = FastAPI(title=settings.service_name, version=settings.version)
+
+    if settings.cors_allowed_origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_allowed_origins),
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     @application.exception_handler(AuthContextResolutionError)
     async def handle_auth_context_resolution_error(

@@ -1,12 +1,28 @@
 :80 {
   encode gzip zstd
 
-  @health path /health
-  handle @health {
-    header Content-Type "text/plain; charset=utf-8"
-    respond "ok" 200
-  }
+  route {
+    @health path /health
+    handle @health {
+      header Content-Type "text/plain; charset=utf-8"
+      respond "ok" 200
+    }
 
-  root * /srv
-  file_server
+    @runtime_health path /runtime/health
+    handle @runtime_health {
+      rewrite * /health
+      reverse_proxy agent-runtime:8000
+    }
+
+    @runtime_api path /auth /auth/* /workspaces /workspaces/* /analysis-tasks* /analysis-runs* /conversations*
+    handle @runtime_api {
+      reverse_proxy agent-runtime:8000
+    }
+
+    handle {
+      root * /srv
+      try_files {path} /index.html
+      file_server
+    }
+  }
 }
