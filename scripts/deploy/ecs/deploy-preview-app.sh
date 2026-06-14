@@ -133,6 +133,14 @@ sync_repo_build_context() {
     --exclude .tmp \
     --exclude __pycache__ \
     --exclude '*.pyc' \
+    --exclude .env \
+    --exclude '.env.*' \
+    --exclude '**/.env' \
+    --exclude '**/.env.*' \
+    --exclude '*.pem' \
+    --exclude '*.key' \
+    --exclude '*.p12' \
+    --exclude '*.pfx' \
     --exclude apps/web/dist
 }
 
