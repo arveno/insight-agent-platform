@@ -278,6 +278,33 @@ Analysis
 - `血缘 = 指标从哪些表、字段、任务或来源计算而来`；`证据 = 支撑指标异常判断或指标可信度的来源材料`。证据不等于 RAG，RAG 只是证据来源之一。
 - `Platform Operations` 与 `Data & Knowledge`、`Dashboard`、`Analysis`、`Governance`、`Observability` 相关，但当前阶段只承接当前 `Workspace` 的只读平台健康总览，不承接全租户或全平台运维后台。
 
+### Dashboard / Metrics shared context source rule
+
+- `Dashboard` 是 current workspace 的经营总览 surface。
+- `Metrics` 是 current workspace 的指标目录 / 指标详情 surface。
+- `Dashboard` 和 `Metrics` 必须消费同一个 current workspace metric source；`Dashboard` 不拥有一套独立 metric source，`Metrics` 也不拥有另一套独立 metric source。
+- `Dashboard metric tile`、`Metrics list item`、`Metric detail`、以及后续 `Report / Evidence` 中出现的 metric ref，都必须回到同一个 canonical `metricId`。
+- 入口位置可以不同：
+  - `Dashboard metric tile`
+  - `Metrics list item`
+  - `Metric detail`
+  - 后续 `Report / Evidence` 引用
+- 但进入 `Analysis` 的 `sourceRef / contextPack` 构造必须统一。
+- `Analysis` 主区只承接 text-first conversation：
+  - `user message bubble`
+  - `assistant message bubble`
+- 结构化 context 不塞进 conversation bubble，必须在右侧 `Inspector` 展示。
+- submit 语义统一为：
+  - `text-only input`
+  - optional `contextPack`
+  - authenticated `user / workspace / role` from session context
+  - 用户发送后 `create/reuse Conversation -> create AnalysisTask with contextPack -> create AnalysisRun -> create User Message`
+- 当前阶段不再区分“异常追问 / 结果追问 / 普通追问”的执行路径；这些只是不同来源的 context，最终都进入同一个 `text + context` submit transaction。
+- `#223` 第一阶段只建立 shared metric source 与 Analysis text context entry。
+- `#202-2` 仍负责 `SourceRef detail / Open full source`。
+- `#203` 仍负责 `Conversation list / re-entry`。
+- 本规则不推翻既有 `#202` subject-scoped Inspector tree 方向，也不把 `Dashboard` 改成单个 metric detail 页面。
+
 ### 3.6 AI Platform Core Technology Boundary
 
 产品层面的 AI 技术边界固定如下：
