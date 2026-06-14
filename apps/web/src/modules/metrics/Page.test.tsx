@@ -92,16 +92,28 @@ describe("MetricsPage", () => {
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith("analysis", {
-      draftContextPack: {
-        chips: ["营收质量", "Last 30 days", "当前值 ¥12.8M", "环比 -3.2%", "风险 medium"],
-        sourceId: "metric-recognized-revenue",
-        sourceTitle: "确认收入",
-        sourceType: "metric",
+      analysisContextPack: expect.objectContaining({
         suggestedPrompt:
           "请基于 确认收入 在 Last 30 days 的表现，解释 环比 -3.2% 的主要原因，并给出下一步建议。",
-        summary:
-          "当前值 ¥12.8M，阈值 收入增速 < -2%，趋势 环比 -3.2%，可结合公式、血缘和证据继续分析。"
-      }
+        root: expect.objectContaining({
+          chips: ["营收质量", "Last 30 days", "环比 -3.2%", "风险 medium"],
+          kind: "metric",
+          sourceRef: {
+            metricId: "metric-recognized-revenue",
+            type: "metric"
+          },
+          summary:
+            "当前值 ¥12.8M，阈值 收入增速 < -2%，趋势 环比 -3.2%，可结合公式、血缘和证据继续分析。",
+          timeRange: {
+            key: "last_30_days",
+            label: "Last 30 days"
+          },
+          title: "确认收入",
+          value: "¥12.8M"
+        }),
+        traceability: "direct_refs",
+        version: 1
+      })
     });
     expect(screen.queryByRole("button", { name: "新增指标" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();

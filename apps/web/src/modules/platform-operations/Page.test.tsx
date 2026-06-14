@@ -76,7 +76,7 @@ describe("PlatformOperationsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "带上下文进入 Analysis" }));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    expect(onNavigate).toHaveBeenCalledWith("analysis");
+    expect(onNavigate).toHaveBeenCalledWith("analysis", undefined);
     expect(screen.queryByText("真实 conversation")).toBeNull();
     expect(screen.queryByText("真实 run")).toBeNull();
   });

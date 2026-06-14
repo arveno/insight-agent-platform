@@ -3,6 +3,7 @@ import { ConfigProvider } from "antd";
 
 import { I18nProvider, useI18n } from "../i18n/I18nProvider";
 import { getAntdThemeConfig } from "../theme/antdTheme";
+import { CurrentWorkspaceBindingProvider } from "../workspace/CurrentWorkspaceBindingProvider";
 
 type TestProvidersProps = {
   children: ReactNode;
@@ -21,7 +22,14 @@ function TestConfigProvider({ children }: TestProvidersProps) {
 
   return (
     <ConfigProvider locale={antdLocale} theme={getAntdThemeConfig("light")}>
-      {children}
+      <CurrentWorkspaceBindingProvider
+        value={{
+          workspaceId: "workspace-northstar-retail-china",
+          workspaceName: "Northstar Retail China"
+        }}
+      >
+        {children}
+      </CurrentWorkspaceBindingProvider>
     </ConfigProvider>
   );
 }

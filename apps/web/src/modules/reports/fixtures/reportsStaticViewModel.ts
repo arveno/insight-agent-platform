@@ -8,7 +8,8 @@ import {
 import type {
   ReportDetailViewModel,
   ReportListItemViewModel,
-  ReportsViewModel
+  ReportsViewModel,
+  ReportsWorkspaceBinding
 } from "../models/reportsViewModel";
 
 function toReportListItem(report: ReportDetailViewModel): ReportListItemViewModel {
@@ -310,11 +311,28 @@ export const reportCatalog: ReportDetailViewModel[] = [
 
 const defaultSelectedReport = reportCatalog[0];
 
+function bindReportToWorkspace(
+  report: ReportDetailViewModel,
+  workspaceBinding: ReportsWorkspaceBinding
+): ReportDetailViewModel {
+  const [, ...sourceContextParts] = report.sourceContext.split(" / ");
+
+  return {
+    ...report,
+    sourceContext: [workspaceBinding.workspaceName, ...sourceContextParts].join(" / "),
+    workspaceId: workspaceBinding.workspaceId
+  };
+}
+
 export function createReportsViewModel(
+  workspaceBinding: ReportsWorkspaceBinding,
   selectedReportKey = defaultSelectedReport.key
 ): ReportsViewModel {
   const selectedDetail =
-    reportCatalog.find((report) => report.key === selectedReportKey) ?? defaultSelectedReport;
+    bindReportToWorkspace(
+      reportCatalog.find((report) => report.key === selectedReportKey) ?? defaultSelectedReport,
+      workspaceBinding
+    );
 
   return {
     actionSuggestions: selectedDetail.actionSuggestions,
@@ -355,7 +373,9 @@ export function createReportsViewModel(
     },
     readonlyState: defaultReadonlyState,
     reportSections: selectedDetail.sections,
-    reports: reportCatalog.map((report) => toReportListItem(report)),
+    reports: reportCatalog.map((report) =>
+      toReportListItem(bindReportToWorkspace(report, workspaceBinding))
+    ),
     reportsState: defaultStateCoverage.ready,
     rightAssistSummary: {
       descriptionKey: "page.reports.rightAssist.description",
@@ -381,4 +401,7 @@ export function createReportsViewModel(
   };
 }
 
-export const reportsStaticViewModel = createReportsViewModel();
+export const reportsStaticViewModel = createReportsViewModel({
+  workspaceId: "workspace-northstar-retail-china",
+  workspaceName: "Northstar Retail China"
+});

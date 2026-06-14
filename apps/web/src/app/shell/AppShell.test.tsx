@@ -3,6 +3,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type {
   AnalysisRun,
+  AnalysisTask,
   Conversation,
   Decision,
   Message,
@@ -48,6 +49,7 @@ vi.mock("../../shared/graph/RelationshipGraphCanvas", () => ({
 
 type GoldenPathExample = {
   analysisRun: AnalysisRun;
+  analysisTask: AnalysisTask;
   conversation: Conversation;
   decisions: Decision[];
   messageStream: MessageStream[];
@@ -120,6 +122,10 @@ function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
 
     if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}`)) {
       return Response.json(goldenPath.analysisRun);
+    }
+
+    if (url.endsWith(`/analysis-tasks/${goldenPath.analysisTask.analysisTaskId}`)) {
+      return Response.json(goldenPath.analysisTask);
     }
 
     if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}/messages`)) {
@@ -242,6 +248,7 @@ describe("AppShell", () => {
     const analysisNavigation = screen.getByRole("navigation", {
       name: "Analysis session navigation"
     });
+    const main = screen.getByRole("region", { name: "Analysis conversation" });
 
     expect(within(analysisNavigation).getByText("分析")).toBeTruthy();
     expect(within(analysisNavigation).getByRole("textbox", { name: "搜索会话" })).toBeTruthy();
@@ -250,8 +257,9 @@ describe("AppShell", () => {
     expect(within(analysisNavigation).queryByText("毛利率波动分析")).toBeNull();
     expect(within(analysisNavigation).queryByText("库存异常定位")).toBeNull();
     expect(within(analysisNavigation).getByText("暂无匹配会话")).toBeTruthy();
-    expect(screen.getByText("输入问题开始分析")).toBeTruthy();
-    expect(screen.getAllByText("Draft Context").length).toBeGreaterThanOrEqual(2);
+    expect(within(main).getByText("输入问题开始分析")).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "输入你想分析的问题" })).toBeTruthy();
+    expect(screen.queryByText("Draft Context")).toBeNull();
     expect(screen.queryByText("No analysis runtime selected")).toBeNull();
   });
 
@@ -270,14 +278,15 @@ describe("AppShell", () => {
       name: "Analysis session navigation"
     });
     const main = await screen.findByRole("region", { name: "Analysis conversation" });
+    const messageList = within(main).getByRole("log", { name: "Analysis message list" });
 
     expect(within(main).queryByRole("heading", { name: "分析" })).toBeNull();
     expect(within(main).queryByRole("button", { name: "查看报告" })).toBeNull();
     expect(within(main).queryByRole("button", { name: "查看观测" })).toBeNull();
-    expect(
-      within(main).getAllByText("来自 Analysis conversation · 收入增速异常 · Current scope")
-    ).toHaveLength(2);
     expect(within(analysisNavigation).getByText("收入增速异常")).toBeTruthy();
+    expect(within(messageList).getByText("System")).toBeTruthy();
+    expect(within(messageList).getByText("User")).toBeTruthy();
+    expect(within(messageList).getByText("Assistant")).toBeTruthy();
     expect(
       within(main).getByText("解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。")
     ).toBeTruthy();
@@ -285,14 +294,15 @@ describe("AppShell", () => {
       within(main).getAllByText(
         "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配，而不是整体价格体系失效。"
       )
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+    expect(within(main).getByText("点击消息查看本次运行。")).toBeTruthy();
     expect(within(main).getByRole("group", { name: "Analysis composer" })).toBeTruthy();
-    expect(within(main).getByRole("textbox", { name: "后续追问" })).toBeTruthy();
+    expect(within(main).getByRole("textbox", { name: "输入你想分析的问题" })).toBeTruthy();
+    expect(within(main).getByText(/Stream completed · 更新于/)).toBeTruthy();
     expect(within(main).queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
 
     expect(screen.getAllByText("Run Trace").length).toBeGreaterThan(0);
-    expect(screen.getByText("runId: analysis-q2-revenue-gap")).toBeTruthy();
     expect(screen.getByText("1. run.created")).toBeTruthy();
     expect(screen.getByText("5. tool_call.completed")).toBeTruthy();
     expect(screen.getByText("7. synthesis.started")).toBeTruthy();
@@ -300,10 +310,10 @@ describe("AppShell", () => {
     expect(screen.queryByText("Feedback / Bad Case 入口")).toBeNull();
     expect(screen.queryByText("报告补充入口")).toBeNull();
     expect(screen.queryByText(/技术对接：/)).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 
-  it("opens and closes run trace event detail without leaving analysis", async () => {
+  it("opens and closes run trace event detail within the inspector without leaving analysis", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
     const fetchMock = installRuntimeFetchMock(goldenPath);
     window.history.replaceState(
@@ -318,27 +328,23 @@ describe("AppShell", () => {
       name: "Analysis session navigation"
     });
     const main = await screen.findByRole("region", { name: "Analysis conversation" });
+    const runCreatedButtonName = /运行轨迹 1\. run\.created/;
 
-    fireEvent.click(screen.getByRole("button", { name: "查看 Trace 事件详情：1. run.created" }));
+    fireEvent.click(screen.getByRole("button", { name: runCreatedButtonName }));
 
-    const dialog = screen.getByRole("dialog", { name: "Trace Event Detail" });
-    expect(within(dialog).getByText("1. run.created")).toBeTruthy();
-    expect(within(dialog).getByText("run.created", { selector: "code" })).toBeTruthy();
-    expect(
-      within(dialog).getByText("记录当前用户问题，并为后续运行绑定上下文。", {
-        selector: "div.ant-typography"
-      })
-    ).toBeTruthy();
+    expect(screen.getByText("1. run.created")).toBeTruthy();
+    expect(screen.getByText("11:08")).toBeTruthy();
+    expect(screen.getByText("succeeded")).toBeTruthy();
+    expect(screen.getByText("仅摘要")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /运行轨迹 2\. context\.bound/ })).toBeNull();
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "关闭详情" }));
+    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
 
-    expect(screen.queryByRole("dialog", { name: "Trace Event Detail" })).toBeNull();
+    expect(screen.getByRole("button", { name: runCreatedButtonName })).toBeTruthy();
     expect(analysisNavigation).toBeTruthy();
-    expect(
-      within(main).getAllByText("来自 Analysis conversation · 收入增速异常 · Current scope")
-    ).toHaveLength(2);
+    expect(within(main).getByText("点击消息查看本次运行。")).toBeTruthy();
     expect(screen.getAllByText("Run Trace").length).toBeGreaterThan(0);
-    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 
   it("enters reports navigation mode and keeps report selection in local UI state", () => {

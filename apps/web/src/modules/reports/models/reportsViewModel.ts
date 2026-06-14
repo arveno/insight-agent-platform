@@ -74,3 +74,8 @@ export type ReportsViewModel = StaticPageViewModelBase & {
   selectedReport: ReportListItemViewModel;
   sourceEvidence: ReportSourceEvidenceViewModel[];
 };
+
+export type ReportsWorkspaceBinding = {
+  workspaceId: string;
+  workspaceName: string;
+};
