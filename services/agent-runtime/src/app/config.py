@@ -12,6 +12,12 @@ def _read_bool_env(name: str, default: bool) -> bool:
     return raw_value.lower() in {"1", "true", "yes", "on"}
 
 
+def _read_csv_env(name: str) -> tuple[str, ...]:
+    raw_value = getenv(name, "")
+    values = [value.strip() for value in raw_value.split(",")]
+    return tuple(value for value in values if value)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Agent Runtime 最小配置。"""
@@ -28,6 +34,7 @@ class Settings:
     auth_session_cookie_samesite: str = "lax"
     auth_session_cookie_secure: bool = False
     auth_session_ttl_seconds: int = 2_592_000
+    cors_allowed_origins: tuple[str, ...] = ()
 
 
 @lru_cache
@@ -48,4 +55,5 @@ def get_settings() -> Settings:
             default=app_env != "local",
         ),
         auth_session_ttl_seconds=int(getenv("AUTH_SESSION_TTL_SECONDS", "2592000")),
+        cors_allowed_origins=_read_csv_env("CORS_ALLOWED_ORIGINS"),
     )

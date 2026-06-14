@@ -17,6 +17,8 @@
     "migration:runtime-foundation": "./scripts/migration/runtime_foundation.sh migrate",
     "seed:runtime-foundation": "./scripts/migration/runtime_foundation.sh seed",
     "query-verify:runtime-foundation": "./scripts/migration/runtime_foundation.sh query-verify",
+    "deploy:ecs-preview": "bash scripts/deploy/ecs/deploy-preview-app.sh",
+    "smoke:ecs-preview-auth": "bash scripts/smoke/ecs-preview-auth.sh",
     "verify": "pnpm check:structure && pnpm check:contracts && pnpm format:check",
     "format": "prettier --write README.md \"*.{json,mjs}\" \"docs/**/*.md\" \".github/**/*.yml\" \"apps/web/index.html\" \"apps/web/**/*.{json,ts,tsx}\"",
     "format:check": "prettier --check README.md \"*.{json,mjs}\" \"docs/**/*.md\" \".github/**/*.yml\" \"apps/web/index.html\" \"apps/web/**/*.{json,ts,tsx}\"",
@@ -28,7 +30,7 @@
     "format:backend": "cd services/agent-runtime && uv run ruff format .",
     "typecheck:backend": "cd services/agent-runtime && uv run mypy src tests",
     "test:backend": "cd services/agent-runtime && uv run pytest",
-    "smoke": "echo \"smoke 检查占位\""
+    "smoke": "pnpm smoke:ecs-preview-auth"
   },
   "scriptsInfo": {
     "dev": "默认启动前端开发服务，等价于 dev:web。",
@@ -44,6 +46,8 @@
     "migration:runtime-foundation": "执行 #157-1 runtime foundation migration，默认目标为 ECS preview MySQL；如需本地适配器，显式设置 IAP_MIGRATION_TARGET=local。",
     "seed:runtime-foundation": "执行 #157-1 runtime foundation seed，默认目标为 ECS preview MySQL；如需本地适配器，显式设置 IAP_MIGRATION_TARGET=local。",
     "query-verify:runtime-foundation": "执行 #157-1 runtime foundation 只读 query verify，默认目标为 ECS preview MySQL；如需本地适配器，显式设置 IAP_MIGRATION_TARGET=local。",
+    "deploy:ecs-preview": "构建前端、同步 ECS preview 资产、构建 agent-runtime 容器、启动 preview 栈并执行 migration/seed/query-verify。",
+    "smoke:ecs-preview-auth": "对 ECS preview 执行 curl 登录 smoke，覆盖 /runtime/health、/login、/auth/login、/auth/me、/workspaces 和 /auth/select-workspace。",
     "verify": "运行结构、contracts 和格式检查。",
     "format": "使用 Prettier 格式化项目内前端、文档和配置文件。",
     "format:check": "检查格式是否符合 Prettier 规则，不修改文件。",
@@ -55,7 +59,7 @@
     "format:backend": "运行后端 Ruff 格式化。",
     "typecheck:backend": "运行后端 mypy 类型检查。",
     "test:backend": "运行后端 pytest 测试。",
-    "smoke": "Smoke Test 入口，当前仍是占位。"
+    "smoke": "Smoke Test 入口，当前指向 ECS preview auth smoke。"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

@@ -6,8 +6,11 @@
 
 - ECS host bootstrap foundation
 - ECS preview compose infra foundation
+- ECS preview runnable app deployment slice
 
-当前仍不负责完整 deploy，不负责完整 smoke / rollback，不负责启动 runtime / worker 业务容器。
+当前已支持 frontend static + `agent-runtime` 的 runnable app deploy，但仍不负责 `agent-worker`、`Milvus Lite`、完整 CI/CD 或 rollback versioning。
+
+如 ECS 默认 Python index 出现超时，可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 覆盖 runtime image build 使用的依赖源；默认值为 `https://mirrors.aliyun.com/pypi/simple/`。
 
 ## 前置条件
 
@@ -137,11 +140,12 @@ bash scripts/deploy/ecs/verify-bootstrap.sh --hello-world
 
 ## Compose Infra Foundation
 
-当前 compose infra foundation 只覆盖：
+当前 `compose.ecs.preview.yml` 包含：
 
 - `mysql`
 - `redis`
 - `caddy`
+- `agent-runtime`
 
 镜像来源通过 compose env 配置，不再把 `redis:7` 的 ECS 手工 `docker tag` 视为正式流程。Preview 如需使用 ACR，应通过 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE` 配置镜像地址；`ACR Personal Edition` 只作为 preview 镜像来源，不作为 production registry。
 
@@ -216,6 +220,62 @@ bash scripts/deploy/ecs/up-compose-infra.sh
 
 不启动 `agent-runtime`、`agent-worker`，也不部署 frontend build output。
 
+## Runnable App Deployment Slice
+
+本地执行完整 runnable app deploy：
+
+```bash
+IAP_ECS_HOST_ALIAS=iap-ecs \
+PREVIEW_BASE_URL=http://<ECS_IP_OR_DOMAIN> \
+pnpm deploy:ecs-preview
+```
+
+该入口会：
+
+- 本地执行 `pnpm --dir apps/web build`
+- 同步 `apps/web/dist` 到 `/opt/insight-agent-platform/shared/frontend`
+- 同步 `deploy/docker/**` 到 `/opt/insight-agent-platform/deploy/docker`
+- 同步可重复的 runtime build context 到 `/opt/insight-agent-platform/repo`
+- 在 ECS 上 `docker compose build agent-runtime`
+- 在 ECS 上 `docker compose up -d mysql redis agent-runtime caddy`
+- 运行 `migration -> seed -> query verify`
+- 输出 `/login` 访问地址
+
+只做 dry-run：
+
+```bash
+bash scripts/deploy/ecs/deploy-preview-app.sh --dry-run
+```
+
+显式清空 ECS preview MySQL / Redis 数据后再部署：
+
+```bash
+IAP_ECS_HOST_ALIAS=iap-ecs \
+PREVIEW_BASE_URL=http://<ECS_IP_OR_DOMAIN> \
+pnpm deploy:ecs-preview -- --reset-data
+```
+
+auth smoke：
+
+```bash
+PREVIEW_BASE_URL=http://<ECS_IP_OR_DOMAIN> \
+pnpm smoke:ecs-preview-auth
+```
+
+本地前端通过 Vite proxy 调试 ECS preview：
+
+```bash
+VITE_AGENT_RUNTIME_BASE_URL=/api \
+VITE_AGENT_RUNTIME_PROXY_TARGET=http://<ECS_IP_OR_DOMAIN> \
+pnpm dev
+```
+
+访问：
+
+```text
+http://127.0.0.1:5173/login
+```
+
 ### 校验 compose infra
 
 在 ECS 上执行：
@@ -250,8 +310,8 @@ bash scripts/rollback/ecs-compose-infra.sh --reset-data
 
 ## 边界
 
-- 当前新增的是 compose infra foundation，不代表完整 `#164` 完成。
-- 当前不代表 runtime / worker / frontend build deployment / migration / seed / query verify / full smoke / rollback versioning 已完成。
-- 后续仍需接入 runtime container、worker container、frontend build output、migration、seed、query verify、full smoke 和 rollback versioning。
+- 当前新增的是 runnable app deployment slice，不代表完整 `#164` 完成。
+- 当前不代表 `agent-worker`、`Milvus Lite`、full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
+- 后续仍需补 worker、vector store、更多 smoke、failure simulation 和版本化 rollback。
 - 不允许手工改数据库；后续 preview reset 仍必须回到 `migration -> seed -> query verify`。
 - 不允许把 `MySQL 3306`、`Redis 6379`、`FastAPI 8000` 直接暴露到公网。

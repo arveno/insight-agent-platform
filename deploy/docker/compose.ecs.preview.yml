@@ -26,6 +26,45 @@ services:
     networks:
       - preview
 
+  agent-runtime:
+    build:
+      context: ${AGENT_RUNTIME_BUILD_CONTEXT:-/opt/insight-agent-platform/repo}
+      dockerfile: ${AGENT_RUNTIME_DOCKERFILE:-deploy/docker/agent-runtime/Dockerfile}
+      args:
+        AGENT_RUNTIME_PYPI_INDEX_URL: ${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${AGENT_RUNTIME_HOST_PORT:-8000}:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-preview}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      AUTH_SESSION_COOKIE_SECURE: ${AUTH_SESSION_COOKIE_SECURE:-false}
+      AUTH_SESSION_COOKIE_SAMESITE: ${AUTH_SESSION_COOKIE_SAMESITE:-lax}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173}
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://127.0.0.1:8000/health >/dev/null",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - preview
+
   redis:
     image: ${REDIS_IMAGE:-redis:7}
     restart: unless-stopped
@@ -49,7 +88,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/insight-agent-platform/deploy/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${CADDY_SITE_ROOT}:/srv:ro
     networks:
       - preview
