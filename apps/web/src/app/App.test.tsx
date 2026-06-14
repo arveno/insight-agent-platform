@@ -372,6 +372,19 @@ describe("App", () => {
     });
   });
 
+  it("hides seed credentials on the login page by default", async () => {
+    installAuthFetchMock();
+
+    renderAppAt("/login");
+
+    expect(await screen.findByRole("heading", { name: "登录 Insight Agent" })).toBeTruthy();
+    expect(screen.queryByText("Seed user:")).toBeNull();
+    expect(screen.queryByText("zoe@northstar.example.com")).toBeNull();
+    expect(screen.queryByText("zoe-password")).toBeNull();
+    expect(screen.queryByPlaceholderText("zoe@northstar.example.com")).toBeNull();
+    expect(screen.queryByPlaceholderText("zoe-password")).toBeNull();
+  });
+
   it("shows the runtime auth error on failed login", async () => {
     installAuthFetchMock();
 
@@ -443,7 +456,10 @@ describe("App", () => {
     expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(screen.getAllByText("Zoe Chen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("analyst").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "退出登录" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "当前工作区" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "用户入口" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "切换工作区" })).toBeNull();
   });
 
   it("logs out and returns to /login", async () => {
@@ -456,7 +472,8 @@ describe("App", () => {
 
     expect(await screen.findByText("经营状态总览")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "退出登录" }));
+    fireEvent.click(screen.getByRole("button", { name: "用户入口" }));
+    fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));
 
     expect(await screen.findByRole("heading", { name: "登录 Insight Agent" })).toBeTruthy();
     expect(window.location.pathname).toBe("/login");
@@ -478,18 +495,8 @@ describe("App", () => {
     expect(await screen.findByText("收入增速异常")).toBeTruthy();
     expect(screen.getAllByText("Run Trace").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "切换工作区" }));
-
-    expect(await screen.findByRole("heading", { name: "选择工作区" })).toBeTruthy();
-
-    const seaCard = (await screen.findByText("Northstar Retail SEA")).closest(
-      ".ant-card"
-    ) as HTMLElement | null;
-    if (!seaCard) {
-      throw new Error("Expected workspace card for Northstar Retail SEA.");
-    }
-
-    fireEvent.click(within(seaCard).getByRole("button", { name: "进入工作区" }));
+    fireEvent.click(screen.getByRole("button", { name: "当前工作区" }));
+    fireEvent.click(await screen.findByText("Northstar Retail SEA"));
 
     expect(await screen.findByText("输入问题开始分析")).toBeTruthy();
     expect(screen.queryByText("收入增速异常")).toBeNull();

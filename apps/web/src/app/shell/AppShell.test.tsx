@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -232,14 +232,35 @@ describe("AppShell", () => {
     expect(screen.queryByText("技术对接")).toBeNull();
   });
 
-  it("renders the authenticated header identity and workspace actions", () => {
+  it("renders a workspace dropdown and compact user menu without top-right account actions", async () => {
     renderAppShell();
 
+    expect(screen.getByRole("button", { name: "当前工作区" })).toBeTruthy();
     expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(screen.getAllByText("Ada Chen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("analyst").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "切换工作区" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "切换工作区" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "用户入口" }));
+
+    expect(await screen.findByText("ada@northstar.example.com")).toBeTruthy();
     expect(screen.getByRole("button", { name: "退出登录" })).toBeTruthy();
+    expect(screen.getByText("语言")).toBeTruthy();
+    expect(screen.getByText("主题")).toBeTruthy();
+  });
+
+  it("selects a workspace from the header dropdown", async () => {
+    const onSelectWorkspace = vi.fn().mockResolvedValue(undefined);
+
+    renderAppShell({ onSelectWorkspace });
+
+    fireEvent.click(screen.getByRole("button", { name: "当前工作区" }));
+    fireEvent.click(await screen.findByText("East Retail Demo"));
+
+    await waitFor(() => {
+      expect(onSelectWorkspace).toHaveBeenCalledWith("workspace-east-retail-demo");
+    });
   });
 
   it("enters analysis mode in draft state when no runtime bootstrap id is available", () => {

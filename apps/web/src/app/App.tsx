@@ -304,8 +304,9 @@ function AppRouter() {
         navigateUrl(buildLoginUrl(null), { replace: true });
       }}
       onNavigate={navigateToRoute}
-      onOpenWorkspaceSelection={() => {
-        navigateUrl(buildWorkspaceSelectionUrl(buildRoutePath(protectedRoute)));
+      onSelectWorkspace={async (workspaceId) => {
+        await selectWorkspace(workspaceId);
+        navigateUrl(buildRoutePath(protectedRoute), { replace: true });
       }}
       routeState={location.routeState}
       session={{

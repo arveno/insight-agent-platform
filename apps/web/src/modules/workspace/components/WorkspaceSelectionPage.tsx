@@ -1,18 +1,14 @@
 import { useState } from "react";
-import { Alert, Button, Card, Col, Flex, Row, Space, Tag, Typography } from "antd";
+import { Alert, Button, Card, Flex, Space, Tag, Typography, theme } from "antd";
 
-type WorkspaceSelectionOptionViewModel = {
-  membershipId: string;
-  name: string;
-  role: string;
-  workspaceId: string;
-};
+import { shellThemeTokens } from "../../../shared/theme/tokens";
+import type { WorkspaceOptionViewModel } from "../../../shared/workspace/workspaceOptionViewModel";
 
 type WorkspaceSelectionPageProps = {
   currentWorkspaceId?: string | null;
   displayName: string;
   onSelectWorkspace: (workspaceId: string) => Promise<void>;
-  workspaces: WorkspaceSelectionOptionViewModel[];
+  workspaces: WorkspaceOptionViewModel[];
 };
 
 export function WorkspaceSelectionPage({
@@ -21,6 +17,7 @@ export function WorkspaceSelectionPage({
   onSelectWorkspace,
   workspaces
 }: WorkspaceSelectionPageProps) {
+  const { token } = theme.useToken();
   const [pendingWorkspaceId, setPendingWorkspaceId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -38,9 +35,18 @@ export function WorkspaceSelectionPage({
   };
 
   return (
-    <main style={{ minHeight: "100vh", padding: 24 }}>
-      <Flex align="center" justify="center" style={{ minHeight: "100%" }}>
-        <Space direction="vertical" size={20} style={{ maxWidth: 960, width: "100%" }}>
+    <main
+      style={{
+        alignItems: "center",
+        background: token.colorBgLayout,
+        display: "flex",
+        justifyContent: "center",
+        minHeight: "100vh",
+        padding: shellThemeTokens.pagePadding
+      }}
+    >
+      <Flex align="center" justify="center" style={{ width: "100%" }}>
+        <Space direction="vertical" size={20} style={{ maxWidth: 520, width: "100%" }}>
           <Space direction="vertical" size={6}>
             <Typography.Title level={3} style={{ margin: 0 }}>
               选择工作区
@@ -59,39 +65,43 @@ export function WorkspaceSelectionPage({
             />
           ) : null}
 
-          <Row gutter={[16, 16]}>
+          <Space direction="vertical" size={16} style={{ width: "100%" }}>
             {workspaces.map((workspace) => {
               const isCurrentWorkspace = workspace.workspaceId === currentWorkspaceId;
               const isPending = workspace.workspaceId === pendingWorkspaceId;
 
               return (
-                <Col key={workspace.membershipId} md={12} xs={24}>
-                  <Card>
-                    <Space direction="vertical" size={16} style={{ width: "100%" }}>
-                      <Space align="center" size={8} wrap>
-                        <Typography.Title level={5} style={{ margin: 0 }}>
-                          {workspace.name}
-                        </Typography.Title>
-                        <Tag color="blue">{workspace.role}</Tag>
-                        {isCurrentWorkspace ? <Tag>当前工作区</Tag> : null}
-                      </Space>
-                      <Typography.Text type="secondary">
-                        workspaceId: {workspace.workspaceId}
-                      </Typography.Text>
-                      <Button
-                        block
-                        loading={isPending}
-                        onClick={() => void handleSelectWorkspace(workspace.workspaceId)}
-                        type="primary"
-                      >
-                        {isCurrentWorkspace ? "继续进入" : "进入工作区"}
-                      </Button>
+                <Card
+                  key={workspace.membershipId}
+                  style={{
+                    background: token.colorBgElevated,
+                    borderColor: token.colorBorderSecondary
+                  }}
+                >
+                  <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                    <Space align="center" size={8} wrap>
+                      <Typography.Title level={5} style={{ margin: 0 }}>
+                        {workspace.name}
+                      </Typography.Title>
+                      <Tag color="blue">{workspace.role}</Tag>
+                      {isCurrentWorkspace ? <Tag>当前工作区</Tag> : null}
                     </Space>
-                  </Card>
-                </Col>
+                    <Typography.Text type="secondary">
+                      选择此工作区以继续当前会话，并应用对应 membership role。
+                    </Typography.Text>
+                    <Button
+                      block
+                      loading={isPending}
+                      onClick={() => void handleSelectWorkspace(workspace.workspaceId)}
+                      type="primary"
+                    >
+                      {isCurrentWorkspace ? "继续进入" : "进入工作区"}
+                    </Button>
+                  </Space>
+                </Card>
               );
             })}
-          </Row>
+          </Space>
         </Space>
       </Flex>
     </main>

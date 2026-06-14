@@ -1,50 +1,96 @@
 import type { ReactNode } from "react";
-import { Button, Flex, Space, Tag, Typography, theme } from "antd";
+import { DownOutlined } from "@ant-design/icons";
+import { Button, Dropdown, Flex, Space, Tag, Typography, theme } from "antd";
+import type { MenuProps } from "antd";
 
 import { shellThemeTokens } from "../../shared/theme/tokens";
+import type { WorkspaceOptionViewModel } from "../../shared/workspace/workspaceOptionViewModel";
 
 export type HeaderBarProps = {
-  currentUserEmail?: ReactNode;
-  currentUserName: ReactNode;
   currentUserRole: ReactNode;
+  currentWorkspaceId: string;
   currentWorkspaceName: ReactNode;
   feedback?: ReactNode;
-  logoutLabel: ReactNode;
-  onLogout?: () => void;
-  onOpenWorkspaceSelection?: () => void;
-  workspaceSwitchLabel: ReactNode;
+  onSelectWorkspace?: (workspaceId: string) => void;
+  workspaces: WorkspaceOptionViewModel[];
 };
 
 export function HeaderBar({
-  currentUserEmail,
-  currentUserName,
   currentUserRole,
+  currentWorkspaceId,
   currentWorkspaceName,
   feedback,
-  logoutLabel,
-  onLogout,
-  onOpenWorkspaceSelection,
-  workspaceSwitchLabel
+  onSelectWorkspace,
+  workspaces
 }: HeaderBarProps) {
   const { token } = theme.useToken();
+  const workspaceItems: MenuProps["items"] = workspaces.map((workspace) => {
+    const isCurrentWorkspace = workspace.workspaceId === currentWorkspaceId;
+
+    return {
+      disabled: isCurrentWorkspace || !onSelectWorkspace,
+      key: workspace.workspaceId,
+      label: (
+        <Flex align="center" justify="space-between" gap={token.marginSM}>
+          <Space direction="vertical" size={0}>
+            <Typography.Text>{workspace.name}</Typography.Text>
+            <Typography.Text
+              style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
+            >
+              {workspace.role}
+            </Typography.Text>
+          </Space>
+          <Space align="center" size={8}>
+            <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+              {workspace.role}
+            </Tag>
+            {isCurrentWorkspace ? <Tag style={{ marginInlineEnd: 0 }}>当前工作区</Tag> : null}
+          </Space>
+        </Flex>
+      )
+    };
+  });
 
   return (
     <Flex
       align="center"
-      justify="space-between"
+      justify="flex-start"
       style={{
         gap: token.margin,
         height: "100%",
         paddingInline: shellThemeTokens.headerPaddingInline
       }}
     >
-      <Space direction="vertical" size={2}>
-        <Space align="center" size={8} wrap>
-          <Typography.Text>{currentWorkspaceName}</Typography.Text>
-          <Tag color="blue" style={{ marginInlineEnd: 0 }}>
-            {currentUserRole}
-          </Tag>
-        </Space>
+      <Space direction="vertical" size={4}>
+        <Dropdown
+          menu={{
+            items: workspaceItems,
+            onClick: ({ key }) => {
+              onSelectWorkspace?.(String(key));
+            }
+          }}
+          trigger={["click"]}
+        >
+          <Button
+            aria-label="当前工作区"
+            style={{
+              alignItems: "center",
+              background: token.colorBgElevated,
+              borderColor: token.colorBorderSecondary,
+              display: "inline-flex",
+              gap: token.marginXS,
+              height: "auto",
+              paddingBlock: 4
+            }}
+            type="default"
+          >
+            <Typography.Text>{currentWorkspaceName}</Typography.Text>
+            <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+              {currentUserRole}
+            </Tag>
+            <DownOutlined />
+          </Button>
+        </Dropdown>
         {feedback ? (
           <Typography.Text
             style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}
@@ -52,22 +98,6 @@ export function HeaderBar({
             {feedback}
           </Typography.Text>
         ) : null}
-      </Space>
-      <Space align="center" size={12}>
-        <Space direction="vertical" size={0}>
-          <Typography.Text style={{ lineHeight: 1.2 }}>{currentUserName}</Typography.Text>
-          <Typography.Text
-            style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM, lineHeight: 1.2 }}
-          >
-            {currentUserEmail}
-          </Typography.Text>
-        </Space>
-        <Button onClick={onOpenWorkspaceSelection} type="default">
-          {workspaceSwitchLabel}
-        </Button>
-        <Button onClick={onLogout} type="text">
-          {logoutLabel}
-        </Button>
       </Space>
     </Flex>
   );
