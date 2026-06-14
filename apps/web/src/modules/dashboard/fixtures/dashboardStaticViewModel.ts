@@ -200,6 +200,67 @@ export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
   ],
   metricCards: [],
   metricContextPacks: {},
+  nodeDisplay: {
+    "dashboard-node-directory-metrics": {
+      valueText: "2"
+    },
+    "dashboard-node-directory-platform-quality": {
+      valueText: "1"
+    },
+    "dashboard-node-directory-report-evidence": {
+      valueText: "3"
+    },
+    "dashboard-node-directory-risks": {
+      valueText: "2"
+    },
+    "dashboard-node-evidence-quality-job": {
+      sourceRefId: "source-evidence-quality-job"
+    },
+    "dashboard-node-evidence-revenue-summary": {
+      sourceRefId: "source-evidence-q2-revenue"
+    },
+    "dashboard-node-metric-gross-margin": {
+      risk: {
+        label: "Low risk",
+        level: "low"
+      },
+      sourceRefId: "metric-gross-margin",
+      trendText: "环比 +1.1%",
+      valueText: "48.6%"
+    },
+    "dashboard-node-metric-revenue": {
+      defaultInspectorSelection: true,
+      risk: {
+        label: "Medium risk",
+        level: "medium"
+      },
+      sourceRefId: "metric-recognized-revenue",
+      trendText: "环比 -3.2%",
+      valueText: "¥12.8M"
+    },
+    "dashboard-node-platform-quality": {
+      valueText: "2 项需关注"
+    },
+    "dashboard-node-report-weekly-business": {
+      sourceRefId: "report-weekly-business",
+      valueText: "5 条证据"
+    },
+    "dashboard-node-risk-revenue-growth": {
+      risk: {
+        label: "Medium risk",
+        level: "medium"
+      },
+      sourceRefId: "metric-recognized-revenue",
+      valueText: "-3.2%"
+    },
+    "dashboard-node-risk-summary": {
+      risk: {
+        label: "Medium risk",
+        level: "medium"
+      },
+      valueText: "2 项关注"
+    }
+  },
   pageDescriptionKey: "page.dashboard.description",
   pageKey: "dashboard",
   pageTitleKey: "page.dashboard.title",

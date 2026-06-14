@@ -43,11 +43,7 @@ export type DashboardPageContentProps = PageRouteProps & {
   controller: DashboardOverviewController;
 };
 
-function nodeHasPriorityRisk(nodeId: string): boolean {
-  return /(风险|risk)\s*(medium|high|critical)/i.test(nodeId);
-}
-
-function createDashboardContextTreeViewport(
+export function createDashboardContextTreeViewport(
   viewModel: DashboardSurfaceViewModel
 ): DashboardContextTreeViewport {
   const metricDirectory = viewModel.root.children?.find(
@@ -55,11 +51,7 @@ function createDashboardContextTreeViewport(
   );
   const metricNodes = metricDirectory?.children ?? [];
   const activeNode =
-    metricNodes.find((node) => {
-      const nodeSignature = [node.value, ...(node.chips ?? [])].join(" ");
-
-      return nodeHasPriorityRisk(nodeSignature);
-    }) ??
+    metricNodes.find((node) => viewModel.nodeDisplay[node.nodeId]?.defaultInspectorSelection) ??
     metricNodes[0] ??
     viewModel.root.children?.[0] ??
     viewModel.root;

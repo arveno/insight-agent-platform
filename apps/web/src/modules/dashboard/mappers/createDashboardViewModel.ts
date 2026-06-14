@@ -18,49 +18,130 @@ import {
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
-import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
+import type {
+  DashboardNodeDisplayViewModel,
+  DashboardSurfaceViewModel
+} from "../models/dashboardViewModel";
 
 const dashboardOwner = createDraftAnalysisTaskOwnerRef();
 const defaultTimestamp = "2026-06-05T11:08:12+08:00";
 
-function humanizeMetricStatus(status: Metric["status"]): string {
+function mapMetricStatus(status: Metric["status"]): DashboardNodeDisplayViewModel["status"] {
   switch (status) {
     case "attention":
-      return "Attention";
+      return {
+        label: "Attention",
+        tone: "warning"
+      };
     case "healthy":
-      return "Healthy";
+      return {
+        label: "Healthy",
+        tone: "success"
+      };
     default:
-      return status;
+      return {
+        label: status,
+        tone: "default"
+      };
+  }
+}
+
+function mapMetricRisk(riskLevel: Metric["riskLevel"]): DashboardNodeDisplayViewModel["risk"] {
+  switch (riskLevel) {
+    case "critical":
+      return {
+        label: "Critical risk",
+        level: "critical"
+      };
+    case "high":
+      return {
+        label: "High risk",
+        level: "high"
+      };
+    case "medium":
+      return {
+        label: "Medium risk",
+        level: "medium"
+      };
+    case "low":
+      return {
+        label: "Low risk",
+        level: "low"
+      };
+  }
+}
+
+function mapSourceRefId(sourceRef: InspectorTreeNode["sourceRef"]): string | undefined {
+  if (!sourceRef) {
+    return undefined;
+  }
+
+  switch (sourceRef.type) {
+    case "analysisRun":
+      return sourceRef.runId;
+    case "dataTable":
+      return sourceRef.tableId;
+    case "job":
+      return sourceRef.jobId;
+    case "knowledgeDocument":
+      return sourceRef.knowledgeDocumentId;
+    case "metric":
+      return sourceRef.metricId;
+    case "modelCall":
+      return sourceRef.modelCallId;
+    case "report":
+      return sourceRef.reportId;
+    case "sourceEvidence":
+      return sourceRef.sourceEvidenceId;
+    case "toolCall":
+      return sourceRef.toolCallId;
   }
 }
 
 function createMetricDirectory(metrics: Metric[]): {
   metricContextPacks: Record<string, AnalysisTaskContextPack>;
   metricNodes: InspectorTreeNode[];
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
 } {
   const metricContextPacks: Record<string, AnalysisTaskContextPack> = {};
+  const nodeDisplay: Record<string, DashboardNodeDisplayViewModel> = {};
+  const defaultInspectorMetricId =
+    metrics.find((metric) => metric.riskLevel !== "low")?.metricId ?? metrics[0]?.metricId;
   const metricNodes = metrics.map((metric) => {
     const contextPack = buildMetricAnalysisContextPack(metric);
     const metricNode: InspectorTreeNode = {
       ...contextPack.root,
-      description: humanizeMetricStatus(metric.status),
       summary: `${metric.thresholdSummary}，可结合公式和上下文来源继续分析。`
     };
 
     metricContextPacks[contextPack.root.nodeId] = contextPack;
+    nodeDisplay[metricNode.nodeId] = {
+      defaultInspectorSelection: metric.metricId === defaultInspectorMetricId,
+      risk: mapMetricRisk(metric.riskLevel),
+      sourceRefId: metric.metricId,
+      status: mapMetricStatus(metric.status),
+      trendText: formatMetricTrendLabel(metric),
+      valueText: formatMetricDisplayValue(metric)
+    };
 
     return metricNode;
   });
 
-  return { metricContextPacks, metricNodes };
+  return { metricContextPacks, metricNodes, nodeDisplay };
 }
 
 function createRiskNodes(primaryMetric: Metric | undefined): {
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
   riskNodes: InspectorTreeNode[];
   riskSummaryNode: InspectorTreeNode;
 } {
   if (!primaryMetric) {
     return {
+      nodeDisplay: {
+        "dashboard-node-risk-summary": {
+          valueText: "0 项关注"
+        }
+      },
       riskNodes: [],
       riskSummaryNode: {
         chips: ["0 项关注", "等待当前 workspace 指标"],
@@ -78,6 +159,17 @@ function createRiskNodes(primaryMetric: Metric | undefined): {
   const trendLabel = formatMetricTrendLabel(primaryMetric);
 
   return {
+    nodeDisplay: {
+      "dashboard-node-risk-primary-metric": {
+        risk: mapMetricRisk(primaryMetric.riskLevel),
+        sourceRefId: primaryMetric.metricId,
+        valueText: trendLabel
+      },
+      "dashboard-node-risk-summary": {
+        risk: mapMetricRisk(primaryMetric.riskLevel),
+        valueText: "1 项关注"
+      }
+    },
     riskNodes: [
       {
         chips: [primaryMetric.riskLevel, primaryMetric.period],
@@ -107,8 +199,11 @@ function createRiskNodes(primaryMetric: Metric | undefined): {
   };
 }
 
-function createReportEvidenceNodes(workspaceName: string): InspectorTreeNode[] {
-  return [
+function createReportEvidenceNodes(workspaceName: string): {
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
+  reportEvidenceNodes: InspectorTreeNode[];
+} {
+  const reportEvidenceNodes: InspectorTreeNode[] = [
     {
       chips: ["5 条证据", `Workspace ${workspaceName}`],
       kind: "report",
@@ -149,10 +244,29 @@ function createReportEvidenceNodes(workspaceName: string): InspectorTreeNode[] {
       title: "数据质量与任务证据"
     }
   ];
+
+  return {
+    nodeDisplay: {
+      "dashboard-node-evidence-quality-job": {
+        sourceRefId: "source-evidence-quality-job"
+      },
+      "dashboard-node-evidence-revenue-summary": {
+        sourceRefId: "source-evidence-q2-revenue"
+      },
+      "dashboard-node-report-weekly-business": {
+        sourceRefId: "report-weekly-business",
+        valueText: "5 条证据"
+      }
+    },
+    reportEvidenceNodes
+  };
 }
 
-function createQualityNodes(): InspectorTreeNode[] {
-  return [
+function createQualityNodes(): {
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
+  qualityNodes: InspectorTreeNode[];
+} {
+  const qualityNodes: InspectorTreeNode[] = [
     {
       chips: ["Platform quality", "Evidence-ready"],
       disabledReason: "当前仅提供平台质量摘要。",
@@ -165,6 +279,15 @@ function createQualityNodes(): InspectorTreeNode[] {
       value: "2 项需关注"
     }
   ];
+
+  return {
+    nodeDisplay: {
+      "dashboard-node-platform-quality": {
+        valueText: "2 项需关注"
+      }
+    },
+    qualityNodes
+  };
 }
 
 function resolveLastUpdatedAt(metrics: Metric[]): string {
@@ -177,15 +300,37 @@ export function createDashboardViewModel(
   metrics: Metric[],
   workspaceBinding: CurrentWorkspaceBinding
 ): DashboardSurfaceViewModel {
-  const { metricContextPacks, metricNodes } = createMetricDirectory(metrics);
+  const { metricContextPacks, metricNodes, nodeDisplay: metricNodeDisplay } =
+    createMetricDirectory(metrics);
   const primaryMetric = metrics[0];
-  const { riskNodes, riskSummaryNode } = createRiskNodes(primaryMetric);
-  const reportEvidenceNodes = createReportEvidenceNodes(workspaceBinding.workspaceName);
-  const qualityNodes = createQualityNodes();
+  const { nodeDisplay: riskNodeDisplay, riskNodes, riskSummaryNode } = createRiskNodes(primaryMetric);
+  const {
+    nodeDisplay: reportEvidenceNodeDisplay,
+    reportEvidenceNodes
+  } = createReportEvidenceNodes(workspaceBinding.workspaceName);
+  const { nodeDisplay: qualityNodeDisplay, qualityNodes } = createQualityNodes();
   const lastUpdatedAt = resolveLastUpdatedAt(metrics);
   const rootSummaryMetric = primaryMetric
     ? `${primaryMetric.name} 当前值 ${formatMetricDisplayValue(primaryMetric)}。`
     : "当前 workspace 暂无共享指标。";
+  const nodeDisplay: DashboardSurfaceViewModel["nodeDisplay"] = {
+    ...metricNodeDisplay,
+    ...riskNodeDisplay,
+    ...reportEvidenceNodeDisplay,
+    ...qualityNodeDisplay,
+    "dashboard-node-directory-metrics": {
+      valueText: `${metricNodes.length}`
+    },
+    "dashboard-node-directory-platform-quality": {
+      valueText: `${qualityNodes.length}`
+    },
+    "dashboard-node-directory-report-evidence": {
+      valueText: `${reportEvidenceNodes.length}`
+    },
+    "dashboard-node-directory-risks": {
+      valueText: `${riskNodes.length + 1}`
+    }
+  };
 
   return {
     dashboardId: "dashboard-main",
@@ -217,6 +362,7 @@ export function createDashboardViewModel(
     ],
     metricCards: [],
     metricContextPacks,
+    nodeDisplay,
     pageDescriptionKey: "page.dashboard.description",
     pageKey: "dashboard",
     pageTitleKey: "page.dashboard.title",

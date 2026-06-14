@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { Metric } from "@insight-agent/contracts/generated/typescript";
+import type {
+  InspectorTreeNode,
+  Metric
+} from "@insight-agent/contracts/generated/typescript";
 
 import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
 import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
 import { createDashboardViewModel } from "./mappers/createDashboardViewModel";
+import * as DashboardPageModule from "./Page";
 import { DashboardPage } from "./Page";
+import type { DashboardSurfaceViewModel } from "./models/dashboardViewModel";
 import { DashboardInspectorPanel } from "./sections/DashboardSections";
 
 afterEach(cleanup);
@@ -88,6 +93,28 @@ describe("DashboardPage", () => {
         workspaceName="Northstar Retail China"
       />
     );
+  }
+
+  function mapDashboardNode(
+    node: InspectorTreeNode,
+    nodeId: string,
+    updater: (node: InspectorTreeNode) => InspectorTreeNode
+  ): InspectorTreeNode {
+    const nextChildren = node.children?.map((child) => mapDashboardNode(child, nodeId, updater));
+    const nextNode = nextChildren ? { ...node, children: nextChildren } : node;
+
+    return nextNode.nodeId === nodeId ? updater(nextNode) : nextNode;
+  }
+
+  function updateDashboardViewModelNode(
+    viewModel: DashboardSurfaceViewModel,
+    nodeId: string,
+    updater: (node: InspectorTreeNode) => InspectorTreeNode
+  ): DashboardSurfaceViewModel {
+    return {
+      ...viewModel,
+      root: mapDashboardNode(viewModel.root, nodeId, updater)
+    };
   }
 
   it("renders the default time range and updates the shared-metric summary without navigation", async () => {
@@ -253,6 +280,33 @@ describe("DashboardPage", () => {
     );
   });
 
+  it("selects the default inspector metric from mapper metadata instead of parsing raw chips", () => {
+    const orderedViewModel = createDashboardViewModel(
+      [
+        findRuntimeMetric("metric-gross-margin"),
+        findRuntimeMetric("metric-recognized-revenue")
+      ],
+      {
+        workspaceId: "workspace-northstar-retail-china",
+        workspaceName: "Northstar Retail China"
+      }
+    );
+    const sanitizedViewModel = updateDashboardViewModelNode(
+      orderedViewModel,
+      "metric-context-metric-recognized-revenue",
+      (node) => ({
+        ...node,
+        chips: [],
+        value: undefined
+      })
+    );
+
+    expect(typeof DashboardPageModule.createDashboardContextTreeViewport).toBe("function");
+    expect(
+      DashboardPageModule.createDashboardContextTreeViewport(sanitizedViewModel).activeNodeId
+    ).toBe("metric-context-metric-recognized-revenue");
+  });
+
   it("renders a simplified Chinese dashboard context directory", () => {
     render(
       <TestProviders>
@@ -277,7 +331,9 @@ describe("DashboardPage", () => {
     expect(screen.getByText("平台质量 1")).toBeTruthy();
     expect(screen.getByText("指标 · Last 30 days")).toBeTruthy();
     expect(screen.getByText("¥12.8M · 下降 3.2%")).toBeTruthy();
-    expect(screen.getByText("Medium risk · Attention")).toBeTruthy();
+    expect(screen.getByText("Medium risk")).toBeTruthy();
+    expect(screen.getByText("Attention")).toBeTruthy();
+    expect(screen.queryByText("Medium risk · Attention")).toBeNull();
     expect(screen.getByText("来源引用")).toBeTruthy();
     expect(screen.getByText("metric-recognized-revenue")).toBeTruthy();
     expect(screen.queryByText("Dashboard Context")).toBeNull();
@@ -285,6 +341,55 @@ describe("DashboardPage", () => {
     expect(screen.queryByText("Selected Node")).toBeNull();
     expect(screen.queryByText(/^metric$/)).toBeNull();
     expect(screen.queryByText(/SourceRef:/)).toBeNull();
+  });
+
+  it("renders metric risk and status from mapper fields instead of reverse-parsing raw strings", () => {
+    const misleadingViewModel = updateDashboardViewModelNode(
+      dashboardViewModel,
+      "metric-context-metric-recognized-revenue",
+      (node) => ({
+        ...node,
+        chips: ["High"],
+        description: "Healthy"
+      })
+    );
+
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-recognized-revenue"
+          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={misleadingViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("Medium risk")).toBeTruthy();
+    expect(screen.getByText("Attention")).toBeTruthy();
+    expect(screen.queryByText("High risk · Healthy")).toBeNull();
+  });
+
+  it("does not infer evidence risk from evidence chips", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="dashboard-node-evidence-revenue-summary"
+          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-report-evidence"]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("source-evidence-q2-revenue")).toBeTruthy();
+    expect(screen.queryByText("High risk")).toBeNull();
   });
 
   it("expands collapsed groups and updates the current-node detail on selection", () => {

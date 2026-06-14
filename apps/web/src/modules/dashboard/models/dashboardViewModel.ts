@@ -7,6 +7,8 @@ import type {
   StaticPageStateViewModel,
   StaticPageViewModelBase
 } from "../../../shared/view-model/staticViewModelTypes";
+import type { RiskBadgeProps } from "../../../shared/ui/status/RiskBadge";
+import type { StatusTagProps } from "../../../shared/ui/status/StatusTag";
 
 export type DashboardTimeRangeKey =
   | "last_12_hours"
@@ -25,11 +27,21 @@ export type DashboardTimeRangeViewModel = {
   selectedKey: DashboardTimeRangeKey;
 };
 
+export type DashboardNodeDisplayViewModel = {
+  defaultInspectorSelection?: boolean;
+  risk?: RiskBadgeProps;
+  sourceRefId?: string;
+  status?: StatusTagProps;
+  trendText?: string;
+  valueText?: string;
+};
+
 export type DashboardSurfaceViewModel = StaticPageViewModelBase & {
   dashboardId: string;
   dashboardState: StaticPageStateViewModel;
   description: string;
   metricContextPacks: Record<string, AnalysisTaskContextPack>;
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
   root: InspectorTreeNode;
   timeRange: DashboardTimeRangeViewModel;
   title: string;
