@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Divider, Popover, Segmented, Space, Typography, theme } from "antd";
 
 import { createNavigationGroups, webCompositionRoutes } from "../router/router";
 import { useAppTheme } from "../providers/AppThemeProvider";
+import type { AuthSessionViewModel } from "../providers/authViewModel";
 import { AppIcon } from "../../shared/icons/AppIcon";
 import { useI18n } from "../../shared/i18n/I18nProvider";
 import { localeOptions } from "../../shared/i18n/localeTypes";
@@ -21,32 +22,55 @@ import { RouteShellOutlet, hasModuleShellRoute } from "./RouteShellOutlet";
 
 type LeftNavMode = "root" | StaticRouteKey;
 
-export function AppShell() {
+type AppShellProps = {
+  currentRoute?: StaticRouteKey;
+  onLogout?: () => void;
+  onNavigate?: (route: StaticRouteKey, routeState?: AppRouteState) => void;
+  onOpenWorkspaceSelection?: () => void;
+  routeState?: AppRouteState;
+  session: AuthSessionViewModel & {
+    currentWorkspace: NonNullable<AuthSessionViewModel["currentWorkspace"]>;
+  };
+};
+
+export function AppShell({
+  currentRoute,
+  onLogout,
+  onNavigate,
+  onOpenWorkspaceSelection,
+  routeState,
+  session
+}: AppShellProps) {
   const { locale, setLocale, t } = useI18n();
   const { setThemeMode, themeMode } = useAppTheme();
   const { token } = theme.useToken();
-  const [activeRoute, setActiveRoute] = useState<StaticRouteKey>(
-    appShellStaticViewModel.currentRoute
+  const [uncontrolledRoute, setUncontrolledRoute] = useState<StaticRouteKey>(
+    currentRoute ?? appShellStaticViewModel.currentRoute
   );
-  const [activeRouteState, setActiveRouteState] = useState<AppRouteState | undefined>(undefined);
+  const [uncontrolledRouteState, setUncontrolledRouteState] = useState<AppRouteState | undefined>(
+    routeState
+  );
+  const activeRoute = currentRoute ?? uncontrolledRoute;
+  const activeRouteState = routeState ?? uncontrolledRouteState;
   const [leftNavMode, setLeftNavMode] = useState<LeftNavMode>(
-    hasModuleShellRoute(appShellStaticViewModel.currentRoute)
-      ? appShellStaticViewModel.currentRoute
-      : "root"
+    hasModuleShellRoute(activeRoute) ? activeRoute : "root"
   );
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(
-    appShellStaticViewModel.workspace.workspaceId
-  );
-  const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(false);
-  const selectedWorkspace =
-    appShellStaticViewModel.workspaces.find(
-      (workspace) => workspace.workspaceId === selectedWorkspaceId
-    ) ?? appShellStaticViewModel.workspace;
+
+  useEffect(() => {
+    setLeftNavMode(hasModuleShellRoute(activeRoute) ? activeRoute : "root");
+  }, [activeRoute]);
+
   const ActivePage = webCompositionRoutes[activeRoute];
-  const handleNavigate = (route: StaticRouteKey, routeState?: AppRouteState) => {
-    setActiveRoute(route);
-    setActiveRouteState(routeState);
+  const handleNavigate = (route: StaticRouteKey, nextRouteState?: AppRouteState) => {
     setLeftNavMode(hasModuleShellRoute(route) ? route : "root");
+
+    if (onNavigate) {
+      onNavigate(route, nextRouteState);
+      return;
+    }
+
+    setUncontrolledRoute(route);
+    setUncontrolledRouteState(nextRouteState);
   };
   const navigationGroups = useMemo(
     () =>
@@ -74,10 +98,13 @@ export function AppShell() {
     >
       <Space direction="vertical" size={4}>
         <Typography.Text style={shellTypographyStyles.cardTitle}>
-          {appShellStaticViewModel.currentUser.displayName}
+          {session.user.displayName}
         </Typography.Text>
         <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-          {appShellStaticViewModel.currentUser.roleLabel}
+          {session.currentWorkspace.role}
+        </Typography.Text>
+        <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
+          {session.user.email}
         </Typography.Text>
       </Space>
       <Divider style={{ margin: 0 }} />
@@ -109,21 +136,14 @@ export function AppShell() {
   );
   const header = (
     <HeaderBar
-      currentWorkspaceName={selectedWorkspace.name}
-      feedback={workspaceRefreshFeedback ? t("shell.workspace.switchFeedback") : undefined}
-      manageWorkspaceLabel={t("shell.workspace.manage")}
-      onOpenWorkspaceManagement={() => handleNavigate("workspace")}
-      onSelectWorkspace={(workspaceId) => {
-        if (workspaceId === selectedWorkspaceId) {
-          return;
-        }
-
-        setSelectedWorkspaceId(workspaceId);
-        setWorkspaceRefreshFeedback(true);
-      }}
-      selectedWorkspaceId={selectedWorkspaceId}
-      workspaceMenuLabel={t("shell.workspace.currentLabel")}
-      workspaces={appShellStaticViewModel.workspaces}
+      currentUserEmail={session.user.email}
+      currentUserName={session.user.displayName}
+      currentUserRole={session.currentWorkspace.role}
+      currentWorkspaceName={session.currentWorkspace.name}
+      logoutLabel="退出登录"
+      onLogout={onLogout}
+      onOpenWorkspaceSelection={onOpenWorkspaceSelection}
+      workspaceSwitchLabel="切换工作区"
     />
   );
   const rootLeftNavContent = (
@@ -191,10 +211,10 @@ export function AppShell() {
           >
             <Space direction="vertical" size={2} style={{ width: "100%" }}>
               <Typography.Text style={shellTypographyStyles.cardTitle}>
-                {appShellStaticViewModel.currentUser.displayName}
+                {session.user.displayName}
               </Typography.Text>
               <Typography.Text type="secondary" style={shellTypographyStyles.cardDescription}>
-                {appShellStaticViewModel.currentUser.roleLabel}
+                {session.currentWorkspace.role}
               </Typography.Text>
             </Space>
           </Button>
@@ -204,7 +224,7 @@ export function AppShell() {
   );
   const defaultMainContent = (
     <ActivePage
-      key={`${selectedWorkspace.workspaceId}:${activeRoute}`}
+      key={`${session.currentWorkspace.workspaceId}:${activeRoute}`}
       onNavigate={handleNavigate}
       routeState={activeRouteState}
     />
@@ -213,7 +233,6 @@ export function AppShell() {
   return (
     <RouteShellOutlet
       activeRoute={activeRoute}
-      currentUserId={appShellStaticViewModel.currentUser.userId}
       routeState={activeRouteState}
       defaultMainContent={defaultMainContent}
       header={header}
@@ -223,7 +242,10 @@ export function AppShell() {
       renderLeftNav={renderLeftNav}
       rootLeftNavContent={rootLeftNavContent}
       selectedBusinessDomainId={appShellStaticViewModel.selectedBusinessDomainId}
-      selectedWorkspace={selectedWorkspace}
+      selectedWorkspace={{
+        name: session.currentWorkspace.name,
+        workspaceId: session.currentWorkspace.workspaceId
+      }}
     />
   );
 }

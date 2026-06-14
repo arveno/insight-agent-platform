@@ -11,24 +11,17 @@ export type UseAnalysisShellSlotsParams = {
   onBackToRoot: () => void;
   onNavigate?: NavigateToRoute;
   routeState?: AppRouteState;
-  userId: string;
-  workspaceId: string;
-  workspaceName: string;
 };
 
 export function useAnalysisShellSlots({
   businessDomainId,
   onBackToRoot,
-  routeState,
-  userId,
-  workspaceId
+  routeState
 }: UseAnalysisShellSlotsParams): ShellRegionSlots {
   const controller = useAnalysisWorkspaceController({
     draftContext: routeState?.analysisContextPack,
     submitIdentity: {
-      businessDomainId,
-      userId,
-      workspaceId
+      businessDomainId
     }
   });
 

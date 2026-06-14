@@ -30,7 +30,8 @@ describe("AgentRuntimeClient", () => {
       headers: {
         Accept: "application/json"
       },
-      method: "GET"
+      method: "GET",
+      credentials: "include"
     });
   });
 
@@ -50,9 +51,7 @@ describe("AgentRuntimeClient", () => {
     const result = await client.submitAnalysisDraft({
       businessDomainId: "business-domain-revenue-quality",
       contextPack: null,
-      question: "解释华东区域收入增速放缓的主要原因。",
-      userId: "user-zoe",
-      workspaceId: "workspace-northstar-retail-china"
+      question: "解释华东区域收入增速放缓的主要原因。"
     });
 
     expect(result).toEqual(persistedSubmitChain);
@@ -60,15 +59,14 @@ describe("AgentRuntimeClient", () => {
       body: JSON.stringify({
         businessDomainId: "business-domain-revenue-quality",
         contextPack: null,
-        question: "解释华东区域收入增速放缓的主要原因。",
-        userId: "user-zoe",
-        workspaceId: "workspace-northstar-retail-china"
+        question: "解释华东区域收入增速放缓的主要原因。"
       }),
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json"
       },
-      method: "POST"
+      method: "POST",
+      credentials: "include"
     });
   });
 
@@ -92,9 +90,7 @@ describe("AgentRuntimeClient", () => {
         businessDomainId: "business-domain-revenue-quality",
         contextPack: null,
         conversationId: "conversation-123",
-        question: "继续追问华东收入增速放缓的主要原因。",
-        userId: "user-luca",
-        workspaceId: "workspace-other"
+        question: "继续追问华东收入增速放缓的主要原因。"
       })
     ).rejects.toMatchObject({
       code: "MISMATCH",
@@ -125,7 +121,8 @@ describe("AgentRuntimeClient", () => {
         headers: {
           Accept: "text/event-stream"
         },
-        method: "GET"
+        method: "GET",
+        credentials: "include"
       }
     );
   });

@@ -3,15 +3,22 @@ import type {
   AnalysisTask,
   Conversation,
   Decision,
+  LoginRequest,
+  LoginResponse,
+  LogoutResponse,
   Message,
   MessageStream,
+  MeResponse,
   ModelCall,
   Report,
   RunEvent,
+  SelectWorkspaceRequest,
+  SelectWorkspaceResponse,
   SourceEvidence,
   SubmitAnalysisDraftRequest,
   SubmitAnalysisDraftResponse,
-  ToolCall
+  ToolCall,
+  WorkspaceListResponse
 } from "@insight-agent/contracts/generated/typescript";
 
 type ListResponse<T> = {
@@ -103,6 +110,7 @@ export class AgentRuntimeClient {
       }
       response = await fetch(`${this.baseUrl}${path}`, {
         body,
+        credentials: "include",
         headers,
         method
       });
@@ -171,6 +179,29 @@ export class AgentRuntimeClient {
   submitAnalysisDraft(payload: SubmitAnalysisDraftRequest) {
     return this.post<SubmitAnalysisDraftResponse, SubmitAnalysisDraftRequest>(
       "/analysis-tasks/submit",
+      payload
+    );
+  }
+
+  login(payload: LoginRequest) {
+    return this.post<LoginResponse, LoginRequest>("/auth/login", payload);
+  }
+
+  logout() {
+    return this.post<LogoutResponse, Record<string, never>>("/auth/logout", {});
+  }
+
+  getMe() {
+    return this.get<MeResponse>("/auth/me");
+  }
+
+  listWorkspaces() {
+    return this.get<WorkspaceListResponse>("/workspaces");
+  }
+
+  selectWorkspace(payload: SelectWorkspaceRequest) {
+    return this.post<SelectWorkspaceResponse, SelectWorkspaceRequest>(
+      "/auth/select-workspace",
       payload
     );
   }

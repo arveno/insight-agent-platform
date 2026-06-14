@@ -60,8 +60,6 @@ export type AnalysisWorkspaceDataLoader = (
 
 export type AnalysisDraftSubmitIdentity = {
   businessDomainId: string;
-  userId: string;
-  workspaceId: string;
 };
 
 export type AnalysisDraftSubmitter = (
@@ -564,9 +562,7 @@ export function useAnalysisWorkspaceController(
             businessDomainId: submitIdentity.businessDomainId,
             conversationId: selectedSession?.conversationId,
             draftContext,
-            question,
-            userId: submitIdentity.userId,
-            workspaceId: submitIdentity.workspaceId
+            question
           });
           const loadResult = await loader({
             conversationId: submitResult.conversation.conversationId,
