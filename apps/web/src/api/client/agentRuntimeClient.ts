@@ -9,6 +9,7 @@ import type {
   Message,
   MessageStream,
   MeResponse,
+  Metric,
   ModelCall,
   Report,
   RunEvent,
@@ -146,6 +147,14 @@ export class AgentRuntimeClient {
 
   getConversation(conversationId: string) {
     return this.get<Conversation>(`/conversations/${conversationId}`);
+  }
+
+  listMetrics() {
+    return this.get<ListResponse<Metric>>("/metrics");
+  }
+
+  getMetric(metricId: string) {
+    return this.get<Metric>(`/metrics/${metricId}`);
   }
 
   getAnalysisTask(analysisTaskId: string) {

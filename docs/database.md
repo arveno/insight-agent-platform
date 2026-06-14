@@ -174,9 +174,7 @@ source_evidence 可引用 data_table / metric / knowledge_chunk / sql_query / me
 
 ```text
 metrics
-metric_formulas
-metric_thresholds
-metric_lineage
+metric_context_sources
 ```
 
 关系：
@@ -184,9 +182,15 @@ metric_lineage
 ```text
 workspace 1 - n metrics
 business_domain 1 - n metrics
-metric 1 - n metric_formulas
-metric 1 - n metric_thresholds
-metric n - n data_fields / data_tables，通过 metric_lineage 关联
+metric 1 - n metric_context_sources
+metric_context_source 可引用 data_table / knowledge_document / source_evidence / report
+```
+
+说明：
+
+```text
+metric_formulas / metric_thresholds / metric_lineage 仍属于后续扩展位，只有在对应 Issue 审查通过后才能入库。
+当前 #223 正式持久化 shared metric source，以 metrics + metric_context_sources 为最小闭环。
 ```
 
 ### Analysis Runtime

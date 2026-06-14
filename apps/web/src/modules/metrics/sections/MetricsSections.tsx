@@ -1,18 +1,8 @@
-import { Flex, Space, Typography } from "antd";
+import { Flex, Typography } from "antd";
 
-import type {
-  StaticRiskViewModel,
-  StaticStatusViewModel
-} from "../../../shared/view-model/staticViewModelTypes";
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
-import {
-  createAnalysisContextPackFromTree,
-  createDraftAnalysisTaskOwnerRef
-} from "../../../shared/navigation/analysisContextPack";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
-import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
-import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { translateKey } from "../../../shared/i18n/translateKey";
 import { PageIntro } from "../../../shared/layout/containers/PageIntro";
@@ -20,40 +10,13 @@ import { ContentSection } from "../../../shared/layout/sections/ContentSection";
 import { SectionStack } from "../../../shared/layout/sections/SectionStack";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
-import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import type { MetricDetailViewModel, MetricsViewModel } from "../models/metricsViewModel";
-import { mapMetricEvidenceItem } from "../mappers/mapMetricEvidenceItem";
 
 export type MetricsSectionsProps = PageRouteProps & {
   viewModel: MetricsViewModel;
 };
-
-function buildTagSlot(
-  t: ReturnType<typeof useI18n>["t"],
-  {
-    risk,
-    status
-  }: {
-    risk?: StaticRiskViewModel;
-    status?: StaticStatusViewModel;
-  }
-) {
-  const statusTag = toStatusTag(t, status);
-  const riskBadge = toRiskBadge(t, risk);
-
-  if (!statusTag && !riskBadge) {
-    return undefined;
-  }
-
-  return (
-    <Space wrap>
-      {statusTag ? <StatusTag {...statusTag} /> : null}
-      {riskBadge ? <RiskBadge {...riskBadge} /> : null}
-    </Space>
-  );
-}
 
 function buildAnalysisAction(
   metric: MetricDetailViewModel,
@@ -62,38 +25,12 @@ function buildAnalysisAction(
 ) {
   return createRouteAction({
     iconName: "analysis",
-    key: `${metric.analysisContext.metricId}-analysis`,
+    key: `${metric.metricId}-analysis`,
     label: t("action.metricOpenAnalysis.label"),
     onNavigate,
     route: "analysis",
     routeState: {
-      analysisContextPack: createAnalysisContextPackFromTree({
-        capturedAt: "2026-06-03T18:00:00+08:00",
-        root: {
-          nodeId: `metrics-node-${metric.metricId}`,
-          kind: "metric",
-          role: "inputContext",
-          owner: createDraftAnalysisTaskOwnerRef(),
-          title: metric.metricName,
-          summary: `当前值 ${metric.currentValue}，阈值 ${metric.analysisContext.threshold}，趋势 ${metric.trend}，可结合公式、血缘和证据继续分析。`,
-          value: metric.currentValue,
-          chips: [
-            metric.businessDomain,
-            metric.timeRange,
-            metric.trend,
-            `风险 ${metric.analysisContext.riskLevel}`
-          ],
-          timeRange: {
-            key: metric.timeRange.toLowerCase().replaceAll(" ", "_"),
-            label: metric.timeRange
-          },
-          sourceRef: {
-            type: "metric",
-            metricId: metric.metricId
-          }
-        },
-        suggestedPrompt: `请基于 ${metric.metricName} 在 ${metric.timeRange} 的表现，解释 ${metric.trend} 的主要原因，并给出下一步建议。`,
-      })
+      analysisContextPack: metric.analysisContextPack
     },
     title: t("action.metricOpenAnalysis.description"),
     variant: "contextPrimary"
@@ -118,8 +55,8 @@ function buildLineageAction(
 function MetricDefinitionCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <ContentCard
-      description="当前阶段只展示指标业务定义，不提供配置写入或规则编辑。"
-      eyebrow={metric.businessDomain}
+      description="当前阶段只展示指标业务定义，不提供配置写入、权限管理或规则编辑。"
+      eyebrow={metric.businessDomainLabel}
       title="业务定义"
     >
       <Typography.Text style={{ display: "block", fontWeight: 600 }}>
@@ -129,23 +66,19 @@ function MetricDefinitionCard({ metric }: { metric: MetricDetailViewModel }) {
   );
 }
 
-function MetricSummaryCard({
-  metric,
-  t
-}: {
-  metric: MetricDetailViewModel;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
+function MetricSummaryCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <StatCard
-      description={`时间范围：${metric.timeRange}`}
+      description={`时间范围：${metric.period}`}
       key={`${metric.key}-summary`}
-      meta={<Typography.Text type="secondary">业务域：{metric.businessDomain}</Typography.Text>}
-      risk={toRiskBadge(t, metric.risk)}
-      status={toStatusTag(t, metric.status)}
-      supportingMeta={`${metric.evidenceItems.length} 条证据`}
+      meta={
+        <Typography.Text type="secondary">
+          业务域：{metric.businessDomainLabel} / Owner：{metric.ownerTeam}
+        </Typography.Text>
+      }
+      supportingMeta={`状态 ${metric.status} / 风险 ${metric.riskLevel}`}
       title="当前摘要"
-      trend={metric.trend}
+      trend={metric.trendLabel}
       value={metric.currentValue}
     />
   );
@@ -153,93 +86,41 @@ function MetricSummaryCard({
 
 function MetricFormulaCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
-    <ContentCard description="业务公式和技术字段映射只读展示，不触发真实计算或更新。" title="公式">
-      <Space direction="vertical" size={8} style={{ width: "100%" }}>
-        <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-          业务公式：{metric.formula.businessFormula}
-        </Typography.Text>
-        <Typography.Text>技术字段：{metric.formula.technicalFormula}</Typography.Text>
-      </Space>
+    <ContentCard description="只读展示公式摘要，不触发真实计算或更新。" title="公式摘要">
+      <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+        {metric.formulaSummary}
+      </Typography.Text>
     </ContentCard>
   );
 }
 
-function MetricThresholdCard({
-  metric,
-  t
-}: {
-  metric: MetricDetailViewModel;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
+function MetricThresholdCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <ContentCard
-      description="阈值和异常规则只解释什么时候需要追问，不运行真实规则引擎。"
-      title="阈值 / 异常规则"
+      description="阈值和风险摘要只解释什么时候需要继续追问，不运行真实规则引擎。"
+      title="阈值 / 风险摘要"
     >
-      <Space direction="vertical" size={10} style={{ width: "100%" }}>
-        {metric.thresholdRules.map((rule) => (
-          <Space direction="vertical" key={rule.key} size={4} style={{ width: "100%" }}>
-            <Space wrap>
-              <Typography.Text style={{ fontWeight: 600 }}>{rule.label}</Typography.Text>
-              {rule.risk ? <RiskBadge {...toRiskBadge(t, rule.risk)!} /> : null}
-            </Space>
-            <Typography.Text>{rule.condition}</Typography.Text>
-          </Space>
-        ))}
-      </Space>
+      <Typography.Text style={{ display: "block", fontWeight: 600 }}>
+        {metric.thresholdSummary}
+      </Typography.Text>
+      <Typography.Text type="secondary">当前风险等级：{metric.riskLevel}</Typography.Text>
     </ContentCard>
   );
 }
 
-function MetricLineageCard({ metric }: { metric: MetricDetailViewModel }) {
+function MetricContextSourcesCard({ metric }: { metric: MetricDetailViewModel }) {
   return (
     <ContentCard
-      description="字段来源只做语义解释，不执行真实 SQL、真实查询或跨 Workspace 下钻。"
-      title="字段血缘摘要"
-    >
-      <Space direction="vertical" size={10} style={{ width: "100%" }}>
-        {metric.lineageSources.map((source) => (
-          <Space direction="vertical" key={source.key} size={4} style={{ width: "100%" }}>
-            <Typography.Text style={{ fontWeight: 600 }}>{source.label}</Typography.Text>
-            <Typography.Text>{source.source}</Typography.Text>
-            <Typography.Text type="secondary">{source.description}</Typography.Text>
-          </Space>
-        ))}
-      </Space>
-    </ContentCard>
-  );
-}
-
-function MetricEvidenceCard({
-  metric,
-  t
-}: {
-  metric: MetricDetailViewModel;
-  t: ReturnType<typeof useI18n>["t"];
-}) {
-  return (
-    <ContentCard
-      description="证据入口只展示当前指标的静态摘要，不展示 raw API、DB row、Tool 输出或模型原文。"
-      title="证据摘要"
+      description="上下文来源只展示摘要和 canonical sourceRef，不展示 detail 页面或 raw payload。"
+      title="上下文来源摘要"
     >
       <TitledList
-        items={metric.evidenceItems.map((item) => {
-          const evidence = mapMetricEvidenceItem(t, item);
-
-          return {
-            key: evidence.key,
-            meta: (
-              <Space wrap>
-                <Typography.Text type="secondary">{evidence.sourceTypeLabel}</Typography.Text>
-                {evidence.confidenceText ? (
-                  <Typography.Text type="secondary">{evidence.confidenceText}</Typography.Text>
-                ) : null}
-              </Space>
-            ),
-            summary: evidence.summary,
-            title: evidence.title
-          };
-        })}
+        items={metric.contextSources.map((source) => ({
+          key: source.key,
+          meta: <Typography.Text type="secondary">{source.meta}</Typography.Text>,
+          summary: source.description,
+          title: source.title
+        }))}
       />
     </ContentCard>
   );
@@ -292,7 +173,6 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
           <ContentCard
             description={item.description}
             key={item.key}
-            tagSlot={buildTagSlot(t, item)}
             title={item.label}
           >
             <Typography.Text style={{ display: "block", fontWeight: 600 }}>
@@ -326,11 +206,10 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
         title={`${translateKey(t, sectionByKey["selected-metric-detail"].titleKey)}：${selectedMetric.metricName}`}
       >
         <MetricDefinitionCard metric={selectedMetric} />
-        <MetricSummaryCard metric={selectedMetric} t={t} />
+        <MetricSummaryCard metric={selectedMetric} />
         <MetricFormulaCard metric={selectedMetric} />
-        <MetricThresholdCard metric={selectedMetric} t={t} />
-        <MetricLineageCard metric={selectedMetric} />
-        <MetricEvidenceCard metric={selectedMetric} t={t} />
+        <MetricThresholdCard metric={selectedMetric} />
+        <MetricContextSourcesCard metric={selectedMetric} />
         <MetricActionsCard metric={selectedMetric} onNavigate={onNavigate} t={t} />
       </ContentSection>
     </SectionStack>

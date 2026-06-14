@@ -117,6 +117,43 @@ class CurrentWorkspaceContextRecord(TypedDict):
     role: str
 
 
+class MetricContextSourceRecord(TypedDict):
+    """Metric context source summary bound to one persisted metric definition."""
+
+    metricContextSourceId: str
+    metricId: str
+    sourceType: Literal["dataTable", "knowledgeDocument", "sourceEvidence", "report"]
+    sourceId: str
+    role: str
+    title: str
+    summary: str
+    createdAt: str
+    updatedAt: str
+
+
+class MetricRecord(TypedDict):
+    """Metric contract-shaped read record with workspace-scoped context source summaries."""
+
+    metricId: str
+    workspaceId: str
+    businessDomainId: str
+    name: str
+    description: str
+    currentValue: str
+    unit: str | None
+    period: str
+    trendDirection: Literal["up", "down", "flat"]
+    trendValue: str
+    status: str
+    riskLevel: Literal["low", "medium", "high", "critical"]
+    ownerTeam: str
+    formulaSummary: str
+    thresholdSummary: str
+    contextSources: list[MetricContextSourceRecord]
+    createdAt: str
+    updatedAt: str
+
+
 class SourceRefReport(TypedDict):
     type: Literal["report"]
     reportId: str
@@ -570,6 +607,43 @@ def _require_array(raw: object, field_name: str) -> list[object]:
     if not isinstance(raw, list):
         raise RuntimeFoundationError(f"{field_name} query did not return a JSON array.")
     return cast(list[object], raw)
+
+
+def _metric_context_sources_json_sql(metric_id_column: str) -> str:
+    return f"""
+COALESCE(
+  (
+    SELECT JSON_ARRAYAGG(
+      JSON_OBJECT(
+        'metricContextSourceId', metric_context_source_id,
+        'metricId', metric_id,
+        'sourceType', source_type,
+        'sourceId', source_id,
+        'role', role,
+        'title', title,
+        'summary', summary,
+        'createdAt', created_at,
+        'updatedAt', updated_at
+      )
+    )
+    FROM (
+      SELECT
+        metric_context_source_id,
+        metric_id,
+        source_type,
+        source_id,
+        role,
+        title,
+        summary,
+        created_at,
+        updated_at
+      FROM metric_context_sources
+      WHERE metric_id = {metric_id_column}
+      ORDER BY created_at ASC, id ASC
+    ) ordered_metric_context_sources
+  ),
+  JSON_ARRAY()
+)"""
 
 
 def _coerce_analysis_run_retryable(payload: dict[str, object]) -> AnalysisRunRecord:
@@ -1558,6 +1632,110 @@ LIMIT 1;
         if payload is None:
             raise KeyError(auth_session_id)
         return cast(CurrentWorkspaceContextRecord, payload)
+
+
+class MetricRepository:
+    """Repository boundary for workspace-scoped shared metric source read access."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def list_by_workspace_id(self, workspace_id: str) -> list[MetricRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(metric_payload)
+      FROM (
+        SELECT JSON_OBJECT(
+          'metricId', metric_id,
+          'workspaceId', workspace_id,
+          'businessDomainId', business_domain_id,
+          'name', name,
+          'description', description,
+          'currentValue', current_value,
+          'unit', unit,
+          'period', period,
+          'trendDirection', trend_direction,
+          'trendValue', trend_value,
+          'status', status,
+          'riskLevel', risk_level,
+          'ownerTeam', owner_team,
+          'formulaSummary', formula_summary,
+          'thresholdSummary', threshold_summary,
+          'contextSources', {_metric_context_sources_json_sql('ordered_metrics.metric_id')},
+          'createdAt', created_at,
+          'updatedAt', updated_at
+        ) AS metric_payload
+        FROM (
+          SELECT
+            id,
+            metric_id,
+            workspace_id,
+            business_domain_id,
+            name,
+            description,
+            current_value,
+            unit,
+            period,
+            trend_direction,
+            trend_value,
+            status,
+            risk_level,
+            owner_team,
+            formula_summary,
+            threshold_summary,
+            created_at,
+            updated_at
+          FROM metrics
+          WHERE workspace_id = {_sql_literal(workspace_id)}
+          ORDER BY created_at ASC, id ASC
+        ) ordered_metrics
+      ) ordered_metric_payloads
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Metric.items")
+        return cast(list[MetricRecord], items)
+
+    def get_by_metric_id_and_workspace_id(self, metric_id: str, *, workspace_id: str) -> MetricRecord:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'metricId', metric_id,
+  'workspaceId', workspace_id,
+  'businessDomainId', business_domain_id,
+  'name', name,
+  'description', description,
+  'currentValue', current_value,
+  'unit', unit,
+  'period', period,
+  'trendDirection', trend_direction,
+  'trendValue', trend_value,
+  'status', status,
+  'riskLevel', risk_level,
+  'ownerTeam', owner_team,
+  'formulaSummary', formula_summary,
+  'thresholdSummary', threshold_summary,
+  'contextSources', {_metric_context_sources_json_sql('metrics.metric_id')},
+  'createdAt', created_at,
+  'updatedAt', updated_at
+)
+FROM metrics
+WHERE metric_id = {_sql_literal(metric_id)}
+  AND workspace_id = {_sql_literal(workspace_id)}
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            raise KeyError(metric_id)
+        return cast(MetricRecord, payload)
 
 
 class AnalysisTaskRepository:

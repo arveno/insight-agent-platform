@@ -462,6 +462,9 @@ INSERT INTO auth_sessions (
     assert "users.row_count=1" in verify_result.stdout
     assert "workspaces.row_count=2" in verify_result.stdout
     assert "workspace_memberships.row_count=2" in verify_result.stdout
+    assert "metrics.china.row_count=4" in verify_result.stdout
+    assert "metrics.sea.row_count=2" in verify_result.stdout
+    assert "metric_context_sources.row_count=12" in verify_result.stdout
     assert "auth_sessions.seedUser.exists=1" in verify_result.stdout
     assert "auth_sessions.validSeedUserSession.exists=1" in verify_result.stdout
     assert "user.userId=user-zoe" in verify_result.stdout
@@ -473,8 +476,17 @@ INSERT INTO auth_sessions (
     assert "conversation-revenue-gap-q2" in verify_result.stdout
     assert "analysis-q2-revenue-gap" in verify_result.stdout
     assert "business-domain-revenue-quality" in verify_result.stdout
-    assert "metric-recognized-revenue" in verify_result.stdout
-    assert "tables=17" in verify_result.stdout
+    assert "metric.recognizedRevenue.exists=1" in verify_result.stdout
+    assert "metric.grossMargin.exists=1" in verify_result.stdout
+    assert "metric.refundRate.exists=1" in verify_result.stdout
+    assert "metric.inventoryTurnover.exists=1" in verify_result.stdout
+    assert "metric.seaRecognizedRevenue.exists=1" in verify_result.stdout
+    assert "metric.seaDeliveryDelayRate.exists=1" in verify_result.stdout
+    assert "metricContextSources.recognizedRevenue.exists=1" in verify_result.stdout
+    assert "metricContextSources.seaDeliveryDelay.exists=1" in verify_result.stdout
+    assert "analysisTask.contextPack.root.kind=dashboardOverview" in verify_result.stdout
+    assert "analysisTask.contextPack.reportId=report-weekly-business" in verify_result.stdout
+    assert "tables=19" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
     assert "tool_calls.row_count=0" in verify_result.stdout

@@ -7,6 +7,96 @@ afterEach(() => {
 });
 
 describe("AgentRuntimeClient", () => {
+  it("lists workspace-scoped shared metrics from the authenticated runtime API", async () => {
+    const metricsPayload = {
+      items: [
+        {
+          businessDomainId: "business-domain-revenue-quality",
+          contextSources: [],
+          createdAt: "2026-06-12T10:30:00+08:00",
+          currentValue: "¥12.8M",
+          description: "已满足确认条件的收入金额。",
+          formulaSummary: "确认收入 = 已预订收入 - 退款金额",
+          metricId: "metric-recognized-revenue",
+          name: "确认收入",
+          ownerTeam: "Revenue Operations",
+          period: "Last 30 days",
+          riskLevel: "medium",
+          status: "attention",
+          thresholdSummary: "收入增速 < -2% 进入关注",
+          trendDirection: "down",
+          trendValue: "-3.2%",
+          unit: "CNY",
+          updatedAt: "2026-06-12T10:30:00+08:00",
+          workspaceId: "workspace-northstar-retail-china"
+        }
+      ]
+    };
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(metricsPayload));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new AgentRuntimeClient("http://runtime.test");
+
+    const result = await client.listMetrics();
+
+    expect(result).toEqual(metricsPayload);
+    expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/metrics", {
+      headers: {
+        Accept: "application/json"
+      },
+      method: "GET",
+      credentials: "include"
+    });
+  });
+
+  it("reads one workspace-scoped metric detail by canonical metricId", async () => {
+    const metric = {
+      businessDomainId: "business-domain-revenue-quality",
+      contextSources: [
+        {
+          createdAt: "2026-06-12T10:30:00+08:00",
+          metricContextSourceId: "metric-context-source-revenue-table",
+          metricId: "metric-recognized-revenue",
+          role: "primary_table",
+          sourceId: "table-sales-order",
+          sourceType: "dataTable",
+          summary: "作为确认收入的主表来源。",
+          title: "销售订单汇总表",
+          updatedAt: "2026-06-12T10:30:00+08:00"
+        }
+      ],
+      createdAt: "2026-06-12T10:30:00+08:00",
+      currentValue: "¥12.8M",
+      description: "已满足确认条件的收入金额。",
+      formulaSummary: "确认收入 = 已预订收入 - 退款金额",
+      metricId: "metric-recognized-revenue",
+      name: "确认收入",
+      ownerTeam: "Revenue Operations",
+      period: "Last 30 days",
+      riskLevel: "medium",
+      status: "attention",
+      thresholdSummary: "收入增速 < -2% 进入关注",
+      trendDirection: "down",
+      trendValue: "-3.2%",
+      unit: "CNY",
+      updatedAt: "2026-06-12T10:30:00+08:00",
+      workspaceId: "workspace-northstar-retail-china"
+    };
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(metric));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new AgentRuntimeClient("http://runtime.test");
+
+    const result = await client.getMetric("metric-recognized-revenue");
+
+    expect(result).toEqual(metric);
+    expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/metrics/metric-recognized-revenue", {
+      headers: {
+        Accept: "application/json"
+      },
+      method: "GET",
+      credentials: "include"
+    });
+  });
+
   it("reads the persisted analysis task surface by canonical analysisTaskId", async () => {
     const analysisTask = {
       analysisTaskId: "analysis-task-123",

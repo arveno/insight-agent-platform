@@ -105,6 +105,310 @@ ON DUPLICATE KEY UPDATE
   last_accessed_at = VALUES(last_accessed_at),
   revoked_at = VALUES(revoked_at);
 
+INSERT INTO metrics (
+  metric_id,
+  workspace_id,
+  business_domain_id,
+  name,
+  description,
+  current_value,
+  unit,
+  period,
+  trend_direction,
+  trend_value,
+  status,
+  risk_level,
+  owner_team,
+  formula_summary,
+  threshold_summary,
+  created_at,
+  updated_at
+) VALUES
+(
+  'metric-recognized-revenue',
+  'workspace-northstar-retail-china',
+  'business-domain-revenue-quality',
+  '确认收入',
+  '已满足确认条件的收入金额。',
+  '¥12.8M',
+  'CNY',
+  'Last 30 days',
+  'down',
+  '-3.2%',
+  'attention',
+  'medium',
+  'Revenue Operations',
+  '确认收入 = 已预订收入 - 退款金额',
+  '收入增速 < -2% 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-gross-margin',
+  'workspace-northstar-retail-china',
+  'business-domain-margin-analysis',
+  '毛利率',
+  '收入扣除销售成本后保留的利润比例。',
+  '33.4%',
+  '%',
+  'Last 30 days',
+  'flat',
+  '+0.0%',
+  'healthy',
+  'low',
+  'Finance BP',
+  '毛利率 = 毛利润 / 净收入',
+  '毛利率 < 32% 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-refund-rate',
+  'workspace-northstar-retail-china',
+  'business-domain-revenue-quality',
+  '退款率',
+  '已退款订单占已确认订单的比例。',
+  '4.8%',
+  '%',
+  'Last 30 days',
+  'up',
+  '+0.9%',
+  'attention',
+  'medium',
+  'Customer Care',
+  '退款率 = 退款订单数 / 已确认订单数',
+  '退款率 > 4.5% 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-inventory-turnover',
+  'workspace-northstar-retail-china',
+  'business-domain-supply-chain-efficiency',
+  '库存周转',
+  '一定周期内库存消耗和补货效率的综合指标。',
+  '5.1 turns',
+  'turns',
+  'Last 30 days',
+  'down',
+  '-0.4 turns',
+  'attention',
+  'high',
+  'Supply Chain',
+  '库存周转 = 销售成本 / 平均库存',
+  '库存周转 < 5.3 turns 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-sea-recognized-revenue',
+  'workspace-northstar-retail-sea',
+  'business-domain-revenue-quality',
+  'SEA 确认收入',
+  'SEA workspace 下已满足确认条件的收入金额。',
+  '$4.3M',
+  'USD',
+  'Last 30 days',
+  'down',
+  '-1.6%',
+  'attention',
+  'medium',
+  'SEA Revenue Operations',
+  'SEA 确认收入 = 已预订收入 - 退款金额',
+  '收入增速 < -1.5% 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-sea-delivery-delay-rate',
+  'workspace-northstar-retail-sea',
+  'business-domain-delivery-operations',
+  'SEA 配送延迟率',
+  'SEA workspace 下配送延迟订单占比。',
+  '6.2%',
+  '%',
+  'Last 30 days',
+  'up',
+  '+1.1%',
+  'attention',
+  'high',
+  'SEA Fulfillment',
+  '配送延迟率 = 延迟订单数 / 总配送订单数',
+  '配送延迟率 > 5.5% 进入关注',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  business_domain_id = VALUES(business_domain_id),
+  name = VALUES(name),
+  description = VALUES(description),
+  current_value = VALUES(current_value),
+  unit = VALUES(unit),
+  period = VALUES(period),
+  trend_direction = VALUES(trend_direction),
+  trend_value = VALUES(trend_value),
+  status = VALUES(status),
+  risk_level = VALUES(risk_level),
+  owner_team = VALUES(owner_team),
+  formula_summary = VALUES(formula_summary),
+  threshold_summary = VALUES(threshold_summary),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO metric_context_sources (
+  metric_context_source_id,
+  metric_id,
+  source_type,
+  source_id,
+  role,
+  title,
+  summary,
+  created_at,
+  updated_at
+) VALUES
+(
+  'metric-context-source-revenue-table',
+  'metric-recognized-revenue',
+  'dataTable',
+  'table-sales-order',
+  'primary_table',
+  '销售订单汇总表',
+  '作为确认收入的主表来源，按 workspace 粒度聚合已确认订单收入。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-revenue-report',
+  'metric-recognized-revenue',
+  'report',
+  'report-weekly-business',
+  'supporting_report',
+  '周经营分析报告',
+  '补充收入确认节奏、区域差异和渠道复核建议的只读摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-margin-table',
+  'metric-gross-margin',
+  'dataTable',
+  'table-income-statement-daily',
+  'primary_table',
+  '损益日表',
+  '提供毛利润和净收入字段，用于解释毛利率波动。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-margin-document',
+  'metric-gross-margin',
+  'knowledgeDocument',
+  'knowledge-document-margin-review',
+  'supporting_document',
+  '毛利率复盘纪要',
+  '沉淀促销结构、成本结算和毛利波动解释的知识摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-refund-table',
+  'metric-refund-rate',
+  'dataTable',
+  'table-refund-order',
+  'primary_table',
+  '退款订单表',
+  '提供退款订单明细和退款原因聚合口径。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-refund-evidence',
+  'metric-refund-rate',
+  'sourceEvidence',
+  'source-evidence-refund-watch',
+  'supporting_evidence',
+  '退款异常证据摘要',
+  '记录近期退款率抬升和客服标签聚合后的证据摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-inventory-table',
+  'metric-inventory-turnover',
+  'dataTable',
+  'table-inventory-daily',
+  'primary_table',
+  '库存日快照表',
+  '提供平均库存和周转校验所需的日级快照摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-inventory-document',
+  'metric-inventory-turnover',
+  'knowledgeDocument',
+  'knowledge-document-inventory-east-04',
+  'supporting_document',
+  '华东库存复核记录',
+  '补充促销库存错配和补货节奏异常的摘要说明。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-sea-revenue-table',
+  'metric-sea-recognized-revenue',
+  'dataTable',
+  'table-sea-sales-order',
+  'primary_table',
+  'SEA 销售订单汇总表',
+  '按 SEA workspace 聚合已确认订单收入，用于解释区域收入变化。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-sea-revenue-report',
+  'metric-sea-recognized-revenue',
+  'report',
+  'report-sea-weekly-operations',
+  'supporting_report',
+  'SEA 周经营报告',
+  '提供 SEA 区域渠道确认与交付节奏的补充摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-sea-delay-table',
+  'metric-sea-delivery-delay-rate',
+  'dataTable',
+  'table-sea-delivery-fulfillment',
+  'primary_table',
+  'SEA 履约配送表',
+  '聚合延迟订单和履约 SLA 口径，用于解释延迟率波动。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+),
+(
+  'metric-context-source-sea-delay-evidence',
+  'metric-sea-delivery-delay-rate',
+  'sourceEvidence',
+  'source-evidence-sea-delivery-delay',
+  'supporting_evidence',
+  'SEA 延迟异常证据摘要',
+  '汇总港口拥堵、承运商履约异常和运营备注的证据摘要。',
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  metric_id = VALUES(metric_id),
+  source_type = VALUES(source_type),
+  source_id = VALUES(source_id),
+  role = VALUES(role),
+  title = VALUES(title),
+  summary = VALUES(summary),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
 INSERT INTO analysis_tasks (
   analysis_task_id,
   conversation_id,
@@ -123,15 +427,73 @@ INSERT INTO analysis_tasks (
   'business-domain-revenue-quality',
   '解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。',
   CAST('{
-    "metricId": "metric-recognized-revenue",
-    "timeRange": "2026 Q2",
-    "threshold": "收入增速 < -2%",
-    "trend": "华东区域收入增速低于阈值",
-    "tableIds": ["table-sales-order", "table-refund-order"],
-    "knowledgeDocumentIds": [
-      "knowledge-document-channel-weekly-17",
-      "knowledge-document-inventory-east-04"
-    ]
+    "version": 1,
+    "suggestedPrompt": "请继续分析华东收入增速放缓的主要原因。",
+    "traceability": "direct_refs",
+    "capturedAt": "2026-06-05T03:08:12Z",
+    "root": {
+      "nodeId": "inspector-node-task-context-root",
+      "kind": "dashboardOverview",
+      "role": "inputContext",
+      "owner": {
+        "type": "analysisTask"
+      },
+      "title": "经营状态总览",
+      "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+      "chips": ["Northstar Retail China", "Last 7 days", "3 条证据"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T03:08:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-task-context-report",
+          "kind": "report",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "周经营分析报告",
+          "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
+          "sourceRef": {
+            "type": "report",
+            "reportId": "report-weekly-business"
+          }
+        },
+        {
+          "nodeId": "inspector-node-task-context-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "确认收入",
+          "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+          "value": "收入增速 < -2%",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-recognized-revenue"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-task-context-metric-source-1",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "销售订单汇总表",
+              "summary": "作为确认收入的主表来源。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sales-order"
+              }
+            }
+          ]
+        }
+      ]
+    }
   }' AS JSON),
   '2026-06-05T11:08:12+08:00',
   '2026-06-05T11:08:12+08:00'

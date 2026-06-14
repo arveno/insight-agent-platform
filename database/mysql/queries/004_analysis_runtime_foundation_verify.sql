@@ -9,6 +9,8 @@ SELECT CONCAT(
         'workspaces',
         'workspace_memberships',
         'auth_sessions',
+        'metrics',
+        'metric_context_sources',
         'analysis_tasks',
         'conversations',
         'analysis_runs',
@@ -34,6 +36,23 @@ FROM workspaces;
 
 SELECT CONCAT('workspace_memberships.row_count=', COUNT(*)) AS check_line
 FROM workspace_memberships;
+
+SELECT CONCAT(
+  'metrics.china.row_count=',
+  COUNT(*)
+) AS check_line
+FROM metrics
+WHERE workspace_id = 'workspace-northstar-retail-china';
+
+SELECT CONCAT(
+  'metrics.sea.row_count=',
+  COUNT(*)
+) AS check_line
+FROM metrics
+WHERE workspace_id = 'workspace-northstar-retail-sea';
+
+SELECT CONCAT('metric_context_sources.row_count=', COUNT(*)) AS check_line
+FROM metric_context_sources;
 
 SELECT CONCAT(
   'auth_sessions.seedUser.exists=',
@@ -183,25 +202,25 @@ WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
 
 SELECT CONCAT(
   'analysisTask.contextPack.metricId=',
-  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.metricId'))
+  JSON_UNQUOTE(
+    JSON_EXTRACT(context_pack_json, '$.root.children[1].sourceRef.metricId')
+  )
 ) AS check_line
 FROM analysis_tasks
 WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
 
 SELECT CONCAT(
-  'analysisTask.contextPack.tableIds=',
-  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.tableIds[0]')),
-  ',',
-  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.tableIds[1]'))
+  'analysisTask.contextPack.root.kind=',
+  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.root.kind'))
 ) AS check_line
 FROM analysis_tasks
 WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
 
 SELECT CONCAT(
-  'analysisTask.contextPack.knowledgeDocumentIds=',
-  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.knowledgeDocumentIds[0]')),
-  ',',
-  JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.knowledgeDocumentIds[1]'))
+  'analysisTask.contextPack.reportId=',
+  JSON_UNQUOTE(
+    JSON_EXTRACT(context_pack_json, '$.root.children[0].sourceRef.reportId')
+  )
 ) AS check_line
 FROM analysis_tasks
 WHERE analysis_task_id = 'analysis-task-revenue-gap-q2';
@@ -213,3 +232,85 @@ WHERE run_id = 'analysis-q2-revenue-gap';
 SELECT CONCAT('analysisRun.phase=', phase) AS check_line
 FROM analysis_runs
 WHERE run_id = 'analysis-q2-revenue-gap';
+
+SELECT CONCAT(
+  'metric.recognizedRevenue.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-recognized-revenue'
+      AND workspace_id = 'workspace-northstar-retail-china'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metric.grossMargin.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-gross-margin'
+      AND workspace_id = 'workspace-northstar-retail-china'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metric.refundRate.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-refund-rate'
+      AND workspace_id = 'workspace-northstar-retail-china'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metric.inventoryTurnover.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-inventory-turnover'
+      AND workspace_id = 'workspace-northstar-retail-china'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metric.seaRecognizedRevenue.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-sea-recognized-revenue'
+      AND workspace_id = 'workspace-northstar-retail-sea'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metric.seaDeliveryDelayRate.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metrics
+    WHERE metric_id = 'metric-sea-delivery-delay-rate'
+      AND workspace_id = 'workspace-northstar-retail-sea'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metricContextSources.recognizedRevenue.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metric_context_sources
+    WHERE metric_id = 'metric-recognized-revenue'
+      AND source_id = 'table-sales-order'
+      AND source_type = 'dataTable'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'metricContextSources.seaDeliveryDelay.exists=',
+  EXISTS(
+    SELECT 1
+    FROM metric_context_sources
+    WHERE metric_id = 'metric-sea-delivery-delay-rate'
+      AND source_id = 'table-sea-delivery-fulfillment'
+      AND source_type = 'dataTable'
+  )
+) AS check_line;

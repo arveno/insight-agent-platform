@@ -1,4 +1,7 @@
-import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
+import type {
+  AnalysisTaskContextPack,
+  InspectorTreeNode
+} from "@insight-agent/contracts/generated/typescript";
 
 import type {
   StaticPageStateViewModel,
@@ -26,6 +29,7 @@ export type DashboardSurfaceViewModel = StaticPageViewModelBase & {
   dashboardId: string;
   dashboardState: StaticPageStateViewModel;
   description: string;
+  metricContextPacks: Record<string, AnalysisTaskContextPack>;
   root: InspectorTreeNode;
   timeRange: DashboardTimeRangeViewModel;
   title: string;

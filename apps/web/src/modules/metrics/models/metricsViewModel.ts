@@ -1,10 +1,8 @@
 import type {
-  StaticEvidenceEntranceViewModel,
   StaticPageStateViewModel,
   StaticPageViewModelBase,
-  StaticRiskViewModel,
-  StaticStatusViewModel
 } from "../../../shared/view-model/staticViewModelTypes";
+import type { AnalysisTaskContextPack } from "@insight-agent/contracts/generated/typescript";
 
 export type MetricsWorkspaceBinding = {
   workspaceId: string;
@@ -17,53 +15,30 @@ export type MetricListItemViewModel = {
   metricName: string;
 };
 
-export type MetricThresholdRuleViewModel = {
-  condition: string;
+export type MetricContextSourceViewModel = {
   key: string;
-  label: string;
-  risk?: StaticRiskViewModel;
-};
-
-export type MetricLineageSourceViewModel = {
+  meta: string;
   description: string;
-  key: string;
-  label: string;
-  source: string;
-};
-
-export type MetricAnalysisContextViewModel = {
-  currentValue: string;
-  evidenceRefs: string[];
-  formula: string;
-  lineage: string;
-  metricId: string;
-  metricName: string;
-  riskLevel: string;
-  threshold: string;
-  timeRange: string;
-  trend: string;
-  workspaceId: string;
+  title: string;
 };
 
 export type MetricDetailViewModel = {
-  analysisContext: MetricAnalysisContextViewModel;
-  businessDomain: string;
+  analysisContextPack: AnalysisTaskContextPack;
+  businessDomainId: string;
+  businessDomainLabel: string;
+  contextSources: MetricContextSourceViewModel[];
   currentValue: string;
   definition: string;
-  evidenceItems: StaticEvidenceEntranceViewModel[];
-  formula: {
-    businessFormula: string;
-    technicalFormula: string;
-  };
+  formulaSummary: string;
   key: string;
-  lineageSources: MetricLineageSourceViewModel[];
   metricId: string;
   metricName: string;
-  risk?: StaticRiskViewModel;
-  status?: StaticStatusViewModel;
-  thresholdRules: MetricThresholdRuleViewModel[];
-  timeRange: string;
-  trend: string;
+  ownerTeam: string;
+  period: string;
+  riskLevel: string;
+  status: string;
+  thresholdSummary: string;
+  trendLabel: string;
   workspaceId: string;
 };
 

@@ -4,7 +4,6 @@ import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 
 export function DashboardMetricOverview({
@@ -14,30 +13,28 @@ export function DashboardMetricOverview({
   viewModel
 }: DashboardStatCardProps) {
   const { t } = useI18n();
-  const isPriorityMetric = metric.nodeId === "dashboard-node-metric-revenue";
+  const isPriorityMetric = metric.sourceRef?.type === "metric" && metric.sourceRef.metricId === "metric-recognized-revenue";
   const description = isPriorityMetric
     ? t("dashboard.metrics.riskDescription")
     : t("dashboard.metrics.defaultDescription");
+  const metricContextPack = viewModel.metricContextPacks[metric.nodeId];
+
+  if (!metricContextPack) {
+    throw new Error(`Missing shared metric context pack for dashboard node ${metric.nodeId}.`);
+  }
+
   const metricActions = [
-    ...(isPriorityMetric
-      ? [
-          createRouteAction({
-            iconName: "analysis",
-            key: `${metric.nodeId}-analyze`,
-            label: t("dashboard.action.analyzeAnomaly"),
-            onNavigate,
-            route: "analysis",
-            routeState: {
-              analysisContextPack: createDashboardAnalysisContextPack({
-                nodeId: metric.nodeId,
-                suggestedPrompt: `请分析 Dashboard 中指标 ${metric.title} 的异常表现，并结合相关证据给出下一步建议。`,
-                viewModel
-              })
-            },
-            variant: "contextPrimary"
-          })
-        ]
-      : []),
+    createRouteAction({
+      iconName: "analysis",
+      key: `${metric.nodeId}-analyze`,
+      label: t("dashboard.action.analyzeAnomaly"),
+      onNavigate,
+      route: "analysis",
+      routeState: {
+        analysisContextPack: metricContextPack
+      },
+      variant: "contextPrimary"
+    }),
     createRouteAction({
       iconName: "data",
       key: `${metric.nodeId}-source`,

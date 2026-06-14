@@ -42,6 +42,7 @@ DataField
 KnowledgeDocument
 KnowledgeChunk
 Metric
+MetricContextSource
 MetricFormula
 MetricThreshold
 MetricLineage
@@ -750,6 +751,7 @@ full ModelCall raw output
 - `SourceEvidence` 不得原地更新。
 - `Metric` definition 可以做版本化。
 - `Metric` observation / snapshot 必须绑定 time range，不得被 latest value 原地覆盖。
+- `Metric` read surface 当前只允许暴露 `currentValue / period / trend / thresholdSummary / formulaSummary / contextSources` 等摘要字段，不得把 raw table row、document content、report full body 塞回共享链路。
 - `KnowledgeDocument` / `DataTable` schema 如有变化，应通过 version / asOf 表达。
 - raw data 不进入 `contextPack`。
 

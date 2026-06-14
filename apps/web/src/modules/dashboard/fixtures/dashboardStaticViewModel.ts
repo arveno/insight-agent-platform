@@ -199,6 +199,7 @@ export const dashboardStaticViewModel: DashboardSurfaceViewModel = {
     }
   ],
   metricCards: [],
+  metricContextPacks: {},
   pageDescriptionKey: "page.dashboard.description",
   pageKey: "dashboard",
   pageTitleKey: "page.dashboard.title",

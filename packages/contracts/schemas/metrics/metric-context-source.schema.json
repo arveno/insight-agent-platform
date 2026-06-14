@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://insight-agent-platform/contracts/metric-context-source.schema.json",
+  "title": "MetricContextSource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metricContextSourceId",
+    "metricId",
+    "sourceType",
+    "sourceId",
+    "role",
+    "title",
+    "summary",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "metricContextSourceId": {
+      "type": "string"
+    },
+    "metricId": {
+      "type": "string"
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": ["dataTable", "knowledgeDocument", "sourceEvidence", "report"]
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

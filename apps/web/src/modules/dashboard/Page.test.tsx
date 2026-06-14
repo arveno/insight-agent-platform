@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
+import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
 import { DashboardPage } from "./Page";
 
@@ -23,16 +25,18 @@ beforeAll(() => {
 });
 
 describe("DashboardPage", () => {
-  it("renders the default time range and updates the static summary without navigation", async () => {
+  const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
+
+  it("renders the default time range and updates the shared-metric summary without navigation", async () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <DashboardPage onNavigate={onNavigate} />
+        <DashboardPage metricsLoader={metricsLoader} onNavigate={onNavigate} />
       </TestProviders>
     );
 
-    expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
+    expect(await screen.findByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
     expect(screen.getByText("当前展示最近 30 天内的指标摘要、异常和报告入口。")).toBeTruthy();
 
     fireEvent.mouseDown(screen.getByRole("combobox", { name: "Dashboard time range" }));
@@ -42,14 +46,14 @@ describe("DashboardPage", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("renders the child dashboard sections inside DashboardHero instead of as peer sections", () => {
+  it("renders the child dashboard sections inside DashboardHero instead of as peer sections", async () => {
     const { container } = render(
       <TestProviders>
-        <DashboardPage />
+        <DashboardPage metricsLoader={metricsLoader} />
       </TestProviders>
     );
 
-    const overviewSurface = screen.getByText("经营状态总览").closest(".ant-card") as HTMLElement;
+    const overviewSurface = (await screen.findByText("经营状态总览")).closest(".ant-card") as HTMLElement;
     const sectionText = Array.from(overviewSurface.querySelectorAll("section")).map((section) =>
       section.textContent?.replace(/\s+/g, " ").trim()
     );
@@ -64,8 +68,8 @@ describe("DashboardPage", () => {
     expect(screen.getByText("季度收入证据摘要")).toBeTruthy();
     expect(screen.getByText("数据质量与任务证据")).toBeTruthy();
 
-    expect(screen.getByText("零售收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
-    expect(screen.getByText("收入增速异常").closest(".ant-col")?.className).toContain(
+    expect(screen.getByText("确认收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
+    expect(screen.getByText("确认收入 风险摘要").closest(".ant-col")?.className).toContain(
       "ant-col-md-12"
     );
     expect(screen.getByText("周经营分析报告").closest(".ant-col")?.className).toContain(
@@ -84,16 +88,16 @@ describe("DashboardPage", () => {
     expect(within(overviewSurface).getAllByText("Last 30 days").length).toBeGreaterThan(0);
   });
 
-  it("builds every Analysis entry point from the semantic root tree or the selected subtree", () => {
+  it("builds shared metric Analysis entry plus lightweight Dashboard subtree entries", async () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <DashboardPage onNavigate={onNavigate} />
+        <DashboardPage metricsLoader={metricsLoader} onNavigate={onNavigate} />
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
+    fireEvent.click(await screen.findByRole("button", { name: "发起分析" }));
     expect(onNavigate).toHaveBeenNthCalledWith(
       1,
       "analysis",
@@ -105,32 +109,22 @@ describe("DashboardPage", () => {
     );
 
     fireEvent.click(
-      within(screen.getByText("零售收入").closest(".ant-card")!).getByRole("button", {
+      within(screen.getByText("确认收入").closest(".ant-card")!).getByRole("button", {
         name: "分析异常"
       })
     );
     expect(onNavigate).toHaveBeenNthCalledWith(
       2,
       "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            chips: expect.arrayContaining(["环比 -3.2%", "4 条证据"]),
-            nodeId: "dashboard-node-metric-revenue",
-            sourceRef: {
-              metricId: "metric-recognized-revenue",
-              type: "metric"
-            },
-            summary: "季度收入低于目标区间，需要继续拆解区域、渠道与确认节奏。",
-            title: "零售收入",
-            value: "¥12.8M"
-          })
-        })
-      })
+      {
+        analysisContextPack: buildMetricAnalysisContextPack(
+          findRuntimeMetric("metric-recognized-revenue")
+        )
+      }
     );
 
     fireEvent.click(
-      within(screen.getByText("收入增速异常").closest(".ant-card")!).getByRole("button", {
+      within(screen.getByText("确认收入 风险摘要").closest(".ant-card")!).getByRole("button", {
         name: "带上下文分析"
       })
     );
@@ -139,7 +133,7 @@ describe("DashboardPage", () => {
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-risk-revenue-growth" })
+          root: expect.objectContaining({ nodeId: "dashboard-node-risk-primary-metric" })
         })
       })
     );
@@ -155,7 +149,10 @@ describe("DashboardPage", () => {
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
           root: expect.objectContaining({
-            chips: expect.arrayContaining(["5 条证据", "更新时间 2026-06-03T17:30:00+08:00"]),
+            chips: expect.arrayContaining([
+              "5 条证据",
+              "Workspace Northstar Retail China"
+            ]),
             nodeId: "dashboard-node-report-weekly-business",
             sourceRef: {
               reportId: "report-weekly-business",
@@ -185,8 +182,8 @@ describe("DashboardPage", () => {
               sourceEvidenceId: "source-evidence-q2-revenue",
               type: "sourceEvidence"
             },
-            summary: "来自核心收入指标、报告段落和数据质量摘要的证据入口。",
-            title: "零售收入证据摘要"
+            summary: "来自核心指标和报告入口的轻量证据摘要。",
+            title: "季度收入证据摘要"
           })
         })
       })

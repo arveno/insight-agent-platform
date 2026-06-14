@@ -263,6 +263,36 @@ export const requiredFieldsBySchema = {
   "workspace/select-workspace-request.schema.json": ["workspaceId"],
   "workspace/select-workspace-response.schema.json": ["authSession", "currentWorkspaceContext"],
   "workspace/logout-response.schema.json": ["success"],
+  "metrics/metric-context-source.schema.json": [
+    "metricContextSourceId",
+    "metricId",
+    "sourceType",
+    "sourceId",
+    "role",
+    "title",
+    "summary",
+    "createdAt",
+    "updatedAt"
+  ],
+  "metrics/metric.schema.json": [
+    "metricId",
+    "workspaceId",
+    "businessDomainId",
+    "name",
+    "description",
+    "currentValue",
+    "period",
+    "trendDirection",
+    "trendValue",
+    "status",
+    "riskLevel",
+    "ownerTeam",
+    "formulaSummary",
+    "thresholdSummary",
+    "contextSources",
+    "createdAt",
+    "updatedAt"
+  ],
   "analysis/analysis-task-context-pack.schema.json": [
     "version",
     "suggestedPrompt",
@@ -469,6 +499,8 @@ export const requiredFieldsBySchema = {
 
 export const minimumOpenApiPaths = [
   "/health",
+  "/metrics",
+  "/metrics/{metricId}",
   "/analysis-tasks",
   "/analysis-tasks/submit",
   "/conversations",

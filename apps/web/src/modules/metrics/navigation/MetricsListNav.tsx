@@ -21,7 +21,7 @@ export function MetricsListNav({ controller, onBack }: MetricsListNavProps) {
       searchLabel="搜索指标"
       searchPlaceholder="搜索指标"
       searchValue={controller.searchValue}
-      selectedKey={controller.selectedMetricKey}
+      selectedKey={controller.selectedMetricKey ?? undefined}
       title="指标"
     />
   );
