@@ -3,11 +3,65 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentRuntimeClient, RuntimeApiError } from "./agentRuntimeClient";
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 
 describe("AgentRuntimeClient", () => {
+  it("uses an explicit runtime base URL when VITE_AGENT_RUNTIME_BASE_URL is set", () => {
+    vi.stubEnv("VITE_AGENT_RUNTIME_BASE_URL", "/api");
+    vi.stubEnv("VITE_AGENT_RUNTIME_PROXY_TARGET", "");
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "localhost",
+        origin: "http://localhost:5173",
+        port: "5173",
+        protocol: "http:"
+      }
+    });
+
+    const client = new AgentRuntimeClient();
+
+    expect(client.baseUrl).toBe("/api");
+  });
+
+  it("uses the local /api proxy path on localhost when VITE_AGENT_RUNTIME_PROXY_TARGET is set", () => {
+    vi.stubEnv("VITE_AGENT_RUNTIME_BASE_URL", "");
+    vi.stubEnv("VITE_AGENT_RUNTIME_PROXY_TARGET", "http://39.96.95.159");
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "localhost",
+        origin: "http://localhost:5173",
+        port: "5173",
+        protocol: "http:"
+      }
+    });
+
+    const client = new AgentRuntimeClient();
+
+    expect(client.baseUrl).toBe("/api");
+  });
+
+  it("keeps the direct local runtime fallback on localhost when no proxy target is set", () => {
+    vi.stubEnv("VITE_AGENT_RUNTIME_BASE_URL", "");
+    vi.stubEnv("VITE_AGENT_RUNTIME_PROXY_TARGET", "");
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "localhost",
+        origin: "http://localhost:5173",
+        port: "5173",
+        protocol: "http:"
+      }
+    });
+
+    const client = new AgentRuntimeClient();
+
+    expect(client.baseUrl).toBe("http://127.0.0.1:8000");
+  });
+
   it("defaults browser runtime API base to /api on non-localhost pages", () => {
+    vi.stubEnv("VITE_AGENT_RUNTIME_BASE_URL", "");
+    vi.stubEnv("VITE_AGENT_RUNTIME_PROXY_TARGET", "");
     vi.stubGlobal("window", {
       location: {
         hostname: "39.96.95.159",

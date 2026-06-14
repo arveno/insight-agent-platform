@@ -45,6 +45,7 @@ export class RuntimeApiError extends Error {
 
 function resolveAgentRuntimeBaseUrl(): string {
   const envBaseUrl = import.meta.env.VITE_AGENT_RUNTIME_BASE_URL;
+  const proxyTarget = import.meta.env.VITE_AGENT_RUNTIME_PROXY_TARGET;
 
   if (typeof envBaseUrl === "string" && envBaseUrl.trim().length > 0) {
     return envBaseUrl.replace(/\/$/, "");
@@ -54,10 +55,15 @@ function resolveAgentRuntimeBaseUrl(): string {
     return "http://127.0.0.1:8000";
   }
 
-  const { hostname, port, protocol } = window.location;
+  const { hostname } = window.location;
+  const isLocalhost = hostname === "127.0.0.1" || hostname === "localhost";
 
-  if ((hostname === "127.0.0.1" || hostname === "localhost") && port !== "8000") {
-    return `${protocol}//127.0.0.1:8000`;
+  if (isLocalhost) {
+    if (typeof proxyTarget === "string" && proxyTarget.trim().length > 0) {
+      return "/api";
+    }
+
+    return "http://127.0.0.1:8000";
   }
 
   return "/api";
