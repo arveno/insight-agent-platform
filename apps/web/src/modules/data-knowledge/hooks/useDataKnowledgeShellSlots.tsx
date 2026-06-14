@@ -1,7 +1,7 @@
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import { DataKnowledgePageContent } from "../Page";
-import { defaultDataKnowledgeWorkspaceBinding } from "../fixtures/dataKnowledgeStaticViewModel";
 import { DataKnowledgeListNav } from "../navigation/DataKnowledgeListNav";
 import { DataKnowledgeInspectorPanel } from "../panels/DataKnowledgeInspectorPanel";
 
@@ -17,12 +17,13 @@ export type UseDataKnowledgeShellSlotsParams = {
 export function useDataKnowledgeShellSlots({
   onBackToRoot,
   onNavigate,
-  workspaceId = defaultDataKnowledgeWorkspaceBinding.workspaceId,
-  workspaceName = defaultDataKnowledgeWorkspaceBinding.workspaceName
+  workspaceId,
+  workspaceName
 }: UseDataKnowledgeShellSlotsParams): ShellRegionSlots {
+  const currentWorkspaceBinding = useCurrentWorkspaceBinding();
   const controller = useDataKnowledgeOverviewState({
-    workspaceId,
-    workspaceName
+    workspaceId: workspaceId ?? currentWorkspaceBinding.workspaceId,
+    workspaceName: workspaceName ?? currentWorkspaceBinding.workspaceName
   });
 
   return {

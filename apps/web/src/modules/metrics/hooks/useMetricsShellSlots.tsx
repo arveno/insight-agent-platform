@@ -1,7 +1,7 @@
 import type { ShellRegionSlots } from "../../../shared/layout/ShellRegionSlots";
 import type { NavigateToRoute } from "../../../shared/navigation/navigationTypes";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import { MetricsPageContent } from "../Page";
-import { defaultMetricsWorkspaceBinding } from "../fixtures/metricsStaticViewModel";
 import { MetricsListNav } from "../navigation/MetricsListNav";
 
 import { useMetricsOverviewState } from "./useMetricsOverviewState";
@@ -16,12 +16,13 @@ export type UseMetricsShellSlotsParams = {
 export function useMetricsShellSlots({
   onBackToRoot,
   onNavigate,
-  workspaceId = defaultMetricsWorkspaceBinding.workspaceId,
-  workspaceName = defaultMetricsWorkspaceBinding.workspaceName
+  workspaceId,
+  workspaceName
 }: UseMetricsShellSlotsParams): ShellRegionSlots {
+  const currentWorkspaceBinding = useCurrentWorkspaceBinding();
   const controller = useMetricsOverviewState({
-    workspaceId,
-    workspaceName
+    workspaceId: workspaceId ?? currentWorkspaceBinding.workspaceId,
+    workspaceName: workspaceName ?? currentWorkspaceBinding.workspaceName
   });
 
   return {

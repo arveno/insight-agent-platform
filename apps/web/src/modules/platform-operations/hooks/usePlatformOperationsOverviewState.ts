@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  createPlatformOperationsViewModel,
-  defaultPlatformOperationsWorkspaceBinding
-} from "../fixtures/platformOperationsStaticViewModel";
+import { createPlatformOperationsViewModel } from "../fixtures/platformOperationsStaticViewModel";
 import type {
   PlatformOperationsViewModel,
   PlatformOperationsWorkspaceBinding
 } from "../models/platformOperationsViewModel";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 
 const defaultSelectedOperationKey = createPlatformOperationsViewModel().selectedOperation.key;
 
@@ -25,17 +23,19 @@ export type PlatformOperationsOverviewController = {
 };
 
 export function usePlatformOperationsOverviewState(
-  workspaceBinding: PlatformOperationsWorkspaceBinding = defaultPlatformOperationsWorkspaceBinding
+  workspaceBinding?: PlatformOperationsWorkspaceBinding
 ): PlatformOperationsOverviewController {
+  const currentWorkspaceBinding = useCurrentWorkspaceBinding();
+  const resolvedWorkspaceBinding = workspaceBinding ?? currentWorkspaceBinding;
   const [selectedOperationKey, setSelectedOperationKey] = useState(defaultSelectedOperationKey);
   const viewModel = useMemo(
-    () => createPlatformOperationsViewModel(selectedOperationKey, workspaceBinding),
-    [selectedOperationKey, workspaceBinding]
+    () => createPlatformOperationsViewModel(selectedOperationKey, resolvedWorkspaceBinding),
+    [resolvedWorkspaceBinding, selectedOperationKey]
   );
 
   useEffect(() => {
     setSelectedOperationKey(defaultSelectedOperationKey);
-  }, [workspaceBinding.workspaceId]);
+  }, [resolvedWorkspaceBinding.workspaceId]);
 
   return {
     onSelectOperation: (key) => {

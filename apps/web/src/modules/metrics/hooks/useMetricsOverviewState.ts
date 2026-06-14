@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  createMetricsViewModel,
-  defaultMetricsWorkspaceBinding
-} from "../fixtures/metricsStaticViewModel";
+import { createMetricsViewModel } from "../fixtures/metricsStaticViewModel";
 import type { MetricsViewModel, MetricsWorkspaceBinding } from "../models/metricsViewModel";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 
 const defaultSelectedMetricKey = createMetricsViewModel().selectedMetric.key;
 
@@ -24,13 +22,15 @@ export type MetricsOverviewController = {
 };
 
 export function useMetricsOverviewState(
-  workspaceBinding: MetricsWorkspaceBinding = defaultMetricsWorkspaceBinding
+  workspaceBinding?: MetricsWorkspaceBinding
 ): MetricsOverviewController {
+  const currentWorkspaceBinding = useCurrentWorkspaceBinding();
+  const resolvedWorkspaceBinding = workspaceBinding ?? currentWorkspaceBinding;
   const [searchValue, setSearchValue] = useState("");
   const [selectedMetricKey, setSelectedMetricKey] = useState(defaultSelectedMetricKey);
   const viewModel = useMemo(
-    () => createMetricsViewModel(selectedMetricKey, workspaceBinding),
-    [selectedMetricKey, workspaceBinding]
+    () => createMetricsViewModel(selectedMetricKey, resolvedWorkspaceBinding),
+    [resolvedWorkspaceBinding, selectedMetricKey]
   );
   const filteredMetrics = useMemo(() => {
     const normalizedQuery = searchValue.trim().toLowerCase();
@@ -47,7 +47,7 @@ export function useMetricsOverviewState(
   useEffect(() => {
     setSearchValue("");
     setSelectedMetricKey(defaultSelectedMetricKey);
-  }, [workspaceBinding.workspaceId]);
+  }, [resolvedWorkspaceBinding.workspaceId]);
 
   return {
     filteredMetrics,

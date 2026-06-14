@@ -36,7 +36,6 @@ function resolveCurrentWorkspace(
         workspace.workspaceId === currentWorkspaceContext.workspaceId &&
         workspace.role === currentWorkspaceContext.role
     ) ??
-    workspaces.find((workspace) => workspace.workspaceId === currentWorkspaceContext.workspaceId) ??
     null
   );
 }

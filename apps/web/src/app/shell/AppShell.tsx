@@ -13,6 +13,7 @@ import { shellThemeTokens } from "../../shared/theme/tokens";
 import { shellTypographyStyles } from "../../shared/theme/typography";
 import type { ThemeMode } from "../../shared/theme/themeTypes";
 import type { AppRouteState, StaticRouteKey } from "../../shared/navigation/navigationTypes";
+import { CurrentWorkspaceBindingProvider } from "../../shared/workspace/CurrentWorkspaceBindingProvider";
 
 import { appShellStaticViewModel } from "./fixtures/appShellStaticViewModel";
 
@@ -231,21 +232,28 @@ export function AppShell({
   );
 
   return (
-    <RouteShellOutlet
-      activeRoute={activeRoute}
-      routeState={activeRouteState}
-      defaultMainContent={defaultMainContent}
-      header={header}
-      leftNavMode={leftNavMode}
-      onBackToRoot={() => setLeftNavMode("root")}
-      onNavigate={handleNavigate}
-      renderLeftNav={renderLeftNav}
-      rootLeftNavContent={rootLeftNavContent}
-      selectedBusinessDomainId={appShellStaticViewModel.selectedBusinessDomainId}
-      selectedWorkspace={{
-        name: session.currentWorkspace.name,
-        workspaceId: session.currentWorkspace.workspaceId
+    <CurrentWorkspaceBindingProvider
+      value={{
+        workspaceId: session.currentWorkspace.workspaceId,
+        workspaceName: session.currentWorkspace.name
       }}
-    />
+    >
+      <RouteShellOutlet
+        activeRoute={activeRoute}
+        routeState={activeRouteState}
+        defaultMainContent={defaultMainContent}
+        header={header}
+        leftNavMode={leftNavMode}
+        onBackToRoot={() => setLeftNavMode("root")}
+        onNavigate={handleNavigate}
+        renderLeftNav={renderLeftNav}
+        rootLeftNavContent={rootLeftNavContent}
+        selectedBusinessDomainId={appShellStaticViewModel.selectedBusinessDomainId}
+        selectedWorkspace={{
+          name: session.currentWorkspace.name,
+          workspaceId: session.currentWorkspace.workspaceId
+        }}
+      />
+    </CurrentWorkspaceBindingProvider>
   );
 }

@@ -4,6 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { TestProviders } from "../../shared/test/TestProviders";
 import { createReportsViewModel } from "./fixtures/reportsStaticViewModel";
 import type { ReportsReaderController } from "./hooks/useReportsReaderState";
+import type { ReportsWorkspaceBinding } from "./models/reportsViewModel";
 import { ReportsPage, ReportsPageContent } from "./Page";
 
 afterEach(cleanup);
@@ -24,10 +25,15 @@ beforeAll(() => {
   });
 });
 
+const testWorkspaceBinding: ReportsWorkspaceBinding = {
+  workspaceId: "workspace-northstar-retail-china",
+  workspaceName: "Northstar Retail China"
+};
+
 function createController(
   selectedReportKey = "report-inventory-exception-tracking"
 ): ReportsReaderController {
-  const viewModel = createReportsViewModel(selectedReportKey);
+  const viewModel = createReportsViewModel(testWorkspaceBinding, selectedReportKey);
 
   return {
     filteredReports: viewModel.reports,
@@ -90,19 +96,26 @@ describe("ReportsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "带上下文分析" }));
 
     expect(onNavigate).toHaveBeenCalledWith("analysis", {
-      draftContextPack: {
-        chips: [
-          "reportId report-inventory-exception-tracking",
-          "runId run-inventory-exception-tracking",
-          "2 条证据",
-          "2 个章节"
-        ],
-        sourceId: "report-inventory-exception-tracking",
-        sourceTitle: "库存异常跟踪报告",
-        sourceType: "report",
+      analysisContextPack: expect.objectContaining({
         suggestedPrompt: "请基于报告《库存异常跟踪报告》继续分析关键证据、风险判断和下一步动作。",
-        summary: "跟踪库存积压与补货错配，沉淀异常定位、证据与清仓优先级建议。"
-      }
+        root: expect.objectContaining({
+          chips: [
+            "reportId report-inventory-exception-tracking",
+            "runId run-inventory-exception-tracking",
+            "2 条证据",
+            "2 个章节"
+          ],
+          kind: "report",
+          sourceRef: {
+            reportId: "report-inventory-exception-tracking",
+            type: "report"
+          },
+          summary: "跟踪库存积压与补货错配，沉淀异常定位、证据与清仓优先级建议。",
+          title: "库存异常跟踪报告"
+        }),
+        traceability: "direct_refs",
+        version: 1
+      })
     });
   });
 });

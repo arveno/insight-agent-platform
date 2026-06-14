@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { createDataKnowledgeViewModel } from "../mappers/createDataKnowledgeViewModel";
-import { defaultDataKnowledgeWorkspaceBinding } from "../fixtures/dataKnowledgeStaticViewModel";
 import type {
   DataKnowledgeRelationshipNodeViewModel,
   DataKnowledgeViewModel,
   DataKnowledgeWorkspaceBindingViewModel
 } from "../models/dataKnowledgeViewModel";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 
 const defaultViewModel = createDataKnowledgeViewModel();
 const defaultSelectedAssetKey = defaultViewModel.selectedAsset.key;
@@ -38,15 +38,17 @@ export type DataKnowledgeOverviewController = {
 };
 
 export function useDataKnowledgeOverviewState(
-  workspaceBinding: DataKnowledgeWorkspaceBindingViewModel = defaultDataKnowledgeWorkspaceBinding
+  workspaceBinding?: DataKnowledgeWorkspaceBindingViewModel
 ): DataKnowledgeOverviewController {
+  const currentWorkspaceBinding = useCurrentWorkspaceBinding();
+  const resolvedWorkspaceBinding = workspaceBinding ?? currentWorkspaceBinding;
   const [searchValue, setSearchValue] = useState("");
   const [selectedAssetKey, setSelectedAssetKey] = useState(defaultSelectedAssetKey);
   const [selectedNodeId, setSelectedNodeId] = useState(defaultSelectedNodeId);
   const previousAssetKeyRef = useRef(selectedAssetKey);
   const viewModel = useMemo(
-    () => createDataKnowledgeViewModel(selectedAssetKey, workspaceBinding),
-    [selectedAssetKey, workspaceBinding]
+    () => createDataKnowledgeViewModel(selectedAssetKey, resolvedWorkspaceBinding),
+    [resolvedWorkspaceBinding, selectedAssetKey]
   );
   const filteredAssetItems = useMemo(() => {
     const normalizedQuery = searchValue.trim().toLowerCase();
@@ -71,7 +73,7 @@ export function useDataKnowledgeOverviewState(
     setSelectedAssetKey(defaultSelectedAssetKey);
     setSelectedNodeId(defaultSelectedNodeId);
     previousAssetKeyRef.current = defaultSelectedAssetKey;
-  }, [workspaceBinding.workspaceId]);
+  }, [resolvedWorkspaceBinding.workspaceId]);
 
   useEffect(() => {
     const currentAssetKey = viewModel.selectedAsset.key;
