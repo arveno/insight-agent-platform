@@ -52,6 +52,39 @@ assert_login_page() {
   log "PASS login page"
 }
 
+assert_metrics_unauthenticated() {
+  local body_file
+  local status_code
+  body_file="$(mktemp)"
+  status_code="$(
+    curl \
+      --silent \
+      --show-error \
+      --connect-timeout 5 \
+      --max-time 20 \
+      --output "${body_file}" \
+      --write-out "%{http_code}" \
+      "${preview_base_url}/metrics"
+  )"
+  [[ "${status_code}" == "401" ]] || {
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    die "Expected unauthenticated /metrics to return 401, got ${status_code}."
+  }
+  JSON_PAYLOAD="$(cat "${body_file}")" python3 - <<'PY'
+import json
+import os
+
+payload = json.loads(os.environ["JSON_PAYLOAD"])
+assert payload == {
+    "errorCode": "UNAUTHORIZED",
+    "message": "Authentication session is missing or invalid.",
+}, payload
+PY
+  rm -f "${body_file}"
+  log "PASS unauthenticated metrics"
+}
+
 login_seed_user() {
   local payload
   cookie_jar="$(mktemp)"
@@ -119,6 +152,91 @@ PY
   log "PASS workspace list"
 }
 
+assert_metrics_for_workspace() {
+  local expected_workspace_id="$1"
+  local expected_metric_ids_csv="$2"
+  local payload
+  payload="$(
+    curl \
+      "${CURL_ARGS[@]}" \
+      --cookie "${cookie_jar}" \
+      "${preview_base_url}/metrics"
+  )"
+  JSON_PAYLOAD="${payload}" EXPECTED_WORKSPACE_ID="${expected_workspace_id}" EXPECTED_METRIC_IDS="${expected_metric_ids_csv}" python3 - <<'PY'
+import json
+import os
+
+payload = json.loads(os.environ["JSON_PAYLOAD"])
+expected_workspace_id = os.environ["EXPECTED_WORKSPACE_ID"]
+expected_metric_ids = set(filter(None, os.environ["EXPECTED_METRIC_IDS"].split(",")))
+items = payload["items"]
+assert isinstance(items, list), payload
+metric_ids = [item["metricId"] for item in items]
+assert set(metric_ids) == expected_metric_ids, metric_ids
+assert len(metric_ids) == len(expected_metric_ids), metric_ids
+for item in items:
+    assert item["workspaceId"] == expected_workspace_id, item
+PY
+  log "PASS metrics list ${expected_workspace_id}"
+}
+
+assert_metric_detail() {
+  local metric_id="$1"
+  local expected_workspace_id="$2"
+  local payload
+  payload="$(
+    curl \
+      "${CURL_ARGS[@]}" \
+      --cookie "${cookie_jar}" \
+      "${preview_base_url}/metrics/${metric_id}"
+  )"
+  JSON_PAYLOAD="${payload}" EXPECTED_METRIC_ID="${metric_id}" EXPECTED_WORKSPACE_ID="${expected_workspace_id}" python3 - <<'PY'
+import json
+import os
+
+payload = json.loads(os.environ["JSON_PAYLOAD"])
+assert payload["metricId"] == os.environ["EXPECTED_METRIC_ID"], payload
+assert payload["workspaceId"] == os.environ["EXPECTED_WORKSPACE_ID"], payload
+assert isinstance(payload["contextSources"], list), payload
+PY
+  log "PASS metric detail ${metric_id}"
+}
+
+assert_metric_not_found_in_current_workspace() {
+  local metric_id="$1"
+  local body_file
+  local status_code
+  body_file="$(mktemp)"
+  status_code="$(
+    curl \
+      --silent \
+      --show-error \
+      --connect-timeout 5 \
+      --max-time 20 \
+      --cookie "${cookie_jar}" \
+      --output "${body_file}" \
+      --write-out "%{http_code}" \
+      "${preview_base_url}/metrics/${metric_id}"
+  )"
+  [[ "${status_code}" == "404" ]] || {
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    die "Expected /metrics/${metric_id} to return 404 in current workspace, got ${status_code}."
+  }
+  JSON_PAYLOAD="$(cat "${body_file}")" EXPECTED_METRIC_ID="${metric_id}" python3 - <<'PY'
+import json
+import os
+
+payload = json.loads(os.environ["JSON_PAYLOAD"])
+assert payload == {
+    "errorCode": "NOT_FOUND",
+    "message": f"Metric not found: {os.environ['EXPECTED_METRIC_ID']}",
+}, payload
+PY
+  rm -f "${body_file}"
+  log "PASS metric 404 ${metric_id}"
+}
+
 assert_workspace_switch() {
   local payload
   payload="$(
@@ -147,10 +265,19 @@ main() {
   require_prerequisites
   assert_health
   assert_login_page
+  assert_metrics_unauthenticated
   login_seed_user
   assert_auth_me
   assert_workspaces
+  assert_metrics_for_workspace \
+    "workspace-northstar-retail-china" \
+    "metric-recognized-revenue,metric-gross-margin,metric-refund-rate,metric-inventory-turnover"
+  assert_metric_detail "metric-recognized-revenue" "workspace-northstar-retail-china"
   assert_workspace_switch
+  assert_metrics_for_workspace \
+    "workspace-northstar-retail-sea" \
+    "metric-sea-recognized-revenue,metric-sea-delivery-delay-rate"
+  assert_metric_not_found_in_current_workspace "metric-recognized-revenue"
   log "PASS auth smoke completed"
 }
 
