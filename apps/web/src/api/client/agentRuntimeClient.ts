@@ -54,13 +54,13 @@ function resolveAgentRuntimeBaseUrl(): string {
     return "http://127.0.0.1:8000";
   }
 
-  const { hostname, origin, port, protocol } = window.location;
+  const { hostname, port, protocol } = window.location;
 
   if ((hostname === "127.0.0.1" || hostname === "localhost") && port !== "8000") {
     return `${protocol}//127.0.0.1:8000`;
   }
 
-  return origin;
+  return "/api";
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {

@@ -4,6 +4,7 @@ set -Eeuo pipefail
 preview_base_url="${PREVIEW_BASE_URL:-}"
 cookie_jar=""
 readonly CURL_ARGS=(--silent --show-error --fail --connect-timeout 5 --max-time 20)
+readonly API_BASE_PATH="/api"
 
 log() {
   printf '[ecs-preview-smoke] %s\n' "$*"
@@ -24,6 +25,11 @@ require_prerequisites() {
   [[ -n "${preview_base_url}" ]] || die "Set PREVIEW_BASE_URL, for example http://<ECS_IP_OR_DOMAIN>."
   command -v curl >/dev/null 2>&1 || die "curl is required."
   command -v python3 >/dev/null 2>&1 || die "python3 is required."
+}
+
+api_url() {
+  local path="$1"
+  printf '%s%s%s\n' "${preview_base_url}" "${API_BASE_PATH}" "${path}"
 }
 
 assert_health() {
@@ -52,6 +58,42 @@ assert_login_page() {
   log "PASS login page"
 }
 
+assert_metrics_page_route() {
+  local body_file
+  body_file="$(mktemp)"
+  curl "${CURL_ARGS[@]}" "${preview_base_url}/metrics" >"${body_file}"
+  grep -qi "<html" "${body_file}" || {
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    die "/metrics did not return HTML."
+  }
+  grep -q 'id="root"' "${body_file}" || {
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    die "/metrics did not return the SPA root container."
+  }
+  grep -q '<script type="module"' "${body_file}" || {
+    cat "${body_file}" >&2
+    rm -f "${body_file}"
+    die "/metrics did not return the SPA script tag."
+  }
+  HTML_BODY_PATH="${body_file}" python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+body = Path(os.environ["HTML_BODY_PATH"]).read_text()
+try:
+    json.loads(body)
+except json.JSONDecodeError:
+    pass
+else:
+    raise AssertionError("/metrics unexpectedly returned JSON.")
+PY
+  rm -f "${body_file}"
+  log "PASS metrics page route"
+}
+
 assert_metrics_unauthenticated() {
   local body_file
   local status_code
@@ -64,12 +106,12 @@ assert_metrics_unauthenticated() {
       --max-time 20 \
       --output "${body_file}" \
       --write-out "%{http_code}" \
-      "${preview_base_url}/metrics"
+      "$(api_url "/metrics")"
   )"
   [[ "${status_code}" == "401" ]] || {
     cat "${body_file}" >&2
     rm -f "${body_file}"
-    die "Expected unauthenticated /metrics to return 401, got ${status_code}."
+    die "Expected unauthenticated /api/metrics to return 401, got ${status_code}."
   }
   JSON_PAYLOAD="$(cat "${body_file}")" python3 - <<'PY'
 import json
@@ -94,7 +136,7 @@ login_seed_user() {
       --cookie-jar "${cookie_jar}" \
       --header "Content-Type: application/json" \
       --data '{"email":"zoe@northstar.example.com","password":"zoe-password"}' \
-      "${preview_base_url}/auth/login"
+      "$(api_url "/auth/login")"
   )"
   JSON_PAYLOAD="${payload}" python3 - <<'PY'
 import json
@@ -114,7 +156,7 @@ assert_auth_me() {
     curl \
       "${CURL_ARGS[@]}" \
       --cookie "${cookie_jar}" \
-      "${preview_base_url}/auth/me"
+      "$(api_url "/auth/me")"
   )"
   JSON_PAYLOAD="${payload}" python3 - <<'PY'
 import json
@@ -134,7 +176,7 @@ assert_workspaces() {
     curl \
       "${CURL_ARGS[@]}" \
       --cookie "${cookie_jar}" \
-      "${preview_base_url}/workspaces"
+      "$(api_url "/workspaces")"
   )"
   JSON_PAYLOAD="${payload}" python3 - <<'PY'
 import json
@@ -160,7 +202,7 @@ assert_metrics_for_workspace() {
     curl \
       "${CURL_ARGS[@]}" \
       --cookie "${cookie_jar}" \
-      "${preview_base_url}/metrics"
+      "$(api_url "/metrics")"
   )"
   JSON_PAYLOAD="${payload}" EXPECTED_WORKSPACE_ID="${expected_workspace_id}" EXPECTED_METRIC_IDS="${expected_metric_ids_csv}" python3 - <<'PY'
 import json
@@ -188,7 +230,7 @@ assert_metric_detail() {
     curl \
       "${CURL_ARGS[@]}" \
       --cookie "${cookie_jar}" \
-      "${preview_base_url}/metrics/${metric_id}"
+      "$(api_url "/metrics/${metric_id}")"
   )"
   JSON_PAYLOAD="${payload}" EXPECTED_METRIC_ID="${metric_id}" EXPECTED_WORKSPACE_ID="${expected_workspace_id}" python3 - <<'PY'
 import json
@@ -216,12 +258,12 @@ assert_metric_not_found_in_current_workspace() {
       --cookie "${cookie_jar}" \
       --output "${body_file}" \
       --write-out "%{http_code}" \
-      "${preview_base_url}/metrics/${metric_id}"
+      "$(api_url "/metrics/${metric_id}")"
   )"
   [[ "${status_code}" == "404" ]] || {
     cat "${body_file}" >&2
     rm -f "${body_file}"
-    die "Expected /metrics/${metric_id} to return 404 in current workspace, got ${status_code}."
+    die "Expected /api/metrics/${metric_id} to return 404 in current workspace, got ${status_code}."
   }
   JSON_PAYLOAD="$(cat "${body_file}")" EXPECTED_METRIC_ID="${metric_id}" python3 - <<'PY'
 import json
@@ -246,7 +288,7 @@ assert_workspace_switch() {
       --cookie-jar "${cookie_jar}" \
       --header "Content-Type: application/json" \
       --data '{"workspaceId":"workspace-northstar-retail-sea"}' \
-      "${preview_base_url}/auth/select-workspace"
+      "$(api_url "/auth/select-workspace")"
   )"
   JSON_PAYLOAD="${payload}" python3 - <<'PY'
 import json
@@ -265,6 +307,7 @@ main() {
   require_prerequisites
   assert_health
   assert_login_page
+  assert_metrics_page_route
   assert_metrics_unauthenticated
   login_seed_user
   assert_auth_me

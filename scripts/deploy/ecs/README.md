@@ -262,6 +262,15 @@ PREVIEW_BASE_URL=http://<ECS_IP_OR_DOMAIN> \
 pnpm smoke:ecs-preview-auth
 ```
 
+ECS preview 的公网 namespace 固定为：
+
+```text
+Frontend page routes: /...
+Public runtime API: /api/*
+```
+
+`deploy-preview-app.sh` 会用 `VITE_AGENT_RUNTIME_BASE_URL=/api` 构建前端，因此像 `/metrics` 这样的页面 route 会继续回到 SPA，runtime API 则通过 Caddy 的 `/api/* -> strip /api -> agent-runtime:8000` 代理进入后端。
+
 本地前端通过 Vite proxy 调试 ECS preview：
 
 ```bash

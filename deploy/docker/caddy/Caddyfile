@@ -14,8 +14,9 @@
       reverse_proxy agent-runtime:8000
     }
 
-    @runtime_api path /auth /auth/* /workspaces /workspaces/* /metrics /metrics/* /analysis-tasks* /analysis-runs* /conversations*
+    @runtime_api path /api /api/*
     handle @runtime_api {
+      uri strip_prefix /api
       reverse_proxy agent-runtime:8000
     }
 

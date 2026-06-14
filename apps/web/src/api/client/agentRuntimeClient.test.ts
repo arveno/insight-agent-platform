@@ -7,6 +7,21 @@ afterEach(() => {
 });
 
 describe("AgentRuntimeClient", () => {
+  it("defaults browser runtime API base to /api on non-localhost pages", () => {
+    vi.stubGlobal("window", {
+      location: {
+        hostname: "39.96.95.159",
+        origin: "http://39.96.95.159",
+        port: "",
+        protocol: "http:"
+      }
+    });
+
+    const client = new AgentRuntimeClient();
+
+    expect(client.baseUrl).toBe("/api");
+  });
+
   it("lists workspace-scoped shared metrics from the authenticated runtime API", async () => {
     const metricsPayload = {
       items: [

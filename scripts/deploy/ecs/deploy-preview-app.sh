@@ -101,7 +101,7 @@ ensure_remote_directories() {
 
 build_frontend() {
   log "Building frontend static assets."
-  run_local_cmd pnpm --dir "${REPO_ROOT}/apps/web" build
+  run_local_cmd env VITE_AGENT_RUNTIME_BASE_URL=/api pnpm --dir "${REPO_ROOT}/apps/web" build
 }
 
 sync_frontend_dist() {
