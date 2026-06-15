@@ -63,6 +63,6 @@ describe("useMetricsShellSlots", () => {
     expect(screen.getByText("指标总览")).toBeTruthy();
     expect(screen.getByText("指标辅助区")).toBeTruthy();
     expect(screen.getAllByText("库存周转").length).toBeGreaterThan(0);
-    expect(screen.getByText(zhCnMessages["risk.high.title"])).toBeTruthy();
+    expect(screen.getAllByText(zhCnMessages["risk.high.title"]).length).toBeGreaterThan(0);
   });
 });

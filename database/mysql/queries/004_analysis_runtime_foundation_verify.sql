@@ -9,6 +9,9 @@ SELECT CONCAT(
         'workspaces',
         'workspace_memberships',
         'auth_sessions',
+        'data_sources',
+        'data_tables',
+        'knowledge_documents',
         'metrics',
         'metric_context_sources',
         'analysis_tasks',
@@ -36,6 +39,15 @@ FROM workspaces;
 
 SELECT CONCAT('workspace_memberships.row_count=', COUNT(*)) AS check_line
 FROM workspace_memberships;
+
+SELECT CONCAT('data_sources.row_count=', COUNT(*)) AS check_line
+FROM data_sources;
+
+SELECT CONCAT('data_tables.row_count=', COUNT(*)) AS check_line
+FROM data_tables;
+
+SELECT CONCAT('knowledge_documents.row_count=', COUNT(*)) AS check_line
+FROM knowledge_documents;
 
 SELECT CONCAT(
   'metrics.china.row_count=',
@@ -314,3 +326,102 @@ SELECT CONCAT(
       AND source_type = 'dataTable'
   )
 ) AS check_line;
+
+SELECT CONCAT(
+  'metricContextSources.unresolved.row_count=',
+  COUNT(*)
+) AS check_line
+FROM metric_context_sources
+WHERE CASE source_type
+  WHEN 'dataTable' THEN NOT EXISTS(
+    SELECT 1
+    FROM data_tables
+    WHERE table_id = metric_context_sources.source_id
+  )
+  WHEN 'knowledgeDocument' THEN NOT EXISTS(
+    SELECT 1
+    FROM knowledge_documents
+    WHERE knowledge_document_id = metric_context_sources.source_id
+  )
+  WHEN 'report' THEN NOT EXISTS(
+    SELECT 1
+    FROM reports
+    WHERE report_id = metric_context_sources.source_id
+  )
+  WHEN 'sourceEvidence' THEN NOT EXISTS(
+    SELECT 1
+    FROM source_evidence
+    WHERE source_evidence_id = metric_context_sources.source_id
+  )
+  ELSE TRUE
+END;
+
+SELECT CONCAT(
+  'dataTables.unresolvedDataSource.row_count=',
+  COUNT(*)
+) AS check_line
+FROM data_tables
+WHERE NOT EXISTS(
+  SELECT 1
+  FROM data_sources
+  WHERE data_source_id = data_tables.data_source_id
+);
+
+SELECT CONCAT(
+  'sourceEvidence.unresolvedRun.row_count=',
+  COUNT(*)
+) AS check_line
+FROM source_evidence
+WHERE NOT EXISTS(
+  SELECT 1
+  FROM analysis_runs
+  WHERE run_id = source_evidence.run_id
+);
+
+SELECT CONCAT(
+  'sourceEvidence.unresolvedSource.row_count=',
+  COUNT(*)
+) AS check_line
+FROM source_evidence
+WHERE CASE source_type
+  WHEN 'data_table' THEN NOT EXISTS(
+    SELECT 1
+    FROM data_tables
+    WHERE table_id = source_evidence.source_id
+  )
+  WHEN 'knowledge_document' THEN NOT EXISTS(
+    SELECT 1
+    FROM knowledge_documents
+    WHERE knowledge_document_id = source_evidence.source_id
+  )
+  ELSE FALSE
+END;
+
+SELECT CONCAT(
+  'reports.unresolvedRun.row_count=',
+  COUNT(*)
+) AS check_line
+FROM reports
+WHERE NOT EXISTS(
+  SELECT 1
+  FROM analysis_runs
+  WHERE run_id = reports.run_id
+);
+
+SELECT CONCAT(
+  'reports.unresolvedSourceEvidence.row_count=',
+  COUNT(*)
+) AS check_line
+FROM reports
+WHERE EXISTS(
+  SELECT 1
+  FROM JSON_TABLE(
+    reports.source_evidence_json,
+    '$[*]' COLUMNS (source_evidence_id VARCHAR(128) PATH '$')
+  ) AS report_source_evidence
+  WHERE NOT EXISTS(
+    SELECT 1
+    FROM source_evidence
+    WHERE source_evidence_id = report_source_evidence.source_evidence_id
+  )
+);

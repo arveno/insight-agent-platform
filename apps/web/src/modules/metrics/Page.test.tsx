@@ -109,15 +109,29 @@ describe("MetricsPage", () => {
     expect(screen.getAllByText("收入增速 < -2% 进入关注").length).toBeGreaterThan(0);
     expect(screen.getAllByText("销售订单汇总表").length).toBeGreaterThan(0);
     expect(screen.getAllByText("周经营分析报告").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("数据表 · 主表").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("报告 · 支撑报告").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("当前快照用于解释指标关系和上下文来源；后续会接入事实数据计算。")
+      screen.getByText(
+        "当前快照 read model 只解释指标关系和上下文来源；后续会接入真实事实链路。"
+      )
     ).toBeTruthy();
     expect(screen.getByText("风险分布")).toBeTruthy();
     expect(screen.getByText("业务域分布")).toBeTruthy();
     expect(screen.getByText("来源类型摘要")).toBeTruthy();
     expect(screen.getByText("只读边界")).toBeTruthy();
     expect(screen.getAllByText("库存周转").length).toBeGreaterThan(0);
-    expect(screen.getByText(zhCnMessages["risk.high.title"])).toBeTruthy();
+    expect(screen.getAllByText(zhCnMessages["risk.high.title"]).length).toBeGreaterThan(0);
+    expect(screen.queryByText("dataTable · primary_table")).toBeNull();
+    expect(screen.queryByText("report · supporting_report")).toBeNull();
+    expect(screen.queryByText(/^dataTable$/)).toBeNull();
+    expect(screen.queryByText(/^report$/)).toBeNull();
+    expect(screen.queryByText(/^primary_table$/)).toBeNull();
+    expect(screen.queryByText(/^supporting_report$/)).toBeNull();
+    expect(screen.queryByText(/^medium$/)).toBeNull();
+    expect(screen.queryByText(/^high$/)).toBeNull();
+    expect(screen.queryByText(/^low$/)).toBeNull();
+    expect(screen.queryByText(/^attention$/)).toBeNull();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -135,6 +149,15 @@ describe("MetricsPage", () => {
 
   it("uses analysis entry actions as shared metric context handoff", async () => {
     const onNavigate = vi.fn();
+    const selectedMetric = findRuntimeMetric("metric-recognized-revenue");
+    const metricsViewModel = createMetricsViewModel({
+      metrics: runtimeMetricsFixtures,
+      selectedMetric,
+      workspaceBinding: {
+        workspaceId: "workspace-northstar-retail-china",
+        workspaceName: "Northstar Retail China"
+      }
+    });
 
     render(
       <TestProviders>
@@ -146,9 +169,8 @@ describe("MetricsPage", () => {
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onNavigate).toHaveBeenCalledWith("analysis", {
-      analysisContextPack: buildMetricAnalysisContextPack(
-        findRuntimeMetric("metric-recognized-revenue")
-      )
+      analysisContextNodeDisplay: metricsViewModel.selectedMetric.analysisContextNodeDisplay,
+      analysisContextPack: buildMetricAnalysisContextPack(selectedMetric)
     });
     expect(screen.queryByRole("button", { name: "新增指标" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
@@ -170,5 +192,24 @@ describe("MetricsPage", () => {
     expect(metricsViewModel.selectedMetric.analysisContextPack).toEqual(
       buildMetricAnalysisContextPack(selectedMetric)
     );
+  });
+
+  it("derives selected metric context rows from the shared context subtree instead of a page-owned source row track", () => {
+    const selectedMetric = findRuntimeMetric("metric-recognized-revenue");
+    const metricsViewModel = createMetricsViewModel({
+      metrics: runtimeMetricsFixtures,
+      selectedMetric,
+      workspaceBinding: {
+        workspaceId: "workspace-northstar-retail-china",
+        workspaceName: "Northstar Retail China"
+      }
+    });
+
+    expect(metricsViewModel.selectedMetric.contextNodes).toEqual(
+      metricsViewModel.selectedMetric.analysisContextPack.root.children ?? []
+    );
+    expect(
+      (metricsViewModel.selectedMetric as { contextSources?: unknown }).contextSources
+    ).toBeUndefined();
   });
 });

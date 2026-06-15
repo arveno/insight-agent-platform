@@ -1,13 +1,18 @@
 import type {
-  StaticSummaryItemViewModel,
-  StaticPageStateViewModel,
-  StaticPageViewModelBase,
-} from "../../../shared/view-model/staticViewModelTypes";
-import type { AnalysisTaskContextPack } from "@insight-agent/contracts/generated/typescript";
+  AnalysisTaskContextPack,
+  InspectorTreeNode
+} from "@insight-agent/contracts/generated/typescript";
+
+import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
 import type {
   SharedRiskViewModel,
   SharedStatusViewModel
 } from "../../../shared/utils/viewModelState";
+import type {
+  StaticPageStateViewModel,
+  StaticPageViewModelBase,
+  StaticSummaryItemViewModel
+} from "../../../shared/view-model/staticViewModelTypes";
 
 export type MetricsWorkspaceBinding = {
   workspaceId: string;
@@ -18,13 +23,6 @@ export type MetricListItemViewModel = {
   key: string;
   metricId: string;
   metricName: string;
-};
-
-export type MetricContextSourceViewModel = {
-  key: string;
-  meta: string;
-  description: string;
-  title: string;
 };
 
 export type MetricStatusViewModel = SharedStatusViewModel;
@@ -55,25 +53,23 @@ export type MetricAtRiskItemViewModel = {
 
 export type MetricDetailViewModel = {
   analysisContextPack: AnalysisTaskContextPack;
-  businessDomainId: string;
+  analysisContextNodeDisplay: ContextTreeNodeDisplayMap;
   businessDomainLabel: string;
-  contextSources: MetricContextSourceViewModel[];
-  currentValue: string;
-  definition: string;
+  contextNodes: InspectorTreeNode[];
+  currentSnapshotSummary: string;
+  currentSnapshotValue: string;
   formulaSummary: string;
   key: string;
   metricId: string;
+  metricDefinition: string;
   metricName: string;
   ownerTeam: string;
-  period: string;
-  riskLevel: string;
   riskView: MetricRiskViewModel;
-  status: string;
+  snapshotCapturedAt: string;
+  snapshotPeriodLabel: string;
   statusView: MetricStatusViewModel;
   thresholdSummary: string;
   trendLabel: string;
-  updatedAt: string;
-  workspaceId: string;
 };
 
 export type MetricsInspectorViewModel = {

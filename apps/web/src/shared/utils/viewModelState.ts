@@ -1,5 +1,7 @@
 import type { Metric } from "@insight-agent/contracts/generated/typescript";
 
+import { defaultLocale } from "../i18n/localeTypes";
+import { messages } from "../i18n/messages";
 import type { Translate } from "../i18n/translateKey";
 import { translateKey } from "../i18n/translateKey";
 import type { RiskBadgeProps, RiskLevel } from "../ui/status/RiskBadge";
@@ -68,6 +70,7 @@ const riskLevelMap: Record<SharedRiskLevel, RiskLevel> = {
   medium: "medium",
   none: "unknown"
 };
+const defaultTranslate: Translate = (key) => messages[defaultLocale][key];
 
 function productRiskReason(reason?: string): string | undefined {
   if (!reason) {
@@ -122,4 +125,15 @@ export function createMetricStatusViewModel(status: Metric["status"]): SharedSta
     reason: `Unknown metric status: ${status}`,
     status: "disabled"
   };
+}
+
+export function formatMetricRiskLabel(
+  t: Translate,
+  riskLevel: Metric["riskLevel"]
+): string {
+  return translateKey(t, metricRiskTitleKeyByLevel[riskLevel]);
+}
+
+export function formatDefaultMetricRiskLabel(riskLevel: Metric["riskLevel"]): string {
+  return formatMetricRiskLabel(defaultTranslate, riskLevel);
 }

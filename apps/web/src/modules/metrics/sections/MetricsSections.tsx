@@ -11,11 +11,13 @@ import { createRouteAction } from "../../../shared/navigation/createRouteAction"
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import type { PageRouteProps } from "../../../shared/navigation/navigationTypes";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
+import { ContextTreeNodeRow } from "../../../shared/ui/lists/ContextTreeNodeRow";
 import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
+import { createContextTreeNodeDisplay } from "../../../shared/view-model/contextTreeNodeDisplay";
 
 import type { MetricDetailViewModel, MetricsViewModel } from "../models/metricsViewModel";
 
@@ -39,6 +41,7 @@ function buildAnalysisAction(
     onNavigate,
     route: "analysis",
     routeState: {
+      analysisContextNodeDisplay: metric.analysisContextNodeDisplay,
       analysisContextPack: metric.analysisContextPack
     },
     title: t("action.metricOpenAnalysis.description"),
@@ -76,7 +79,7 @@ function MetricHeaderCard({
 
   return (
     <StatCard
-      description={metric.definition}
+      description={metric.metricDefinition}
       meta={
         <Typography.Text type="secondary">
           {`业务域：${metric.businessDomainLabel} / Owner：${metric.ownerTeam}`}
@@ -84,7 +87,7 @@ function MetricHeaderCard({
       }
       supportingMeta={
         <Typography.Text type="secondary">
-          {`周期：${metric.period} / As of ${metric.updatedAt}`}
+          {`周期：${metric.snapshotPeriodLabel} / As of ${metric.snapshotCapturedAt}`}
         </Typography.Text>
       }
       tagSlot={
@@ -96,8 +99,42 @@ function MetricHeaderCard({
       }
       title={metric.metricName}
       trend={metric.trendLabel}
-      value={metric.currentValue}
+      value={metric.currentSnapshotValue}
     />
+  );
+}
+
+function MetricContextNodeList({
+  metric,
+  showSummary,
+  t
+}: {
+  metric: MetricDetailViewModel;
+  showSummary?: boolean;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      {metric.contextNodes.map((node) => (
+        <Space
+          direction="vertical"
+          key={node.nodeId}
+          size={4}
+          style={{ width: "100%" }}
+        >
+          <ContextTreeNodeRow
+            {...createContextTreeNodeDisplay({
+              activeNodeId: "",
+              node,
+              t
+            })}
+          />
+          {showSummary && node.summary ? (
+            <Typography.Text type="secondary">{node.summary}</Typography.Text>
+          ) : null}
+        </Space>
+      ))}
+    </Space>
   );
 }
 
@@ -113,23 +150,14 @@ function MetricRelationshipCard({
 
   return (
     <ContentCard
-      description="当前快照用于解释指标关系和上下文来源；后续会接入事实数据计算。"
+      description="当前快照 read model 只解释指标关系和上下文来源；后续会接入真实事实链路。"
       title="指标关系链"
     >
       <TitledList
         items={[
           {
             key: `${metric.metricId}-relationship-sources`,
-            summary: (
-              <Space direction="vertical" size={4}>
-                {metric.contextSources.map((source) => (
-                  <Space key={source.key} size={8} wrap>
-                    <Typography.Text>{source.title}</Typography.Text>
-                    <Typography.Text type="secondary">{source.meta}</Typography.Text>
-                  </Space>
-                ))}
-              </Space>
-            ),
+            summary: <MetricContextNodeList metric={metric} t={t} />,
             title: "输入来源"
           },
           {
@@ -139,7 +167,7 @@ function MetricRelationshipCard({
           },
           {
             key: `${metric.metricId}-relationship-snapshot`,
-            summary: `${metric.currentValue} · ${metric.period} · As of ${metric.updatedAt}`,
+            summary: metric.currentSnapshotSummary,
             title: "当前快照"
           },
           {
@@ -174,7 +202,7 @@ function MetricDefinitionCard({ metric }: { metric: MetricDetailViewModel }) {
       title="业务定义"
     >
       <Typography.Text style={{ display: "block", fontWeight: 600 }}>
-        {metric.definition}
+        {metric.metricDefinition}
       </Typography.Text>
     </ContentCard>
   );
@@ -224,20 +252,13 @@ function MetricContextSourcesCard({
 }) {
   return (
     <ContentCard
-      description="上下文来源只展示摘要、sourceType 和 role，不展开 detail 页面或 raw payload。"
+      description="上下文来源来自当前指标的 canonical context subtree，不展开 detail 页面或 raw payload。"
       footerActions={
         <NavigationActionButton action={buildLineageAction(metric.metricId, onNavigate, t)} />
       }
       title="上下文来源摘要"
     >
-      <TitledList
-        items={metric.contextSources.map((source) => ({
-          key: source.key,
-          meta: <Typography.Text type="secondary">{source.meta}</Typography.Text>,
-          summary: source.description,
-          title: source.title
-        }))}
-      />
+      <MetricContextNodeList metric={metric} showSummary t={t} />
     </ContentCard>
   );
 }
