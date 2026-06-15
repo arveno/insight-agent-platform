@@ -57,7 +57,7 @@ describe("DashboardPage", () => {
   }
 
   function DashboardInspectorHarness() {
-    const [activeNodeId, setActiveNodeId] = useState("metric-context-metric-recognized-revenue");
+    const [activeNodeId, setActiveNodeId] = useState("dashboard-node-root");
     const [expandedNodeIds, setExpandedNodeIds] = useState([
       "dashboard-node-root",
       "dashboard-node-directory-metrics"
@@ -151,7 +151,7 @@ describe("DashboardPage", () => {
     expect(within(overviewSurface).getAllByText("Last 30 days").length).toBeGreaterThan(0);
   });
 
-  it("renders metric, risk, and evidence cards from the dashboard tree projection without raw enum leakage", async () => {
+  it("renders metric, risk, and evidence cards from the dashboard tree projection without raw enum leakage or fake detail actions", async () => {
     render(
       <TestProviders>
         <DashboardPage metricsLoader={metricsLoader} />
@@ -159,11 +159,30 @@ describe("DashboardPage", () => {
     );
 
     const metricCard = (await screen.findByText("确认收入")).closest(".ant-card") as HTMLElement;
+    const healthyMetricCard = screen.getByText("毛利率").closest(".ant-card") as HTMLElement;
     const riskCard = screen.getByText("库存周转风险").closest(".ant-card") as HTMLElement;
     const evidenceCard = screen.getByText("退款异常证据摘要").closest(".ant-card") as HTMLElement;
+    const reportCard = screen.getByText("周经营分析报告").closest(".ant-card") as HTMLElement;
 
     expect(within(metricCard).getByText("已满足确认条件的收入金额。")).toBeTruthy();
     expect(within(metricCard).getByText("营收质量 · Last 30 days · 下降 3.2%")).toBeTruthy();
+    expect(within(metricCard).getByRole("button", { name: "分析指标" })).toBeTruthy();
+    expect(
+      within(metricCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.analyzeAnomaly"]
+      })
+    ).toBeNull();
+    expect(
+      within(metricCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.viewDataKnowledge"]
+      })
+    ).toBeNull();
+    expect(within(healthyMetricCard).getByRole("button", { name: "分析指标" })).toBeTruthy();
+    expect(
+      within(healthyMetricCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.analyzeAnomaly"]
+      })
+    ).toBeNull();
     expect(within(metricCard).queryByText("收入增速 < -2% 进入关注")).toBeNull();
     expect(within(metricCard).queryByText(/风险 (medium|high|low)/)).toBeNull();
     expect(metricCard.textContent?.match(/Last 30 days/g)).toHaveLength(1);
@@ -171,11 +190,38 @@ describe("DashboardPage", () => {
     expect(within(riskCard).getByText("5.1 turns · 下降 0.4 turns")).toBeTruthy();
     expect(within(riskCard).getByText("库存周转 < 5.3 turns 进入关注")).toBeTruthy();
     expect(within(riskCard).getByText("供应链效率 · Last 30 days")).toBeTruthy();
-    expect(within(riskCard).queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
+    expect(within(riskCard).getByRole("button", { name: "分析风险" })).toBeTruthy();
+    expect(
+      within(riskCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewAnomaly"] })
+    ).toBeNull();
+    expect(
+      within(riskCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })
+    ).toBeNull();
 
-    expect(within(evidenceCard).getByText("sourceEvidence · supporting_evidence")).toBeTruthy();
-    expect(within(evidenceCard).queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
+    expect(within(reportCard).getByText("报告 · 支撑报告")).toBeTruthy();
+    expect(within(reportCard).getByRole("button", { name: "带报告上下文分析" })).toBeTruthy();
+    expect(within(reportCard).queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(
+      within(reportCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.viewSuggestions"]
+      })
+    ).toBeNull();
+    expect(within(evidenceCard).getByText("证据 · 支撑证据")).toBeTruthy();
+    expect(within(evidenceCard).getByRole("button", { name: "带证据上下文分析" })).toBeTruthy();
+    expect(
+      within(evidenceCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.viewEvidence"]
+      })
+    ).toBeNull();
+    expect(
+      within(evidenceCard).queryByRole("button", {
+        name: zhCnMessages["dashboard.action.viewDataKnowledge"]
+      })
+    ).toBeNull();
+    expect(
+      within(evidenceCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })).toBeNull();
   });
 
   it("builds shared metric Analysis entry plus lightweight Dashboard subtree entries", async () => {
@@ -192,7 +238,7 @@ describe("DashboardPage", () => {
       </TestProviders>
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "发起分析" }));
+    fireEvent.click(await screen.findByRole("button", { name: "分析经营状态" }));
     expect(onNavigate).toHaveBeenNthCalledWith(
       1,
       "analysis",
@@ -205,7 +251,7 @@ describe("DashboardPage", () => {
 
     fireEvent.click(
       within(screen.getByText("确认收入").closest(".ant-card")!).getByRole("button", {
-        name: "分析异常"
+        name: "分析指标"
       })
     );
     expect(onNavigate).toHaveBeenNthCalledWith(
@@ -220,7 +266,7 @@ describe("DashboardPage", () => {
 
     fireEvent.click(
       within(screen.getByText("库存周转风险").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
+        name: "分析风险"
       })
     );
     expect(onNavigate).toHaveBeenNthCalledWith(
@@ -242,7 +288,7 @@ describe("DashboardPage", () => {
 
     fireEvent.click(
       within(screen.getByText("周经营分析报告").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
+        name: "带报告上下文分析"
       })
     );
     expect(onNavigate).toHaveBeenNthCalledWith(
@@ -265,7 +311,7 @@ describe("DashboardPage", () => {
 
     fireEvent.click(
       within(screen.getByText("退款异常证据摘要").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
+        name: "带证据上下文分析"
       })
     );
     expect(onNavigate).toHaveBeenNthCalledWith(
@@ -287,7 +333,7 @@ describe("DashboardPage", () => {
     );
   });
 
-  it("selects the default inspector metric from mapper metadata instead of parsing raw chips", () => {
+  it("starts the inspector viewport from the semantic dashboard root", () => {
     const orderedViewModel = createDashboardViewModel(
       [
         findRuntimeMetric("metric-gross-margin"),
@@ -309,16 +355,17 @@ describe("DashboardPage", () => {
     );
 
     expect(typeof DashboardPageModule.createDashboardContextTreeViewport).toBe("function");
-    expect(
-      DashboardPageModule.createDashboardContextTreeViewport(sanitizedViewModel).activeNodeId
-    ).toBe("metric-context-metric-recognized-revenue");
+    expect(DashboardPageModule.createDashboardContextTreeViewport(sanitizedViewModel)).toEqual({
+      activeNodeId: "dashboard-node-root",
+      expandedNodeIds: ["dashboard-node-root", "dashboard-node-directory-metrics"]
+    });
   });
 
   it("renders a simplified Chinese dashboard context directory", () => {
     render(
       <TestProviders>
         <DashboardInspectorPanel
-          activeNodeId="metric-context-metric-recognized-revenue"
+          activeNodeId="dashboard-node-root"
           expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
           onExpandNodes={vi.fn()}
           onSelectNode={vi.fn()}
@@ -332,22 +379,15 @@ describe("DashboardPage", () => {
     expect(screen.getByText("上下文目录")).toBeTruthy();
     expect(screen.getByText("当前节点")).toBeTruthy();
     expect(screen.getByText("Last 30 days · Northstar Retail China")).toBeTruthy();
+    expect(screen.getByText("经营状态总览 3")).toBeTruthy();
     expect(screen.getByText("核心指标 4")).toBeTruthy();
     expect(screen.getByText("风险异常 3")).toBeTruthy();
     expect(screen.getByText("报告与证据 2")).toBeTruthy();
-    expect(screen.getByText("指标 · Last 30 days")).toBeTruthy();
-    expect(screen.getByText("¥12.8M · 下降 3.2%")).toBeTruthy();
-    expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
-    expect(screen.getByText(zhCnMessages["risk.medium.title"])).toBeTruthy();
-    expect(screen.getByText(zhCnMessages["status.attention.title"])).toBeTruthy();
-    expect(screen.queryByText("风险 medium")).toBeNull();
-    expect(
-      screen.queryByText(
-        `${zhCnMessages["risk.medium.title"]} · ${zhCnMessages["status.attention.title"]}`
-      )
-    ).toBeNull();
+    expect(screen.getAllByText("经营状态总览").length).toBeGreaterThan(0);
+    expect(screen.getByText("经营总览 · Last 30 days")).toBeTruthy();
+    expect(screen.getByText(dashboardViewModel.root.summary!)).toBeTruthy();
     expect(screen.getByText("来源引用")).toBeTruthy();
-    expect(screen.getByText("metric-recognized-revenue")).toBeTruthy();
+    expect(screen.getByText("目录节点 / 当前上下文根")).toBeTruthy();
     expect(screen.queryByText("平台质量")).toBeNull();
     expect(screen.queryByText("Dashboard Context")).toBeNull();
     expect(screen.queryByText("Context Tree")).toBeNull();

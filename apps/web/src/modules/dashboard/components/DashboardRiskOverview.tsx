@@ -23,7 +23,7 @@ export function DashboardRiskOverview({
     createRouteAction({
       iconName: "analysis",
       key: `${item.nodeId}-context-analysis`,
-      label: t("dashboard.action.analyzeWithContext"),
+      label: t("dashboard.action.analyzeRisk"),
       onNavigate,
       route: "analysis",
       routeState: {
@@ -34,21 +34,6 @@ export function DashboardRiskOverview({
         })
       },
       variant: "contextPrimary"
-    }),
-    createRouteAction({
-      iconName: "analysis",
-      key: `${item.nodeId}-detail`,
-      label: t("dashboard.action.viewAnomaly"),
-      onNavigate,
-      route: "analysis",
-      routeState: {
-        analysisContextPack: createDashboardAnalysisContextPack({
-          nodeId: item.nodeId,
-          suggestedPrompt: `请继续拆解 ${item.title} 的异常信号，并说明需要优先验证的证据。`,
-          viewModel
-        })
-      },
-      variant: "objectDetail"
     })
   ];
 

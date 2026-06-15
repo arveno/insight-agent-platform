@@ -219,6 +219,10 @@ function resolveSourceRefSummary(
   node: DashboardSurfaceViewModel["root"],
   viewModel: DashboardSurfaceViewModel
 ): string {
+  if (node.nodeId === viewModel.root.nodeId) {
+    return "目录节点 / 当前上下文根";
+  }
+
   return (
     resolveNodeDisplay(node.nodeId, viewModel)?.sourceRefId ??
     mapSourceRefId(node.sourceRef) ??
@@ -227,6 +231,10 @@ function resolveSourceRefSummary(
 }
 
 function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRangeLabel: string) {
+  if ((node.kind === "report" || node.kind === "sourceEvidence") && node.chips?.length) {
+    return node.chips.join(" · ");
+  }
+
   return `${dashboardKindLabels[node.kind] ?? node.kind} · ${node.timeRange?.label ?? selectedTimeRangeLabel}`;
 }
 
@@ -275,7 +283,7 @@ function renderTreeNodeTitle(
 }
 
 function buildDashboardTreeData(
-  nodes: DashboardSurfaceViewModel["root"]["children"],
+  nodes: DashboardSurfaceViewModel["root"][] | undefined,
   t: ReturnType<typeof useI18n>["t"],
   viewModel: DashboardSurfaceViewModel
 ): DataNode[] {
@@ -319,11 +327,11 @@ export function DashboardInspectorPanel({
     >
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
         <Tree
-          expandedKeys={expandedNodeIds.filter((nodeId) => nodeId !== viewModel.root.nodeId)}
+          expandedKeys={expandedNodeIds}
           onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
           onSelect={(_, info) => onSelectNode(String(info.node.key))}
           selectedKeys={[selectedNode.nodeId]}
-          treeData={buildDashboardTreeData(viewModel.root.children, t, viewModel)}
+          treeData={buildDashboardTreeData([viewModel.root], t, viewModel)}
         />
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>

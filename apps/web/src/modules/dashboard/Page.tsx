@@ -46,21 +46,11 @@ export type DashboardPageContentProps = PageRouteProps & {
 export function createDashboardContextTreeViewport(
   viewModel: DashboardSurfaceViewModel
 ): DashboardContextTreeViewport {
-  const metricDirectory = viewModel.root.children?.find(
-    (node) => node.nodeId === "dashboard-node-directory-metrics"
-  );
-  const metricNodes = metricDirectory?.children ?? [];
-  const activeNode =
-    metricNodes.find((node) => viewModel.nodeDisplay[node.nodeId]?.defaultInspectorSelection) ??
-    metricNodes[0] ??
-    viewModel.root.children?.[0] ??
-    viewModel.root;
-
   return {
-    activeNodeId: activeNode.nodeId,
+    activeNodeId: viewModel.root.nodeId,
     expandedNodeIds: [
       viewModel.root.nodeId,
-      metricDirectory?.nodeId ?? "dashboard-node-directory-metrics"
+      "dashboard-node-directory-metrics"
     ]
   };
 }

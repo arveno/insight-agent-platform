@@ -15,32 +15,9 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
   if (props.kind === "report") {
     const reportActions = [
       createRouteAction({
-        iconName: "reports",
-        key: `${props.report.nodeId}-view-report`,
-        label: t("dashboard.action.viewReports"),
-        onNavigate,
-        route: "reports",
-        variant: "objectDetail"
-      }),
-      createRouteAction({
-        iconName: "analysis",
-        key: `${props.report.nodeId}-suggestions`,
-        label: t("dashboard.action.viewSuggestions"),
-        onNavigate,
-        route: "analysis",
-        routeState: {
-          analysisContextPack: createDashboardAnalysisContextPack({
-            nodeId: props.report.nodeId,
-            suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
-            viewModel: props.viewModel
-          })
-        },
-        variant: "objectDetail"
-      }),
-      createRouteAction({
         iconName: "analysis",
         key: `${props.report.nodeId}-context-analysis`,
-        label: t("dashboard.action.analyzeWithContext"),
+        label: t("dashboard.action.analyzeReportWithContext"),
         onNavigate,
         route: "analysis",
         routeState: {
@@ -65,7 +42,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
             ))}
           </Flex>
         }
-      meta={
+        meta={
           props.report.chips?.length ? (
             <Typography.Text type="secondary">{props.report.chips.join(" · ")}</Typography.Text>
           ) : null
@@ -77,17 +54,9 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
 
   const evidenceActions = [
     createRouteAction({
-      iconName: "evidence",
-      key: `${props.evidence.nodeId}-view-evidence`,
-      label: t("dashboard.action.viewEvidence"),
-      onNavigate,
-      route: "reports",
-      variant: "sourceLink"
-    }),
-    createRouteAction({
       iconName: "analysis",
       key: `${props.evidence.nodeId}-context-analysis`,
-      label: t("dashboard.action.analyzeWithContext"),
+      label: t("dashboard.action.analyzeEvidenceWithContext"),
       onNavigate,
       route: "analysis",
       routeState: {
@@ -98,14 +67,6 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         })
       },
       variant: "contextPrimary"
-    }),
-    createRouteAction({
-      iconName: "data",
-      key: `${props.evidence.nodeId}-source`,
-      label: t("dashboard.action.viewDataKnowledge"),
-      onNavigate,
-      route: "data-knowledge",
-      variant: "sourceLink"
     })
   ];
 

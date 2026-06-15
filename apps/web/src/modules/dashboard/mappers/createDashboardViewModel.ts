@@ -22,6 +22,8 @@ import {
 import {
   buildMetricAnalysisContextPack,
   formatMetricBusinessDomainLabel,
+  formatMetricContextSourceRoleLabel,
+  formatMetricContextSourceTypeLabel,
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
@@ -179,7 +181,10 @@ function createReportEvidenceNodes(metrics: Metric[]): {
     };
 
     return {
-      chips: [source.sourceType, source.role],
+      chips: [
+        formatMetricContextSourceTypeLabel(source.sourceType),
+        formatMetricContextSourceRoleLabel(source.role)
+      ],
       kind: source.sourceType,
       nodeId,
       owner: dashboardOwner,

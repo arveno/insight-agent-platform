@@ -24,21 +24,13 @@ export function DashboardMetricOverview({
     createRouteAction({
       iconName: "analysis",
       key: `${metric.nodeId}-analyze`,
-      label: t("dashboard.action.analyzeAnomaly"),
+      label: t("dashboard.action.analyzeMetric"),
       onNavigate,
       route: "analysis",
       routeState: {
         analysisContextPack: metricContextPack
       },
       variant: "contextPrimary"
-    }),
-    createRouteAction({
-      iconName: "data",
-      key: `${metric.nodeId}-source`,
-      label: t("dashboard.action.viewDataKnowledge"),
-      onNavigate,
-      route: "data-knowledge",
-      variant: "sourceLink"
     })
   ];
 

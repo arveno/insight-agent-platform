@@ -17,6 +17,20 @@ const businessDomainLabels: Record<string, string> = {
   "business-domain-supply-chain-efficiency": "供应链效率"
 };
 
+const metricContextSourceTypeLabels: Record<string, string> = {
+  dataTable: "数据表",
+  knowledgeDocument: "知识文档",
+  report: "报告",
+  sourceEvidence: "证据"
+};
+
+const metricContextSourceRoleLabels: Record<string, string> = {
+  primary_table: "主表",
+  supporting_document: "支撑文档",
+  supporting_evidence: "支撑证据",
+  supporting_report: "支撑报告"
+};
+
 function normalizePeriodKey(period: string): string {
   return period
     .trim()
@@ -31,6 +45,14 @@ function normalizeTrendMagnitude(trendValue: string): string {
 
 export function formatMetricBusinessDomainLabel(businessDomainId: string): string {
   return businessDomainLabels[businessDomainId] ?? businessDomainId;
+}
+
+export function formatMetricContextSourceTypeLabel(sourceType: MetricContextSource["sourceType"]): string {
+  return metricContextSourceTypeLabels[sourceType] ?? sourceType;
+}
+
+export function formatMetricContextSourceRoleLabel(role: MetricContextSource["role"]): string {
+  return metricContextSourceRoleLabels[role] ?? role;
 }
 
 export function formatMetricDisplayValue(metric: Metric): string {

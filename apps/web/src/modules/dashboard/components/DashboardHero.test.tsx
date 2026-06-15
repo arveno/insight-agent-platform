@@ -68,7 +68,7 @@ describe("DashboardHero", () => {
     expect(description).toBeTruthy();
     expect(screen.getByText(selectedTimeRange.description)).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "发起分析" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "分析经营状态" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看指标" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看报告" })).toBeTruthy();
     expect(screen.getByText("4 项")).toBeTruthy();
@@ -80,11 +80,8 @@ describe("DashboardHero", () => {
     expect(evidenceFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(screen.queryByText(dashboardViewModel.lastUpdatedAt)).toBeNull();
     expect(screen.queryByText("右侧上下文")).toBeNull();
-    expect(screen.queryByText("证据 / 运行轨迹 / 建议动作")).toBeNull();
-    expect(screen.queryByText("运行轨迹")).toBeNull();
-    expect(screen.queryByText("建议动作")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
+    fireEvent.click(screen.getByRole("button", { name: "分析经营状态" }));
     expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({

@@ -72,10 +72,10 @@ describe("dashboardSelectors", () => {
       title: "库存周转风险"
     });
     expect(reportNodes[0]).toMatchObject({
-      chips: ["report", "supporting_report"]
+      chips: ["报告", "支撑报告"]
     });
     expect(evidenceNodes[0]).toMatchObject({
-      chips: ["sourceEvidence", "supporting_evidence"]
+      chips: ["证据", "支撑证据"]
     });
     expect(
       metricNodes
