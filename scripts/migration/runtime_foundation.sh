@@ -70,6 +70,7 @@ readonly EXPECTED_VERIFY_LINES=(
   "reports.invalidLifecycle.row_count=0"
   "reportSections.unresolvedReport.row_count=0"
   "contextPack.futureReferencedArtifact.row_count=0"
+  "contextPack.selfProducedArtifact.row_count=0"
 )
 
 migration_target="${IAP_MIGRATION_TARGET:-ecs}"

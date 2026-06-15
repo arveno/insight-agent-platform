@@ -513,6 +513,7 @@ INSERT INTO auth_sessions (
     assert "reports.invalidLifecycle.row_count=0" in verify_result.stdout
     assert "reportSections.unresolvedReport.row_count=0" in verify_result.stdout
     assert "contextPack.futureReferencedArtifact.row_count=0" in verify_result.stdout
+    assert "contextPack.selfProducedArtifact.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())

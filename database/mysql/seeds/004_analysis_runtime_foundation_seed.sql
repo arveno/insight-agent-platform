@@ -754,22 +754,85 @@ INSERT INTO analysis_tasks (
   '查看作为历史参考工件的周经营分析报告。',
   CAST('{
     "version": 1,
-    "suggestedPrompt": "查看历史周经营分析报告工件。",
+    "suggestedPrompt": "基于当时的收入、退款和渠道周报输入，生成历史周经营分析报告。",
     "traceability": "direct_refs",
     "capturedAt": "2026-06-05T02:50:12Z",
     "root": {
       "nodeId": "inspector-node-seeded-weekly-business-root",
-      "kind": "report",
+      "kind": "dashboardOverview",
       "role": "inputContext",
       "owner": {
         "type": "analysisTask"
       },
-      "title": "周经营分析报告",
-      "summary": "作为历史参考工件保留的周经营报告快照。",
-      "sourceRef": {
-        "type": "report",
-        "reportId": "report-weekly-business"
-      }
+      "title": "周经营分析输入快照",
+      "summary": "生成历史周经营分析报告时使用的收入、退款和渠道上下文。",
+      "chips": ["Northstar Retail China", "Historical artifact input", "Revenue quality"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T02:50:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-seeded-weekly-business-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "确认收入",
+          "summary": "历史报告生成时关注的核心收入指标。",
+          "value": "收入增速 < -2%",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-recognized-revenue"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-seeded-weekly-business-table-sales",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "销售订单汇总表",
+              "summary": "提供收入确认主表输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sales-order"
+              }
+            },
+            {
+              "nodeId": "inspector-node-seeded-weekly-business-table-refund",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "退款订单表",
+              "summary": "提供退款率抬升的输入明细。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-refund-order"
+              }
+            }
+          ]
+        },
+        {
+          "nodeId": "inspector-node-seeded-weekly-business-document",
+          "kind": "knowledgeDocument",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "渠道经营周报第 17 期",
+          "summary": "补充华东渠道确认节奏的历史输入摘要。",
+          "sourceRef": {
+            "type": "knowledgeDocument",
+            "knowledgeDocumentId": "knowledge-document-channel-weekly-17"
+          }
+        }
+      ]
     }
   }' AS JSON),
   '2026-06-05T10:50:12+08:00',
@@ -1123,22 +1186,71 @@ INSERT INTO analysis_tasks (
   '查看作为历史参考工件的 SEA 周经营报告。',
   CAST('{
     "version": 1,
-    "suggestedPrompt": "查看历史 SEA 周经营报告工件。",
+    "suggestedPrompt": "基于当时的延迟率和履约输入，生成历史 SEA 周经营报告。",
     "traceability": "direct_refs",
     "capturedAt": "2026-06-05T03:00:12Z",
     "root": {
       "nodeId": "inspector-node-seeded-sea-weekly-operations-root",
-      "kind": "report",
+      "kind": "dashboardOverview",
       "role": "inputContext",
       "owner": {
         "type": "analysisTask"
       },
-      "title": "SEA 周经营报告",
-      "summary": "作为历史参考工件保留的 SEA 周经营报告快照。",
-      "sourceRef": {
-        "type": "report",
-        "reportId": "report-sea-weekly-operations"
-      }
+      "title": "SEA 周经营分析输入快照",
+      "summary": "生成历史 SEA 周经营报告时使用的履约与收入输入上下文。",
+      "chips": ["Northstar Retail SEA", "Historical artifact input", "Delivery operations"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T03:00:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-seeded-sea-weekly-operations-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "SEA 配送延迟率",
+          "summary": "历史报告生成时关注的履约延迟指标。",
+          "value": "配送延迟率 > 5.5% 进入关注",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-sea-delivery-delay-rate"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-seeded-sea-weekly-operations-table-delay",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "SEA 履约配送表",
+              "summary": "提供延迟订单和履约 SLA 输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sea-delivery-fulfillment"
+              }
+            },
+            {
+              "nodeId": "inspector-node-seeded-sea-weekly-operations-table-sales",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "SEA 销售订单汇总表",
+              "summary": "提供区域订单节奏与收入确认输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sea-sales-order"
+              }
+            }
+          ]
+        }
+      ]
     }
   }' AS JSON),
   '2026-06-05T11:00:12+08:00',

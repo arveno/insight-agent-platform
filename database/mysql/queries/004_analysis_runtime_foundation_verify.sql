@@ -467,26 +467,54 @@ WHERE NOT EXISTS(
   WHERE report_id = report_sections.report_id
 );
 
-WITH referenced_artifacts AS (
+WITH context_pack_source_refs AS (
   SELECT
-    'analysis-task-revenue-gap-q2' AS analysis_task_id,
-    'report' AS artifact_kind,
-    'report-weekly-business' AS artifact_id
+    analysis_task_id,
+    JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.root.sourceRef.type')) AS source_type,
+    JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.root.sourceRef.reportId')) AS report_id,
+    JSON_UNQUOTE(
+      JSON_EXTRACT(context_pack_json, '$.root.sourceRef.sourceEvidenceId')
+    ) AS source_evidence_id
+  FROM analysis_tasks
+  WHERE JSON_EXTRACT(context_pack_json, '$.root.sourceRef.type') IS NOT NULL
+
   UNION ALL
+
   SELECT
-    'analysis-task-revenue-gap-q2' AS analysis_task_id,
-    'sourceEvidence' AS artifact_kind,
-    'source-evidence-refund-watch' AS artifact_id
+    analysis_tasks.analysis_task_id,
+    child_refs.source_type,
+    child_refs.report_id,
+    child_refs.source_evidence_id
+  FROM analysis_tasks
+  JOIN JSON_TABLE(
+    analysis_tasks.context_pack_json,
+    '$.root.children[*]' COLUMNS (
+      source_type VARCHAR(32) PATH '$.sourceRef.type' NULL ON EMPTY NULL ON ERROR,
+      report_id VARCHAR(128) PATH '$.sourceRef.reportId' NULL ON EMPTY NULL ON ERROR,
+      source_evidence_id VARCHAR(128) PATH '$.sourceRef.sourceEvidenceId' NULL ON EMPTY NULL ON ERROR
+    )
+  ) AS child_refs
+    ON TRUE
+  WHERE child_refs.source_type IS NOT NULL
+
   UNION ALL
+
   SELECT
-    'analysis-task-sea-delivery-delay' AS analysis_task_id,
-    'report' AS artifact_kind,
-    'report-sea-weekly-operations' AS artifact_id
-  UNION ALL
-  SELECT
-    'analysis-task-sea-delivery-delay' AS analysis_task_id,
-    'sourceEvidence' AS artifact_kind,
-    'source-evidence-sea-delivery-delay' AS artifact_id
+    analysis_tasks.analysis_task_id,
+    grandchild_refs.source_type,
+    grandchild_refs.report_id,
+    grandchild_refs.source_evidence_id
+  FROM analysis_tasks
+  JOIN JSON_TABLE(
+    analysis_tasks.context_pack_json,
+    '$.root.children[*].children[*]' COLUMNS (
+      source_type VARCHAR(32) PATH '$.sourceRef.type' NULL ON EMPTY NULL ON ERROR,
+      report_id VARCHAR(128) PATH '$.sourceRef.reportId' NULL ON EMPTY NULL ON ERROR,
+      source_evidence_id VARCHAR(128) PATH '$.sourceRef.sourceEvidenceId' NULL ON EMPTY NULL ON ERROR
+    )
+  ) AS grandchild_refs
+    ON TRUE
+  WHERE grandchild_refs.source_type IS NOT NULL
 )
 SELECT CONCAT(
   'contextPack.futureReferencedArtifact.row_count=',
@@ -494,22 +522,103 @@ SELECT CONCAT(
 ) AS check_line
 FROM (
   SELECT
-    referenced_artifacts.analysis_task_id,
+    context_pack_source_refs.analysis_task_id,
     analysis_tasks.created_at AS analysis_task_created_at,
-    CASE referenced_artifacts.artifact_kind
+    CASE context_pack_source_refs.source_type
       WHEN 'report' THEN reports.created_at
       WHEN 'sourceEvidence' THEN source_evidence.created_at
       ELSE NULL
     END AS artifact_created_at
-  FROM referenced_artifacts
+  FROM context_pack_source_refs
   INNER JOIN analysis_tasks
-    ON analysis_tasks.analysis_task_id = referenced_artifacts.analysis_task_id
+    ON analysis_tasks.analysis_task_id = context_pack_source_refs.analysis_task_id
   LEFT JOIN reports
-    ON referenced_artifacts.artifact_kind = 'report'
-   AND reports.report_id = referenced_artifacts.artifact_id
+    ON context_pack_source_refs.source_type = 'report'
+   AND reports.report_id = context_pack_source_refs.report_id
   LEFT JOIN source_evidence
-    ON referenced_artifacts.artifact_kind = 'sourceEvidence'
-   AND source_evidence.source_evidence_id = referenced_artifacts.artifact_id
+    ON context_pack_source_refs.source_type = 'sourceEvidence'
+   AND source_evidence.source_evidence_id = context_pack_source_refs.source_evidence_id
+  WHERE context_pack_source_refs.source_type IN ('report', 'sourceEvidence')
 ) AS seeded_context_artifacts
 WHERE artifact_created_at IS NULL
    OR artifact_created_at > analysis_task_created_at;
+
+WITH context_pack_source_refs AS (
+  SELECT
+    analysis_task_id,
+    JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.root.sourceRef.type')) AS source_type,
+    JSON_UNQUOTE(JSON_EXTRACT(context_pack_json, '$.root.sourceRef.reportId')) AS report_id,
+    JSON_UNQUOTE(
+      JSON_EXTRACT(context_pack_json, '$.root.sourceRef.sourceEvidenceId')
+    ) AS source_evidence_id
+  FROM analysis_tasks
+  WHERE JSON_EXTRACT(context_pack_json, '$.root.sourceRef.type') IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    analysis_tasks.analysis_task_id,
+    child_refs.source_type,
+    child_refs.report_id,
+    child_refs.source_evidence_id
+  FROM analysis_tasks
+  JOIN JSON_TABLE(
+    analysis_tasks.context_pack_json,
+    '$.root.children[*]' COLUMNS (
+      source_type VARCHAR(32) PATH '$.sourceRef.type' NULL ON EMPTY NULL ON ERROR,
+      report_id VARCHAR(128) PATH '$.sourceRef.reportId' NULL ON EMPTY NULL ON ERROR,
+      source_evidence_id VARCHAR(128) PATH '$.sourceRef.sourceEvidenceId' NULL ON EMPTY NULL ON ERROR
+    )
+  ) AS child_refs
+    ON TRUE
+  WHERE child_refs.source_type IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    analysis_tasks.analysis_task_id,
+    grandchild_refs.source_type,
+    grandchild_refs.report_id,
+    grandchild_refs.source_evidence_id
+  FROM analysis_tasks
+  JOIN JSON_TABLE(
+    analysis_tasks.context_pack_json,
+    '$.root.children[*].children[*]' COLUMNS (
+      source_type VARCHAR(32) PATH '$.sourceRef.type' NULL ON EMPTY NULL ON ERROR,
+      report_id VARCHAR(128) PATH '$.sourceRef.reportId' NULL ON EMPTY NULL ON ERROR,
+      source_evidence_id VARCHAR(128) PATH '$.sourceRef.sourceEvidenceId' NULL ON EMPTY NULL ON ERROR
+    )
+  ) AS grandchild_refs
+    ON TRUE
+  WHERE grandchild_refs.source_type IS NOT NULL
+)
+SELECT CONCAT(
+  'contextPack.selfProducedArtifact.row_count=',
+  COUNT(*)
+) AS check_line
+FROM (
+  SELECT
+    context_pack_source_refs.analysis_task_id,
+    context_pack_source_refs.source_type,
+    report_runs.analysis_task_id AS report_analysis_task_id,
+    source_evidence_runs.analysis_task_id AS source_evidence_analysis_task_id
+  FROM context_pack_source_refs
+  LEFT JOIN reports
+    ON context_pack_source_refs.source_type = 'report'
+   AND reports.report_id = context_pack_source_refs.report_id
+  LEFT JOIN analysis_runs AS report_runs
+    ON report_runs.run_id = reports.run_id
+  LEFT JOIN source_evidence
+    ON context_pack_source_refs.source_type = 'sourceEvidence'
+   AND source_evidence.source_evidence_id = context_pack_source_refs.source_evidence_id
+  LEFT JOIN analysis_runs AS source_evidence_runs
+    ON source_evidence_runs.run_id = source_evidence.run_id
+  WHERE context_pack_source_refs.source_type IN ('report', 'sourceEvidence')
+) AS context_pack_artifact_ownership
+WHERE (
+  source_type = 'report'
+  AND report_analysis_task_id = analysis_task_id
+) OR (
+  source_type = 'sourceEvidence'
+  AND source_evidence_analysis_task_id = analysis_task_id
+);
