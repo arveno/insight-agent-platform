@@ -5,10 +5,11 @@ import type {
 import type {
   AnalysisRunEventStatus,
   AnalysisRunEventType,
+  AnalysisRunPhase,
   AnalysisRunStatus
 } from "./runtimeContractTypes";
 
-export type { AnalysisRunEventStatus, AnalysisRunEventType, AnalysisRunStatus };
+export type { AnalysisRunEventStatus, AnalysisRunEventType, AnalysisRunPhase, AnalysisRunStatus };
 
 export type AnalysisRunEvent = {
   costText?: string;
@@ -35,6 +36,7 @@ export type AnalysisRunEvent = {
 export type AnalysisRun = {
   costText: string;
   errorSummaryText: string;
+  phase: AnalysisRunPhase;
   riskViewModel?: SharedRiskViewModel;
   runId: string;
   stageSummary: string;
