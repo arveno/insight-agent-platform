@@ -151,6 +151,33 @@ describe("DashboardPage", () => {
     expect(within(overviewSurface).getAllByText("Last 30 days").length).toBeGreaterThan(0);
   });
 
+  it("renders metric, risk, and evidence cards from the dashboard tree projection without raw enum leakage", async () => {
+    render(
+      <TestProviders>
+        <DashboardPage metricsLoader={metricsLoader} />
+      </TestProviders>
+    );
+
+    const metricCard = (await screen.findByText("确认收入")).closest(".ant-card") as HTMLElement;
+    const riskCard = screen.getByText("库存周转风险").closest(".ant-card") as HTMLElement;
+    const evidenceCard = screen.getByText("退款异常证据摘要").closest(".ant-card") as HTMLElement;
+
+    expect(within(metricCard).getByText("已满足确认条件的收入金额。")).toBeTruthy();
+    expect(within(metricCard).getByText("营收质量 · Last 30 days · 下降 3.2%")).toBeTruthy();
+    expect(within(metricCard).queryByText("收入增速 < -2% 进入关注")).toBeNull();
+    expect(within(metricCard).queryByText(/风险 (medium|high|low)/)).toBeNull();
+    expect(metricCard.textContent?.match(/Last 30 days/g)).toHaveLength(1);
+
+    expect(within(riskCard).getByText("5.1 turns · 下降 0.4 turns")).toBeTruthy();
+    expect(within(riskCard).getByText("库存周转 < 5.3 turns 进入关注")).toBeTruthy();
+    expect(within(riskCard).getByText("供应链效率 · Last 30 days")).toBeTruthy();
+    expect(within(riskCard).queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
+
+    expect(within(evidenceCard).getByText("sourceEvidence · supporting_evidence")).toBeTruthy();
+    expect(within(evidenceCard).queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
+  });
+
   it("builds shared metric Analysis entry plus lightweight Dashboard subtree entries", async () => {
     const onNavigate = vi.fn();
     const inventoryRiskNode = findNodeByTitle(dashboardViewModel.root, "库存周转风险");
@@ -310,8 +337,10 @@ describe("DashboardPage", () => {
     expect(screen.getByText("报告与证据 2")).toBeTruthy();
     expect(screen.getByText("指标 · Last 30 days")).toBeTruthy();
     expect(screen.getByText("¥12.8M · 下降 3.2%")).toBeTruthy();
+    expect(screen.getByText("已满足确认条件的收入金额。")).toBeTruthy();
     expect(screen.getByText(zhCnMessages["risk.medium.title"])).toBeTruthy();
     expect(screen.getByText(zhCnMessages["status.attention.title"])).toBeTruthy();
+    expect(screen.queryByText("风险 medium")).toBeNull();
     expect(
       screen.queryByText(
         `${zhCnMessages["risk.medium.title"]} · ${zhCnMessages["status.attention.title"]}`
@@ -417,6 +446,6 @@ describe("DashboardPage", () => {
 
     expect(screen.getByText("当前节点")).toBeTruthy();
     expect(screen.getByText("风险信号 · Last 30 days")).toBeTruthy();
-    expect(screen.getByText("库存周转当前值 5.1 turns，阈值 库存周转 < 5.3 turns 进入关注，趋势 下降 0.4 turns，建议进入 Analysis 继续追问。")).toBeTruthy();
+    expect(screen.getByText("库存周转 < 5.3 turns 进入关注")).toBeTruthy();
   });
 });

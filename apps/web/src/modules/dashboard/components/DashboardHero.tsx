@@ -83,11 +83,6 @@ export function DashboardHero({
       key: "evidence",
       title: t("dashboard.hero.fact.evidenceLabel"),
       value: `${reportNodes.length + evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
-    },
-    {
-      key: "right-context",
-      title: t("dashboard.hero.fact.rightContextLabel"),
-      value: t("dashboard.hero.fact.rightContextValue")
     }
   ];
 

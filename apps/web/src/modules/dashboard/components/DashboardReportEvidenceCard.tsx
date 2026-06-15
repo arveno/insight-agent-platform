@@ -65,14 +65,10 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
             ))}
           </Flex>
         }
-        meta={
-          <Space wrap>
-            {props.report.chips?.map((chip) => (
-              <Typography.Text key={chip} type="secondary">
-                {chip}
-              </Typography.Text>
-            ))}
-          </Space>
+      meta={
+          props.report.chips?.length ? (
+            <Typography.Text type="secondary">{props.report.chips.join(" · ")}</Typography.Text>
+          ) : null
         }
         title={props.report.title}
       />
@@ -110,14 +106,6 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
       onNavigate,
       route: "data-knowledge",
       variant: "sourceLink"
-    }),
-    createRouteAction({
-      iconName: "trace",
-      key: `${props.evidence.nodeId}-trace`,
-      label: t("dashboard.action.viewTrace"),
-      onNavigate,
-      route: "observability",
-      variant: "sourceLink"
     })
   ];
 
@@ -133,13 +121,9 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         </Flex>
       }
       meta={
-        <Space wrap>
-          {props.evidence.chips?.map((chip) => (
-            <Typography.Text key={chip} type="secondary">
-              {chip}
-            </Typography.Text>
-          ))}
-        </Space>
+        props.evidence.chips?.length ? (
+          <Typography.Text type="secondary">{props.evidence.chips.join(" · ")}</Typography.Text>
+        ) : null
       }
       title={props.evidence.title}
     />

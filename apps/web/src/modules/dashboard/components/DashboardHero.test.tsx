@@ -32,7 +32,7 @@ const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
 });
 
 describe("DashboardHero", () => {
-  it("renders the shared page intro copy, actions, time range, and four fact cards", () => {
+  it("renders the shared page intro copy, actions, time range, and three fact cards", () => {
     const onNavigate = vi.fn();
     const selectedTimeRange = dashboardViewModel.timeRange.options.find(
       (option) => option.key === dashboardViewModel.timeRange.selectedKey
@@ -58,8 +58,6 @@ describe("DashboardHero", () => {
     const metricFact = screen.getByText("核心指标");
     const anomalyFact = screen.getByText("风险异常");
     const evidenceFact = screen.getByText("相关证据");
-    const contextFact = screen.getByText("右侧上下文");
-
     expect(eyebrow.getAttribute("style")).toContain(
       `font-size: ${shellThemeTokens.fontSizeMeta}px`
     );
@@ -76,13 +74,15 @@ describe("DashboardHero", () => {
     expect(screen.getByText("4 项")).toBeTruthy();
     expect(screen.getByText("3 项关注")).toBeTruthy();
     expect(screen.getByText("2 条")).toBeTruthy();
-    expect(screen.getByText("证据 / 运行轨迹 / 建议动作")).toBeTruthy();
     expect(metricFact.closest(".ant-col")?.className).toContain("ant-col-md-12");
     expect(metricFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(anomalyFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(evidenceFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
-    expect(contextFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(screen.queryByText(dashboardViewModel.lastUpdatedAt)).toBeNull();
+    expect(screen.queryByText("右侧上下文")).toBeNull();
+    expect(screen.queryByText("证据 / 运行轨迹 / 建议动作")).toBeNull();
+    expect(screen.queryByText("运行轨迹")).toBeNull();
+    expect(screen.queryByText("建议动作")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
     expect(onNavigate).toHaveBeenCalledWith(

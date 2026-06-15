@@ -36,6 +36,8 @@ describe("DashboardReportEvidenceCard", () => {
     expect(screen.getByText("最近报告")).toBeTruthy();
     expect(screen.getByText("周经营分析报告")).toBeTruthy();
     expect(screen.getByText("补充收入确认节奏、区域差异和渠道复核建议的只读摘要。")).toBeTruthy();
+    expect(screen.getByText("report · supporting_report")).toBeTruthy();
+    expect(screen.queryByText(/更新时间/)).toBeNull();
     expect(screen.getByRole("button", { name: "查看报告" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看建议" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "带上下文分析" })).toBeTruthy();
@@ -69,10 +71,11 @@ describe("DashboardReportEvidenceCard", () => {
     expect(screen.getByText("证据")).toBeTruthy();
     expect(screen.getByText("退款异常证据摘要")).toBeTruthy();
     expect(screen.getByText("记录近期退款率抬升和客服标签聚合后的证据摘要。")).toBeTruthy();
+    expect(screen.getByText("sourceEvidence · supporting_evidence")).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看证据" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "带上下文分析" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "查看数据来源" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "查看运行轨迹" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "查看运行轨迹" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "带上下文分析" }));
     expect(onNavigate).toHaveBeenCalledWith(

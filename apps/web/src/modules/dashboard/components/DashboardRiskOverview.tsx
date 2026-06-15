@@ -49,14 +49,6 @@ export function DashboardRiskOverview({
         })
       },
       variant: "objectDetail"
-    }),
-    createRouteAction({
-      iconName: "trace",
-      key: `${item.nodeId}-trace`,
-      label: t("dashboard.action.viewTrace"),
-      onNavigate,
-      route: "observability",
-      variant: "sourceLink"
     })
   ];
 
@@ -70,6 +62,11 @@ export function DashboardRiskOverview({
             <NavigationActionButton action={action} key={action.key} />
           ))}
         </Flex>
+      }
+      meta={
+        item.chips?.length ? (
+          <Typography.Text type="secondary">{item.chips.join(" · ")}</Typography.Text>
+        ) : null
       }
       tagSlot={
         risk || status ? (

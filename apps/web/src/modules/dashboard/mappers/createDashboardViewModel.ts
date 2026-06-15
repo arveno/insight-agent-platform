@@ -21,6 +21,7 @@ import {
 } from "../../../shared/view-model/staticStateFixtures";
 import {
   buildMetricAnalysisContextPack,
+  formatMetricBusinessDomainLabel,
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
@@ -82,9 +83,12 @@ function createMetricDirectory(metrics: Metric[]): {
     metrics.find((metric) => metric.riskLevel !== "low")?.metricId ?? metrics[0]?.metricId;
   const metricNodes = metrics.map((metric) => {
     const contextPack = buildMetricAnalysisContextPack(metric);
+    const businessDomainLabel = formatMetricBusinessDomainLabel(metric.businessDomainId);
+    const trendLabel = formatMetricTrendLabel(metric);
     const metricNode: InspectorTreeNode = {
       ...contextPack.root,
-      summary: `${metric.thresholdSummary}，可结合公式和上下文来源继续分析。`
+      chips: [businessDomainLabel, metric.period, trendLabel],
+      summary: metric.description
     };
 
     metricContextPacks[contextPack.root.nodeId] = contextPack;
@@ -116,6 +120,7 @@ function createRiskNodes(metrics: Metric[]): {
     .filter((metric) => metric.riskLevel !== "low")
     .sort(compareMetricsByRisk)
     .map((metric) => {
+      const businessDomainLabel = formatMetricBusinessDomainLabel(metric.businessDomainId);
       const trendLabel = formatMetricTrendLabel(metric);
       const riskNodeId = `dashboard-node-risk-${metric.metricId}`;
 
@@ -128,7 +133,7 @@ function createRiskNodes(metrics: Metric[]): {
       };
 
       return {
-        chips: [metric.period, metric.ownerTeam],
+        chips: [businessDomainLabel, metric.period],
         kind: "riskSignal",
         nodeId: riskNodeId,
         owner: dashboardOwner,
@@ -137,7 +142,7 @@ function createRiskNodes(metrics: Metric[]): {
           metricId: metric.metricId,
           type: "metric"
         },
-        summary: `${metric.name}当前值 ${formatMetricDisplayValue(metric)}，阈值 ${metric.thresholdSummary}，趋势 ${trendLabel}，建议进入 Analysis 继续追问。`,
+        summary: metric.thresholdSummary,
         timeRange: {
           key: normalizePeriodKey(metric.period),
           label: metric.period
@@ -174,10 +179,7 @@ function createReportEvidenceNodes(metrics: Metric[]): {
     };
 
     return {
-      chips:
-        source.sourceType === "report"
-          ? [`更新时间 ${source.updatedAt}`]
-          : [source.sourceType, source.role],
+      chips: [source.sourceType, source.role],
       kind: source.sourceType,
       nodeId,
       owner: dashboardOwner,

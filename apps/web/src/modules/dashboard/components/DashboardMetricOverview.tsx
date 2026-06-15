@@ -10,7 +10,6 @@ import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 export function DashboardMetricOverview({
   metric,
   onNavigate,
-  timeRange,
   viewModel
 }: DashboardStatCardProps) {
   const { t } = useI18n();
@@ -54,14 +53,9 @@ export function DashboardMetricOverview({
         </Flex>
       }
       meta={
-        <Space wrap>
-          <Typography.Text type="secondary">{timeRange.label}</Typography.Text>
-          {metric.chips?.map((chip) => (
-            <Typography.Text key={chip} type="secondary">
-              {chip}
-            </Typography.Text>
-          ))}
-        </Space>
+        metric.chips?.length ? (
+          <Typography.Text type="secondary">{metric.chips.join(" · ")}</Typography.Text>
+        ) : null
       }
       risk={toRiskBadge(t, metricDisplay?.risk)}
       status={toStatusTag(t, metricDisplay?.status)}
