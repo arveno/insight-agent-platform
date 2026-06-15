@@ -10,6 +10,7 @@ from src.app.routes.analysis_tasks import router as analysis_tasks_router
 from src.app.routes.auth import router as auth_router
 from src.app.routes.conversations import router as conversations_router
 from src.app.routes.health import router as health_router
+from src.app.routes.metrics import router as metrics_router
 from src.app.routes.runtime_contracts import runtime_error_response
 
 
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(metrics_router)
     application.include_router(analysis_tasks_router)
     application.include_router(conversations_router)
     application.include_router(analysis_runs_router)

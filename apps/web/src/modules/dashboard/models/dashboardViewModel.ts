@@ -1,9 +1,16 @@
-import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
+import type {
+  AnalysisTaskContextPack,
+  InspectorTreeNode
+} from "@insight-agent/contracts/generated/typescript";
 
 import type {
   StaticPageStateViewModel,
   StaticPageViewModelBase
 } from "../../../shared/view-model/staticViewModelTypes";
+import type {
+  SharedRiskViewModel,
+  SharedStatusViewModel
+} from "../../../shared/utils/viewModelState";
 
 export type DashboardTimeRangeKey =
   | "last_12_hours"
@@ -22,10 +29,21 @@ export type DashboardTimeRangeViewModel = {
   selectedKey: DashboardTimeRangeKey;
 };
 
+export type DashboardNodeDisplayViewModel = {
+  defaultInspectorSelection?: boolean;
+  risk?: SharedRiskViewModel;
+  sourceRefId?: string;
+  status?: SharedStatusViewModel;
+  trendText?: string;
+  valueText?: string;
+};
+
 export type DashboardSurfaceViewModel = StaticPageViewModelBase & {
   dashboardId: string;
   dashboardState: StaticPageStateViewModel;
   description: string;
+  metricContextPacks: Record<string, AnalysisTaskContextPack>;
+  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
   root: InspectorTreeNode;
   timeRange: DashboardTimeRangeViewModel;
   title: string;

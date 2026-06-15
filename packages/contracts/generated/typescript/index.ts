@@ -399,6 +399,19 @@ export interface MemoryItem {
   createdAt?: string;
 }
 
+/** Generated from packages/contracts/schemas/metrics/metric-context-source.schema.json */
+export interface MetricContextSource {
+  metricContextSourceId: string;
+  metricId: string;
+  sourceType: "dataTable" | "knowledgeDocument" | "sourceEvidence" | "report";
+  sourceId: string;
+  role: string;
+  title: string;
+  summary: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Generated from packages/contracts/schemas/metrics/metric-formula.schema.json */
 export interface MetricFormula {
   metricFormulaId?: string;
@@ -425,10 +438,24 @@ export interface MetricThreshold {
 
 /** Generated from packages/contracts/schemas/metrics/metric.schema.json */
 export interface Metric {
-  metricId?: string;
-  workspaceId?: string;
-  name?: string;
-  createdAt?: string;
+  metricId: string;
+  workspaceId: string;
+  businessDomainId: string;
+  name: string;
+  description: string;
+  currentValue: string;
+  unit?: string | null;
+  period: string;
+  trendDirection: "up" | "down" | "flat";
+  trendValue: string;
+  status: string;
+  riskLevel: "low" | "medium" | "high" | "critical";
+  ownerTeam: string;
+  formulaSummary: string;
+  thresholdSummary: string;
+  contextSources: Array<MetricContextSource>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Generated from packages/contracts/schemas/model-tools/model-config.schema.json */

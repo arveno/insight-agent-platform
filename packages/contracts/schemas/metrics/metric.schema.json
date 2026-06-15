@@ -4,6 +4,25 @@
   "title": "Metric",
   "type": "object",
   "additionalProperties": false,
+  "required": [
+    "metricId",
+    "workspaceId",
+    "businessDomainId",
+    "name",
+    "description",
+    "currentValue",
+    "period",
+    "trendDirection",
+    "trendValue",
+    "status",
+    "riskLevel",
+    "ownerTeam",
+    "formulaSummary",
+    "thresholdSummary",
+    "contextSources",
+    "createdAt",
+    "updatedAt"
+  ],
   "properties": {
     "metricId": {
       "type": "string"
@@ -11,10 +30,58 @@
     "workspaceId": {
       "type": "string"
     },
+    "businessDomainId": {
+      "type": "string"
+    },
     "name": {
       "type": "string"
     },
+    "description": {
+      "type": "string"
+    },
+    "currentValue": {
+      "type": "string"
+    },
+    "unit": {
+      "type": ["string", "null"]
+    },
+    "period": {
+      "type": "string"
+    },
+    "trendDirection": {
+      "type": "string",
+      "enum": ["up", "down", "flat"]
+    },
+    "trendValue": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "riskLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "ownerTeam": {
+      "type": "string"
+    },
+    "formulaSummary": {
+      "type": "string"
+    },
+    "thresholdSummary": {
+      "type": "string"
+    },
+    "contextSources": {
+      "type": "array",
+      "items": {
+        "$ref": "./metric-context-source.schema.json"
+      }
+    },
     "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
       "type": "string",
       "format": "date-time"
     }

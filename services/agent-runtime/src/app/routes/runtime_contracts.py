@@ -159,6 +159,55 @@ class LogoutResponse(BaseModel):
     success: bool
 
 
+class MetricContextSourceResponse(BaseModel):
+    """Workspace-scoped metric context source summary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metricContextSourceId: str
+    metricId: str
+    sourceType: Literal["dataTable", "knowledgeDocument", "sourceEvidence", "report"]
+    sourceId: str
+    role: str
+    title: str
+    summary: str
+    createdAt: str
+    updatedAt: str
+
+
+class MetricResponse(BaseModel):
+    """Shared workspace-scoped Metric response used by Dashboard and Metrics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    metricId: str
+    workspaceId: str
+    businessDomainId: str
+    name: str
+    description: str
+    currentValue: str
+    unit: str | None = None
+    period: str
+    trendDirection: Literal["up", "down", "flat"]
+    trendValue: str
+    status: str
+    riskLevel: Literal["low", "medium", "high", "critical"]
+    ownerTeam: str
+    formulaSummary: str
+    thresholdSummary: str
+    contextSources: list[MetricContextSourceResponse]
+    createdAt: str
+    updatedAt: str
+
+
+class MetricListResponse(BaseModel):
+    """GET /metrics list response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[MetricResponse]
+
+
 class SourceRefReportModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

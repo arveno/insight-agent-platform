@@ -22,7 +22,6 @@ export type DashboardStatCardProps = DashboardNavigationProps & {
 };
 
 export type DashboardRiskCardProps = DashboardNavigationProps & {
-  isRiskSummary?: boolean;
   item: InspectorTreeNode;
   viewModel: DashboardSurfaceViewModel;
 };
@@ -38,8 +37,3 @@ export type DashboardReportEvidenceCardProps =
       kind: "evidence";
       viewModel: DashboardSurfaceViewModel;
     });
-
-export type DashboardQualityCardProps = DashboardNavigationProps & {
-  item: InspectorTreeNode;
-  viewModel: DashboardSurfaceViewModel;
-};

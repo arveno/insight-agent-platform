@@ -12,8 +12,8 @@ import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAn
 import {
   selectDashboardEvidenceNodes,
   selectDashboardMetricNodes,
+  selectDashboardReportNodes,
   selectDashboardRiskNodes,
-  selectDashboardRiskSummaryNode
 } from "../models/dashboardSelectors";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
@@ -29,41 +29,23 @@ export function DashboardHero({
   const { token } = theme.useToken();
   const metricNodes = selectDashboardMetricNodes(viewModel.root);
   const riskNodes = selectDashboardRiskNodes(viewModel.root);
-  const riskSummaryNode = selectDashboardRiskSummaryNode(viewModel.root);
+  const reportNodes = selectDashboardReportNodes(viewModel.root);
   const evidenceNodes = selectDashboardEvidenceNodes(viewModel.root);
-  const anomalyCount = riskNodes.length + (riskSummaryNode ? 1 : 0);
-  const heroActions = [
-    createRouteAction({
-      iconName: "analysis",
-      key: "dashboard-hero-analysis",
-      label: t("action.dashboardPrimaryAnalysis.label"),
-      onNavigate,
-      route: "analysis",
-      routeState: {
-        analysisContextPack: createDashboardAnalysisContextPack({
-          suggestedPrompt: `请基于 Dashboard 当前 ${selectedTimeRange.label} 的概览，解释最值得优先追问的经营问题。`,
-          viewModel
-        })
-      },
-      variant: "globalPrimary"
-    }),
-    createRouteAction({
-      iconName: "metrics",
-      key: "dashboard-hero-metrics",
-      label: t("dashboard.action.viewMetrics"),
-      onNavigate,
-      route: "metrics",
-      variant: "moduleEntry"
-    }),
-    createRouteAction({
-      iconName: "reports",
-      key: "dashboard-hero-reports",
-      label: t("dashboard.action.viewReports"),
-      onNavigate,
-      route: "reports",
-      variant: "moduleEntry"
-    })
-  ];
+  const anomalyCount = riskNodes.length;
+  const primaryAnalysisAction = createRouteAction({
+    iconName: "analysis",
+    key: "dashboard-hero-analysis",
+    label: t("action.dashboardPrimaryAnalysis.label"),
+    onNavigate,
+    route: "analysis",
+    routeState: {
+      analysisContextPack: createDashboardAnalysisContextPack({
+        suggestedPrompt: `请基于 Dashboard 当前 ${selectedTimeRange.label} 的概览，解释最值得优先追问的经营问题。`,
+        viewModel
+      })
+    },
+    variant: "globalPrimary"
+  });
   const timeRangeOptions = viewModel.timeRange.options.map((option) => ({
     label: option.label,
     value: option.key
@@ -82,12 +64,7 @@ export function DashboardHero({
     {
       key: "evidence",
       title: t("dashboard.hero.fact.evidenceLabel"),
-      value: `${evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
-    },
-    {
-      key: "right-context",
-      title: t("dashboard.hero.fact.rightContextLabel"),
-      value: t("dashboard.hero.fact.rightContextValue")
+      value: `${reportNodes.length + evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
     }
   ];
 
@@ -98,8 +75,8 @@ export function DashboardHero({
       eyebrow={t("dashboard.hero.eyebrow")}
       extra={
         <DashboardHeroActions
-          heroActions={heroActions}
           onTimeRangeChange={onTimeRangeChange}
+          primaryAnalysisAction={primaryAnalysisAction}
           selectedTimeRangeKey={selectedTimeRangeKey}
           timeRangeOptions={timeRangeOptions}
         />
@@ -133,13 +110,13 @@ export function DashboardHero({
 }
 
 function DashboardHeroActions({
-  heroActions,
   onTimeRangeChange,
+  primaryAnalysisAction,
   selectedTimeRangeKey,
   timeRangeOptions
 }: {
-  heroActions: ReturnType<typeof createRouteAction>[];
   onTimeRangeChange: DashboardHeroProps["onTimeRangeChange"];
+  primaryAnalysisAction: ReturnType<typeof createRouteAction>;
   selectedTimeRangeKey: DashboardHeroProps["selectedTimeRangeKey"];
   timeRangeOptions: Array<{
     label: string;
@@ -157,9 +134,7 @@ function DashboardHeroActions({
         value={selectedTimeRangeKey}
       />
       <Space size={12} wrap>
-        {heroActions.map((action) => (
-          <NavigationActionButton action={action} key={action.key} />
-        ))}
+        <NavigationActionButton action={primaryAnalysisAction} />
       </Space>
     </Flex>
   );

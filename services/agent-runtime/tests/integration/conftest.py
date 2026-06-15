@@ -21,6 +21,8 @@ RUNTIME_FOUNDATION_TABLES = (
     "workspace_memberships",
     "workspaces",
     "users",
+    "metric_context_sources",
+    "metrics",
     "message_streams",
     "messages",
     "report_sections",

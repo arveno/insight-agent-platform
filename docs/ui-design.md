@@ -138,11 +138,34 @@ Code
 
 默认策略：
 
-- `Dashboard` 默认不启用 Inspector。
+- `Dashboard` 不启用通用详情型 Inspector；如当前阶段需要右侧辅助区，其形态固定为标准化 `Context Tree Viewport`。
 - `Analysis` 需要 Inspector，用于当前 subject 的 context、run、evidence、report、decision、tool call、model call detail。
 - `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
 - `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
 - `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
+
+### Dashboard Context Tree Viewport
+
+- `Dashboard` 当前允许启用右侧辅助区，但其形态固定为标准化 `Context Tree Viewport`，不是 `Tree + 当前节点详情面板`。
+- viewport 只展示同一棵 semantic `root` 的目录投影；它与 `Dashboard` 主区 cards projection 以及 `Analysis draft contextPack.root` 共享同一语义来源。
+- viewport 顶部的时间范围和 workspace 边界必须显示为 compact tag，不使用普通描述句。
+- viewport 不显示：
+  - `当前节点`
+  - `来源引用`
+  - `sourceRef id`
+  - 长 `summary / description`
+  - raw enum / raw role / raw sourceType
+- viewport row 只显示层级、标题、compact value / meta 和 badge，不承担详情阅读职责。
+- root 默认展开，但用户点击 root switcher 后必须允许折叠；不得在 `onExpand` 后强制把 root 重新塞回 expanded keys。
+- 当前 `Dashboard` 只暴露 root-level `分析经营状态`；`metric / risk / report / evidence` 节点级分析能力可以保留在 mapper / adapter 中，但 UI 暂不暴露。
+
+Dashboard Context Tree row 的展示规则固定如下：
+
+- Root：`经营状态总览` + `4 指标 · 3 风险 · 2 证据`，不显示 child count `3`
+- Section：显示 `核心指标 4` / `风险异常 3` / `报告与证据 2`
+- Metric：显示 `title + value · trend + status/risk badge`，不显示 child count
+- Risk：显示 `title + value · trend + status/risk badge`，不显示长阈值句
+- Report / Evidence：显示 `title + 报告 · 支撑报告 / 证据 · 支撑证据`
 
 Inspector subject roots / tree node kinds：
 
@@ -274,9 +297,10 @@ AppShell
 - `Dashboard / Metrics / Reports / Data & Knowledge / Run Trace / Evidence` 进入 `Open in Analysis with context` 时，必须从 canonical contract objects 生成上下文；入口 surface 不是 source of truth。
 - `Dashboard` 可以是 origin surface，但当 `metric / report / evidence / data / knowledge` refs 已存在时，不得在前端把 `Dashboard` 当作唯一来源对象。
 - `Dashboard` 作为首个 context tree producer，必须先暴露 semantic root tree；Dashboard UI 与 Analysis draft context tree 共享同一语义来源。
-- Dashboard top analysis action 选择 overview root subtree；metric / risk / report / evidence action 选择对应 node 或 subtree。
+- Dashboard top analysis action 选择 overview root subtree；node-level context selection 能力允许保留在 mapper / adapter 中，但在当前阶段 UI 只保留 root-level `分析经营状态`。
 - 前端可以组合 Inspector 内部 UI routes、stack node keys 和本地选择态，但不得发明新的 business ID；具体 canonical ID 映射以 `docs/contracts.md` 为准。
 - 页面入口只表达导航、Analysis 新聊天草稿态入口或只读摘要入口，不等于真实执行。
+- 在目标页面没有真实 deep link / detail / selected object 恢复前，不得把 `查看指标`、`查看报告`、`查看治理风险`、`查看证据` 等对象按钮显示为稳定产品入口。
 
 ### Page Archetype
 
@@ -334,7 +358,7 @@ shared 只保留无业务语义的公共能力，固定边界如下：
 - `shared/ui/actions`：`ActionButton`。
 - `shared/ui/surfaces`：`CardSurface` 这类视觉壳。
 - `shared/ui/cards`：`ContentCard / StatCard / EntryCard / DetailCard` 等无业务语义 card pattern。
-- `shared/ui/lists`：`PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline` 等无业务语义 list pattern。
+- `shared/ui/lists`：`PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline / ContextTreeNodeRow` 等无业务语义 list pattern。
 - `shared/ui/states`：`EmptyState / ErrorState / LoadingState / WarningState`。
 - `shared/ui/status`：`StatusTag / RiskBadge`。
 - `shared/view-model`：跨 app / modules 边界需要共享的静态 ViewModel 类型、fixtures 和真正无业务的通用 helper。
@@ -583,10 +607,12 @@ shared/
 ### List Contract
 
 - 不抽 `SourceEvidenceList / ReportFindingList / ToolDefinitionList / RunTraceList / MetricDefinitionList`。
-- 应抽 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline` 这类无业务 primitive。
+- 应抽 `PropertyList / TitledList / AnnotatedList / SelectableList / GroupedSelectableList / EventTimeline / ContextTreeNodeRow` 这类无业务 primitive。
 - shared list item props 必须是通用字段。
 - module 负责把业务对象映射成 shared list item props。
 - 如果无法去业务化，组件留在 module，不跨 module 复用。
+- `ContextTreeNodeRow` 属于 shared display primitive：它只接收展示模型 props，例如 `title / count / secondaryText / valueText / badges / selected`，不识别 `dashboard / metric / report / evidence` 业务对象，不处理路由，不处理 `sourceRef`。
+- `ContextTreeNodeRow` 的业务映射必须留在 module 内，例如 `Dashboard` 负责把 `InspectorTreeNode + nodeDisplay` 映射成 row display model；后续 `Analysis` / `Reports` / 其它 tree/list 场景复用同一 display model 规则。
 
 ### Card Contract
 

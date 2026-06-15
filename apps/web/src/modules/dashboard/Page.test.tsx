@@ -1,8 +1,15 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
+import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
+import { createDashboardViewModel } from "./mappers/createDashboardViewModel";
+import * as DashboardPageModule from "./Page";
 import { DashboardPage } from "./Page";
+import type { DashboardSurfaceViewModel } from "./models/dashboardViewModel";
+import { DashboardInspectorPanel } from "./sections/DashboardSections";
 
 afterEach(cleanup);
 
@@ -22,17 +29,85 @@ beforeAll(() => {
   });
 });
 
+const recognizedRevenueMetric = findRuntimeMetric("metric-recognized-revenue");
+const refundRateMetric = findRuntimeMetric("metric-refund-rate");
+
 describe("DashboardPage", () => {
-  it("renders the default time range and updates the static summary without navigation", async () => {
+  const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
+  const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
+    workspaceId: "workspace-northstar-retail-china",
+    workspaceName: "Northstar Retail China"
+  });
+
+  function DashboardInspectorHarness() {
+    const [activeNodeId, setActiveNodeId] = useState("dashboard-node-root");
+    const [expandedNodeIds, setExpandedNodeIds] = useState([
+      "dashboard-node-root",
+      "dashboard-node-directory-metrics"
+    ]);
+
+    return (
+      <DashboardInspectorPanel
+        activeNodeId={activeNodeId}
+        expandedNodeIds={expandedNodeIds}
+        onExpandNodes={setExpandedNodeIds}
+        onSelectNode={setActiveNodeId}
+        selectedTimeRangeLabel="Last 30 days"
+        viewModel={dashboardViewModel}
+        workspaceName="Northstar Retail China"
+      />
+    );
+  }
+
+  function mapDashboardNode(
+    node: InspectorTreeNode,
+    nodeId: string,
+    updater: (node: InspectorTreeNode) => InspectorTreeNode
+  ): InspectorTreeNode {
+    const nextChildren = node.children?.map((child) => mapDashboardNode(child, nodeId, updater));
+    const nextNode = nextChildren ? { ...node, children: nextChildren } : node;
+
+    return nextNode.nodeId === nodeId ? updater(nextNode) : nextNode;
+  }
+
+  function updateDashboardViewModelNode(
+    viewModel: DashboardSurfaceViewModel,
+    nodeId: string,
+    updater: (node: InspectorTreeNode) => InspectorTreeNode
+  ): DashboardSurfaceViewModel {
+    return {
+      ...viewModel,
+      root: mapDashboardNode(viewModel.root, nodeId, updater)
+    };
+  }
+
+  function getTreeNodeByTitle(title: string): HTMLElement {
+    const node = screen
+      .getAllByText(title)
+      .map((element) => element.closest(".ant-tree-treenode"))
+      .find((element) => element?.getAttribute("role") === "treeitem");
+
+    if (!node) {
+      throw new Error(`Expected tree node for ${title}.`);
+    }
+
+    return node as HTMLElement;
+  }
+
+  function normalizeTextContent(element: HTMLElement | null | undefined): string {
+    return element?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+  }
+
+  it("renders the default time range and updates the shared-metric summary without navigation", async () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <DashboardPage onNavigate={onNavigate} />
+        <DashboardPage metricsLoader={metricsLoader} onNavigate={onNavigate} />
       </TestProviders>
     );
 
-    expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
+    expect(await screen.findByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
     expect(screen.getByText("当前展示最近 30 天内的指标摘要、异常和报告入口。")).toBeTruthy();
 
     fireEvent.mouseDown(screen.getByRole("combobox", { name: "Dashboard time range" }));
@@ -42,41 +117,33 @@ describe("DashboardPage", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("renders the child dashboard sections inside DashboardHero instead of as peer sections", () => {
+  it("renders the child dashboard sections inside DashboardHero and aligns report/evidence cards to the same two-column layout", async () => {
     const { container } = render(
       <TestProviders>
-        <DashboardPage />
+        <DashboardPage metricsLoader={metricsLoader} />
       </TestProviders>
     );
 
-    const overviewSurface = screen.getByText("经营状态总览").closest(".ant-card") as HTMLElement;
+    const overviewSurface = (await screen.findByText("经营状态总览")).closest(".ant-card") as HTMLElement;
     const sectionText = Array.from(overviewSurface.querySelectorAll("section")).map((section) =>
       section.textContent?.replace(/\s+/g, " ").trim()
     );
+    const reportCardColumn = screen.getByText("周经营分析报告").closest(".ant-col");
 
     expect(overviewSurface).toBeTruthy();
-    expect(sectionText).toHaveLength(4);
+    expect(sectionText).toHaveLength(3);
     expect(sectionText.some((text) => text?.includes("核心指标"))).toBe(true);
     expect(sectionText.some((text) => text?.includes("风险异常"))).toBe(true);
     expect(sectionText.some((text) => text?.includes("报告与证据"))).toBe(true);
-    expect(sectionText.some((text) => text?.includes("平台质量"))).toBe(true);
     expect(screen.getByText("周经营分析报告")).toBeTruthy();
-    expect(screen.getByText("季度收入证据摘要")).toBeTruthy();
-    expect(screen.getByText("数据质量与任务证据")).toBeTruthy();
+    expect(screen.getByText("退款异常证据摘要")).toBeTruthy();
 
-    expect(screen.getByText("零售收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
-    expect(screen.getByText("收入增速异常").closest(".ant-col")?.className).toContain(
+    expect(screen.getByText("确认收入").closest(".ant-col")?.className).toContain("ant-col-md-12");
+    expect(screen.getByText("库存周转风险").closest(".ant-col")?.className).toContain(
       "ant-col-md-12"
     );
-    expect(screen.getByText("周经营分析报告").closest(".ant-col")?.className).toContain(
-      "ant-col-xl-8"
-    );
-    const platformQualityColumnClassName = screen
-      .getAllByText("平台质量")
-      .map((element) => element.closest(".ant-col")?.className)
-      .find((className) => className?.includes("ant-col-md-12"));
-
-    expect(platformQualityColumnClassName).toContain("ant-col-md-12");
+    expect(reportCardColumn?.className).toContain("ant-col-md-12");
+    expect(reportCardColumn?.className).not.toContain("ant-col-xl-8");
     expect(container.querySelectorAll("main > .ant-space > .ant-space-item")).toHaveLength(1);
     expect(
       Array.from(container.querySelectorAll("main > .ant-space > .ant-space-item > section"))
@@ -84,112 +151,220 @@ describe("DashboardPage", () => {
     expect(within(overviewSurface).getAllByText("Last 30 days").length).toBeGreaterThan(0);
   });
 
-  it("builds every Analysis entry point from the semantic root tree or the selected subtree", () => {
+  it("keeps Dashboard UI entry points converged to the root analysis action", async () => {
     const onNavigate = vi.fn();
 
     render(
       <TestProviders>
-        <DashboardPage onNavigate={onNavigate} />
+        <DashboardPage metricsLoader={metricsLoader} onNavigate={onNavigate} />
       </TestProviders>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      1,
+    fireEvent.click(await screen.findByRole("button", { name: "分析经营状态" }));
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-root" })
+          root: expect.objectContaining({ nodeId: "dashboard-node-root", title: "经营状态总览" })
         })
       })
     );
 
-    fireEvent.click(
-      within(screen.getByText("零售收入").closest(".ant-card")!).getByRole("button", {
-        name: "分析异常"
-      })
+    for (const label of [
+      "查看指标",
+      "查看报告",
+      "查看治理风险",
+      "全部报告",
+      "分析指标",
+      "分析风险",
+      "带报告上下文分析",
+      "带证据上下文分析"
+    ]) {
+      expect(screen.queryByRole("button", { name: label })).toBeNull();
+    }
+  });
+
+  it("starts the inspector viewport from the semantic dashboard root", () => {
+    const orderedViewModel = createDashboardViewModel(
+      [
+        findRuntimeMetric("metric-gross-margin"),
+        findRuntimeMetric("metric-recognized-revenue")
+      ],
+      {
+        workspaceId: "workspace-northstar-retail-china",
+        workspaceName: "Northstar Retail China"
+      }
     );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      2,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            chips: expect.arrayContaining(["环比 -3.2%", "4 条证据"]),
-            nodeId: "dashboard-node-metric-revenue",
-            sourceRef: {
-              metricId: "metric-recognized-revenue",
-              type: "metric"
-            },
-            summary: "季度收入低于目标区间，需要继续拆解区域、渠道与确认节奏。",
-            title: "零售收入",
-            value: "¥12.8M"
-          })
-        })
+    const sanitizedViewModel = updateDashboardViewModelNode(
+      orderedViewModel,
+      "metric-context-metric-recognized-revenue",
+      (node) => ({
+        ...node,
+        chips: [],
+        value: undefined
       })
     );
 
-    fireEvent.click(
-      within(screen.getByText("收入增速异常").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      3,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-risk-revenue-growth" })
-        })
-      })
+    expect(typeof DashboardPageModule.createDashboardContextTreeViewport).toBe("function");
+    expect(DashboardPageModule.createDashboardContextTreeViewport(sanitizedViewModel)).toEqual({
+      activeNodeId: "dashboard-node-root",
+      expandedNodeIds: ["dashboard-node-root", "dashboard-node-directory-metrics"]
+    });
+  });
+
+  it("renders a standardized dashboard context tree viewport without a selected-node detail panel", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="dashboard-node-root"
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "dashboard-node-directory-risks",
+            "dashboard-node-directory-report-evidence"
+          ]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
     );
 
-    fireEvent.click(
-      within(screen.getByText("周经营分析报告").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      4,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            chips: expect.arrayContaining(["5 条证据", "更新时间 2026-06-03T17:30:00+08:00"]),
-            nodeId: "dashboard-node-report-weekly-business",
-            sourceRef: {
-              reportId: "report-weekly-business",
-              type: "report"
-            },
-            summary: "建议先核对相关证据，再带上下文继续分析。",
-            title: "周经营分析报告"
-          })
-        })
-      })
+    expect(screen.getByText("上下文目录")).toBeTruthy();
+    expect(screen.getByText("Last 30 days")).toBeTruthy();
+    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.queryByText("当前节点")).toBeNull();
+    expect(screen.queryByText("来源引用")).toBeNull();
+    expect(screen.queryByText("目录节点 / 当前上下文根")).toBeNull();
+    expect(screen.queryByText("SourceRef")).toBeNull();
+    expect(screen.queryByText("经营状态总览 3")).toBeNull();
+    expect(screen.queryByText("metric-recognized-revenue")).toBeNull();
+    expect(screen.queryByText("source-evidence-refund-watch")).toBeNull();
+    expect(screen.queryByText(/supporting_report|supporting_evidence|sourceEvidence/)).toBeNull();
+
+    const rootNode = getTreeNodeByTitle("经营状态总览");
+    const metricSection = getTreeNodeByTitle("核心指标");
+    const riskSection = getTreeNodeByTitle("风险异常");
+    const reportEvidenceSection = getTreeNodeByTitle("报告与证据");
+    const metricNode = getTreeNodeByTitle("确认收入");
+    const riskNode = getTreeNodeByTitle("库存周转风险");
+    const reportNode = getTreeNodeByTitle("周经营分析报告");
+    const evidenceNode = getTreeNodeByTitle("退款异常证据摘要");
+
+    expect(normalizeTextContent(rootNode)).toContain("4 指标 · 3 风险 · 2 证据");
+    expect(normalizeTextContent(rootNode)).not.toMatch(/经营状态总览\s*3/);
+    expect(normalizeTextContent(metricSection)).toMatch(/核心指标\s*4/);
+    expect(normalizeTextContent(riskSection)).toMatch(/风险异常\s*3/);
+    expect(normalizeTextContent(reportEvidenceSection)).toMatch(/报告与证据\s*2/);
+    expect(normalizeTextContent(metricNode)).toContain("¥12.8M · 下降 3.2%");
+    expect(normalizeTextContent(metricNode)).toContain("关注");
+    expect(normalizeTextContent(metricNode)).toContain("中风险");
+    expect(normalizeTextContent(metricNode)).not.toMatch(/确认收入\s*2/);
+    expect(normalizeTextContent(riskNode)).toContain("5.1 turns · 下降 0.4 turns");
+    expect(normalizeTextContent(riskNode)).not.toContain("库存周转 < 5.3 turns 进入关注");
+    expect(normalizeTextContent(reportNode)).toContain("报告 · 支撑报告");
+    expect(normalizeTextContent(evidenceNode)).toContain("证据 · 支撑证据");
+  });
+
+  it("shows display labels instead of raw chips for metric child report nodes in the inspector", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-recognized-revenue-metric-context-source-revenue-report"
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "metric-context-metric-recognized-revenue"
+          ]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
     );
 
-    fireEvent.click(
-      within(screen.getByText("季度收入证据摘要").closest(".ant-card")!).getByRole("button", {
-        name: "带上下文分析"
-      })
+    expect(screen.getAllByText("周经营分析报告").length).toBeGreaterThan(0);
+    expect(screen.getByText("报告 · 支撑报告")).toBeTruthy();
+    expect(
+      screen.queryByText(
+        recognizedRevenueMetric.contextSources.find((source) => source.sourceType === "report")
+          ?.role ?? ""
+      )
+    ).toBeNull();
+    expect(
+      screen.queryByText(
+        [
+          "report",
+          recognizedRevenueMetric.contextSources.find((source) => source.sourceType === "report")
+            ?.role ?? ""
+        ].join(" · ")
+      )
+    ).toBeNull();
+  });
+
+  it("shows display labels instead of raw chips for metric child evidence nodes in the inspector", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-refund-rate-metric-context-source-refund-evidence"
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "metric-context-metric-refund-rate"
+          ]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
     );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      5,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            chips: expect.arrayContaining(["Metric / Report", "High"]),
-            nodeId: "dashboard-node-evidence-revenue-summary",
-            sourceRef: {
-              sourceEvidenceId: "source-evidence-q2-revenue",
-              type: "sourceEvidence"
-            },
-            summary: "来自核心收入指标、报告段落和数据质量摘要的证据入口。",
-            title: "零售收入证据摘要"
-          })
-        })
-      })
+
+    expect(screen.getAllByText("退款异常证据摘要").length).toBeGreaterThan(0);
+    expect(screen.getByText("证据 · 支撑证据")).toBeTruthy();
+    expect(
+      screen.queryByText(
+        refundRateMetric.contextSources.find((source) => source.sourceType === "sourceEvidence")
+          ?.role ?? ""
+      )
+    ).toBeNull();
+    expect(
+      screen.queryByText(
+        [
+          "sourceEvidence",
+          refundRateMetric.contextSources.find(
+            (source) => source.sourceType === "sourceEvidence"
+          )?.role ?? ""
+        ].join(" · ")
+      )
+    ).toBeNull();
+  });
+
+  it("defaults the root to expanded and lets the user collapse it", async () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorHarness />
+      </TestProviders>
     );
+
+    expect(() => getTreeNodeByTitle("核心指标")).not.toThrow();
+
+    const rootNode = getTreeNodeByTitle("经营状态总览");
+    const rootSwitcher = rootNode.querySelector(".ant-tree-switcher") as HTMLElement | null;
+
+    expect(rootSwitcher).toBeTruthy();
+    fireEvent.click(rootSwitcher!);
+
+    expect(screen.getByText("经营状态总览")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText("核心指标")).toBeNull();
+    });
   });
 });

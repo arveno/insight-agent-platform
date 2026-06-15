@@ -118,6 +118,75 @@ paths:
           $ref: "#/components/responses/RuntimeUnauthorized"
         "403":
           $ref: "#/components/responses/RuntimeForbidden"
+  /metrics:
+    get:
+      summary: 读取当前 workspace 的指标目录
+      description: >
+        只返回当前 authenticated session 已选择 workspace 下的共享 metric source。
+        Dashboard 与 Metrics 必须读取同一份 workspace-scoped metrics 数据，不允许前端传 userId/workspaceId 作为 authority。
+      operationId: listMetrics
+      responses:
+        "200":
+          description: 当前 workspace 下的只读指标列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricList"
+              example:
+                items:
+                  - metricId: metric-recognized-revenue
+                    workspaceId: workspace-northstar-retail-china
+                    businessDomainId: business-domain-revenue-quality
+                    name: 确认收入
+                    description: 已满足确认条件的收入金额。
+                    currentValue: ¥12.8M
+                    unit: CNY
+                    period: Last 30 days
+                    trendDirection: down
+                    trendValue: -3.2%
+                    status: attention
+                    riskLevel: medium
+                    ownerTeam: Revenue Operations
+                    formulaSummary: 确认收入 = 已预订收入 - 退款金额
+                    thresholdSummary: 收入增速 < -2% 进入关注
+                    contextSources:
+                      - metricContextSourceId: metric-context-source-revenue-table
+                        metricId: metric-recognized-revenue
+                        sourceType: dataTable
+                        sourceId: table-sales-order
+                        role: primary_table
+                        title: 销售订单汇总表
+                        summary: 作为确认收入的主表来源，按 workspace 粒度聚合已确认订单收入。
+                        createdAt: "2026-06-05T11:08:12+08:00"
+                        updatedAt: "2026-06-05T11:08:12+08:00"
+                    createdAt: "2026-06-05T11:08:12+08:00"
+                    updatedAt: "2026-06-05T11:08:12+08:00"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+  /metrics/{metricId}:
+    get:
+      summary: 读取单个 metric 定义与上下文来源摘要
+      description: >
+        只允许读取当前 authenticated workspace 下的 canonical metricId。
+        metric 不属于当前 workspace 时返回 not found / forbidden 语义中的既有 runtime not found 形态。
+      operationId: getMetric
+      parameters:
+        - in: path
+          name: metricId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 单个 metric 详情。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metric"
+        "401":
+          $ref: "#/components/responses/RuntimeUnauthorized"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-tasks:
     post:
       summary: 创建分析输入任务
@@ -1419,6 +1488,10 @@ components:
       $ref: "../schemas/workspace/select-workspace-response.schema.json"
     LogoutResponse:
       $ref: "../schemas/workspace/logout-response.schema.json"
+    MetricContextSource:
+      $ref: "../schemas/metrics/metric-context-source.schema.json"
+    Metric:
+      $ref: "../schemas/metrics/metric.schema.json"
     HealthResponse:
       type: object
       description: 健康检查响应体。
@@ -1634,6 +1707,16 @@ components:
       $ref: "../schemas/analysis/execution-attempt.schema.json"
     ApprovalRequest:
       $ref: "../schemas/analysis/approval-request.schema.json"
+    MetricList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Metric"
     RunEventList:
       type: object
       additionalProperties: false

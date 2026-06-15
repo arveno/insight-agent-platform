@@ -1,3 +1,5 @@
+import type { Metric } from "@insight-agent/contracts/generated/typescript";
+
 import type { Translate } from "../i18n/translateKey";
 import { translateKey } from "../i18n/translateKey";
 import type { RiskBadgeProps, RiskLevel } from "../ui/status/RiskBadge";
@@ -27,6 +29,24 @@ export type SharedRiskViewModel = {
   reason?: string;
   title?: string;
   titleKey?: string;
+};
+
+const metricRiskTitleKeyByLevel: Record<Metric["riskLevel"], string> = {
+  critical: "risk.critical.title",
+  high: "risk.high.title",
+  low: "risk.low.title",
+  medium: "risk.medium.title"
+};
+
+const metricStatusViewByStatus: Record<string, SharedStatusViewModel> = {
+  attention: {
+    labelKey: "status.attention.title",
+    status: "warning"
+  },
+  healthy: {
+    labelKey: "status.healthy.title",
+    status: "success"
+  }
 };
 
 const statusToneByKind: Record<SharedStatusViewModel["status"], StatusTagProps["tone"]> = {
@@ -82,5 +102,24 @@ export function toRiskBadge(t: Translate, risk?: SharedRiskViewModel): RiskBadge
       : (risk.title ?? translateKey(t, "risk.unknown.title")),
     level: riskLevelMap[risk.level],
     reason: productRiskReason(risk.reason)
+  };
+}
+
+export function createMetricRiskViewModel(
+  riskLevel: Metric["riskLevel"],
+  reason?: string
+): SharedRiskViewModel {
+  return {
+    level: riskLevel,
+    reason,
+    titleKey: metricRiskTitleKeyByLevel[riskLevel]
+  };
+}
+
+export function createMetricStatusViewModel(status: Metric["status"]): SharedStatusViewModel {
+  return metricStatusViewByStatus[status] ?? {
+    labelKey: "status.unknown.title",
+    reason: `Unknown metric status: ${status}`,
+    status: "disabled"
   };
 }

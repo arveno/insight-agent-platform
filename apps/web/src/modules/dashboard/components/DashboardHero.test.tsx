@@ -1,10 +1,11 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { runtimeMetricsFixtures } from "../../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../../shared/test/TestProviders";
 import { shellThemeTokens } from "../../../shared/theme/tokens";
 
-import { dashboardStaticViewModel } from "../fixtures/dashboardStaticViewModel";
+import { createDashboardViewModel } from "../mappers/createDashboardViewModel";
 import { DashboardHero } from "./DashboardHero";
 
 afterEach(cleanup);
@@ -25,11 +26,16 @@ beforeAll(() => {
   });
 });
 
+const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
+  workspaceId: "workspace-northstar-retail-china",
+  workspaceName: "Northstar Retail China"
+});
+
 describe("DashboardHero", () => {
-  it("renders the shared page intro copy, actions, time range, and four fact cards", () => {
+  it("renders the shared page intro copy, the root analysis action, time range, and three fact cards", () => {
     const onNavigate = vi.fn();
-    const selectedTimeRange = dashboardStaticViewModel.timeRange.options.find(
-      (option) => option.key === dashboardStaticViewModel.timeRange.selectedKey
+    const selectedTimeRange = dashboardViewModel.timeRange.options.find(
+      (option) => option.key === dashboardViewModel.timeRange.selectedKey
     )!;
 
     render(
@@ -38,8 +44,8 @@ describe("DashboardHero", () => {
           onNavigate={onNavigate}
           onTimeRangeChange={vi.fn()}
           selectedTimeRange={selectedTimeRange}
-          selectedTimeRangeKey={dashboardStaticViewModel.timeRange.selectedKey}
-          viewModel={dashboardStaticViewModel}
+          selectedTimeRangeKey={dashboardViewModel.timeRange.selectedKey}
+          viewModel={dashboardViewModel}
         />
       </TestProviders>
     );
@@ -48,14 +54,10 @@ describe("DashboardHero", () => {
 
     const eyebrow = screen.getByText("经营工作台");
     const title = screen.getByText("经营状态总览");
-    const description = screen.getByText(
-      "围绕经营状态、风险信号、报告证据和平台质量继续追问。"
-    );
+    const description = screen.getByText(dashboardViewModel.root.summary!);
     const metricFact = screen.getByText("核心指标");
     const anomalyFact = screen.getByText("风险异常");
     const evidenceFact = screen.getByText("相关证据");
-    const contextFact = screen.getByText("右侧上下文");
-
     expect(eyebrow.getAttribute("style")).toContain(
       `font-size: ${shellThemeTokens.fontSizeMeta}px`
     );
@@ -66,35 +68,33 @@ describe("DashboardHero", () => {
     expect(description).toBeTruthy();
     expect(screen.getByText(selectedTimeRange.description)).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "发起分析" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "查看指标" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "查看报告" })).toBeTruthy();
-    expect(screen.getByText("2 项")).toBeTruthy();
-    expect(screen.getByText("2 项关注")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "分析经营状态" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "查看指标" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
+    expect(screen.getByText("4 项")).toBeTruthy();
+    expect(screen.getByText("3 项关注")).toBeTruthy();
     expect(screen.getByText("2 条")).toBeTruthy();
-    expect(screen.getByText("证据 / 运行轨迹 / 建议动作")).toBeTruthy();
     expect(metricFact.closest(".ant-col")?.className).toContain("ant-col-md-12");
     expect(metricFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(anomalyFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
     expect(evidenceFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
-    expect(contextFact.closest(".ant-col")?.className).toContain("ant-col-xl-6");
-    expect(screen.queryByText(dashboardStaticViewModel.lastUpdatedAt)).toBeNull();
-    expect(screen.queryByText("关注")).toBeNull();
+    expect(screen.queryByText(dashboardViewModel.lastUpdatedAt)).toBeNull();
+    expect(screen.queryByText("右侧上下文")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "发起分析" }));
+    fireEvent.click(screen.getByRole("button", { name: "分析经营状态" }));
     expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: dashboardStaticViewModel.root.nodeId })
+          root: expect.objectContaining({ nodeId: dashboardViewModel.root.nodeId })
         })
       })
     );
   });
 
   it("renders child sections inside the same overview surface", () => {
-    const selectedTimeRange = dashboardStaticViewModel.timeRange.options.find(
-      (option) => option.key === dashboardStaticViewModel.timeRange.selectedKey
+    const selectedTimeRange = dashboardViewModel.timeRange.options.find(
+      (option) => option.key === dashboardViewModel.timeRange.selectedKey
     )!;
 
     render(
@@ -102,8 +102,8 @@ describe("DashboardHero", () => {
         <DashboardHero
           onTimeRangeChange={vi.fn()}
           selectedTimeRange={selectedTimeRange}
-          selectedTimeRangeKey={dashboardStaticViewModel.timeRange.selectedKey}
-          viewModel={dashboardStaticViewModel}
+          selectedTimeRangeKey={dashboardViewModel.timeRange.selectedKey}
+          viewModel={dashboardViewModel}
         >
           <section>
             <h3>核心指标</h3>

@@ -370,6 +370,18 @@ class MemoryItem(TypedDict):
     content: NotRequired[str]
     createdAt: NotRequired[str]
 
+# Generated from packages/contracts/schemas/metrics/metric-context-source.schema.json
+class MetricContextSource(TypedDict):
+    metricContextSourceId: str
+    metricId: str
+    sourceType: Literal["dataTable", "knowledgeDocument", "sourceEvidence", "report"]
+    sourceId: str
+    role: str
+    title: str
+    summary: str
+    createdAt: str
+    updatedAt: str
+
 # Generated from packages/contracts/schemas/metrics/metric-formula.schema.json
 class MetricFormula(TypedDict):
     metricFormulaId: NotRequired[str]
@@ -393,10 +405,24 @@ class MetricThreshold(TypedDict):
 
 # Generated from packages/contracts/schemas/metrics/metric.schema.json
 class Metric(TypedDict):
-    metricId: NotRequired[str]
-    workspaceId: NotRequired[str]
-    name: NotRequired[str]
-    createdAt: NotRequired[str]
+    metricId: str
+    workspaceId: str
+    businessDomainId: str
+    name: str
+    description: str
+    currentValue: str
+    unit: NotRequired[str | None]
+    period: str
+    trendDirection: Literal["up", "down", "flat"]
+    trendValue: str
+    status: str
+    riskLevel: Literal["low", "medium", "high", "critical"]
+    ownerTeam: str
+    formulaSummary: str
+    thresholdSummary: str
+    contextSources: list[MetricContextSource]
+    createdAt: str
+    updatedAt: str
 
 # Generated from packages/contracts/schemas/model-tools/model-config.schema.json
 class ModelConfig(TypedDict):
@@ -583,4 +609,4 @@ class Workspace(TypedDict):
     createdAt: str
     updatedAt: str
 
-__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "AuthSession", "BusinessDomain", "CurrentWorkspaceContext", "LoginRequest", "LoginResponse", "LogoutResponse", "MeResponse", "Role", "SelectWorkspaceRequest", "SelectWorkspaceResponse", "User", "WorkspaceListItem", "WorkspaceListResponse", "WorkspaceMembership", "Workspace"]
+__all__ = ["AnalysisRun", "AnalysisTaskContextPack", "AnalysisTask", "ApprovalRequest", "Conversation", "ExecutionAttempt", "InspectorOwnerRef", "InspectorTreeNode", "MessageStream", "Message", "ModelCall", "RunEvent", "SourceEvidence", "SourceRef", "SubmitAnalysisDraftRequest", "SubmitAnalysisDraftResponse", "ToolCall", "DataField", "DataSource", "DataTable", "KnowledgeChunk", "KnowledgeDocument", "BadCase", "EvaluationDataset", "EvaluationRun", "EvaluationScore", "Feedback", "AuditLog", "PermissionPolicy", "RiskRule", "MemoryItem", "MetricContextSource", "MetricFormula", "MetricLineage", "MetricThreshold", "Metric", "ModelConfig", "PromptVersion", "RagStrategy", "RoutingPolicy", "ToolDefinition", "DataQualityCheck", "Job", "Notification", "ActionSuggestion", "Decision", "ReportSection", "Report", "AuthSession", "BusinessDomain", "CurrentWorkspaceContext", "LoginRequest", "LoginResponse", "LogoutResponse", "MeResponse", "Role", "SelectWorkspaceRequest", "SelectWorkspaceResponse", "User", "WorkspaceListItem", "WorkspaceListResponse", "WorkspaceMembership", "Workspace"]

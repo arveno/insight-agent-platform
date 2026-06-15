@@ -278,6 +278,61 @@ Analysis
 - `血缘 = 指标从哪些表、字段、任务或来源计算而来`；`证据 = 支撑指标异常判断或指标可信度的来源材料`。证据不等于 RAG，RAG 只是证据来源之一。
 - `Platform Operations` 与 `Data & Knowledge`、`Dashboard`、`Analysis`、`Governance`、`Observability` 相关，但当前阶段只承接当前 `Workspace` 的只读平台健康总览，不承接全租户或全平台运维后台。
 
+### Dashboard / Metrics shared context source rule
+
+- `Dashboard` 是 current workspace 的经营总览 surface。
+- `Metrics` 是 current workspace 的指标目录 / 指标详情 surface。
+- `Dashboard` 和 `Metrics` 必须消费同一个 current workspace metric source；`Dashboard` 不拥有一套独立 metric source，`Metrics` 也不拥有另一套独立 metric source。
+- `Dashboard metric tile`、`Metrics list item`、`Metric detail`、以及后续 `Report / Evidence` 中出现的 metric ref，都必须回到同一个 canonical `metricId`。
+- 入口位置可以不同：
+  - `Dashboard metric tile`
+  - `Metrics list item`
+  - `Metric detail`
+  - 后续 `Report / Evidence` 引用
+- 但进入 `Analysis` 的 `sourceRef / contextPack` 构造必须统一。
+- `Analysis` 主区只承接 text-first conversation：
+  - `user message bubble`
+  - `assistant message bubble`
+- 结构化 context 不塞进 conversation bubble，必须在右侧 `Inspector` 展示。
+- submit 语义统一为：
+  - `text-only input`
+  - optional `contextPack`
+  - authenticated `user / workspace / role` from session context
+  - 用户发送后 `create/reuse Conversation -> create AnalysisTask with contextPack -> create AnalysisRun -> create User Message`
+- 当前阶段不再区分“异常追问 / 结果追问 / 普通追问”的执行路径；这些只是不同来源的 context，最终都进入同一个 `text + context` submit transaction。
+- `#223` 第一阶段只建立 shared metric source 与 Analysis text context entry。
+- `#202-2` 仍负责 `SourceRef detail / Open full source`。
+- `#203` 仍负责 `Conversation list / re-entry`。
+- 本规则不推翻既有 `#202` subject-scoped Inspector tree 方向，也不把 `Dashboard` 改成单个 metric detail 页面。
+
+### Dashboard Context Tree / Action Projection template
+
+- `Dashboard` 是经营状态上下文组织页，不是多入口导航页。
+- 当前阶段 `Dashboard` 只暴露一个主动作：`分析经营状态`。
+- `Metric[] -> createDashboardViewModel -> root` 是 `Dashboard` 的单一语义来源；主区 cards projection、右侧 `Context Tree Viewport` 和 `createDashboardAnalysisContextPack` 都必须来自同一棵 `root`。
+- `Dashboard` 当前不得把 `查看指标`、`查看报告`、`查看治理风险`、`查看证据` 这类对象入口显示成稳定产品入口，除非目标页面已经支持真实 deep link / detail / selected object 恢复。
+- `metric / risk / report / evidence` 节点级 `Analysis contextPack` 能力可以继续保留在 mapper / adapter 中，但在当前阶段 UI 暂不暴露节点级分析按钮。
+- `Dashboard` 右侧固定为标准化 `Context Tree Viewport`，不再组合“Tree + 当前节点详情面板”双层结构。
+- `Dashboard` whole-context 进入 `Analysis` 时，`contextPack.root` 必须继续表示 `经营状态总览`；后续 `Analysis` 目录树改造应直接消费该 `root`，而不是重新拼一套 Dashboard 目录。
+- `Analysis` 右侧完整 context tree 改造属于 `#155` 后续子任务；`#224` 不扩展 `Analysis Inspector`、`SourceRef detail`、`Reports detail`、`Data & Knowledge detail` 或 `AppRouteState deep link`。
+
+Dashboard Context Tree 的当前展示规则固定如下：
+
+- Root：`经营状态总览` + `4 指标 · 3 风险 · 2 证据`
+- Section：`核心指标 4` / `风险异常 3` / `报告与证据 2`
+- Metric：`name + value · trend + status/risk badge`
+- Risk：`name + value · trend + status/risk badge`
+- Report / Evidence：`title + 报告 · 支撑报告 / 证据 · 支撑证据`
+
+Dashboard Context Tree 当前明确不显示：
+
+- `当前节点`
+- `来源引用`
+- `sourceRef id`
+- 长 `summary`
+- raw enum / raw role / raw sourceType
+- 伪造的 detail deep link
+
 ### 3.6 AI Platform Core Technology Boundary
 
 产品层面的 AI 技术边界固定如下：

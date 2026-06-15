@@ -4,9 +4,7 @@ import { findInspectorTreeNodeById } from "../../../shared/navigation/analysisCo
 
 const dashboardDirectoryNodeIds = {
   metrics: "dashboard-node-directory-metrics",
-  platformQuality: "dashboard-node-directory-platform-quality",
   reportEvidence: "dashboard-node-directory-report-evidence",
-  riskSummary: "dashboard-node-risk-summary",
   risks: "dashboard-node-directory-risks"
 } as const;
 
@@ -38,24 +36,12 @@ export function selectDashboardReportEvidenceSection(
   return selectDashboardNode(root, dashboardDirectoryNodeIds.reportEvidence);
 }
 
-export function selectDashboardQualitySection(root: InspectorTreeNode): InspectorTreeNode | undefined {
-  return selectDashboardNode(root, dashboardDirectoryNodeIds.platformQuality);
-}
-
 export function selectDashboardMetricNodes(root: InspectorTreeNode): InspectorTreeNode[] {
   return selectDashboardDirectoryChildren(root, dashboardDirectoryNodeIds.metrics);
 }
 
-export function selectDashboardRiskSummaryNode(
-  root: InspectorTreeNode
-): InspectorTreeNode | undefined {
-  return selectDashboardNode(root, dashboardDirectoryNodeIds.riskSummary);
-}
-
 export function selectDashboardRiskNodes(root: InspectorTreeNode): InspectorTreeNode[] {
-  return selectDashboardDirectoryChildren(root, dashboardDirectoryNodeIds.risks).filter(
-    (node) => node.nodeId !== dashboardDirectoryNodeIds.riskSummary
-  );
+  return selectDashboardDirectoryChildren(root, dashboardDirectoryNodeIds.risks);
 }
 
 export function selectDashboardReportNodes(root: InspectorTreeNode): InspectorTreeNode[] {
@@ -68,8 +54,4 @@ export function selectDashboardEvidenceNodes(root: InspectorTreeNode): Inspector
   return selectDashboardDirectoryChildren(root, dashboardDirectoryNodeIds.reportEvidence).filter(
     (node) => node.kind === "sourceEvidence"
   );
-}
-
-export function selectDashboardQualityNodes(root: InspectorTreeNode): InspectorTreeNode[] {
-  return selectDashboardDirectoryChildren(root, dashboardDirectoryNodeIds.platformQuality);
 }

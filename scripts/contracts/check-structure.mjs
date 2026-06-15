@@ -176,6 +176,7 @@ const contractSchemaPaths = [
   "packages/contracts/schemas/data-knowledge/knowledge-document.schema.json",
   "packages/contracts/schemas/data-knowledge/knowledge-chunk.schema.json",
   "packages/contracts/schemas/metrics/metric.schema.json",
+  "packages/contracts/schemas/metrics/metric-context-source.schema.json",
   "packages/contracts/schemas/metrics/metric-formula.schema.json",
   "packages/contracts/schemas/metrics/metric-threshold.schema.json",
   "packages/contracts/schemas/metrics/metric-lineage.schema.json",

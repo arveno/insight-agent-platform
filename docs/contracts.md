@@ -42,6 +42,7 @@ DataField
 KnowledgeDocument
 KnowledgeChunk
 Metric
+MetricContextSource
 MetricFormula
 MetricThreshold
 MetricLineage
@@ -227,6 +228,8 @@ localOnlyId
 `Context` 只是 Analysis Inspector 的一个 root，不等于整个 Inspector。
 
 Frontend 可以组合 Inspector UI routes、tree path keys 和本地选择态，但不得发明新的 business ID。
+
+`InspectorTreeNode` 的展示投影规则由 `docs/product-design.md` 与 `docs/ui-design.md` 定义；frontend 可以按页面需要选择性消费 `title / chips / value / summary / description` 等字段，但 tree/list row 不得把 raw enum、raw role、raw sourceType 或 `sourceRef id` 直接展示成用户可见文案。
 
 如果 UI 暴露来源 ref，它的业务身份必须回到现有 contract ID：
 
@@ -750,6 +753,7 @@ full ModelCall raw output
 - `SourceEvidence` 不得原地更新。
 - `Metric` definition 可以做版本化。
 - `Metric` observation / snapshot 必须绑定 time range，不得被 latest value 原地覆盖。
+- `Metric` read surface 当前只允许暴露 `currentValue / period / trend / thresholdSummary / formulaSummary / contextSources` 等摘要字段，不得把 raw table row、document content、report full body 塞回共享链路。
 - `KnowledgeDocument` / `DataTable` schema 如有变化，应通过 version / asOf 表达。
 - raw data 不进入 `contextPack`。
 
