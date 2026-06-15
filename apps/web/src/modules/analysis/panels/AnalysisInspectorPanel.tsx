@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Tag } from "antd";
 
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
+import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import type { AnalysisWorkspaceState } from "../hooks/useAnalysisWorkspaceController";
 import type { AnalysisSessionViewModel } from "../models/analysisViewModel";
 import type { InspectorSubject } from "../models/inspectorSubject";
@@ -64,10 +65,12 @@ function createContextViewportBoundaryTags(args: {
   draftContext?: AnalysisTaskContextPack;
   selectedSession?: AnalysisSessionViewModel;
   selectedSubject?: InspectorSubject;
+  workspaceName: string;
 }): ReactNode {
   const root = args.selectedSession?.analysisTaskContextPack?.root ?? args.draftContext?.root;
   const tags = [
     root?.timeRange?.label,
+    args.workspaceName,
     args.selectedSession
       ? args.selectedSubject?.type === "analysisTask"
         ? "分析请求上下文"
@@ -346,6 +349,7 @@ export function AnalysisInspectorPanel({
   selectedSession,
   workspaceState
 }: AnalysisInspectorPanelProps) {
+  const { workspaceName } = useCurrentWorkspaceBinding();
   const roots = selectedSession
     ? buildAnalysisInspectorRoots(selectedSession, selectedInspectorSubject)
     : draftContext
@@ -394,7 +398,8 @@ export function AnalysisInspectorPanel({
     ? createContextViewportBoundaryTags({
         draftContext,
         selectedSession,
-        selectedSubject: selectedInspectorSubject
+        selectedSubject: selectedInspectorSubject,
+        workspaceName
       })
     : selectedNodePresentation?.description ?? contextPanelNote;
 

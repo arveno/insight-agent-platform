@@ -4,7 +4,7 @@ import type { DataNode } from "antd/es/tree";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
 import { useI18n } from "../../../../shared/i18n/I18nProvider";
-import { renderAnalysisContextTreeNodeRow } from "./createContextTreeNodeDisplay";
+import { renderContextTreeNodeRow } from "../../../../shared/view-model/contextTreeNodeDisplay";
 
 export type AnalysisContextTreeViewportProps = {
   initialPath?: string[];
@@ -34,7 +34,11 @@ function buildTreeData(args: {
       })
     ),
     key: args.node.nodeId,
-    title: renderAnalysisContextTreeNodeRow(args.activeNodeId, args.node, args.t)
+    title: renderContextTreeNodeRow({
+      activeNodeId: args.activeNodeId,
+      node: args.node,
+      t: args.t
+    })
   };
 }
 

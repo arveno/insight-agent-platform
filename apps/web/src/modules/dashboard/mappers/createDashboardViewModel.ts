@@ -135,7 +135,7 @@ function createRiskNodes(metrics: Metric[]): {
       };
 
       return {
-        chips: [businessDomainLabel, metric.period],
+        chips: [businessDomainLabel, metric.period, trendLabel],
         kind: "riskSignal",
         nodeId: riskNodeId,
         owner: dashboardOwner,

@@ -107,6 +107,7 @@ describe("AnalysisInspectorPanel", () => {
 
     expect(screen.getByText("上下文目录")).toBeTruthy();
     expect(screen.getByText("Last 30 days")).toBeTruthy();
+    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(screen.getByText("草稿上下文")).toBeTruthy();
     expect(screen.queryByRole("button", { name: new RegExp(draftContext.root.title) })).toBeNull();
     expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
