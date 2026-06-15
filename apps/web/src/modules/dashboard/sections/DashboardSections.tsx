@@ -130,12 +130,13 @@ export function DashboardSections({
 function buildDashboardTreeData(
   nodes: DashboardSurfaceViewModel["root"][] | undefined,
   activeNodeId: string,
+  nodeDisplay: DashboardSurfaceViewModel["nodeDisplay"],
   t: ReturnType<typeof useI18n>["t"]
 ): DataNode[] {
   return (nodes ?? []).map((node) => ({
-    children: buildDashboardTreeData(node.children, activeNodeId, t),
+    children: buildDashboardTreeData(node.children, activeNodeId, nodeDisplay, t),
     key: node.nodeId,
-    title: renderContextTreeNodeRow({ activeNodeId, node, t })
+    title: renderContextTreeNodeRow({ activeNodeId, node, nodeDisplay, t })
   }));
 }
 
@@ -165,7 +166,7 @@ export function DashboardInspectorPanel({
         onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
         onSelect={(_, info) => onSelectNode(String(info.node.key))}
         selectedKeys={[activeNodeId]}
-        treeData={buildDashboardTreeData([viewModel.root], activeNodeId, t)}
+        treeData={buildDashboardTreeData([viewModel.root], activeNodeId, viewModel.nodeDisplay, t)}
       />
     </SidePanel>
   );

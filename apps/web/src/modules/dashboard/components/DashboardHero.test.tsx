@@ -85,6 +85,7 @@ describe("DashboardHero", () => {
     expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({
+        analysisContextNodeDisplay: dashboardViewModel.nodeDisplay,
         analysisContextPack: expect.objectContaining({
           root: expect.objectContaining({ nodeId: dashboardViewModel.root.nodeId })
         })

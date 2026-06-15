@@ -20,6 +20,7 @@ export function useAnalysisShellSlots({
 }: UseAnalysisShellSlotsParams): ShellRegionSlots {
   const controller = useAnalysisWorkspaceController({
     draftContext: routeState?.analysisContextPack,
+    draftContextNodeDisplay: routeState?.analysisContextNodeDisplay,
     submitIdentity: {
       businessDomainId
     }
@@ -45,6 +46,7 @@ export function useAnalysisShellSlots({
             ? "点击消息后，右侧会显示对应的分析详情与上下文。"
             : "右侧会显示当前草稿将要附带的分析详情。"
         }
+        contextNodeDisplay={controller.draftContextNodeDisplay}
         draftContext={controller.draftContext}
         inspectorTreeState={controller.inspectorTreeState}
         onPopInspectorPath={controller.onPopInspectorPath}

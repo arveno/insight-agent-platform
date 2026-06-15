@@ -5,12 +5,33 @@ import type { InspectorTreeNode } from "@insight-agent/contracts/generated/types
 import { messages } from "../i18n/messages";
 import { TestProviders } from "../test/TestProviders";
 import { dashboardInspectorDraftFixture } from "../test/fixtures/dashboardInspectorDraftFixture";
+import { findRuntimeMetric } from "../test/fixtures/runtimeMetrics";
 import { ContextTreeNodeRow } from "../ui/lists/ContextTreeNodeRow";
+import {
+  createMetricRiskViewModel,
+  createMetricStatusViewModel
+} from "../utils/viewModelState";
+import {
+  formatMetricDisplayValue,
+  formatMetricTrendLabel
+} from "../../api/adapters/buildMetricAnalysisContextPack";
 import { createContextTreeNodeDisplay } from "./contextTreeNodeDisplay";
 
 afterEach(cleanup);
 
 const t = (key: keyof (typeof messages)["zh-CN"]) => messages["zh-CN"][key];
+const recognizedRevenueMetric = findRuntimeMetric("metric-recognized-revenue");
+const recognizedRevenueNodeDisplay = {
+  [dashboardInspectorDraftFixture.root.children?.[0]?.children?.[0]?.nodeId ?? ""]: {
+    risk: createMetricRiskViewModel(
+      recognizedRevenueMetric.riskLevel,
+      recognizedRevenueMetric.thresholdSummary
+    ),
+    status: createMetricStatusViewModel(recognizedRevenueMetric.status),
+    trendText: formatMetricTrendLabel(recognizedRevenueMetric),
+    valueText: formatMetricDisplayValue(recognizedRevenueMetric)
+  }
+};
 
 function requireChildNode(parent: InspectorTreeNode, title: string): InspectorTreeNode {
   const node = parent.children?.find((child) => child.title === title);
@@ -56,7 +77,7 @@ describe("contextTreeNodeDisplay", () => {
     expect(props.selected).toBe(false);
   });
 
-  it("renders metric and risk rows with value plus trend but without risk or status badges", () => {
+  it("renders metric and risk rows with value plus trend but without risk or status badges when nodeDisplay is absent", () => {
     const metricSection = requireChildNode(dashboardInspectorDraftFixture.root, "核心指标");
     const recognizedRevenue = requireChildNode(metricSection, "确认收入");
     const riskSection = requireChildNode(dashboardInspectorDraftFixture.root, "风险异常");
@@ -87,6 +108,31 @@ describe("contextTreeNodeDisplay", () => {
     expect(screen.getByText("5.1 turns · 下降 0.4 turns")).toBeTruthy();
     expect(screen.queryByText(/^关注$|^健康$|^中风险$|^高风险$|^低风险$/)).toBeNull();
     expect(screen.queryByText(/风险 medium|风险 high|风险 low/)).toBeNull();
+  });
+
+  it("prefers the official dashboard nodeDisplay for metric value, trend, status, and risk badges", () => {
+    const metricSection = requireChildNode(dashboardInspectorDraftFixture.root, "核心指标");
+    const recognizedRevenue = requireChildNode(metricSection, "确认收入");
+
+    render(
+      <TestProviders>
+        <ContextTreeNodeRow
+          {...createContextTreeNodeDisplay({
+            activeNodeId: recognizedRevenue.nodeId,
+            node: recognizedRevenue,
+            nodeDisplay: recognizedRevenueNodeDisplay,
+            t
+          })}
+        />
+      </TestProviders>
+    );
+
+    const row = screen.getByText("确认收入").closest("[data-context-tree-row-state]");
+
+    expect(normalizeTextContent(row as HTMLElement)).toContain("¥12.8M");
+    expect(normalizeTextContent(row as HTMLElement)).toContain("下降 3.2%");
+    expect(screen.getByText("关注")).toBeTruthy();
+    expect(screen.getByText("中风险")).toBeTruthy();
   });
 
   it("keeps one parity-safe display model for repeated dashboard and analysis consumers", () => {

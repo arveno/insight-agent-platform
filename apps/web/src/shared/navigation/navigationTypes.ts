@@ -3,6 +3,7 @@ import type { AnalysisTaskContextPack } from "@insight-agent/contracts/generated
 
 import type { IconName } from "../icons/iconTypes";
 import type { ActionButtonVariant } from "../ui/actions/actionTypes";
+import type { ContextTreeNodeDisplayMap } from "../view-model/contextTreeNodeDisplay";
 
 export type StaticRouteKey =
   | "dashboard"
@@ -23,6 +24,7 @@ export type StaticRouteKey =
 export type AnalysisContextRouteState = AnalysisTaskContextPack;
 
 export type AppRouteState = {
+  analysisContextNodeDisplay?: ContextTreeNodeDisplayMap;
   analysisContextPack?: AnalysisContextRouteState;
 };
 

@@ -4,10 +4,12 @@ import type { DataNode } from "antd/es/tree";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
 import { useI18n } from "../../../../shared/i18n/I18nProvider";
+import type { ContextTreeNodeDisplayMap } from "../../../../shared/view-model/contextTreeNodeDisplay";
 import { renderContextTreeNodeRow } from "../../../../shared/view-model/contextTreeNodeDisplay";
 
 export type AnalysisContextTreeViewportProps = {
   initialPath?: string[];
+  nodeDisplay?: ContextTreeNodeDisplayMap;
   onBack?: () => void;
   root: InspectorTreeNode;
   showBack?: boolean;
@@ -16,6 +18,7 @@ export type AnalysisContextTreeViewportProps = {
 function buildTreeData(args: {
   activeNodeId: string;
   node: InspectorTreeNode;
+  nodeDisplay?: ContextTreeNodeDisplayMap;
   pathLookup: Map<string, string[]>;
   path: string[];
   t: ReturnType<typeof useI18n>["t"];
@@ -28,6 +31,7 @@ function buildTreeData(args: {
       buildTreeData({
         activeNodeId: args.activeNodeId,
         node: child,
+        nodeDisplay: args.nodeDisplay,
         path: nextPath,
         pathLookup: args.pathLookup,
         t: args.t
@@ -37,6 +41,7 @@ function buildTreeData(args: {
     title: renderContextTreeNodeRow({
       activeNodeId: args.activeNodeId,
       node: args.node,
+      nodeDisplay: args.nodeDisplay,
       t: args.t
     })
   };
@@ -52,6 +57,7 @@ function createExpandedKeys(root: InspectorTreeNode, initialPath?: string[]): st
 
 export function AnalysisContextTreeViewport({
   initialPath,
+  nodeDisplay,
   onBack,
   root,
   showBack = false
@@ -74,6 +80,7 @@ export function AnalysisContextTreeViewport({
       buildTreeData({
         activeNodeId,
         node: root,
+        nodeDisplay,
         path: [],
         pathLookup,
         t
@@ -81,7 +88,7 @@ export function AnalysisContextTreeViewport({
     ];
 
     return { pathLookup, treeData };
-  }, [activeNodeId, root, t]);
+  }, [activeNodeId, nodeDisplay, root, t]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>

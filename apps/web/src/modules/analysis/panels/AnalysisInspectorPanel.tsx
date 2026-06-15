@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Tag } from "antd";
 
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
+import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
 import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import type { AnalysisWorkspaceState } from "../hooks/useAnalysisWorkspaceController";
 import type { AnalysisSessionViewModel } from "../models/analysisViewModel";
@@ -32,6 +33,7 @@ import {
 
 export type AnalysisInspectorPanelProps = {
   contextPanelNote: string;
+  contextNodeDisplay?: ContextTreeNodeDisplayMap;
   draftContext?: AnalysisTaskContextPack;
   inspectorTreeState: AnalysisInspectorTreeState;
   onPopInspectorPath: () => void;
@@ -340,6 +342,7 @@ export function buildAnalysisInspectorRoots(
 
 export function AnalysisInspectorPanel({
   contextPanelNote,
+  contextNodeDisplay,
   draftContext,
   inspectorTreeState,
   onPopInspectorPath,
@@ -377,6 +380,7 @@ export function AnalysisInspectorPanel({
       : shouldRenderDraftContextViewport
         ? draftContext!.root
         : null;
+  const activeContextNodeDisplay = shouldRenderDraftContextViewport ? contextNodeDisplay : undefined;
   const isContextViewport = Boolean(activeContextRoot);
   const selectedPathNodes = activeRoot
     ? findInspectorTreePathNodes(activeRoot.tree, inspectorTreeState.path)
@@ -422,6 +426,7 @@ export function AnalysisInspectorPanel({
       {requestedMissingContextRoot ? null : roots.length === 0 ? null : isContextViewport && activeContextRoot ? (
         <AnalysisContextTreeViewport
           initialPath={inspectorTreeState.path}
+          nodeDisplay={activeContextNodeDisplay}
           onBack={selectedSession ? onPopInspectorPath : undefined}
           root={activeContextRoot}
           showBack={Boolean(selectedSession && activeRoot?.key === "context")}

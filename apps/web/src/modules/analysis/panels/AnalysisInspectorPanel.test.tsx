@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
@@ -6,7 +6,16 @@ import type { InspectorTreeNode } from "@insight-agent/contracts/generated/types
 import { createAnalysisContextPackFromTree } from "../../../shared/navigation/analysisContextPack";
 import { dashboardInspectorDraftFixture } from "../../../shared/test/fixtures/dashboardInspectorDraftFixture";
 import { TestProviders } from "../../../shared/test/TestProviders";
+import { findRuntimeMetric } from "../../../shared/test/fixtures/runtimeMetrics";
+import {
+  createMetricRiskViewModel,
+  createMetricStatusViewModel
+} from "../../../shared/utils/viewModelState";
 import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
+import {
+  formatMetricDisplayValue,
+  formatMetricTrendLabel
+} from "../../../api/adapters/buildMetricAnalysisContextPack";
 import {
   AnalysisInspectorPanel,
   buildAnalysisInspectorRoots
@@ -43,6 +52,40 @@ function createDashboardDraftContext() {
     root: dashboardInspectorDraftFixture.root,
     suggestedPrompt: "请继续分析当前经营状态。"
   });
+}
+
+function createDashboardContextNodeDisplay() {
+  const metrics = [
+    findRuntimeMetric("metric-recognized-revenue"),
+    findRuntimeMetric("metric-gross-margin"),
+    findRuntimeMetric("metric-refund-rate"),
+    findRuntimeMetric("metric-inventory-turnover")
+  ];
+
+  return metrics.reduce<Record<string, {
+    risk?: ReturnType<typeof createMetricRiskViewModel>;
+    status: ReturnType<typeof createMetricStatusViewModel>;
+    trendText: string;
+    valueText: string;
+  }>>((accumulator, metric) => {
+    accumulator[`metric-context-${metric.metricId}`] = {
+      risk: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
+      status: createMetricStatusViewModel(metric.status),
+      trendText: formatMetricTrendLabel(metric),
+      valueText: formatMetricDisplayValue(metric)
+    };
+
+    if (metric.riskLevel !== "low") {
+      accumulator[`dashboard-node-risk-${metric.metricId}`] = {
+        risk: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
+        status: createMetricStatusViewModel(metric.status),
+        trendText: formatMetricTrendLabel(metric),
+        valueText: formatMetricDisplayValue(metric)
+      };
+    }
+
+    return accumulator;
+  }, {});
 }
 
 function getTreeNodeByTitle(title: string): HTMLElement {
@@ -84,11 +127,13 @@ function createSessionWithoutContextPack() {
 describe("AnalysisInspectorPanel", () => {
   it("renders dashboard draft context directly as a standardized context tree viewport", () => {
     const draftContext = createDashboardDraftContext();
+    const contextNodeDisplay = createDashboardContextNodeDisplay();
 
     render(
       <TestProviders>
         <AnalysisInspectorPanel
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
+          contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
           inspectorTreeState={{ path: [], rootKey: null }}
           onPopInspectorPath={() => undefined}
@@ -123,8 +168,9 @@ describe("AnalysisInspectorPanel", () => {
     expect(normalizeTextContent(reportEvidenceSection)).toMatch(/报告与证据\s*2/);
   });
 
-  it("sanitizes raw report source type and role chips without inferring risk or status badges", () => {
+  it("reuses the dashboard route-state nodeDisplay for context-tree metric badges while still sanitizing report source chips", () => {
     const draftContext = createDashboardDraftContext();
+    const contextNodeDisplay = createDashboardContextNodeDisplay();
     const metricSection = requireChildNode(draftContext.root, "核心指标");
     const revenueMetric = requireChildNode(metricSection, "确认收入");
     const revenueReport = requireChildNode(revenueMetric, "周经营分析报告");
@@ -133,6 +179,7 @@ describe("AnalysisInspectorPanel", () => {
       <TestProviders>
         <AnalysisInspectorPanel
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
+          contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
           inspectorTreeState={{
             path: [
@@ -156,22 +203,19 @@ describe("AnalysisInspectorPanel", () => {
     const reportNode = getTreeNodeByTitle("周经营分析报告");
 
     expect(normalizeTextContent(metricNode)).toContain("¥12.8M · 下降 3.2%");
+    expect(within(metricNode).getByText("关注")).toBeTruthy();
+    expect(within(metricNode).getByText("中风险")).toBeTruthy();
     expect(normalizeTextContent(metricNode)).not.toContain("风险 medium");
-    expect(normalizeTextContent(metricNode)).not.toContain("中风险");
-    expect(normalizeTextContent(metricNode)).not.toContain("高风险");
-    expect(normalizeTextContent(metricNode)).not.toContain("低风险");
-    expect(normalizeTextContent(metricNode)).not.toContain("关注");
-    expect(normalizeTextContent(metricNode)).not.toContain("健康");
     expect(screen.getByText("报告 · 支撑报告")).toBeTruthy();
     expect(normalizeTextContent(reportNode)).not.toContain("supporting_report");
     expect(normalizeTextContent(reportNode)).not.toContain("report");
     expect(screen.queryByText(/supporting_report|report/)).toBeNull();
     expect(screen.queryByText(/风险 medium|风险 high|风险 low/)).toBeNull();
-    expect(screen.queryByText(/^中风险$|^高风险$|^低风险$|^关注$|^健康$/)).toBeNull();
   });
 
   it("sanitizes raw evidence source type and role chips inside context tree rows", () => {
     const draftContext = createDashboardDraftContext();
+    const contextNodeDisplay = createDashboardContextNodeDisplay();
     const metricSection = requireChildNode(draftContext.root, "核心指标");
     const refundMetric = requireChildNode(metricSection, "退款率");
     const refundEvidence = requireChildNode(refundMetric, "退款异常证据摘要");
@@ -180,6 +224,7 @@ describe("AnalysisInspectorPanel", () => {
       <TestProviders>
         <AnalysisInspectorPanel
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
+          contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
           inspectorTreeState={{
             path: [

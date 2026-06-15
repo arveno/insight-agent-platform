@@ -6,7 +6,23 @@ import {
   ContextTreeNodeRow,
   type ContextTreeNodeRowProps
 } from "../ui/lists/ContextTreeNodeRow";
+import { RiskBadge } from "../ui/status/RiskBadge";
+import { StatusTag } from "../ui/status/StatusTag";
+import type {
+  SharedRiskViewModel,
+  SharedStatusViewModel
+} from "../utils/viewModelState";
+import { toRiskBadge, toStatusTag } from "../utils/viewModelState";
 import { createContextSourceMetaText } from "./contextSourceDisplay";
+
+export type ContextTreeNodeDisplayViewModel = {
+  risk?: SharedRiskViewModel;
+  status?: SharedStatusViewModel;
+  trendText?: string;
+  valueText?: string;
+};
+
+export type ContextTreeNodeDisplayMap = Record<string, ContextTreeNodeDisplayViewModel>;
 
 function extractTrendLabel(node: InspectorTreeNode): string | undefined {
   const chipTrend = node.chips?.find((chip) => /^(上升|下降|持平)\s+/.test(chip));
@@ -54,11 +70,32 @@ function createRootSummary(node: InspectorTreeNode): string | undefined {
   return `${metricCount} 指标 · ${riskCount} 风险 · ${evidenceCount} 证据`;
 }
 
-function createMetricOrRiskSecondaryText(node: InspectorTreeNode): string | undefined {
-  const trendLabel = extractTrendLabel(node);
-  const parts = [node.value, trendLabel].filter(Boolean);
+function createMetricOrRiskSecondaryText(
+  node: InspectorTreeNode,
+  display?: ContextTreeNodeDisplayViewModel
+): string | undefined {
+  const trendLabel = display?.trendText ?? extractTrendLabel(node);
+  const valueText = display?.valueText ?? node.value;
+  const parts = [valueText, trendLabel].filter(Boolean);
 
   return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
+function createNodeBadges(
+  t: Translate,
+  display?: ContextTreeNodeDisplayViewModel
+): ReactNode | undefined {
+  const statusTag = toStatusTag(t, display?.status);
+  const riskBadge = toRiskBadge(t, display?.risk);
+
+  if (!statusTag && !riskBadge) {
+    return undefined;
+  }
+
+  return [
+    statusTag ? <StatusTag key="status" {...statusTag} /> : null,
+    riskBadge ? <RiskBadge key="risk" {...riskBadge} /> : null
+  ].filter(Boolean);
 }
 
 /**
@@ -70,10 +107,12 @@ function createMetricOrRiskSecondaryText(node: InspectorTreeNode): string | unde
 export function createContextTreeNodeDisplay(args: {
   activeNodeId: string;
   node: InspectorTreeNode;
+  nodeDisplay?: ContextTreeNodeDisplayMap;
   t: Translate;
 }): ContextTreeNodeRowProps {
-  const { activeNodeId, node, t } = args;
+  const { activeNodeId, node, nodeDisplay, t } = args;
   const selected = activeNodeId === node.nodeId;
+  const display = nodeDisplay?.[node.nodeId];
 
   if (node.kind === "dashboardOverview") {
     return {
@@ -93,7 +132,8 @@ export function createContextTreeNodeDisplay(args: {
 
   if (node.kind === "metric" || node.kind === "riskSignal") {
     return {
-      secondaryText: createMetricOrRiskSecondaryText(node),
+      badges: createNodeBadges(t, display),
+      secondaryText: createMetricOrRiskSecondaryText(node, display),
       selected,
       title: node.title
     };
@@ -115,6 +155,7 @@ export function createContextTreeNodeDisplay(args: {
 export function renderContextTreeNodeRow(args: {
   activeNodeId: string;
   node: InspectorTreeNode;
+  nodeDisplay?: ContextTreeNodeDisplayMap;
   t: Translate;
 }): ReactNode {
   return <ContextTreeNodeRow {...createContextTreeNodeDisplay(args)} />;

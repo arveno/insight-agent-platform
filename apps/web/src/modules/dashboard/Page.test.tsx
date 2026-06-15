@@ -166,6 +166,7 @@ describe("DashboardPage", () => {
     expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({
+        analysisContextNodeDisplay: dashboardViewModel.nodeDisplay,
         analysisContextPack: expect.objectContaining({
           root: expect.objectContaining({ nodeId: "dashboard-node-root", title: "经营状态总览" })
         })
@@ -269,16 +270,13 @@ describe("DashboardPage", () => {
     expect(normalizeTextContent(riskSection)).toMatch(/风险异常\s*3/);
     expect(normalizeTextContent(reportEvidenceSection)).toMatch(/报告与证据\s*2/);
     expect(normalizeTextContent(metricNode)).toContain("¥12.8M · 下降 3.2%");
-    expect(normalizeTextContent(metricNode)).not.toContain("关注");
-    expect(normalizeTextContent(metricNode)).not.toContain("健康");
-    expect(normalizeTextContent(metricNode)).not.toContain("中风险");
-    expect(normalizeTextContent(metricNode)).not.toContain("高风险");
-    expect(normalizeTextContent(metricNode)).not.toContain("低风险");
+    expect(normalizeTextContent(metricNode)).toContain("关注");
+    expect(normalizeTextContent(metricNode)).toContain("中风险");
     expect(normalizeTextContent(metricNode)).not.toMatch(/确认收入\s*2/);
     expect(normalizeTextContent(riskNode)).toContain("5.1 turns · 下降 0.4 turns");
     expect(normalizeTextContent(riskNode)).not.toContain("库存周转 < 5.3 turns 进入关注");
-    expect(normalizeTextContent(riskNode)).not.toContain("关注");
-    expect(normalizeTextContent(riskNode)).not.toContain("高风险");
+    expect(normalizeTextContent(riskNode)).toContain("关注");
+    expect(normalizeTextContent(riskNode)).toContain("高风险");
     expect(normalizeTextContent(reportNode)).toContain("报告 · 支撑报告");
     expect(normalizeTextContent(evidenceNode)).toContain("证据 · 支撑证据");
     expect(normalizeTextContent(dataTableNode)).toContain("数据表 · 主表");
