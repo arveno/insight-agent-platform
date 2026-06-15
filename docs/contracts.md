@@ -229,6 +229,8 @@ localOnlyId
 
 Frontend 可以组合 Inspector UI routes、tree path keys 和本地选择态，但不得发明新的 business ID。
 
+`InspectorTreeNode` 的展示投影规则由 `docs/product-design.md` 与 `docs/ui-design.md` 定义；frontend 可以按页面需要选择性消费 `title / chips / value / summary / description` 等字段，但 tree/list row 不得把 raw enum、raw role、raw sourceType 或 `sourceRef id` 直接展示成用户可见文案。
+
 如果 UI 暴露来源 ref，它的业务身份必须回到现有 contract ID：
 
 ```text

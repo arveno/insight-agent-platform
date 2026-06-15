@@ -305,6 +305,34 @@ Analysis
 - `#203` 仍负责 `Conversation list / re-entry`。
 - 本规则不推翻既有 `#202` subject-scoped Inspector tree 方向，也不把 `Dashboard` 改成单个 metric detail 页面。
 
+### Dashboard Context Tree / Action Projection template
+
+- `Dashboard` 是经营状态上下文组织页，不是多入口导航页。
+- 当前阶段 `Dashboard` 只暴露一个主动作：`分析经营状态`。
+- `Metric[] -> createDashboardViewModel -> root` 是 `Dashboard` 的单一语义来源；主区 cards projection、右侧 `Context Tree Viewport` 和 `createDashboardAnalysisContextPack` 都必须来自同一棵 `root`。
+- `Dashboard` 当前不得把 `查看指标`、`查看报告`、`查看治理风险`、`查看证据` 这类对象入口显示成稳定产品入口，除非目标页面已经支持真实 deep link / detail / selected object 恢复。
+- `metric / risk / report / evidence` 节点级 `Analysis contextPack` 能力可以继续保留在 mapper / adapter 中，但在当前阶段 UI 暂不暴露节点级分析按钮。
+- `Dashboard` 右侧固定为标准化 `Context Tree Viewport`，不再组合“Tree + 当前节点详情面板”双层结构。
+- `Dashboard` whole-context 进入 `Analysis` 时，`contextPack.root` 必须继续表示 `经营状态总览`；后续 `Analysis` 目录树改造应直接消费该 `root`，而不是重新拼一套 Dashboard 目录。
+- `Analysis` 右侧完整 context tree 改造属于 `#155` 后续子任务；`#224` 不扩展 `Analysis Inspector`、`SourceRef detail`、`Reports detail`、`Data & Knowledge detail` 或 `AppRouteState deep link`。
+
+Dashboard Context Tree 的当前展示规则固定如下：
+
+- Root：`经营状态总览` + `4 指标 · 3 风险 · 2 证据`
+- Section：`核心指标 4` / `风险异常 3` / `报告与证据 2`
+- Metric：`name + value · trend + status/risk badge`
+- Risk：`name + value · trend + status/risk badge`
+- Report / Evidence：`title + 报告 · 支撑报告 / 证据 · 支撑证据`
+
+Dashboard Context Tree 当前明确不显示：
+
+- `当前节点`
+- `来源引用`
+- `sourceRef id`
+- 长 `summary`
+- raw enum / raw role / raw sourceType
+- 伪造的 detail deep link
+
 ### 3.6 AI Platform Core Technology Boundary
 
 产品层面的 AI 技术边界固定如下：
