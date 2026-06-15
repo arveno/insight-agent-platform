@@ -11,6 +11,7 @@ vi.mock("../../api/adapters/loadWorkspaceMetrics", async () => {
 });
 
 import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
+import { messages } from "../../shared/i18n/messages";
 import {
   findRuntimeMetric,
   runtimeMetricsFixtures
@@ -18,6 +19,7 @@ import {
 import { TestProviders } from "../../shared/test/TestProviders";
 import type { MetricsOverviewController } from "./hooks/useMetricsOverviewState";
 import { useMetricsShellSlots } from "./hooks/useMetricsShellSlots";
+import { createDashboardViewModel } from "../dashboard/mappers/createDashboardViewModel";
 import { createMetricsViewModel } from "./mappers/createMetricsViewModel";
 import { MetricsPage, MetricsPageContent } from "./Page";
 
@@ -38,6 +40,8 @@ beforeAll(() => {
     })
   });
 });
+
+const zhCnMessages = messages["zh-CN"];
 
 function createController(selectedMetricKey = "metric-gross-margin"): MetricsOverviewController {
   const selectedMetric = findRuntimeMetric(selectedMetricKey);
@@ -96,6 +100,8 @@ describe("MetricsPage", () => {
     expect(screen.getByText("公式摘要")).toBeTruthy();
     expect(screen.getByText("阈值 / 风险摘要")).toBeTruthy();
     expect(screen.getByText("上下文来源摘要")).toBeTruthy();
+    expect(screen.getAllByText(zhCnMessages["status.attention.title"]).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(zhCnMessages["risk.medium.title"]).length).toBeGreaterThan(0);
     expect(screen.getAllByText("已满足确认条件的收入金额。").length).toBeGreaterThan(0);
     expect(screen.getByText("¥12.8M")).toBeTruthy();
     expect(screen.getAllByText("Last 30 days").length).toBeGreaterThan(0);
@@ -111,6 +117,8 @@ describe("MetricsPage", () => {
     expect(screen.getByText("业务域分布")).toBeTruthy();
     expect(screen.getByText("来源类型摘要")).toBeTruthy();
     expect(screen.getByText("只读边界")).toBeTruthy();
+    expect(screen.getAllByText("库存周转").length).toBeGreaterThan(0);
+    expect(screen.getByText(zhCnMessages["risk.high.title"])).toBeTruthy();
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
@@ -147,5 +155,25 @@ describe("MetricsPage", () => {
     expect(screen.queryByRole("button", { name: "编辑公式" })).toBeNull();
     expect(screen.queryByRole("button", { name: "编辑阈值" })).toBeNull();
     expect(screen.queryByText("真实 conversation")).toBeNull();
+  });
+
+  it("keeps Dashboard and Metrics metric analysis handoff on the same context pack", () => {
+    const selectedMetric = findRuntimeMetric("metric-recognized-revenue");
+    const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
+      workspaceId: "workspace-northstar-retail-china",
+      workspaceName: "Northstar Retail China"
+    });
+    const metricsViewModel = createMetricsViewModel({
+      metrics: runtimeMetricsFixtures,
+      selectedMetric,
+      workspaceBinding: {
+        workspaceId: "workspace-northstar-retail-china",
+        workspaceName: "Northstar Retail China"
+      }
+    });
+
+    expect(
+      dashboardViewModel.metricContextPacks["metric-context-metric-recognized-revenue"]
+    ).toEqual(metricsViewModel.selectedMetric.analysisContextPack);
   });
 });

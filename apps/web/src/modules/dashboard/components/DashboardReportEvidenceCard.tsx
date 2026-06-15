@@ -1,48 +1,12 @@
 import { Flex, Space, Typography } from "antd";
 
-import type { I18nMessageKey } from "../../../shared/i18n/messages";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { translateKey, type Translate } from "../../../shared/i18n/translateKey";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 
 import type { DashboardReportEvidenceCardProps } from "./dashboardComponentTypes";
-
-const sourceTypeKeyByLabel: Record<string, I18nMessageKey> = {
-  "DataQualityCheck / Job": "evidence.sourceType.dataQualityJob",
-  "Metric / Report": "evidence.sourceType.metricReport"
-};
-
-const confidenceKeyByText: Record<string, I18nMessageKey> = {
-  High: "evidence.confidence.high",
-  Medium: "evidence.confidence.medium"
-};
-
-const summaryKeyByEvidenceKey: Record<string, I18nMessageKey> = {
-  "dashboard-node-evidence-revenue-summary": "evidence.summary.metricRevenue",
-  "dashboard-node-evidence-quality-job": "evidence.summary.qualityJob"
-};
-
-const titleKeyByEvidenceKey: Record<string, I18nMessageKey> = {
-  "dashboard-node-evidence-revenue-summary": "evidence.title.metricRevenue",
-  "dashboard-node-evidence-quality-job": "evidence.title.qualityJob"
-};
-
-function translateMappedText(
-  t: Translate,
-  value: string | undefined,
-  keyMap: Record<string, I18nMessageKey>
-) {
-  if (!value) {
-    return undefined;
-  }
-
-  const key = keyMap[value];
-
-  return key ? translateKey(t, key) : value;
-}
 
 export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardProps) {
   const { onNavigate } = props;
@@ -92,7 +56,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
 
     return (
       <ContentCard
-        description={t("dashboard.reportEvidence.suggestionSummary")}
+        description={props.report.summary}
         eyebrow={t("dashboard.reportEvidence.recentReportEyebrow")}
         footerActions={
           <Flex gap={12} wrap>
@@ -103,12 +67,11 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
         }
         meta={
           <Space wrap>
-            <Typography.Text type="secondary">
-              {props.report.chips?.[1] ?? "更新时间未提供"}
-            </Typography.Text>
-            <Typography.Text type="secondary">
-              {props.report.chips?.[0] ?? `0 ${t("dashboard.common.evidenceCountSuffix")}`}
-            </Typography.Text>
+            {props.report.chips?.map((chip) => (
+              <Typography.Text key={chip} type="secondary">
+                {chip}
+              </Typography.Text>
+            ))}
           </Space>
         }
         title={props.report.title}
@@ -116,13 +79,6 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
     );
   }
 
-  const evidenceTitleKey = titleKeyByEvidenceKey[props.evidence.nodeId];
-  const evidenceSummaryKey = summaryKeyByEvidenceKey[props.evidence.nodeId];
-  const evidenceTitle = evidenceTitleKey ? translateKey(t, evidenceTitleKey) : props.evidence.title;
-  const evidenceSummary = evidenceSummaryKey ? translateKey(t, evidenceSummaryKey) : props.evidence.summary;
-  const evidenceSourceTypeLabel =
-    translateMappedText(t, props.evidence.chips?.[0], sourceTypeKeyByLabel) ?? props.evidence.chips?.[0];
-  const evidenceConfidenceText = translateMappedText(t, props.evidence.chips?.[1], confidenceKeyByText);
   const evidenceActions = [
     createRouteAction({
       iconName: "evidence",
@@ -141,7 +97,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
       routeState: {
         analysisContextPack: createDashboardAnalysisContextPack({
           nodeId: props.evidence.nodeId,
-          suggestedPrompt: `请基于证据《${evidenceTitle}》继续分析它对当前经营判断的影响。`,
+          suggestedPrompt: `请基于证据《${props.evidence.title}》继续分析它对当前经营判断的影响。`,
           viewModel: props.viewModel
         })
       },
@@ -167,7 +123,7 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
 
   return (
     <ContentCard
-      description={evidenceSummary}
+      description={props.evidence.summary}
       eyebrow={t("dashboard.reportEvidence.evidenceEyebrow")}
       footerActions={
         <Flex gap={12} wrap>
@@ -178,13 +134,14 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
       }
       meta={
         <Space wrap>
-          <Typography.Text type="secondary">{evidenceSourceTypeLabel}</Typography.Text>
-          {evidenceConfidenceText ? (
-            <Typography.Text type="secondary">{evidenceConfidenceText}</Typography.Text>
-          ) : null}
+          {props.evidence.chips?.map((chip) => (
+            <Typography.Text key={chip} type="secondary">
+              {chip}
+            </Typography.Text>
+          ))}
         </Space>
       }
-      title={evidenceTitle}
+      title={props.evidence.title}
     />
   );
 }

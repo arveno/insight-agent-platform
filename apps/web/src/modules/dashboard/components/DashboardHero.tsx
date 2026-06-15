@@ -12,8 +12,8 @@ import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAn
 import {
   selectDashboardEvidenceNodes,
   selectDashboardMetricNodes,
+  selectDashboardReportNodes,
   selectDashboardRiskNodes,
-  selectDashboardRiskSummaryNode
 } from "../models/dashboardSelectors";
 import type { DashboardHeroProps } from "./dashboardComponentTypes";
 
@@ -29,9 +29,9 @@ export function DashboardHero({
   const { token } = theme.useToken();
   const metricNodes = selectDashboardMetricNodes(viewModel.root);
   const riskNodes = selectDashboardRiskNodes(viewModel.root);
-  const riskSummaryNode = selectDashboardRiskSummaryNode(viewModel.root);
+  const reportNodes = selectDashboardReportNodes(viewModel.root);
   const evidenceNodes = selectDashboardEvidenceNodes(viewModel.root);
-  const anomalyCount = riskNodes.length + (riskSummaryNode ? 1 : 0);
+  const anomalyCount = riskNodes.length;
   const heroActions = [
     createRouteAction({
       iconName: "analysis",
@@ -82,7 +82,7 @@ export function DashboardHero({
     {
       key: "evidence",
       title: t("dashboard.hero.fact.evidenceLabel"),
-      value: `${evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
+      value: `${reportNodes.length + evidenceNodes.length} ${t("dashboard.hero.fact.evidenceCountSuffix")}`
     },
     {
       key: "right-context",

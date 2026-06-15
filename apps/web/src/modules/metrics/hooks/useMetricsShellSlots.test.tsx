@@ -11,6 +11,7 @@ vi.mock("../../../api/adapters/loadWorkspaceMetrics", async () => {
 });
 
 import { TestProviders } from "../../../shared/test/TestProviders";
+import { messages } from "../../../shared/i18n/messages";
 
 import { useMetricsShellSlots } from "./useMetricsShellSlots";
 
@@ -31,6 +32,8 @@ beforeAll(() => {
     })
   });
 });
+
+const zhCnMessages = messages["zh-CN"];
 
 function MetricsShellSlotHarness() {
   const slots = useMetricsShellSlots({
@@ -59,5 +62,7 @@ describe("useMetricsShellSlots", () => {
     expect(screen.getByRole("navigation", { name: "Metrics navigation" })).toBeTruthy();
     expect(screen.getByText("指标总览")).toBeTruthy();
     expect(screen.getByText("指标辅助区")).toBeTruthy();
+    expect(screen.getAllByText("库存周转").length).toBeGreaterThan(0);
+    expect(screen.getByText(zhCnMessages["risk.high.title"])).toBeTruthy();
   });
 });

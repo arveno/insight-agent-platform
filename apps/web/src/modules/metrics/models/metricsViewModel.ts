@@ -4,6 +4,10 @@ import type {
   StaticPageViewModelBase,
 } from "../../../shared/view-model/staticViewModelTypes";
 import type { AnalysisTaskContextPack } from "@insight-agent/contracts/generated/typescript";
+import type {
+  SharedRiskViewModel,
+  SharedStatusViewModel
+} from "../../../shared/utils/viewModelState";
 
 export type MetricsWorkspaceBinding = {
   workspaceId: string;
@@ -23,15 +27,9 @@ export type MetricContextSourceViewModel = {
   title: string;
 };
 
-export type MetricStatusViewModel = {
-  label: string;
-  tone: "default" | "processing" | "success" | "warning" | "error";
-};
+export type MetricStatusViewModel = SharedStatusViewModel;
 
-export type MetricRiskViewModel = {
-  label: string;
-  level: "low" | "medium" | "high" | "critical" | "unknown";
-};
+export type MetricRiskViewModel = SharedRiskViewModel;
 
 export type MetricSummaryDistributionItemViewModel = {
   key: string;

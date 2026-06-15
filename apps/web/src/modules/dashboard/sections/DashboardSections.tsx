@@ -11,22 +11,19 @@ import { NavigationActionButton } from "../../../shared/navigation/NavigationAct
 import { findInspectorTreeNodeById } from "../../../shared/navigation/analysisContextPack";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
-import { DashboardQualityPanel } from "../components/DashboardQualityPanel";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
 import { DashboardRiskOverview } from "../components/DashboardRiskOverview";
 import {
   selectDashboardEvidenceNodes,
   selectDashboardMetricNodes,
   selectDashboardMetricSection,
-  selectDashboardQualityNodes,
-  selectDashboardQualitySection,
   selectDashboardReportNodes,
   selectDashboardReportEvidenceSection,
   selectDashboardRiskNodes,
-  selectDashboardRiskSection,
-  selectDashboardRiskSummaryNode
+  selectDashboardRiskSection
 } from "../models/dashboardSelectors";
 import type { DashboardSurfaceViewModel } from "../models/dashboardViewModel";
 
@@ -59,12 +56,9 @@ export function DashboardSections({
   const metricSection = selectDashboardMetricSection(viewModel.root);
   const riskNodes = selectDashboardRiskNodes(viewModel.root);
   const riskSection = selectDashboardRiskSection(viewModel.root);
-  const riskSummaryNode = selectDashboardRiskSummaryNode(viewModel.root);
   const reportNodes = selectDashboardReportNodes(viewModel.root);
   const reportEvidenceSection = selectDashboardReportEvidenceSection(viewModel.root);
   const evidenceNodes = selectDashboardEvidenceNodes(viewModel.root);
-  const qualityNodes = selectDashboardQualityNodes(viewModel.root);
-  const qualitySection = selectDashboardQualitySection(viewModel.root);
   const openMetricsAction = createRouteAction({
     iconName: "metrics",
     key: "dashboard-section-metrics",
@@ -89,18 +83,6 @@ export function DashboardSections({
     route: "reports",
     variant: "moduleEntry"
   });
-  const openPlatformOperationsAction = createRouteAction({
-    iconName: "operations",
-    key: "dashboard-section-platform-operations",
-    label: t("dashboard.action.viewPlatformOperations"),
-    onNavigate,
-    route: "platform-operations",
-    variant: "moduleEntry"
-  });
-  const riskItems = [
-    ...riskNodes.map((item) => ({ isRiskSummary: false, item })),
-    ...(riskSummaryNode ? [{ isRiskSummary: true, item: riskSummaryNode }] : [])
-  ];
 
   return (
     <SectionStack>
@@ -136,9 +118,8 @@ export function DashboardSections({
           extra={<NavigationActionButton action={openGovernanceAction} />}
           title={riskSection?.title ?? t("dashboard.risk.title")}
         >
-          {riskItems.map(({ isRiskSummary, item }) => (
+          {riskNodes.map((item) => (
             <DashboardRiskOverview
-              isRiskSummary={isRiskSummary}
               item={item}
               key={item.nodeId}
               onNavigate={onNavigate}
@@ -173,23 +154,6 @@ export function DashboardSections({
             />
           ))}
         </ContentSection>
-
-        <ContentSection
-          colProps={{ md: 12, xs: 24 }}
-          contentLayout="cards"
-          eyebrow={t("dashboard.quality.eyebrow")}
-          extra={<NavigationActionButton action={openPlatformOperationsAction} />}
-          title={qualitySection?.title ?? t("dashboard.quality.title")}
-        >
-          {qualityNodes.map((item) => (
-            <DashboardQualityPanel
-              item={item}
-              key={item.nodeId}
-              onNavigate={onNavigate}
-              viewModel={viewModel}
-            />
-          ))}
-        </ContentSection>
       </DashboardHero>
     </SectionStack>
   );
@@ -197,14 +161,41 @@ export function DashboardSections({
 
 const dashboardKindLabels: Record<string, string> = {
   dashboardOverview: "经营总览",
+  dataTable: "数据表",
   directory: "目录",
+  knowledgeDocument: "知识文档",
   metric: "指标",
-  platformQuality: "平台质量",
   report: "报告",
   riskSignal: "风险信号",
-  riskSummary: "风险摘要",
   sourceEvidence: "证据"
 };
+
+function mapSourceRefId(sourceRef: DashboardSurfaceViewModel["root"]["sourceRef"]): string | undefined {
+  if (!sourceRef) {
+    return undefined;
+  }
+
+  switch (sourceRef.type) {
+    case "analysisRun":
+      return sourceRef.runId;
+    case "dataTable":
+      return sourceRef.tableId;
+    case "job":
+      return sourceRef.jobId;
+    case "knowledgeDocument":
+      return sourceRef.knowledgeDocumentId;
+    case "metric":
+      return sourceRef.metricId;
+    case "modelCall":
+      return sourceRef.modelCallId;
+    case "report":
+      return sourceRef.reportId;
+    case "sourceEvidence":
+      return sourceRef.sourceEvidenceId;
+    case "toolCall":
+      return sourceRef.toolCallId;
+  }
+}
 
 function resolveNodeDisplay(
   nodeId: string,
@@ -224,8 +215,15 @@ function resolveSelectedTrend(
   return resolveNodeDisplay(node.nodeId, viewModel)?.trendText ?? null;
 }
 
-function resolveSourceRefSummary(node: DashboardSurfaceViewModel["root"], viewModel: DashboardSurfaceViewModel): string {
-  return resolveNodeDisplay(node.nodeId, viewModel)?.sourceRefId ?? "目录节点";
+function resolveSourceRefSummary(
+  node: DashboardSurfaceViewModel["root"],
+  viewModel: DashboardSurfaceViewModel
+): string {
+  return (
+    resolveNodeDisplay(node.nodeId, viewModel)?.sourceRefId ??
+    mapSourceRefId(node.sourceRef) ??
+    "目录节点"
+  );
 }
 
 function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRangeLabel: string) {
@@ -234,24 +232,28 @@ function resolveNodeMeta(node: DashboardSurfaceViewModel["root"], selectedTimeRa
 
 function renderNodeRiskStatus(
   node: DashboardSurfaceViewModel["root"],
+  t: ReturnType<typeof useI18n>["t"],
   viewModel: DashboardSurfaceViewModel
 ) {
   const display = resolveNodeDisplay(node.nodeId, viewModel);
+  const risk = toRiskBadge(t, display?.risk);
+  const status = toStatusTag(t, display?.status);
 
-  if (!display?.risk && !display?.status) {
+  if (!risk && !status) {
     return null;
   }
 
   return (
     <Space size={4} wrap>
-      {display.risk ? <RiskBadge {...display.risk} /> : null}
-      {display.status ? <StatusTag {...display.status} /> : null}
+      {risk ? <RiskBadge {...risk} /> : null}
+      {status ? <StatusTag {...status} /> : null}
     </Space>
   );
 }
 
 function renderTreeNodeTitle(
   node: DashboardSurfaceViewModel["root"],
+  t: ReturnType<typeof useI18n>["t"],
   viewModel: DashboardSurfaceViewModel
 ) {
   if (node.children?.length) {
@@ -259,7 +261,7 @@ function renderTreeNodeTitle(
   }
 
   const value = resolveNodeValue(node, viewModel);
-  const riskStatus = renderNodeRiskStatus(node, viewModel);
+  const riskStatus = renderNodeRiskStatus(node, t, viewModel);
 
   return (
     <Flex align="baseline" gap={12} justify="space-between" style={{ width: "100%" }} wrap>
@@ -274,12 +276,13 @@ function renderTreeNodeTitle(
 
 function buildDashboardTreeData(
   nodes: DashboardSurfaceViewModel["root"]["children"],
+  t: ReturnType<typeof useI18n>["t"],
   viewModel: DashboardSurfaceViewModel
 ): DataNode[] {
   return (nodes ?? []).map((node) => ({
-    children: buildDashboardTreeData(node.children, viewModel),
+    children: buildDashboardTreeData(node.children, t, viewModel),
     key: node.nodeId,
-    title: renderTreeNodeTitle(node, viewModel)
+    title: renderTreeNodeTitle(node, t, viewModel)
   }));
 }
 
@@ -306,6 +309,7 @@ export function DashboardInspectorPanel({
   viewModel,
   workspaceName
 }: DashboardInspectorPanelProps) {
+  const { t } = useI18n();
   const selectedNode = findInspectorTreeNodeById(viewModel.root, activeNodeId) ?? viewModel.root;
 
   return (
@@ -319,7 +323,7 @@ export function DashboardInspectorPanel({
           onExpand={(keys) => onExpandNodes(keys.map((key) => String(key)))}
           onSelect={(_, info) => onSelectNode(String(info.node.key))}
           selectedKeys={[selectedNode.nodeId]}
-          treeData={buildDashboardTreeData(viewModel.root.children, viewModel)}
+          treeData={buildDashboardTreeData(viewModel.root.children, t, viewModel)}
         />
 
         <Space direction="vertical" size={8} style={{ width: "100%" }}>
@@ -331,7 +335,7 @@ export function DashboardInspectorPanel({
           {resolveSelectedValueLine(selectedNode, viewModel) ? (
             <Typography.Text>{resolveSelectedValueLine(selectedNode, viewModel)}</Typography.Text>
           ) : null}
-          {renderNodeRiskStatus(selectedNode, viewModel)}
+          {renderNodeRiskStatus(selectedNode, t, viewModel)}
           {selectedNode.summary ? (
             <Typography.Text type="secondary">{selectedNode.summary}</Typography.Text>
           ) : null}

@@ -4,6 +4,7 @@ import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { createRouteAction } from "../../../shared/navigation/createRouteAction";
 import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
+import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 import type { DashboardStatCardProps } from "./dashboardComponentTypes";
 
 export function DashboardMetricOverview({
@@ -13,11 +14,8 @@ export function DashboardMetricOverview({
   viewModel
 }: DashboardStatCardProps) {
   const { t } = useI18n();
-  const isPriorityMetric = metric.sourceRef?.type === "metric" && metric.sourceRef.metricId === "metric-recognized-revenue";
-  const description = isPriorityMetric
-    ? t("dashboard.metrics.riskDescription")
-    : t("dashboard.metrics.defaultDescription");
   const metricContextPack = viewModel.metricContextPacks[metric.nodeId];
+  const metricDisplay = viewModel.nodeDisplay[metric.nodeId];
 
   if (!metricContextPack) {
     throw new Error(`Missing shared metric context pack for dashboard node ${metric.nodeId}.`);
@@ -47,7 +45,7 @@ export function DashboardMetricOverview({
 
   return (
     <StatCard
-      description={<Typography.Text type="secondary">{description}</Typography.Text>}
+      description={<Typography.Text type="secondary">{metric.summary}</Typography.Text>}
       footerActions={
         <Flex gap={12} wrap>
           {metricActions.map((action) => (
@@ -65,15 +63,8 @@ export function DashboardMetricOverview({
           ))}
         </Space>
       }
-      risk={
-        isPriorityMetric
-          ? {
-              label: "中风险",
-              level: "medium",
-              reason: t("dashboard.metrics.riskDescription")
-            }
-          : { label: "低风险", level: "low" }
-      }
+      risk={toRiskBadge(t, metricDisplay?.risk)}
+      status={toStatusTag(t, metricDisplay?.status)}
       title={metric.title}
       value={metric.value ?? "--"}
     />

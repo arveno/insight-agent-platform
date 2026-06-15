@@ -1,11 +1,17 @@
 import type {
   AnalysisTaskContextPack,
   InspectorTreeNode,
-  Metric
+  Metric,
+  MetricContextSource,
+  SourceRef
 } from "@insight-agent/contracts/generated/typescript";
 
 import type { CurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
 import { createDraftAnalysisTaskOwnerRef } from "../../../shared/navigation/analysisContextPack";
+import {
+  createMetricRiskViewModel,
+  createMetricStatusViewModel
+} from "../../../shared/utils/viewModelState";
 import {
   createRightAssistSummary,
   defaultPermissionSummary,
@@ -25,76 +31,43 @@ import type {
 
 const dashboardOwner = createDraftAnalysisTaskOwnerRef();
 const defaultTimestamp = "2026-06-05T11:08:12+08:00";
+const riskLevelPriority: Record<Metric["riskLevel"], number> = {
+  critical: 4,
+  high: 3,
+  low: 1,
+  medium: 2
+};
 
-function mapMetricStatus(status: Metric["status"]): DashboardNodeDisplayViewModel["status"] {
-  switch (status) {
-    case "attention":
-      return {
-        label: "Attention",
-        tone: "warning"
-      };
-    case "healthy":
-      return {
-        label: "Healthy",
-        tone: "success"
-      };
-    default:
-      return {
-        label: status,
-        tone: "default"
-      };
-  }
+function normalizePeriodKey(period: string): string {
+  return period
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-function mapMetricRisk(riskLevel: Metric["riskLevel"]): DashboardNodeDisplayViewModel["risk"] {
-  switch (riskLevel) {
-    case "critical":
-      return {
-        label: "Critical risk",
-        level: "critical"
-      };
-    case "high":
-      return {
-        label: "High risk",
-        level: "high"
-      };
-    case "medium":
-      return {
-        label: "Medium risk",
-        level: "medium"
-      };
-    case "low":
-      return {
-        label: "Low risk",
-        level: "low"
-      };
-  }
-}
-
-function mapSourceRefId(sourceRef: InspectorTreeNode["sourceRef"]): string | undefined {
-  if (!sourceRef) {
-    return undefined;
-  }
-
-  switch (sourceRef.type) {
-    case "analysisRun":
-      return sourceRef.runId;
+function buildMetricSourceRef(source: MetricContextSource): SourceRef {
+  switch (source.sourceType) {
     case "dataTable":
-      return sourceRef.tableId;
-    case "job":
-      return sourceRef.jobId;
+      return {
+        tableId: source.sourceId,
+        type: "dataTable"
+      };
     case "knowledgeDocument":
-      return sourceRef.knowledgeDocumentId;
-    case "metric":
-      return sourceRef.metricId;
-    case "modelCall":
-      return sourceRef.modelCallId;
+      return {
+        knowledgeDocumentId: source.sourceId,
+        type: "knowledgeDocument"
+      };
     case "report":
-      return sourceRef.reportId;
+      return {
+        reportId: source.sourceId,
+        type: "report"
+      };
     case "sourceEvidence":
-      return sourceRef.sourceEvidenceId;
-    case "toolCall":
-      return sourceRef.toolCallId;
+      return {
+        sourceEvidenceId: source.sourceId,
+        type: "sourceEvidence"
+      };
   }
 }
 
@@ -117,9 +90,9 @@ function createMetricDirectory(metrics: Metric[]): {
     metricContextPacks[contextPack.root.nodeId] = contextPack;
     nodeDisplay[metricNode.nodeId] = {
       defaultInspectorSelection: metric.metricId === defaultInspectorMetricId,
-      risk: mapMetricRisk(metric.riskLevel),
+      risk: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
       sourceRefId: metric.metricId,
-      status: mapMetricStatus(metric.status),
+      status: createMetricStatusViewModel(metric.status),
       trendText: formatMetricTrendLabel(metric),
       valueText: formatMetricDisplayValue(metric)
     };
@@ -130,164 +103,92 @@ function createMetricDirectory(metrics: Metric[]): {
   return { metricContextPacks, metricNodes, nodeDisplay };
 }
 
-function createRiskNodes(primaryMetric: Metric | undefined): {
+function compareMetricsByRisk(left: Metric, right: Metric): number {
+  return riskLevelPriority[right.riskLevel] - riskLevelPriority[left.riskLevel];
+}
+
+function createRiskNodes(metrics: Metric[]): {
   nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
   riskNodes: InspectorTreeNode[];
-  riskSummaryNode: InspectorTreeNode;
 } {
-  if (!primaryMetric) {
-    return {
-      nodeDisplay: {
-        "dashboard-node-risk-summary": {
-          valueText: "0 项关注"
-        }
-      },
-      riskNodes: [],
-      riskSummaryNode: {
-        chips: ["0 项关注", "等待当前 workspace 指标"],
-        kind: "riskSummary",
-        nodeId: "dashboard-node-risk-summary",
-        owner: dashboardOwner,
-        role: "inputContext",
-        summary: "当前 workspace 尚未加载出可追问的共享指标。",
-        title: "风险摘要",
-        value: "暂无"
-      }
-    };
-  }
+  const nodeDisplay: Record<string, DashboardNodeDisplayViewModel> = {};
+  const riskNodes = metrics
+    .filter((metric) => metric.riskLevel !== "low")
+    .sort(compareMetricsByRisk)
+    .map((metric) => {
+      const trendLabel = formatMetricTrendLabel(metric);
+      const riskNodeId = `dashboard-node-risk-${metric.metricId}`;
 
-  const trendLabel = formatMetricTrendLabel(primaryMetric);
+      nodeDisplay[riskNodeId] = {
+        risk: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
+        sourceRefId: metric.metricId,
+        status: createMetricStatusViewModel(metric.status),
+        trendText: trendLabel,
+        valueText: formatMetricDisplayValue(metric)
+      };
 
-  return {
-    nodeDisplay: {
-      "dashboard-node-risk-primary-metric": {
-        risk: mapMetricRisk(primaryMetric.riskLevel),
-        sourceRefId: primaryMetric.metricId,
-        valueText: trendLabel
-      },
-      "dashboard-node-risk-summary": {
-        risk: mapMetricRisk(primaryMetric.riskLevel),
-        valueText: "1 项关注"
-      }
-    },
-    riskNodes: [
-      {
-        chips: [primaryMetric.riskLevel, primaryMetric.period],
+      return {
+        chips: [metric.period, metric.ownerTeam],
         kind: "riskSignal",
-        nodeId: "dashboard-node-risk-primary-metric",
+        nodeId: riskNodeId,
         owner: dashboardOwner,
         role: "inputContext",
         sourceRef: {
-          metricId: primaryMetric.metricId,
+          metricId: metric.metricId,
           type: "metric"
         },
-        summary: `${primaryMetric.name} 当前 ${trendLabel}，建议进入 Analysis 继续追问。`,
-        title: `${primaryMetric.name} 风险摘要`,
-        value: trendLabel
-      }
-    ],
-    riskSummaryNode: {
-      chips: ["1 项关注", `风险 ${primaryMetric.riskLevel}`],
-      kind: "riskSummary",
-      nodeId: "dashboard-node-risk-summary",
-      owner: dashboardOwner,
-      role: "inputContext",
-      summary: `最高优先级关注来自 ${primaryMetric.name}。`,
-      title: "风险摘要",
-      value: primaryMetric.riskLevel
-    }
-  };
+        summary: `${metric.name}当前值 ${formatMetricDisplayValue(metric)}，阈值 ${metric.thresholdSummary}，趋势 ${trendLabel}，建议进入 Analysis 继续追问。`,
+        timeRange: {
+          key: normalizePeriodKey(metric.period),
+          label: metric.period
+        },
+        title: `${metric.name}风险`,
+        value: formatMetricDisplayValue(metric)
+      } satisfies InspectorTreeNode;
+    });
+
+  return { nodeDisplay, riskNodes };
 }
 
-function createReportEvidenceNodes(workspaceName: string): {
+function createReportEvidenceNodes(metrics: Metric[]): {
   nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
   reportEvidenceNodes: InspectorTreeNode[];
 } {
-  const reportEvidenceNodes: InspectorTreeNode[] = [
-    {
-      chips: ["5 条证据", `Workspace ${workspaceName}`],
-      kind: "report",
-      nodeId: "dashboard-node-report-weekly-business",
-      owner: dashboardOwner,
-      role: "inputContext",
-      sourceRef: {
-        reportId: "report-weekly-business",
-        type: "report"
-      },
-      summary: "建议先核对相关证据，再带上下文继续分析。",
-      title: "周经营分析报告"
-    },
-    {
-      chips: ["Metric / Report", "High"],
-      kind: "sourceEvidence",
-      nodeId: "dashboard-node-evidence-revenue-summary",
-      owner: dashboardOwner,
-      role: "inputContext",
-      sourceRef: {
-        sourceEvidenceId: "source-evidence-q2-revenue",
-        type: "sourceEvidence"
-      },
-      summary: "来自核心指标和报告入口的轻量证据摘要。",
-      title: "季度收入证据摘要"
-    },
-    {
-      chips: ["DataQualityCheck / Job", "Medium"],
-      kind: "sourceEvidence",
-      nodeId: "dashboard-node-evidence-quality-job",
-      owner: dashboardOwner,
-      role: "inputContext",
-      sourceRef: {
-        sourceEvidenceId: "source-evidence-quality-job",
-        type: "sourceEvidence"
-      },
-      summary: "来自数据质量检查和任务日志的轻量证据摘要。",
-      title: "数据质量与任务证据"
-    }
-  ];
+  const nodeDisplay: Record<string, DashboardNodeDisplayViewModel> = {};
+  const dedupedSources = Array.from(
+    metrics
+      .flatMap((metric) => metric.contextSources)
+      .filter((source) => source.sourceType === "report" || source.sourceType === "sourceEvidence")
+      .reduce((accumulator, source) => {
+        accumulator.set(`${source.sourceType}:${source.sourceId}`, source);
 
-  return {
-    nodeDisplay: {
-      "dashboard-node-evidence-quality-job": {
-        sourceRefId: "source-evidence-quality-job"
-      },
-      "dashboard-node-evidence-revenue-summary": {
-        sourceRefId: "source-evidence-q2-revenue"
-      },
-      "dashboard-node-report-weekly-business": {
-        sourceRefId: "report-weekly-business",
-        valueText: "5 条证据"
-      }
-    },
-    reportEvidenceNodes
-  };
-}
+        return accumulator;
+      }, new Map<string, MetricContextSource>())
+      .values()
+  );
+  const reportEvidenceNodes = dedupedSources.map((source) => {
+    const nodeId = `dashboard-node-${source.sourceType}-${source.sourceId}`;
 
-function createQualityNodes(): {
-  nodeDisplay: Record<string, DashboardNodeDisplayViewModel>;
-  qualityNodes: InspectorTreeNode[];
-} {
-  const qualityNodes: InspectorTreeNode[] = [
-    {
-      chips: ["Platform quality", "Evidence-ready"],
-      disabledReason: "当前仅提供平台质量摘要。",
-      kind: "platformQuality",
-      nodeId: "dashboard-node-platform-quality",
+    nodeDisplay[nodeId] = {
+      sourceRefId: source.sourceId
+    };
+
+    return {
+      chips:
+        source.sourceType === "report"
+          ? [`更新时间 ${source.updatedAt}`]
+          : [source.sourceType, source.role],
+      kind: source.sourceType,
+      nodeId,
       owner: dashboardOwner,
       role: "inputContext",
-      summary: "数据质量检查和运维任务会先以摘要形式呈现。",
-      title: "平台质量",
-      value: "2 项需关注"
-    }
-  ];
+      sourceRef: buildMetricSourceRef(source),
+      summary: source.summary,
+      title: source.title
+    } satisfies InspectorTreeNode;
+  });
 
-  return {
-    nodeDisplay: {
-      "dashboard-node-platform-quality": {
-        valueText: "2 项需关注"
-      }
-    },
-    qualityNodes
-  };
+  return { nodeDisplay, reportEvidenceNodes };
 }
 
 function resolveLastUpdatedAt(metrics: Metric[]): string {
@@ -302,14 +203,13 @@ export function createDashboardViewModel(
 ): DashboardSurfaceViewModel {
   const { metricContextPacks, metricNodes, nodeDisplay: metricNodeDisplay } =
     createMetricDirectory(metrics);
-  const primaryMetric = metrics[0];
-  const { nodeDisplay: riskNodeDisplay, riskNodes, riskSummaryNode } = createRiskNodes(primaryMetric);
+  const { nodeDisplay: riskNodeDisplay, riskNodes } = createRiskNodes(metrics);
   const {
     nodeDisplay: reportEvidenceNodeDisplay,
     reportEvidenceNodes
-  } = createReportEvidenceNodes(workspaceBinding.workspaceName);
-  const { nodeDisplay: qualityNodeDisplay, qualityNodes } = createQualityNodes();
+  } = createReportEvidenceNodes(metrics);
   const lastUpdatedAt = resolveLastUpdatedAt(metrics);
+  const primaryMetric = metrics[0];
   const rootSummaryMetric = primaryMetric
     ? `${primaryMetric.name} 当前值 ${formatMetricDisplayValue(primaryMetric)}。`
     : "当前 workspace 暂无共享指标。";
@@ -317,27 +217,23 @@ export function createDashboardViewModel(
     ...metricNodeDisplay,
     ...riskNodeDisplay,
     ...reportEvidenceNodeDisplay,
-    ...qualityNodeDisplay,
     "dashboard-node-directory-metrics": {
       valueText: `${metricNodes.length}`
-    },
-    "dashboard-node-directory-platform-quality": {
-      valueText: `${qualityNodes.length}`
     },
     "dashboard-node-directory-report-evidence": {
       valueText: `${reportEvidenceNodes.length}`
     },
     "dashboard-node-directory-risks": {
-      valueText: `${riskNodes.length + 1}`
+      valueText: `${riskNodes.length}`
     }
   };
 
   return {
     dashboardId: "dashboard-main",
     dashboardState: defaultStateCoverage.ready,
-    description: "将共享指标、风险摘要、报告证据和平台质量组织为可追问的业务工作台。",
+    description: "将共享指标、风险异常和报告证据组织为可追问的业务工作台。",
     gapNote:
-      "Dashboard 当前使用共享 metric source 组装指标入口，报告、证据和平台质量仍保持 lightweight context。",
+      "Dashboard 当前只从共享 metric source 与 contextSources 派生 Context Tree，不显示平台质量 section。",
     implementationStatus: "gap",
     lastUpdatedAt,
     mainSections: [
@@ -382,9 +278,9 @@ export function createDashboardViewModel(
     root: {
       capturedAt: lastUpdatedAt,
       chips: [
-        metrics.length > 0 ? `Top ${metricNodes.length} metrics` : "No metrics",
-        `${reportEvidenceNodes.length - 1} 条证据`,
-        workspaceBinding.workspaceName
+        "Last 30 days",
+        `${metricNodes.length} 个指标`,
+        `${reportEvidenceNodes.length} 条证据`
       ],
       children: [
         {
@@ -397,12 +293,12 @@ export function createDashboardViewModel(
           title: "核心指标"
         },
         {
-          children: [...riskNodes, riskSummaryNode],
+          children: riskNodes,
           kind: "directory",
           nodeId: "dashboard-node-directory-risks",
           owner: dashboardOwner,
           role: "directory",
-          summary: "聚焦需要继续核查的风险信号与摘要判断。",
+          summary: "聚焦需要继续核查的真实指标风险信号。",
           title: "风险异常"
         },
         {
@@ -413,22 +309,13 @@ export function createDashboardViewModel(
           role: "directory",
           summary: "从报告和证据入口继续追问当前经营问题。",
           title: "报告与证据"
-        },
-        {
-          children: qualityNodes,
-          kind: "directory",
-          nodeId: "dashboard-node-directory-platform-quality",
-          owner: dashboardOwner,
-          role: "directory",
-          summary: "先查看平台质量摘要，再决定是否继续追问。",
-          title: "平台质量"
         }
       ],
       kind: "dashboardOverview",
       nodeId: "dashboard-node-root",
       owner: dashboardOwner,
       role: "inputContext",
-      summary: `围绕 ${workspaceBinding.workspaceName} 当前共享指标、风险摘要、报告证据和平台质量继续追问。${rootSummaryMetric}`,
+      summary: `围绕 ${workspaceBinding.workspaceName} 当前共享指标、风险异常和报告证据继续追问。${rootSummaryMetric}`,
       timeRange: {
         key: "last_30_days",
         label: "Last 30 days"

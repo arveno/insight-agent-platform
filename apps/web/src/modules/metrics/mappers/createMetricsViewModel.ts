@@ -7,6 +7,10 @@ import {
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
 import {
+  createMetricRiskViewModel,
+  createMetricStatusViewModel
+} from "../../../shared/utils/viewModelState";
+import {
   createRightAssistSummary,
   defaultPermissionSummary,
   defaultReadonlyState,
@@ -17,8 +21,6 @@ import type {
   MetricAtRiskItemViewModel,
   MetricDetailViewModel,
   MetricListItemViewModel,
-  MetricRiskViewModel,
-  MetricStatusViewModel,
   MetricSummaryDistributionItemViewModel,
   MetricsViewModel,
   MetricsWorkspaceBinding
@@ -30,64 +32,6 @@ export function createMetricListItems(metrics: Metric[]): MetricListItemViewMode
     metricId: metric.metricId,
     metricName: metric.name
   }));
-}
-
-function startCase(value: string): string {
-  return value
-    .split(/[_-]+/g)
-    .filter(Boolean)
-    .map((part) => part[0]!.toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function mapMetricStatusView(status: string): MetricStatusViewModel {
-  switch (status) {
-    case "healthy":
-      return {
-        label: "Healthy",
-        tone: "success"
-      };
-    case "attention":
-      return {
-        label: "Attention",
-        tone: "warning"
-      };
-    default:
-      return {
-        label: startCase(status),
-        tone: "default"
-      };
-  }
-}
-
-function mapMetricRiskView(riskLevel: string): MetricRiskViewModel {
-  switch (riskLevel) {
-    case "critical":
-      return {
-        label: "Critical risk",
-        level: "critical"
-      };
-    case "high":
-      return {
-        label: "High risk",
-        level: "high"
-      };
-    case "medium":
-      return {
-        label: "Medium risk",
-        level: "medium"
-      };
-    case "low":
-      return {
-        label: "Low risk",
-        level: "low"
-      };
-    default:
-      return {
-        label: startCase(riskLevel),
-        level: "unknown"
-      };
-  }
 }
 
 function mapMetricToDetailViewModel(metric: Metric): MetricDetailViewModel {
@@ -110,9 +54,9 @@ function mapMetricToDetailViewModel(metric: Metric): MetricDetailViewModel {
     ownerTeam: metric.ownerTeam,
     period: metric.period,
     riskLevel: metric.riskLevel,
-    riskView: mapMetricRiskView(metric.riskLevel),
+    riskView: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
     status: metric.status,
-    statusView: mapMetricStatusView(metric.status),
+    statusView: createMetricStatusViewModel(metric.status),
     thresholdSummary: metric.thresholdSummary,
     trendLabel: formatMetricTrendLabel(metric),
     updatedAt: metric.updatedAt,
@@ -156,8 +100,8 @@ function buildAtRiskMetrics(metrics: Metric[]): MetricAtRiskItemViewModel[] {
       key: metric.metricId,
       metricId: metric.metricId,
       metricName: metric.name,
-      riskView: mapMetricRiskView(metric.riskLevel),
-      statusView: mapMetricStatusView(metric.status),
+      riskView: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
+      statusView: createMetricStatusViewModel(metric.status),
       thresholdSummary: metric.thresholdSummary
     }));
 }

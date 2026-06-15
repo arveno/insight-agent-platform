@@ -15,6 +15,7 @@ import { StatCard } from "../../../shared/ui/cards/StatCard";
 import { TitledList } from "../../../shared/ui/lists/TitledList";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
+import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
 
 import type { MetricDetailViewModel, MetricsViewModel } from "../models/metricsViewModel";
 
@@ -70,6 +71,8 @@ function MetricHeaderCard({
   t: ReturnType<typeof useI18n>["t"];
 }) {
   const analysisAction = buildAnalysisAction(metric, onNavigate, t);
+  const status = toStatusTag(t, metric.statusView);
+  const risk = toRiskBadge(t, metric.riskView);
 
   return (
     <StatCard
@@ -86,8 +89,8 @@ function MetricHeaderCard({
       }
       tagSlot={
         <Space wrap>
-          <StatusTag {...metric.statusView} />
-          <RiskBadge {...metric.riskView} />
+          {status ? <StatusTag {...status} /> : null}
+          {risk ? <RiskBadge {...risk} /> : null}
           <NavigationActionButton action={analysisAction} />
         </Space>
       }
@@ -99,10 +102,15 @@ function MetricHeaderCard({
 }
 
 function MetricRelationshipCard({
-  metric
+  metric,
+  t
 }: {
   metric: MetricDetailViewModel;
+  t: ReturnType<typeof useI18n>["t"];
 }) {
+  const risk = toRiskBadge(t, metric.riskView);
+  const status = toStatusTag(t, metric.statusView);
+
   return (
     <ContentCard
       description="当前快照用于解释指标关系和上下文来源；后续会接入事实数据计算。"
@@ -140,8 +148,8 @@ function MetricRelationshipCard({
               <Space direction="vertical" size={4}>
                 <Typography.Text>{metric.thresholdSummary}</Typography.Text>
                 <Space wrap>
-                  <RiskBadge {...metric.riskView} />
-                  <StatusTag {...metric.statusView} />
+                  {risk ? <RiskBadge {...risk} /> : null}
+                  {status ? <StatusTag {...status} /> : null}
                 </Space>
               </Space>
             ),
@@ -183,6 +191,10 @@ function MetricFormulaCard({ metric }: { metric: MetricDetailViewModel }) {
 }
 
 function MetricThresholdCard({ metric }: { metric: MetricDetailViewModel }) {
+  const { t } = useI18n();
+  const risk = toRiskBadge(t, metric.riskView);
+  const status = toStatusTag(t, metric.statusView);
+
   return (
     <ContentCard
       description="阈值与风险只解释为什么需要继续追问，不运行真实异常规则。"
@@ -193,8 +205,8 @@ function MetricThresholdCard({ metric }: { metric: MetricDetailViewModel }) {
           {metric.thresholdSummary}
         </Typography.Text>
         <Space wrap>
-          <RiskBadge {...metric.riskView} />
-          <StatusTag {...metric.statusView} />
+          {risk ? <RiskBadge {...risk} /> : null}
+          {status ? <StatusTag {...status} /> : null}
         </Space>
       </Space>
     </ContentCard>
@@ -299,17 +311,22 @@ export function MetricsInspectorPanel({ viewModel }: MetricsInspectorPanelProps)
 
         <InspectorSection title="有风险指标">
           <TitledList
-            items={viewModel.inspector.atRiskMetrics.map((item) => ({
-              key: item.key,
-              meta: (
-                <Space wrap>
-                  <RiskBadge {...item.riskView} />
-                  <StatusTag {...item.statusView} />
-                </Space>
-              ),
-              summary: `${item.currentValue} · ${item.thresholdSummary}`,
-              title: item.metricName
-            }))}
+            items={viewModel.inspector.atRiskMetrics.map((item) => {
+              const risk = toRiskBadge(t, item.riskView);
+              const status = toStatusTag(t, item.statusView);
+
+              return {
+                key: item.key,
+                meta: (
+                  <Space wrap>
+                    {risk ? <RiskBadge {...risk} /> : null}
+                    {status ? <StatusTag {...status} /> : null}
+                  </Space>
+                ),
+                summary: `${item.currentValue} · ${item.thresholdSummary}`,
+                title: item.metricName
+              };
+            })}
           />
         </InspectorSection>
 
@@ -363,7 +380,7 @@ export function MetricsSections({ onNavigate, viewModel }: MetricsSectionsProps)
         title={`${translateKey(t, sectionByKey["selected-metric-detail"].titleKey)}：${selectedMetric.metricName}`}
       >
         <MetricHeaderCard metric={selectedMetric} onNavigate={onNavigate} t={t} />
-        <MetricRelationshipCard metric={selectedMetric} />
+        <MetricRelationshipCard metric={selectedMetric} t={t} />
         <MetricDefinitionCard metric={selectedMetric} />
         <MetricFormulaCard metric={selectedMetric} />
         <MetricThresholdCard metric={selectedMetric} />
