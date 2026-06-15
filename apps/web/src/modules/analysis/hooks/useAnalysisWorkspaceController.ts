@@ -10,6 +10,7 @@ import {
   type SubmitAnalysisDraftInput
 } from "../../../api/adapters/submitAnalysisDraft";
 import type { AnalysisContextRouteState } from "../../../shared/navigation/navigationTypes";
+import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
 import type {
   AnalysisComposerMode,
   AnalysisComposerViewModel,
@@ -25,7 +26,6 @@ import type {
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createContextRootNodeId,
   createDecisionsRootNodeId,
   createEvidenceRootNodeId,
   createModelCallsRootNodeId,
@@ -69,6 +69,7 @@ export type AnalysisDraftSubmitter = (
 export type UseAnalysisWorkspaceControllerOptions = {
   bootstrap?: AnalysisRuntimeBootstrap;
   draftContext?: AnalysisContextRouteState;
+  draftContextNodeDisplay?: ContextTreeNodeDisplayMap;
   loader?: AnalysisWorkspaceDataLoader;
   submitIdentity?: AnalysisDraftSubmitIdentity;
   submitter?: AnalysisDraftSubmitter;
@@ -84,6 +85,7 @@ export type AnalysisWorkspaceController = {
   };
   currentRun?: AnalysisRun;
   draftContext?: AnalysisDraftContextViewModel;
+  draftContextNodeDisplay?: ContextTreeNodeDisplayMap;
   interactionMessage: string;
   inspectorTreeState: AnalysisInspectorTreeState;
   messages: AnalysisMessage[];
@@ -206,7 +208,6 @@ function getRootNodeId(
   if (rootKey === "context") {
     return (
       session?.analysisTaskContextPack?.root.nodeId ??
-      (session ? createContextRootNodeId(session.analysisTaskId) : null) ??
       draftContext?.root.nodeId ??
       null
     );
@@ -270,6 +271,9 @@ export function useAnalysisWorkspaceController(
   const [draftContext, setDraftContext] = useState<AnalysisContextRouteState | undefined>(
     options.draftContext
   );
+  const [draftContextNodeDisplay, setDraftContextNodeDisplay] = useState<
+    ContextTreeNodeDisplayMap | undefined
+  >(options.draftContextNodeDisplay);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [sessionSearchQuery, setSessionSearchQuery] = useState("");
   const [analysisDraft, setAnalysisDraft] = useState(options.draftContext?.suggestedPrompt ?? "");
@@ -294,6 +298,10 @@ export function useAnalysisWorkspaceController(
   useEffect(() => {
     setDraftContext(options.draftContext);
   }, [draftContextSignature]);
+
+  useEffect(() => {
+    setDraftContextNodeDisplay(options.draftContextNodeDisplay);
+  }, [options.draftContextNodeDisplay]);
 
   useEffect(() => {
     let cancelled = false;
@@ -412,6 +420,8 @@ export function useAnalysisWorkspaceController(
     composerViewModels,
     currentRun: selectedSession?.currentRun,
     draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
+    draftContextNodeDisplay:
+      workspaceState.kind === "draft" ? draftContextNodeDisplay : undefined,
     interactionMessage,
     inspectorTreeState,
     messages: selectedSession?.messages ?? [],
@@ -453,6 +463,7 @@ export function useAnalysisWorkspaceController(
       setWorkspaceState({ kind: "draft" });
       setWorkspaceViewModel(null);
       setDraftContext(undefined);
+      setDraftContextNodeDisplay(undefined);
       setAnalysisDraft("");
       setFollowUpDraft("");
       setSelectedConversationId(null);

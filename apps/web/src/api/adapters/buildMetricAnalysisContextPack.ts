@@ -9,30 +9,16 @@ import {
   createAnalysisContextPackFromTree,
   createDraftAnalysisTaskOwnerRef
 } from "../../shared/navigation/analysisContextPack";
+import {
+  formatDefaultContextSourceRoleLabel,
+  formatDefaultContextSourceTypeLabel
+} from "../../shared/view-model/contextSourceDisplay";
 
 const businessDomainLabels: Record<string, string> = {
   "business-domain-delivery-operations": "履约运营",
   "business-domain-margin-analysis": "利润结构",
   "business-domain-revenue-quality": "营收质量",
   "business-domain-supply-chain-efficiency": "供应链效率"
-};
-
-function joinSnakeCase(...parts: string[]): string {
-  return parts.join("_");
-}
-
-const metricContextSourceTypeLabels: Record<string, string> = {
-  dataTable: "数据表",
-  knowledgeDocument: "知识文档",
-  report: "报告",
-  sourceEvidence: "证据"
-};
-
-const metricContextSourceRoleLabels: Record<string, string> = {
-  [joinSnakeCase("primary", "table")]: "主表",
-  [joinSnakeCase("supporting", "document")]: "支撑文档",
-  [joinSnakeCase("supporting", "evidence")]: "支撑证据",
-  [joinSnakeCase("supporting", "report")]: "支撑报告"
 };
 
 function normalizePeriodKey(period: string): string {
@@ -52,11 +38,11 @@ export function formatMetricBusinessDomainLabel(businessDomainId: string): strin
 }
 
 export function formatMetricContextSourceTypeLabel(sourceType: MetricContextSource["sourceType"]): string {
-  return metricContextSourceTypeLabels[sourceType] ?? sourceType;
+  return formatDefaultContextSourceTypeLabel(sourceType);
 }
 
 export function formatMetricContextSourceRoleLabel(role: MetricContextSource["role"]): string {
-  return metricContextSourceRoleLabels[role] ?? role;
+  return formatDefaultContextSourceRoleLabel(role);
 }
 
 export function formatMetricDisplayValue(metric: Metric): string {

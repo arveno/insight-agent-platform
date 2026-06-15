@@ -39,6 +39,7 @@ export function DashboardHero({
     onNavigate,
     route: "analysis",
     routeState: {
+      analysisContextNodeDisplay: viewModel.nodeDisplay,
       analysisContextPack: createDashboardAnalysisContextPack({
         suggestedPrompt: `请基于 Dashboard 当前 ${selectedTimeRange.label} 的概览，解释最值得优先追问的经营问题。`,
         viewModel
