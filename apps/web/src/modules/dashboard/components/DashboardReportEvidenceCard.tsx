@@ -1,47 +1,18 @@
-import { Flex, Space, Typography } from "antd";
+import { Typography } from "antd";
 
 import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
-import { createRouteAction } from "../../../shared/navigation/createRouteAction";
-import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
-import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 
 import type { DashboardReportEvidenceCardProps } from "./dashboardComponentTypes";
 
 export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardProps) {
-  const { onNavigate } = props;
   const { t } = useI18n();
 
   if (props.kind === "report") {
-    const reportActions = [
-      createRouteAction({
-        iconName: "analysis",
-        key: `${props.report.nodeId}-context-analysis`,
-        label: t("dashboard.action.analyzeReportWithContext"),
-        onNavigate,
-        route: "analysis",
-        routeState: {
-          analysisContextPack: createDashboardAnalysisContextPack({
-            nodeId: props.report.nodeId,
-            suggestedPrompt: `请基于报告《${props.report.title}》继续分析关键证据和后续建议。`,
-            viewModel: props.viewModel
-          })
-        },
-        variant: "contextPrimary"
-      })
-    ];
-
     return (
       <ContentCard
         description={props.report.summary}
         eyebrow={t("dashboard.reportEvidence.recentReportEyebrow")}
-        footerActions={
-          <Flex gap={12} wrap>
-            {reportActions.map((action) => (
-              <NavigationActionButton action={action} key={action.key} />
-            ))}
-          </Flex>
-        }
         meta={
           props.report.chips?.length ? (
             <Typography.Text type="secondary">{props.report.chips.join(" · ")}</Typography.Text>
@@ -52,35 +23,10 @@ export function DashboardReportEvidenceCard(props: DashboardReportEvidenceCardPr
     );
   }
 
-  const evidenceActions = [
-    createRouteAction({
-      iconName: "analysis",
-      key: `${props.evidence.nodeId}-context-analysis`,
-      label: t("dashboard.action.analyzeEvidenceWithContext"),
-      onNavigate,
-      route: "analysis",
-      routeState: {
-        analysisContextPack: createDashboardAnalysisContextPack({
-          nodeId: props.evidence.nodeId,
-          suggestedPrompt: `请基于证据《${props.evidence.title}》继续分析它对当前经营判断的影响。`,
-          viewModel: props.viewModel
-        })
-      },
-      variant: "contextPrimary"
-    })
-  ];
-
   return (
     <ContentCard
       description={props.evidence.summary}
       eyebrow={t("dashboard.reportEvidence.evidenceEyebrow")}
-      footerActions={
-        <Flex gap={12} wrap>
-          {evidenceActions.map((action) => (
-            <NavigationActionButton action={action} key={action.key} />
-          ))}
-        </Flex>
-      }
       meta={
         props.evidence.chips?.length ? (
           <Typography.Text type="secondary">{props.evidence.chips.join(" · ")}</Typography.Text>

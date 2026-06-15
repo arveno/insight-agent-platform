@@ -32,7 +32,7 @@ const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
 });
 
 describe("DashboardHero", () => {
-  it("renders the shared page intro copy, actions, time range, and three fact cards", () => {
+  it("renders the shared page intro copy, the root analysis action, time range, and three fact cards", () => {
     const onNavigate = vi.fn();
     const selectedTimeRange = dashboardViewModel.timeRange.options.find(
       (option) => option.key === dashboardViewModel.timeRange.selectedKey
@@ -69,8 +69,8 @@ describe("DashboardHero", () => {
     expect(screen.getByText(selectedTimeRange.description)).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Dashboard time range" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "分析经营状态" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "查看指标" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "查看报告" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "查看指标" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "查看报告" })).toBeNull();
     expect(screen.getByText("4 项")).toBeTruthy();
     expect(screen.getByText("3 项关注")).toBeTruthy();
     expect(screen.getByText("2 条")).toBeTruthy();

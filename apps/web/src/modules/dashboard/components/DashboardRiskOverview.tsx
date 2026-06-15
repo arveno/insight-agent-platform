@@ -1,53 +1,25 @@
-import { Flex, Space, Typography } from "antd";
+import { Space, Typography } from "antd";
 
 import { ContentCard } from "../../../shared/ui/cards/ContentCard";
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { useI18n } from "../../../shared/i18n/I18nProvider";
-import { createRouteAction } from "../../../shared/navigation/createRouteAction";
-import { NavigationActionButton } from "../../../shared/navigation/NavigationActionButton";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
-import { createDashboardAnalysisContextPack } from "../mappers/createDashboardAnalysisContextPack";
 import type { DashboardRiskCardProps } from "./dashboardComponentTypes";
 
 export function DashboardRiskOverview({
   item,
-  onNavigate,
   viewModel
 }: DashboardRiskCardProps) {
   const { t } = useI18n();
   const itemDisplay = viewModel.nodeDisplay[item.nodeId];
   const risk = toRiskBadge(t, itemDisplay?.risk);
   const status = toStatusTag(t, itemDisplay?.status);
-  const riskActions = [
-    createRouteAction({
-      iconName: "analysis",
-      key: `${item.nodeId}-context-analysis`,
-      label: t("dashboard.action.analyzeRisk"),
-      onNavigate,
-      route: "analysis",
-      routeState: {
-        analysisContextPack: createDashboardAnalysisContextPack({
-          nodeId: item.nodeId,
-          suggestedPrompt: `请基于 Dashboard 中的${item.title}，解释当前风险信号，并给出下一步核查建议。`,
-          viewModel
-        })
-      },
-      variant: "contextPrimary"
-    })
-  ];
 
   return (
     <ContentCard
       description={item.summary}
       eyebrow={t("dashboard.risk.anomalyEyebrow")}
-      footerActions={
-        <Flex gap={12} wrap>
-          {riskActions.map((action) => (
-            <NavigationActionButton action={action} key={action.key} />
-          ))}
-        </Flex>
-      }
       meta={
         item.chips?.length ? (
           <Typography.Text type="secondary">{item.chips.join(" · ")}</Typography.Text>

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { messages } from "../../../shared/i18n/messages";
@@ -20,15 +20,14 @@ const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
 const zhCnMessages = messages["zh-CN"];
 
 describe("DashboardReportEvidenceCard", () => {
-  it("keeps only the report context analysis action and user-facing meta on the card", () => {
-    const onNavigate = vi.fn();
+  it("keeps the report card read-only while showing user-facing meta", () => {
     const report = selectDashboardReportNodes(dashboardViewModel.root)[0]!;
 
     render(
       <TestProviders>
         <DashboardReportEvidenceCard
           kind="report"
-          onNavigate={onNavigate}
+          onNavigate={vi.fn()}
           report={report}
           viewModel={dashboardViewModel}
         />
@@ -53,21 +52,10 @@ describe("DashboardReportEvidenceCard", () => {
     expect(
       screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewSuggestions"] })
     ).toBeNull();
-    expect(screen.getByRole("button", { name: "带报告上下文分析" })).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: "带报告上下文分析" }));
-    expect(onNavigate).toHaveBeenCalledWith(
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: report.nodeId })
-        })
-      })
-    );
+    expect(screen.queryByRole("button", { name: "带报告上下文分析" })).toBeNull();
   });
 
-  it("keeps only the evidence context analysis action and user-facing meta on the card", () => {
-    const onNavigate = vi.fn();
+  it("keeps the evidence card read-only while showing user-facing meta", () => {
     const evidence = selectDashboardEvidenceNodes(dashboardViewModel.root)[0]!;
 
     render(
@@ -75,7 +63,7 @@ describe("DashboardReportEvidenceCard", () => {
         <DashboardReportEvidenceCard
           evidence={evidence}
           kind="evidence"
-          onNavigate={onNavigate}
+          onNavigate={vi.fn()}
           viewModel={dashboardViewModel}
         />
       </TestProviders>
@@ -98,22 +86,12 @@ describe("DashboardReportEvidenceCard", () => {
     expect(
       screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewEvidence"] })
     ).toBeNull();
-    expect(screen.getByRole("button", { name: "带证据上下文分析" })).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewDataKnowledge"] })
     ).toBeNull();
     expect(
       screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })
     ).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "带证据上下文分析" }));
-    expect(onNavigate).toHaveBeenCalledWith(
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: evidence.nodeId })
-        })
-      })
-    );
+    expect(screen.queryByRole("button", { name: "带证据上下文分析" })).toBeNull();
   });
 });

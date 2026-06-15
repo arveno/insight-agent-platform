@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
-import { buildMetricAnalysisContextPack } from "../../api/adapters/buildMetricAnalysisContextPack";
-import { messages } from "../../shared/i18n/messages";
 import { findRuntimeMetric, runtimeMetricsFixtures } from "../../shared/test/fixtures/runtimeMetrics";
 import { TestProviders } from "../../shared/test/TestProviders";
 import { createDashboardViewModel } from "./mappers/createDashboardViewModel";
@@ -31,7 +29,6 @@ beforeAll(() => {
   });
 });
 
-const zhCnMessages = messages["zh-CN"];
 const recognizedRevenueMetric = findRuntimeMetric("metric-recognized-revenue");
 const refundRateMetric = findRuntimeMetric("metric-refund-rate");
 
@@ -41,22 +38,6 @@ describe("DashboardPage", () => {
     workspaceId: "workspace-northstar-retail-china",
     workspaceName: "Northstar Retail China"
   });
-
-  function findNodeByTitle(node: InspectorTreeNode, title: string): InspectorTreeNode | undefined {
-    if (node.title === title) {
-      return node;
-    }
-
-    for (const child of node.children ?? []) {
-      const match = findNodeByTitle(child, title);
-
-      if (match) {
-        return match;
-      }
-    }
-
-    return undefined;
-  }
 
   function DashboardInspectorHarness() {
     const [activeNodeId, setActiveNodeId] = useState("dashboard-node-root");
@@ -69,7 +50,7 @@ describe("DashboardPage", () => {
       <DashboardInspectorPanel
         activeNodeId={activeNodeId}
         expandedNodeIds={expandedNodeIds}
-        onExpandNodes={(nodeIds) => setExpandedNodeIds(["dashboard-node-root", ...nodeIds])}
+        onExpandNodes={setExpandedNodeIds}
         onSelectNode={setActiveNodeId}
         selectedTimeRangeLabel="Last 30 days"
         viewModel={dashboardViewModel}
@@ -100,6 +81,23 @@ describe("DashboardPage", () => {
     };
   }
 
+  function getTreeNodeByTitle(title: string): HTMLElement {
+    const node = screen
+      .getAllByText(title)
+      .map((element) => element.closest(".ant-tree-treenode"))
+      .find((element) => element?.getAttribute("role") === "treeitem");
+
+    if (!node) {
+      throw new Error(`Expected tree node for ${title}.`);
+    }
+
+    return node as HTMLElement;
+  }
+
+  function normalizeTextContent(element: HTMLElement | null | undefined): string {
+    return element?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+  }
+
   it("renders the default time range and updates the shared-metric summary without navigation", async () => {
     const onNavigate = vi.fn();
 
@@ -119,7 +117,7 @@ describe("DashboardPage", () => {
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it("renders the child dashboard sections inside DashboardHero instead of as peer sections", async () => {
+  it("renders the child dashboard sections inside DashboardHero and aligns report/evidence cards to the same two-column layout", async () => {
     const { container } = render(
       <TestProviders>
         <DashboardPage metricsLoader={metricsLoader} />
@@ -130,6 +128,7 @@ describe("DashboardPage", () => {
     const sectionText = Array.from(overviewSurface.querySelectorAll("section")).map((section) =>
       section.textContent?.replace(/\s+/g, " ").trim()
     );
+    const reportCardColumn = screen.getByText("周经营分析报告").closest(".ant-col");
 
     expect(overviewSurface).toBeTruthy();
     expect(sectionText).toHaveLength(3);
@@ -143,9 +142,8 @@ describe("DashboardPage", () => {
     expect(screen.getByText("库存周转风险").closest(".ant-col")?.className).toContain(
       "ant-col-md-12"
     );
-    expect(screen.getByText("周经营分析报告").closest(".ant-col")?.className).toContain(
-      "ant-col-xl-8"
-    );
+    expect(reportCardColumn?.className).toContain("ant-col-md-12");
+    expect(reportCardColumn?.className).not.toContain("ant-col-xl-8");
     expect(container.querySelectorAll("main > .ant-space > .ant-space-item")).toHaveLength(1);
     expect(
       Array.from(container.querySelectorAll("main > .ant-space > .ant-space-item > section"))
@@ -153,86 +151,8 @@ describe("DashboardPage", () => {
     expect(within(overviewSurface).getAllByText("Last 30 days").length).toBeGreaterThan(0);
   });
 
-  it("renders metric, risk, and evidence cards from the dashboard tree projection without raw enum leakage or fake detail actions", async () => {
-    render(
-      <TestProviders>
-        <DashboardPage metricsLoader={metricsLoader} />
-      </TestProviders>
-    );
-
-    const metricCard = (await screen.findByText("确认收入")).closest(".ant-card") as HTMLElement;
-    const healthyMetricCard = screen.getByText("毛利率").closest(".ant-card") as HTMLElement;
-    const riskCard = screen.getByText("库存周转风险").closest(".ant-card") as HTMLElement;
-    const evidenceCard = screen.getByText("退款异常证据摘要").closest(".ant-card") as HTMLElement;
-    const reportCard = screen.getByText("周经营分析报告").closest(".ant-card") as HTMLElement;
-
-    expect(within(metricCard).getByText("已满足确认条件的收入金额。")).toBeTruthy();
-    expect(within(metricCard).getByText("营收质量 · Last 30 days · 下降 3.2%")).toBeTruthy();
-    expect(within(metricCard).getByRole("button", { name: "分析指标" })).toBeTruthy();
-    expect(
-      within(metricCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.analyzeAnomaly"]
-      })
-    ).toBeNull();
-    expect(
-      within(metricCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.viewDataKnowledge"]
-      })
-    ).toBeNull();
-    expect(within(healthyMetricCard).getByRole("button", { name: "分析指标" })).toBeTruthy();
-    expect(
-      within(healthyMetricCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.analyzeAnomaly"]
-      })
-    ).toBeNull();
-    expect(within(metricCard).queryByText("收入增速 < -2% 进入关注")).toBeNull();
-    expect(within(metricCard).queryByText(/风险 (medium|high|low)/)).toBeNull();
-    expect(metricCard.textContent?.match(/Last 30 days/g)).toHaveLength(1);
-
-    expect(within(riskCard).getByText("5.1 turns · 下降 0.4 turns")).toBeTruthy();
-    expect(within(riskCard).getByText("库存周转 < 5.3 turns 进入关注")).toBeTruthy();
-    expect(within(riskCard).getByText("供应链效率 · Last 30 days")).toBeTruthy();
-    expect(within(riskCard).getByRole("button", { name: "分析风险" })).toBeTruthy();
-    expect(
-      within(riskCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewAnomaly"] })
-    ).toBeNull();
-    expect(
-      within(riskCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })
-    ).toBeNull();
-
-    expect(within(reportCard).getByText("报告 · 支撑报告")).toBeTruthy();
-    expect(within(reportCard).getByRole("button", { name: "带报告上下文分析" })).toBeTruthy();
-    expect(within(reportCard).queryByRole("button", { name: "查看报告" })).toBeNull();
-    expect(
-      within(reportCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.viewSuggestions"]
-      })
-    ).toBeNull();
-    expect(within(evidenceCard).getByText("证据 · 支撑证据")).toBeTruthy();
-    expect(within(evidenceCard).getByRole("button", { name: "带证据上下文分析" })).toBeTruthy();
-    expect(
-      within(evidenceCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.viewEvidence"]
-      })
-    ).toBeNull();
-    expect(
-      within(evidenceCard).queryByRole("button", {
-        name: zhCnMessages["dashboard.action.viewDataKnowledge"]
-      })
-    ).toBeNull();
-    expect(
-      within(evidenceCard).queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })
-    ).toBeNull();
-    expect(screen.queryByRole("button", { name: zhCnMessages["dashboard.action.viewTrace"] })).toBeNull();
-  });
-
-  it("builds shared metric Analysis entry plus lightweight Dashboard subtree entries", async () => {
+  it("keeps Dashboard UI entry points converged to the root analysis action", async () => {
     const onNavigate = vi.fn();
-    const inventoryRiskNode = findNodeByTitle(dashboardViewModel.root, "库存周转风险");
-
-    if (!inventoryRiskNode) {
-      throw new Error("Expected Dashboard tree to include the runtime-derived risk node.");
-    }
 
     render(
       <TestProviders>
@@ -241,114 +161,29 @@ describe("DashboardPage", () => {
     );
 
     fireEvent.click(await screen.findByRole("button", { name: "分析经营状态" }));
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      1,
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith(
       "analysis",
       expect.objectContaining({
         analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({ nodeId: "dashboard-node-root" })
+          root: expect.objectContaining({ nodeId: "dashboard-node-root", title: "经营状态总览" })
         })
       })
     );
 
-    fireEvent.click(
-      within(screen.getByText("确认收入").closest(".ant-card")!).getByRole("button", {
-        name: "分析指标"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      2,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            chips: ["营收质量", "Last 30 days", "下降 3.2%"],
-            nodeId: "metric-context-metric-recognized-revenue"
-          })
-        })
-      })
-    );
-    expect(onNavigate.mock.calls[1]?.[1]).toEqual({
-      analysisContextPack: buildMetricAnalysisContextPack(findRuntimeMetric("metric-recognized-revenue"))
-    });
-    for (const level of ["medium", "high", "low"]) {
-      expect(onNavigate.mock.calls[1]?.[1]?.analysisContextPack.root.chips).not.toContain(
-        `风险 ${level}`
-      );
+    for (const label of [
+      "查看指标",
+      "查看报告",
+      "查看治理风险",
+      "全部报告",
+      "分析指标",
+      "分析风险",
+      "带报告上下文分析",
+      "带证据上下文分析"
+    ]) {
+      expect(screen.queryByRole("button", { name: label })).toBeNull();
     }
-    expect(
-      onNavigate.mock.calls[1]?.[1]?.analysisContextPack.root.children?.map(
-        (child: InspectorTreeNode) => child.chips
-      )
-    ).toEqual([["数据表", "主表"], ["报告", "支撑报告"]]);
-
-    fireEvent.click(
-      within(screen.getByText("库存周转风险").closest(".ant-card")!).getByRole("button", {
-        name: "分析风险"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      3,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            nodeId: inventoryRiskNode.nodeId,
-            sourceRef: {
-              metricId: "metric-inventory-turnover",
-              type: "metric"
-            },
-            title: "库存周转风险"
-          })
-        })
-      })
-    );
-
-    fireEvent.click(
-      within(screen.getByText("周经营分析报告").closest(".ant-card")!).getByRole("button", {
-        name: "带报告上下文分析"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      4,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            nodeId: expect.stringMatching(/^dashboard-node-report-/),
-            sourceRef: {
-              reportId: "report-weekly-business",
-              type: "report"
-            },
-            summary: "补充收入确认节奏、区域差异和渠道复核建议的只读摘要。",
-            title: "周经营分析报告"
-          })
-        })
-      })
-    );
-
-    fireEvent.click(
-      within(screen.getByText("退款异常证据摘要").closest(".ant-card")!).getByRole("button", {
-        name: "带证据上下文分析"
-      })
-    );
-    expect(onNavigate).toHaveBeenNthCalledWith(
-      5,
-      "analysis",
-      expect.objectContaining({
-        analysisContextPack: expect.objectContaining({
-          root: expect.objectContaining({
-            nodeId: expect.stringMatching(/^dashboard-node-sourceEvidence-/),
-            sourceRef: {
-              sourceEvidenceId: "source-evidence-refund-watch",
-              type: "sourceEvidence"
-            },
-            summary: "记录近期退款率抬升和客服标签聚合后的证据摘要。",
-            title: "退款异常证据摘要"
-          })
-        })
-      })
-    );
   });
 
   it("starts the inspector viewport from the semantic dashboard root", () => {
@@ -379,12 +214,17 @@ describe("DashboardPage", () => {
     });
   });
 
-  it("renders a simplified Chinese dashboard context directory", () => {
+  it("renders a standardized dashboard context tree viewport without a selected-node detail panel", () => {
     render(
       <TestProviders>
         <DashboardInspectorPanel
           activeNodeId="dashboard-node-root"
-          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "dashboard-node-directory-risks",
+            "dashboard-node-directory-report-evidence"
+          ]}
           onExpandNodes={vi.fn()}
           onSelectNode={vi.fn()}
           selectedTimeRangeLabel="Last 30 days"
@@ -395,92 +235,39 @@ describe("DashboardPage", () => {
     );
 
     expect(screen.getByText("上下文目录")).toBeTruthy();
-    expect(screen.getByText("当前节点")).toBeTruthy();
-    expect(screen.getByText("Last 30 days · Northstar Retail China")).toBeTruthy();
-    expect(screen.getByText("经营状态总览 3")).toBeTruthy();
-    expect(screen.getByText("核心指标 4")).toBeTruthy();
-    expect(screen.getByText("风险异常 3")).toBeTruthy();
-    expect(screen.getByText("报告与证据 2")).toBeTruthy();
-    expect(screen.getAllByText("经营状态总览").length).toBeGreaterThan(0);
-    expect(screen.getByText("经营总览 · Last 30 days")).toBeTruthy();
-    expect(screen.getByText(dashboardViewModel.root.summary!)).toBeTruthy();
-    expect(screen.getByText("来源引用")).toBeTruthy();
-    expect(screen.getByText("目录节点 / 当前上下文根")).toBeTruthy();
-    expect(screen.queryByText("平台质量")).toBeNull();
-    expect(screen.queryByText("Dashboard Context")).toBeNull();
-    expect(screen.queryByText("Context Tree")).toBeNull();
-    expect(screen.queryByText("Selected Node")).toBeNull();
-    expect(screen.queryByText(/^metric$/)).toBeNull();
-    expect(screen.queryByText(/SourceRef:/)).toBeNull();
-  });
+    expect(screen.getByText("Last 30 days")).toBeTruthy();
+    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.queryByText("当前节点")).toBeNull();
+    expect(screen.queryByText("来源引用")).toBeNull();
+    expect(screen.queryByText("目录节点 / 当前上下文根")).toBeNull();
+    expect(screen.queryByText("SourceRef")).toBeNull();
+    expect(screen.queryByText("经营状态总览 3")).toBeNull();
+    expect(screen.queryByText("metric-recognized-revenue")).toBeNull();
+    expect(screen.queryByText("source-evidence-refund-watch")).toBeNull();
+    expect(screen.queryByText(/supporting_report|supporting_evidence|sourceEvidence/)).toBeNull();
 
-  it("renders metric risk and status from mapper fields instead of reverse-parsing raw strings", () => {
-    const misleadingViewModel = updateDashboardViewModelNode(
-      dashboardViewModel,
-      "metric-context-metric-recognized-revenue",
-      (node) => ({
-        ...node,
-        chips: [zhCnMessages["risk.high.title"]],
-        summary: zhCnMessages["status.healthy.title"]
-      })
-    );
+    const rootNode = getTreeNodeByTitle("经营状态总览");
+    const metricSection = getTreeNodeByTitle("核心指标");
+    const riskSection = getTreeNodeByTitle("风险异常");
+    const reportEvidenceSection = getTreeNodeByTitle("报告与证据");
+    const metricNode = getTreeNodeByTitle("确认收入");
+    const riskNode = getTreeNodeByTitle("库存周转风险");
+    const reportNode = getTreeNodeByTitle("周经营分析报告");
+    const evidenceNode = getTreeNodeByTitle("退款异常证据摘要");
 
-    render(
-      <TestProviders>
-        <DashboardInspectorPanel
-          activeNodeId="metric-context-metric-recognized-revenue"
-          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-metrics"]}
-          onExpandNodes={vi.fn()}
-          onSelectNode={vi.fn()}
-          selectedTimeRangeLabel="Last 30 days"
-          viewModel={misleadingViewModel}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByText(zhCnMessages["risk.medium.title"])).toBeTruthy();
-    expect(screen.getByText(zhCnMessages["status.attention.title"])).toBeTruthy();
-    expect(
-      screen.queryByText(
-        `${zhCnMessages["risk.high.title"]} · ${zhCnMessages["status.healthy.title"]}`
-      )
-    ).toBeNull();
-  });
-
-  it("does not infer evidence risk from evidence chips", () => {
-    const refundEvidenceNode = findNodeByTitle(dashboardViewModel.root, "退款异常证据摘要");
-
-    if (!refundEvidenceNode) {
-      throw new Error("Expected Dashboard tree to include 退款异常证据摘要.");
-    }
-
-    const misleadingEvidenceViewModel = updateDashboardViewModelNode(
-      dashboardViewModel,
-      refundEvidenceNode.nodeId,
-      (node) => ({
-        ...node,
-        chips: [zhCnMessages["risk.high.title"], zhCnMessages["status.attention.title"]]
-      })
-    );
-
-    render(
-      <TestProviders>
-        <DashboardInspectorPanel
-          activeNodeId={refundEvidenceNode.nodeId}
-          expandedNodeIds={["dashboard-node-root", "dashboard-node-directory-report-evidence"]}
-          onExpandNodes={vi.fn()}
-          onSelectNode={vi.fn()}
-          selectedTimeRangeLabel="Last 30 days"
-          viewModel={misleadingEvidenceViewModel}
-          workspaceName="Northstar Retail China"
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByText("source-evidence-refund-watch")).toBeTruthy();
-    expect(screen.queryByText(zhCnMessages["risk.high.title"])).toBeNull();
-    expect(screen.queryByText(zhCnMessages["status.attention.title"])).toBeNull();
+    expect(normalizeTextContent(rootNode)).toContain("4 指标 · 3 风险 · 2 证据");
+    expect(normalizeTextContent(rootNode)).not.toMatch(/经营状态总览\s*3/);
+    expect(normalizeTextContent(metricSection)).toMatch(/核心指标\s*4/);
+    expect(normalizeTextContent(riskSection)).toMatch(/风险异常\s*3/);
+    expect(normalizeTextContent(reportEvidenceSection)).toMatch(/报告与证据\s*2/);
+    expect(normalizeTextContent(metricNode)).toContain("¥12.8M · 下降 3.2%");
+    expect(normalizeTextContent(metricNode)).toContain("关注");
+    expect(normalizeTextContent(metricNode)).toContain("中风险");
+    expect(normalizeTextContent(metricNode)).not.toMatch(/确认收入\s*2/);
+    expect(normalizeTextContent(riskNode)).toContain("5.1 turns · 下降 0.4 turns");
+    expect(normalizeTextContent(riskNode)).not.toContain("库存周转 < 5.3 turns 进入关注");
+    expect(normalizeTextContent(reportNode)).toContain("报告 · 支撑报告");
+    expect(normalizeTextContent(evidenceNode)).toContain("证据 · 支撑证据");
   });
 
   it("shows display labels instead of raw chips for metric child report nodes in the inspector", () => {
@@ -560,27 +347,24 @@ describe("DashboardPage", () => {
     ).toBeNull();
   });
 
-  it("expands collapsed groups and updates the current-node detail on selection", () => {
+  it("defaults the root to expanded and lets the user collapse it", async () => {
     render(
       <TestProviders>
         <DashboardInspectorHarness />
       </TestProviders>
     );
 
-    expect(screen.queryByText("库存周转风险")).toBeNull();
+    expect(() => getTreeNodeByTitle("核心指标")).not.toThrow();
 
-    const riskDirectory = screen.getByText("风险异常 3").closest(".ant-tree-treenode");
-    const riskSwitcher = riskDirectory?.querySelector(".ant-tree-switcher") as HTMLElement | null;
+    const rootNode = getTreeNodeByTitle("经营状态总览");
+    const rootSwitcher = rootNode.querySelector(".ant-tree-switcher") as HTMLElement | null;
 
-    expect(riskSwitcher).toBeTruthy();
-    fireEvent.click(riskSwitcher!);
+    expect(rootSwitcher).toBeTruthy();
+    fireEvent.click(rootSwitcher!);
 
-    expect(screen.getByText("库存周转风险")).toBeTruthy();
-
-    fireEvent.click(screen.getByText("库存周转风险"));
-
-    expect(screen.getByText("当前节点")).toBeTruthy();
-    expect(screen.getByText("风险信号 · Last 30 days")).toBeTruthy();
-    expect(screen.getByText("库存周转 < 5.3 turns 进入关注")).toBeTruthy();
+    expect(screen.getByText("经营状态总览")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText("核心指标")).toBeNull();
+    });
   });
 });

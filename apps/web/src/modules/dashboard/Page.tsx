@@ -119,7 +119,7 @@ export function useDashboardOverviewState(
     onExpandContextTree: (nodeIds) => {
       setViewport((currentViewport) => ({
         activeNodeId: currentViewport.activeNodeId,
-        expandedNodeIds: Array.from(new Set([viewModel.root.nodeId, ...nodeIds]))
+        expandedNodeIds: nodeIds
       }));
     },
     onSelectContextNode: (nodeId) => {
