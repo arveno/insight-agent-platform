@@ -398,6 +398,21 @@ WHERE CASE source_type
 END;
 
 SELECT CONCAT(
+  'sourceEvidence.invalidLifecycle.row_count=',
+  COUNT(*)
+) AS check_line
+FROM source_evidence
+LEFT JOIN analysis_runs
+  ON analysis_runs.run_id = source_evidence.run_id
+WHERE analysis_runs.run_id IS NULL
+   OR analysis_runs.status <> 'completed'
+   OR analysis_runs.phase NOT IN ('delivery', 'post_run')
+   OR analysis_runs.outcome <> 'success'
+   OR analysis_runs.completed_at IS NULL
+   OR COALESCE(analysis_runs.retryable, TRUE) <> FALSE
+   OR analysis_runs.terminal_reason <> 'seeded_reference_artifact';
+
+SELECT CONCAT(
   'reports.unresolvedRun.row_count=',
   COUNT(*)
 ) AS check_line
@@ -425,3 +440,76 @@ WHERE EXISTS(
     WHERE source_evidence_id = report_source_evidence.source_evidence_id
   )
 );
+
+SELECT CONCAT(
+  'reports.invalidLifecycle.row_count=',
+  COUNT(*)
+) AS check_line
+FROM reports
+LEFT JOIN analysis_runs
+  ON analysis_runs.run_id = reports.run_id
+WHERE analysis_runs.run_id IS NULL
+   OR analysis_runs.status <> 'completed'
+   OR analysis_runs.phase NOT IN ('delivery', 'post_run')
+   OR analysis_runs.outcome <> 'success'
+   OR analysis_runs.completed_at IS NULL
+   OR COALESCE(analysis_runs.retryable, TRUE) <> FALSE
+   OR analysis_runs.terminal_reason <> 'seeded_reference_artifact';
+
+SELECT CONCAT(
+  'reportSections.unresolvedReport.row_count=',
+  COUNT(*)
+) AS check_line
+FROM report_sections
+WHERE NOT EXISTS(
+  SELECT 1
+  FROM reports
+  WHERE report_id = report_sections.report_id
+);
+
+WITH referenced_artifacts AS (
+  SELECT
+    'analysis-task-revenue-gap-q2' AS analysis_task_id,
+    'report' AS artifact_kind,
+    'report-weekly-business' AS artifact_id
+  UNION ALL
+  SELECT
+    'analysis-task-revenue-gap-q2' AS analysis_task_id,
+    'sourceEvidence' AS artifact_kind,
+    'source-evidence-refund-watch' AS artifact_id
+  UNION ALL
+  SELECT
+    'analysis-task-sea-delivery-delay' AS analysis_task_id,
+    'report' AS artifact_kind,
+    'report-sea-weekly-operations' AS artifact_id
+  UNION ALL
+  SELECT
+    'analysis-task-sea-delivery-delay' AS analysis_task_id,
+    'sourceEvidence' AS artifact_kind,
+    'source-evidence-sea-delivery-delay' AS artifact_id
+)
+SELECT CONCAT(
+  'contextPack.futureReferencedArtifact.row_count=',
+  COUNT(*)
+) AS check_line
+FROM (
+  SELECT
+    referenced_artifacts.analysis_task_id,
+    analysis_tasks.created_at AS analysis_task_created_at,
+    CASE referenced_artifacts.artifact_kind
+      WHEN 'report' THEN reports.created_at
+      WHEN 'sourceEvidence' THEN source_evidence.created_at
+      ELSE NULL
+    END AS artifact_created_at
+  FROM referenced_artifacts
+  INNER JOIN analysis_tasks
+    ON analysis_tasks.analysis_task_id = referenced_artifacts.analysis_task_id
+  LEFT JOIN reports
+    ON referenced_artifacts.artifact_kind = 'report'
+   AND reports.report_id = referenced_artifacts.artifact_id
+  LEFT JOIN source_evidence
+    ON referenced_artifacts.artifact_kind = 'sourceEvidence'
+   AND source_evidence.source_evidence_id = referenced_artifacts.artifact_id
+) AS seeded_context_artifacts
+WHERE artifact_created_at IS NULL
+   OR artifact_created_at > analysis_task_created_at;

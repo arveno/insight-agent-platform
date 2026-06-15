@@ -490,9 +490,9 @@ INSERT INTO auth_sessions (
     assert "analysisTask.contextPack.root.kind=dashboardOverview" in verify_result.stdout
     assert "analysisTask.contextPack.reportId=report-weekly-business" in verify_result.stdout
     assert "tables=22" in verify_result.stdout
-    assert "analysis_tasks.row_count=2" in verify_result.stdout
-    assert "conversations.row_count=2" in verify_result.stdout
-    assert "analysis_runs.row_count=2" in verify_result.stdout
+    assert "analysis_tasks.row_count=4" in verify_result.stdout
+    assert "conversations.row_count=4" in verify_result.stdout
+    assert "analysis_runs.row_count=4" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
     assert "tool_calls.row_count=0" in verify_result.stdout
@@ -507,8 +507,12 @@ INSERT INTO auth_sessions (
     assert "dataTables.unresolvedDataSource.row_count=0" in verify_result.stdout
     assert "sourceEvidence.unresolvedRun.row_count=0" in verify_result.stdout
     assert "sourceEvidence.unresolvedSource.row_count=0" in verify_result.stdout
+    assert "sourceEvidence.invalidLifecycle.row_count=0" in verify_result.stdout
     assert "reports.unresolvedRun.row_count=0" in verify_result.stdout
     assert "reports.unresolvedSourceEvidence.row_count=0" in verify_result.stdout
+    assert "reports.invalidLifecycle.row_count=0" in verify_result.stdout
+    assert "reportSections.unresolvedReport.row_count=0" in verify_result.stdout
+    assert "contextPack.futureReferencedArtifact.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())
