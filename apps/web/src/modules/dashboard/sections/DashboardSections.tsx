@@ -11,6 +11,7 @@ import { ContextTreeNodeRow } from "../../../shared/ui/lists/ContextTreeNodeRow"
 import { RiskBadge } from "../../../shared/ui/status/RiskBadge";
 import { StatusTag } from "../../../shared/ui/status/StatusTag";
 import { toRiskBadge, toStatusTag } from "../../../shared/utils/viewModelState";
+import { createContextSourceMetaText } from "../../../shared/view-model/contextSourceDisplay";
 import { DashboardHero } from "../components/DashboardHero";
 import { DashboardMetricOverview } from "../components/DashboardMetricOverview";
 import { DashboardReportEvidenceCard } from "../components/DashboardReportEvidenceCard";
@@ -216,7 +217,7 @@ function createDashboardContextTreeNodeDisplay(args: {
   }
 
   return {
-    secondaryText: node.chips?.join(" · "),
+    secondaryText: createContextSourceMetaText(t, node.chips ?? []),
     selected,
     title: node.title
   };

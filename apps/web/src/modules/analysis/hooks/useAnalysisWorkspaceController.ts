@@ -25,7 +25,6 @@ import type {
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createContextRootNodeId,
   createDecisionsRootNodeId,
   createEvidenceRootNodeId,
   createModelCallsRootNodeId,
@@ -206,7 +205,6 @@ function getRootNodeId(
   if (rootKey === "context") {
     return (
       session?.analysisTaskContextPack?.root.nodeId ??
-      (session ? createContextRootNodeId(session.analysisTaskId) : null) ??
       draftContext?.root.nodeId ??
       null
     );

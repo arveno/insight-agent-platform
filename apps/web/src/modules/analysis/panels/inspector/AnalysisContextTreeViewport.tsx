@@ -3,6 +3,7 @@ import { Button, Tree } from "antd";
 import type { DataNode } from "antd/es/tree";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
 
+import { useI18n } from "../../../../shared/i18n/I18nProvider";
 import { renderAnalysisContextTreeNodeRow } from "./createContextTreeNodeDisplay";
 
 export type AnalysisContextTreeViewportProps = {
@@ -17,6 +18,7 @@ function buildTreeData(args: {
   node: InspectorTreeNode;
   pathLookup: Map<string, string[]>;
   path: string[];
+  t: ReturnType<typeof useI18n>["t"];
 }): DataNode {
   const nextPath = [...args.path, args.node.nodeId];
   args.pathLookup.set(args.node.nodeId, nextPath);
@@ -27,11 +29,12 @@ function buildTreeData(args: {
         activeNodeId: args.activeNodeId,
         node: child,
         path: nextPath,
-        pathLookup: args.pathLookup
+        pathLookup: args.pathLookup,
+        t: args.t
       })
     ),
     key: args.node.nodeId,
-    title: renderAnalysisContextTreeNodeRow(args.activeNodeId, args.node)
+    title: renderAnalysisContextTreeNodeRow(args.activeNodeId, args.node, args.t)
   };
 }
 
@@ -49,6 +52,7 @@ export function AnalysisContextTreeViewport({
   root,
   showBack = false
 }: AnalysisContextTreeViewportProps) {
+  const { t } = useI18n();
   const initialActiveNodeId = initialPath?.at(-1) ?? root.nodeId;
   const [activeNodeId, setActiveNodeId] = useState(initialActiveNodeId);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>(
@@ -67,12 +71,13 @@ export function AnalysisContextTreeViewport({
         activeNodeId,
         node: root,
         path: [],
-        pathLookup
+        pathLookup,
+        t
       })
     ];
 
     return { pathLookup, treeData };
-  }, [activeNodeId, root]);
+  }, [activeNodeId, root, t]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>

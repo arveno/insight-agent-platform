@@ -12,7 +12,6 @@ import type {
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createContextRootNodeId,
   createEvidenceRootNodeId,
   createModelCallsRootNodeId,
   createReportsRootNodeId,
@@ -41,25 +40,6 @@ export type AnalysisInspectorPanelProps = {
   selectedSession?: AnalysisSessionViewModel;
   workspaceState: AnalysisWorkspaceState;
 };
-
-function createEmptyContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
-  return {
-    nodeId: createContextRootNodeId(session.analysisTaskId),
-    kind: "contextRoot",
-    role: "inputContext",
-    owner: {
-      analysisTaskId: session.analysisTaskId,
-      type: "analysisTask"
-    },
-    title: "本次请求上下文",
-    summary: "当前请求没有附带上下文。",
-    disabledReason: "当前没有可展开的上下文详情。"
-  };
-}
-
-function getContextRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
-  return session.analysisTaskContextPack?.root ?? createEmptyContextRoot(session);
-}
 
 function getInspectorRootsViewTitle(
   draftContext: AnalysisTaskContextPack | undefined,
@@ -197,7 +177,7 @@ export function buildAnalysisInspectorRoots(
   session: AnalysisSessionViewModel,
   subject: InspectorSubject | undefined
 ): AnalysisInspectorRoot[] {
-  const contextRoot = getContextRoot(session);
+  const contextRoot = session.analysisTaskContextPack?.root ?? null;
   const runTraceRoot = createRunTraceRoot(session);
   const reportRoot = createCollectionRoot({
     kind: "reports",
@@ -304,12 +284,16 @@ export function buildAnalysisInspectorRoots(
 
   if (subject?.type === "analysisTask") {
     return [
-      {
-        key: "context",
-        owner: contextRoot.owner,
-        title: contextRoot.title,
-        tree: contextRoot
-      },
+      ...(contextRoot
+        ? [
+            {
+              key: "context" as const,
+              owner: contextRoot.owner,
+              title: contextRoot.title,
+              tree: contextRoot
+            }
+          ]
+        : []),
       {
         key: "run-history",
         owner: runHistoryRoot.owner,
@@ -326,12 +310,16 @@ export function buildAnalysisInspectorRoots(
       title: "Run Trace",
       tree: runTraceRoot
     },
-    {
-      key: "context",
-      owner: contextRoot.owner,
-      title: contextRoot.title,
-      tree: contextRoot
-    },
+    ...(contextRoot
+      ? [
+          {
+            key: "context" as const,
+            owner: contextRoot.owner,
+            title: contextRoot.title,
+            tree: contextRoot
+          }
+        ]
+      : []),
     ...(session.sourceEvidence.length > 0
       ? [{ key: "evidence" as const, owner: evidenceRoot.owner, title: "生成证据", tree: evidenceRoot }]
       : []),
@@ -376,6 +364,9 @@ export function AnalysisInspectorPanel({
     inspectorTreeState.rootKey === null
       ? null
       : roots.find((root) => root.key === inspectorTreeState.rootKey) ?? null;
+  const requestedMissingContextRoot = Boolean(
+    selectedSession && inspectorTreeState.rootKey === "context" && !activeRoot
+  );
   const activeContextRoot =
     activeRoot?.key === "context"
       ? activeRoot.tree
@@ -423,7 +414,7 @@ export function AnalysisInspectorPanel({
       }
       title={panelTitle}
     >
-      {roots.length === 0 ? null : isContextViewport && activeContextRoot ? (
+      {requestedMissingContextRoot ? null : roots.length === 0 ? null : isContextViewport && activeContextRoot ? (
         <AnalysisContextTreeViewport
           initialPath={inspectorTreeState.path}
           onBack={selectedSession ? onPopInspectorPath : undefined}

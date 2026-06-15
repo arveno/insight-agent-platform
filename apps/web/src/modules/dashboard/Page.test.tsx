@@ -222,6 +222,8 @@ describe("DashboardPage", () => {
           expandedNodeIds={[
             "dashboard-node-root",
             "dashboard-node-directory-metrics",
+            "metric-context-metric-recognized-revenue",
+            "metric-context-metric-gross-margin",
             "dashboard-node-directory-risks",
             "dashboard-node-directory-report-evidence"
           ]}
@@ -244,7 +246,11 @@ describe("DashboardPage", () => {
     expect(screen.queryByText("经营状态总览 3")).toBeNull();
     expect(screen.queryByText("metric-recognized-revenue")).toBeNull();
     expect(screen.queryByText("source-evidence-refund-watch")).toBeNull();
-    expect(screen.queryByText(/supporting_report|supporting_evidence|sourceEvidence/)).toBeNull();
+    expect(
+      screen.queryByText(
+        /supporting_report|supporting_evidence|sourceEvidence|dataTable|knowledgeDocument/
+      )
+    ).toBeNull();
 
     const rootNode = getTreeNodeByTitle("经营状态总览");
     const metricSection = getTreeNodeByTitle("核心指标");
@@ -254,6 +260,8 @@ describe("DashboardPage", () => {
     const riskNode = getTreeNodeByTitle("库存周转风险");
     const reportNode = getTreeNodeByTitle("周经营分析报告");
     const evidenceNode = getTreeNodeByTitle("退款异常证据摘要");
+    const dataTableNode = getTreeNodeByTitle("销售订单汇总表");
+    const knowledgeDocumentNode = getTreeNodeByTitle("毛利率复盘纪要");
 
     expect(normalizeTextContent(rootNode)).toContain("4 指标 · 3 风险 · 2 证据");
     expect(normalizeTextContent(rootNode)).not.toMatch(/经营状态总览\s*3/);
@@ -268,6 +276,9 @@ describe("DashboardPage", () => {
     expect(normalizeTextContent(riskNode)).not.toContain("库存周转 < 5.3 turns 进入关注");
     expect(normalizeTextContent(reportNode)).toContain("报告 · 支撑报告");
     expect(normalizeTextContent(evidenceNode)).toContain("证据 · 支撑证据");
+    expect(normalizeTextContent(dataTableNode)).toContain("数据表 · 主表");
+    expect(normalizeTextContent(knowledgeDocumentNode)).toContain("知识文档 · 支撑文档");
+    expect(screen.queryByText(/^dataTable$|^knowledgeDocument$/)).toBeNull();
   });
 
   it("shows display labels instead of raw chips for metric child report nodes in the inspector", () => {
