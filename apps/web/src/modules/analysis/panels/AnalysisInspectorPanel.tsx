@@ -1,4 +1,6 @@
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
+import type { ReactNode } from "react";
+import { Tag } from "antd";
 
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
 import type { AnalysisWorkspaceState } from "../hooks/useAnalysisWorkspaceController";
@@ -20,6 +22,7 @@ import {
   findInspectorTreePathNodes
 } from "../models/inspectorTree";
 import type { AnalysisTaskContextPack } from "../models/runtimeContractTypes";
+import { AnalysisContextTreeViewport } from "./inspector/AnalysisContextTreeViewport";
 import { InspectorRootPanel } from "./inspector/InspectorRootPanel";
 import { InspectorTreeNodePanel } from "./inspector/InspectorTreeNodePanel";
 import {
@@ -75,6 +78,32 @@ function getInspectorRootsViewTitle(
   }
 
   return "分析详情";
+}
+
+function createContextViewportBoundaryTags(args: {
+  draftContext?: AnalysisTaskContextPack;
+  selectedSession?: AnalysisSessionViewModel;
+  selectedSubject?: InspectorSubject;
+}): ReactNode {
+  const root = args.selectedSession?.analysisTaskContextPack?.root ?? args.draftContext?.root;
+  const tags = [
+    root?.timeRange?.label,
+    args.selectedSession
+      ? args.selectedSubject?.type === "analysisTask"
+        ? "分析请求上下文"
+        : "当前运行上下文"
+      : "草稿上下文"
+  ].filter(Boolean) as string[];
+
+  return (
+    <span style={{ columnGap: 8, display: "inline-flex", flexWrap: "wrap", rowGap: 8 }}>
+      {tags.map((tag) => (
+        <Tag bordered={false} key={tag}>
+          {tag}
+        </Tag>
+      ))}
+    </span>
+  );
 }
 
 function createRunTraceRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
@@ -341,11 +370,19 @@ export function AnalysisInspectorPanel({
           }
         ]
       : [];
+  const shouldRenderDraftContextViewport = Boolean(draftContext && !selectedSession);
 
   const activeRoot =
     inspectorTreeState.rootKey === null
       ? null
       : roots.find((root) => root.key === inspectorTreeState.rootKey) ?? null;
+  const activeContextRoot =
+    activeRoot?.key === "context"
+      ? activeRoot.tree
+      : shouldRenderDraftContextViewport
+        ? draftContext!.root
+        : null;
+  const isContextViewport = Boolean(activeContextRoot);
   const selectedPathNodes = activeRoot
     ? findInspectorTreePathNodes(activeRoot.tree, inspectorTreeState.path)
     : null;
@@ -354,11 +391,21 @@ export function AnalysisInspectorPanel({
     ? buildInspectorNodePresentation(selectedNode, selectedPathNodes?.slice(0, -1) ?? [])
     : null;
   const panelTitle = selectedNodePresentation
-    ? getInspectorPresentationTitle(selectedNodePresentation, {
-        includeChildCount: selectedNode?.kind === "directory"
+    ? isContextViewport
+      ? "上下文目录"
+      : getInspectorPresentationTitle(selectedNodePresentation, {
+          includeChildCount: selectedNode?.kind === "directory"
+        })
+    : isContextViewport
+      ? "上下文目录"
+      : getInspectorRootsViewTitle(draftContext, selectedInspectorSubject);
+  const panelDescription = isContextViewport
+    ? createContextViewportBoundaryTags({
+        draftContext,
+        selectedSession,
+        selectedSubject: selectedInspectorSubject
       })
-    : getInspectorRootsViewTitle(draftContext, selectedInspectorSubject);
-  const panelDescription = selectedNodePresentation?.description ?? contextPanelNote;
+    : selectedNodePresentation?.description ?? contextPanelNote;
 
   return (
     <SidePanel
@@ -376,7 +423,14 @@ export function AnalysisInspectorPanel({
       }
       title={panelTitle}
     >
-      {roots.length === 0 ? null : !activeRoot || !selectedNode ? (
+      {roots.length === 0 ? null : isContextViewport && activeContextRoot ? (
+        <AnalysisContextTreeViewport
+          initialPath={inspectorTreeState.path}
+          onBack={selectedSession ? onPopInspectorPath : undefined}
+          root={activeContextRoot}
+          showBack={Boolean(selectedSession && activeRoot?.key === "context")}
+        />
+      ) : !activeRoot || !selectedNode ? (
         <InspectorRootPanel onSelectRoot={onSelectInspectorRoot} roots={roots} />
       ) : (
         <InspectorTreeNodePanel
