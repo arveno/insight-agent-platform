@@ -19,7 +19,6 @@ import {
 import { TestProviders } from "../../shared/test/TestProviders";
 import type { MetricsOverviewController } from "./hooks/useMetricsOverviewState";
 import { useMetricsShellSlots } from "./hooks/useMetricsShellSlots";
-import { createDashboardViewModel } from "../dashboard/mappers/createDashboardViewModel";
 import { createMetricsViewModel } from "./mappers/createMetricsViewModel";
 import { MetricsPage, MetricsPageContent } from "./Page";
 
@@ -157,12 +156,8 @@ describe("MetricsPage", () => {
     expect(screen.queryByText("真实 conversation")).toBeNull();
   });
 
-  it("keeps Dashboard and Metrics metric analysis handoff on the same context pack", () => {
+  it("builds the selected metric analysis handoff from the shared metric context pack", () => {
     const selectedMetric = findRuntimeMetric("metric-recognized-revenue");
-    const dashboardViewModel = createDashboardViewModel(runtimeMetricsFixtures, {
-      workspaceId: "workspace-northstar-retail-china",
-      workspaceName: "Northstar Retail China"
-    });
     const metricsViewModel = createMetricsViewModel({
       metrics: runtimeMetricsFixtures,
       selectedMetric,
@@ -172,8 +167,8 @@ describe("MetricsPage", () => {
       }
     });
 
-    expect(
-      dashboardViewModel.metricContextPacks["metric-context-metric-recognized-revenue"]
-    ).toEqual(metricsViewModel.selectedMetric.analysisContextPack);
+    expect(metricsViewModel.selectedMetric.analysisContextPack).toEqual(
+      buildMetricAnalysisContextPack(selectedMetric)
+    );
   });
 });
