@@ -123,23 +123,96 @@ curl -fsS \
   "question": "${QUESTION}",
   "contextPack": {
     "version": 1,
-    "suggestedPrompt": "请继续分析华东收入增速放缓的主要原因。",
+    "suggestedPrompt": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
     "traceability": "direct_refs",
     "capturedAt": "2026-06-12T10:28:00+08:00",
     "root": {
-      "nodeId": "draft-context-root",
-      "kind": "report",
+      "nodeId": "inspector-node-task-context-root",
+      "kind": "dashboardOverview",
       "role": "inputContext",
       "owner": {
         "type": "analysisTask"
       },
-      "title": "周经营分析报告",
-      "summary": "围绕收入增速放缓、毛利率波动和库存周转压力继续追问。",
-      "chips": ["Northstar Retail China", "Last 7 days", "3 条证据"],
-      "sourceRef": {
-        "type": "report",
-        "reportId": "report-weekly-business"
-      }
+      "title": "经营状态总览",
+      "summary": "华东区域收入增速低于阈值，需要继续解释主因与下一步建议。",
+      "chips": ["Revenue quality", "2026 Q2", "收入增速 < -2%"],
+      "timeRange": {
+        "key": "this_quarter",
+        "label": "2026 Q2"
+      },
+      "capturedAt": "2026-06-12T10:28:00+08:00",
+      "children": [
+        {
+          "nodeId": "context-metric-recognized-revenue",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "确认收入",
+          "summary": "当前异常指标来源。",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-recognized-revenue"
+          }
+        },
+        {
+          "nodeId": "context-table-sales-order",
+          "kind": "dataTable",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "销售订单表",
+          "summary": "用于核对确认收入的订单明细。",
+          "sourceRef": {
+            "type": "dataTable",
+            "tableId": "table-sales-order"
+          }
+        },
+        {
+          "nodeId": "context-table-refund-order",
+          "kind": "dataTable",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "退款订单表",
+          "summary": "用于核对退款与收入回吐影响。",
+          "sourceRef": {
+            "type": "dataTable",
+            "tableId": "table-refund-order"
+          }
+        },
+        {
+          "nodeId": "context-knowledge-channel-weekly-17",
+          "kind": "knowledgeDocument",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "渠道周报 Week 17",
+          "summary": "补充华东渠道确认延迟背景。",
+          "sourceRef": {
+            "type": "knowledgeDocument",
+            "knowledgeDocumentId": "knowledge-document-channel-weekly-17"
+          }
+        },
+        {
+          "nodeId": "context-knowledge-inventory-east-04",
+          "kind": "knowledgeDocument",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "华东库存说明 04",
+          "summary": "补充促销库存与区域履约背景。",
+          "sourceRef": {
+            "type": "knowledgeDocument",
+            "knowledgeDocumentId": "knowledge-document-inventory-east-04"
+          }
+        }
+      ]
     }
   }
 }
