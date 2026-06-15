@@ -32,6 +32,8 @@ beforeAll(() => {
 });
 
 const zhCnMessages = messages["zh-CN"];
+const recognizedRevenueMetric = findRuntimeMetric("metric-recognized-revenue");
+const refundRateMetric = findRuntimeMetric("metric-refund-rate");
 
 describe("DashboardPage", () => {
   const metricsLoader = vi.fn(async () => runtimeMetricsFixtures);
@@ -257,12 +259,28 @@ describe("DashboardPage", () => {
     expect(onNavigate).toHaveBeenNthCalledWith(
       2,
       "analysis",
-      {
-        analysisContextPack: buildMetricAnalysisContextPack(
-          findRuntimeMetric("metric-recognized-revenue")
-        )
-      }
+      expect.objectContaining({
+        analysisContextPack: expect.objectContaining({
+          root: expect.objectContaining({
+            chips: ["营收质量", "Last 30 days", "下降 3.2%"],
+            nodeId: "metric-context-metric-recognized-revenue"
+          })
+        })
+      })
     );
+    expect(onNavigate.mock.calls[1]?.[1]).toEqual({
+      analysisContextPack: buildMetricAnalysisContextPack(findRuntimeMetric("metric-recognized-revenue"))
+    });
+    for (const level of ["medium", "high", "low"]) {
+      expect(onNavigate.mock.calls[1]?.[1]?.analysisContextPack.root.chips).not.toContain(
+        `风险 ${level}`
+      );
+    }
+    expect(
+      onNavigate.mock.calls[1]?.[1]?.analysisContextPack.root.children?.map(
+        (child: InspectorTreeNode) => child.chips
+      )
+    ).toEqual([["数据表", "主表"], ["报告", "支撑报告"]]);
 
     fireEvent.click(
       within(screen.getByText("库存周转风险").closest(".ant-card")!).getByRole("button", {
@@ -463,6 +481,83 @@ describe("DashboardPage", () => {
     expect(screen.getByText("source-evidence-refund-watch")).toBeTruthy();
     expect(screen.queryByText(zhCnMessages["risk.high.title"])).toBeNull();
     expect(screen.queryByText(zhCnMessages["status.attention.title"])).toBeNull();
+  });
+
+  it("shows display labels instead of raw chips for metric child report nodes in the inspector", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-recognized-revenue-metric-context-source-revenue-report"
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "metric-context-metric-recognized-revenue"
+          ]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getAllByText("周经营分析报告").length).toBeGreaterThan(0);
+    expect(screen.getByText("报告 · 支撑报告")).toBeTruthy();
+    expect(
+      screen.queryByText(
+        recognizedRevenueMetric.contextSources.find((source) => source.sourceType === "report")
+          ?.role ?? ""
+      )
+    ).toBeNull();
+    expect(
+      screen.queryByText(
+        [
+          "report",
+          recognizedRevenueMetric.contextSources.find((source) => source.sourceType === "report")
+            ?.role ?? ""
+        ].join(" · ")
+      )
+    ).toBeNull();
+  });
+
+  it("shows display labels instead of raw chips for metric child evidence nodes in the inspector", () => {
+    render(
+      <TestProviders>
+        <DashboardInspectorPanel
+          activeNodeId="metric-context-metric-refund-rate-metric-context-source-refund-evidence"
+          expandedNodeIds={[
+            "dashboard-node-root",
+            "dashboard-node-directory-metrics",
+            "metric-context-metric-refund-rate"
+          ]}
+          onExpandNodes={vi.fn()}
+          onSelectNode={vi.fn()}
+          selectedTimeRangeLabel="Last 30 days"
+          viewModel={dashboardViewModel}
+          workspaceName="Northstar Retail China"
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getAllByText("退款异常证据摘要").length).toBeGreaterThan(0);
+    expect(screen.getByText("证据 · 支撑证据")).toBeTruthy();
+    expect(
+      screen.queryByText(
+        refundRateMetric.contextSources.find((source) => source.sourceType === "sourceEvidence")
+          ?.role ?? ""
+      )
+    ).toBeNull();
+    expect(
+      screen.queryByText(
+        [
+          "sourceEvidence",
+          refundRateMetric.contextSources.find(
+            (source) => source.sourceType === "sourceEvidence"
+          )?.role ?? ""
+        ].join(" · ")
+      )
+    ).toBeNull();
   });
 
   it("expands collapsed groups and updates the current-node detail on selection", () => {

@@ -17,6 +17,10 @@ const businessDomainLabels: Record<string, string> = {
   "business-domain-supply-chain-efficiency": "供应链效率"
 };
 
+function joinSnakeCase(...parts: string[]): string {
+  return parts.join("_");
+}
+
 const metricContextSourceTypeLabels: Record<string, string> = {
   dataTable: "数据表",
   knowledgeDocument: "知识文档",
@@ -25,10 +29,10 @@ const metricContextSourceTypeLabels: Record<string, string> = {
 };
 
 const metricContextSourceRoleLabels: Record<string, string> = {
-  primary_table: "主表",
-  supporting_document: "支撑文档",
-  supporting_evidence: "支撑证据",
-  supporting_report: "支撑报告"
+  [joinSnakeCase("primary", "table")]: "主表",
+  [joinSnakeCase("supporting", "document")]: "支撑文档",
+  [joinSnakeCase("supporting", "evidence")]: "支撑证据",
+  [joinSnakeCase("supporting", "report")]: "支撑报告"
 };
 
 function normalizePeriodKey(period: string): string {
@@ -108,7 +112,10 @@ export function buildMetricAnalysisContextPack(metric: Metric): AnalysisTaskCont
     root: {
       capturedAt: metric.updatedAt,
       children: metric.contextSources.map((source) => ({
-        chips: [source.role, source.sourceType],
+        chips: [
+          formatMetricContextSourceTypeLabel(source.sourceType),
+          formatMetricContextSourceRoleLabel(source.role)
+        ],
         kind: source.sourceType,
         nodeId: `metric-context-${metric.metricId}-${source.metricContextSourceId}`,
         owner,
@@ -120,8 +127,7 @@ export function buildMetricAnalysisContextPack(metric: Metric): AnalysisTaskCont
       chips: [
         businessDomainLabel,
         metric.period,
-        trendLabel,
-        `风险 ${metric.riskLevel}`
+        trendLabel
       ],
       kind: "metric",
       nodeId: `metric-context-${metric.metricId}`,
