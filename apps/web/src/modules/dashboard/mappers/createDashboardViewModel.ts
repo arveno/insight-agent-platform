@@ -2,8 +2,7 @@ import type {
   AnalysisTaskContextPack,
   InspectorTreeNode,
   Metric,
-  MetricContextSource,
-  SourceRef
+  MetricContextSource
 } from "@insight-agent/contracts/generated/typescript";
 
 import type { CurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
@@ -21,6 +20,7 @@ import {
 } from "../../../shared/view-model/staticStateFixtures";
 import {
   buildMetricAnalysisContextPack,
+  createMetricContextSourceRef,
   formatMetricBusinessDomainLabel,
   formatMetricContextSourceRoleLabel,
   formatMetricContextSourceTypeLabel,
@@ -47,31 +47,6 @@ function normalizePeriodKey(period: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
-}
-
-function buildMetricSourceRef(source: MetricContextSource): SourceRef {
-  switch (source.sourceType) {
-    case "dataTable":
-      return {
-        tableId: source.sourceId,
-        type: "dataTable"
-      };
-    case "knowledgeDocument":
-      return {
-        knowledgeDocumentId: source.sourceId,
-        type: "knowledgeDocument"
-      };
-    case "report":
-      return {
-        reportId: source.sourceId,
-        type: "report"
-      };
-    case "sourceEvidence":
-      return {
-        sourceEvidenceId: source.sourceId,
-        type: "sourceEvidence"
-      };
-  }
 }
 
 function createMetricDirectory(metrics: Metric[]): {
@@ -189,7 +164,7 @@ function createReportEvidenceNodes(metrics: Metric[]): {
       nodeId,
       owner: dashboardOwner,
       role: "inputContext",
-      sourceRef: buildMetricSourceRef(source),
+      sourceRef: createMetricContextSourceRef(source),
       summary: source.summary,
       title: source.title
     } satisfies InspectorTreeNode;

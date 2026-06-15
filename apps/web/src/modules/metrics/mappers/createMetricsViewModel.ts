@@ -3,13 +3,16 @@ import type { Metric } from "@insight-agent/contracts/generated/typescript";
 import {
   buildMetricAnalysisContextPack,
   formatMetricBusinessDomainLabel,
+  formatMetricContextSourceTypeLabel,
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
 import {
   createMetricRiskViewModel,
-  createMetricStatusViewModel
+  createMetricStatusViewModel,
+  formatDefaultMetricRiskLabel
 } from "../../../shared/utils/viewModelState";
+import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
 import {
   createRightAssistSummary,
   defaultPermissionSummary,
@@ -35,32 +38,36 @@ export function createMetricListItems(metrics: Metric[]): MetricListItemViewMode
 }
 
 function mapMetricToDetailViewModel(metric: Metric): MetricDetailViewModel {
+  const analysisContextPack = buildMetricAnalysisContextPack(metric);
+  const trendLabel = formatMetricTrendLabel(metric);
+  const currentSnapshotValue = formatMetricDisplayValue(metric);
+
+  /**
+   * 当前 `/metrics` 仍返回单一 Metric read model：
+   * 既承载 definition，也携带 seeded current snapshot 字段。
+   *
+   * 这里显式拆成 `metricDefinition` / `currentSnapshot*`，避免把 seeded
+   * snapshot 误读成真实公式计算、ETL 或异常检测结果。
+   */
   return {
-    analysisContextPack: buildMetricAnalysisContextPack(metric),
-    businessDomainId: metric.businessDomainId,
+    analysisContextNodeDisplay: createMetricAnalysisContextNodeDisplay(metric, analysisContextPack),
+    analysisContextPack,
     businessDomainLabel: formatMetricBusinessDomainLabel(metric.businessDomainId),
-    contextSources: metric.contextSources.map((source) => ({
-      description: source.summary,
-      key: source.metricContextSourceId,
-      meta: `${source.sourceType} · ${source.role}`,
-      title: source.title
-    })),
-    currentValue: formatMetricDisplayValue(metric),
-    definition: metric.description,
+    contextNodes: analysisContextPack.root.children ?? [],
+    currentSnapshotSummary: `${currentSnapshotValue} · ${metric.period} · As of ${metric.updatedAt}`,
+    currentSnapshotValue,
     formulaSummary: metric.formulaSummary,
     key: metric.metricId,
     metricId: metric.metricId,
+    metricDefinition: metric.description,
     metricName: metric.name,
     ownerTeam: metric.ownerTeam,
-    period: metric.period,
-    riskLevel: metric.riskLevel,
     riskView: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
-    status: metric.status,
+    snapshotCapturedAt: metric.updatedAt,
+    snapshotPeriodLabel: metric.period,
     statusView: createMetricStatusViewModel(metric.status),
     thresholdSummary: metric.thresholdSummary,
-    trendLabel: formatMetricTrendLabel(metric),
-    updatedAt: metric.updatedAt,
-    workspaceId: metric.workspaceId
+    trendLabel
   };
 }
 
@@ -106,6 +113,20 @@ function buildAtRiskMetrics(metrics: Metric[]): MetricAtRiskItemViewModel[] {
     }));
 }
 
+function createMetricAnalysisContextNodeDisplay(
+  metric: Metric,
+  analysisContextPack: MetricDetailViewModel["analysisContextPack"]
+): ContextTreeNodeDisplayMap {
+  return {
+    [analysisContextPack.root.nodeId]: {
+      risk: createMetricRiskViewModel(metric.riskLevel, metric.thresholdSummary),
+      status: createMetricStatusViewModel(metric.status),
+      trendText: formatMetricTrendLabel(metric),
+      valueText: formatMetricDisplayValue(metric)
+    }
+  };
+}
+
 export function createMetricsViewModel(args: {
   metrics: Metric[];
   selectedMetric: Metric;
@@ -136,10 +157,16 @@ export function createMetricsViewModel(args: {
       contextSourceTypeDistribution: buildDistributionItems({
         counts: sourceTypeCounts,
         labels: [
-          { key: "dataTable", label: "dataTable" },
-          { key: "report", label: "report" },
-          { key: "sourceEvidence", label: "sourceEvidence" },
-          { key: "knowledgeDocument", label: "knowledgeDocument" }
+          { key: "dataTable", label: formatMetricContextSourceTypeLabel("dataTable") },
+          {
+            key: "knowledgeDocument",
+            label: formatMetricContextSourceTypeLabel("knowledgeDocument")
+          },
+          { key: "report", label: formatMetricContextSourceTypeLabel("report") },
+          {
+            key: "sourceEvidence",
+            label: formatMetricContextSourceTypeLabel("sourceEvidence")
+          }
         ]
       }),
       readonlyBoundaryItems: [
@@ -150,10 +177,10 @@ export function createMetricsViewModel(args: {
       riskDistribution: buildDistributionItems({
         counts: riskCounts,
         labels: [
-          { key: "high", label: "high" },
-          { key: "medium", label: "medium" },
-          { key: "low", label: "low" },
-          { key: "critical", label: "critical" }
+          { key: "critical", label: formatDefaultMetricRiskLabel("critical") },
+          { key: "high", label: formatDefaultMetricRiskLabel("high") },
+          { key: "medium", label: formatDefaultMetricRiskLabel("medium") },
+          { key: "low", label: formatDefaultMetricRiskLabel("low") }
         ]
       }),
       selectedTimeRangeKey: "last_30_days",

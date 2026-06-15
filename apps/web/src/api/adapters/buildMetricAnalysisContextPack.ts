@@ -62,7 +62,7 @@ export function formatMetricTrendLabel(metric: Metric): string {
   }
 }
 
-function buildMetricContextSourceRef(source: MetricContextSource): SourceRef {
+export function createMetricContextSourceRef(source: MetricContextSource): SourceRef {
   switch (source.sourceType) {
     case "dataTable":
       return {
@@ -102,14 +102,14 @@ export function buildMetricAnalysisContextPack(metric: Metric): AnalysisTaskCont
           formatMetricContextSourceTypeLabel(source.sourceType),
           formatMetricContextSourceRoleLabel(source.role)
         ],
-        kind: source.sourceType,
-        nodeId: `metric-context-${metric.metricId}-${source.metricContextSourceId}`,
-        owner,
-        role: "inputContext",
-        sourceRef: buildMetricContextSourceRef(source),
-        summary: source.summary,
-        title: source.title
-      })),
+      kind: source.sourceType,
+      nodeId: `metric-context-${metric.metricId}-${source.metricContextSourceId}`,
+      owner,
+      role: "inputContext",
+      sourceRef: createMetricContextSourceRef(source),
+      summary: source.summary,
+      title: source.title
+    })),
       chips: [
         businessDomainLabel,
         metric.period,

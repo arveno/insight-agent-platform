@@ -105,6 +105,123 @@ ON DUPLICATE KEY UPDATE
   last_accessed_at = VALUES(last_accessed_at),
   revoked_at = VALUES(revoked_at);
 
+INSERT INTO data_sources (
+  data_source_id,
+  workspace_id,
+  source_type,
+  name,
+  created_at
+) VALUES
+(
+  'data-source-china-revenue-warehouse',
+  'workspace-northstar-retail-china',
+  'mysql',
+  'China Revenue Warehouse',
+  '2026-05-19T09:00:00+08:00'
+),
+(
+  'data-source-china-finance-mart',
+  'workspace-northstar-retail-china',
+  'clickhouse',
+  'China Finance Mart',
+  '2026-05-19T09:02:00+08:00'
+),
+(
+  'data-source-china-operations-mart',
+  'workspace-northstar-retail-china',
+  'clickhouse',
+  'China Operations Mart',
+  '2026-05-19T09:04:00+08:00'
+),
+(
+  'data-source-sea-operations-warehouse',
+  'workspace-northstar-retail-sea',
+  'mysql',
+  'SEA Operations Warehouse',
+  '2026-05-19T09:06:00+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  source_type = VALUES(source_type),
+  name = VALUES(name),
+  created_at = VALUES(created_at);
+
+INSERT INTO data_tables (
+  table_id,
+  data_source_id,
+  table_name,
+  created_at
+) VALUES
+(
+  'table-sales-order',
+  'data-source-china-revenue-warehouse',
+  'sales_order',
+  '2026-05-19T09:10:00+08:00'
+),
+(
+  'table-income-statement-daily',
+  'data-source-china-finance-mart',
+  'income_statement_daily',
+  '2026-05-19T09:12:00+08:00'
+),
+(
+  'table-refund-order',
+  'data-source-china-revenue-warehouse',
+  'refund_order',
+  '2026-05-19T09:16:00+08:00'
+),
+(
+  'table-inventory-daily',
+  'data-source-china-operations-mart',
+  'inventory_daily_snapshot',
+  '2026-05-19T09:18:00+08:00'
+),
+(
+  'table-sea-sales-order',
+  'data-source-sea-operations-warehouse',
+  'sea_sales_order',
+  '2026-05-19T09:20:00+08:00'
+),
+(
+  'table-sea-delivery-fulfillment',
+  'data-source-sea-operations-warehouse',
+  'sea_delivery_fulfillment',
+  '2026-05-19T09:22:00+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  data_source_id = VALUES(data_source_id),
+  table_name = VALUES(table_name),
+  created_at = VALUES(created_at);
+
+INSERT INTO knowledge_documents (
+  knowledge_document_id,
+  workspace_id,
+  title,
+  created_at
+) VALUES
+(
+  'knowledge-document-margin-review',
+  'workspace-northstar-retail-china',
+  '毛利率复盘纪要',
+  '2026-05-27T18:00:00+08:00'
+),
+(
+  'knowledge-document-inventory-east-04',
+  'workspace-northstar-retail-china',
+  '华东库存复核记录',
+  '2026-05-29T14:00:00+08:00'
+),
+(
+  'knowledge-document-channel-weekly-17',
+  'workspace-northstar-retail-china',
+  '渠道经营周报第 17 期',
+  '2026-05-30T18:00:00+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  title = VALUES(title),
+  created_at = VALUES(created_at);
+
 INSERT INTO metrics (
   metric_id,
   workspace_id,
@@ -617,3 +734,749 @@ ON DUPLICATE KEY UPDATE
   retryable = VALUES(retryable),
   retry_of_run_id = VALUES(retry_of_run_id),
   original_run_id = VALUES(original_run_id);
+
+INSERT INTO analysis_tasks (
+  analysis_task_id,
+  conversation_id,
+  workspace_id,
+  user_id,
+  business_domain_id,
+  question,
+  context_pack_json,
+  created_at,
+  updated_at
+) VALUES (
+  'analysis-task-seeded-weekly-business-report',
+  'conversation-seeded-weekly-business-report',
+  'workspace-northstar-retail-china',
+  'user-zoe',
+  'business-domain-revenue-quality',
+  '查看作为历史参考工件的周经营分析报告。',
+  CAST('{
+    "version": 1,
+    "suggestedPrompt": "基于当时的收入、退款和渠道周报输入，生成历史周经营分析报告。",
+    "traceability": "direct_refs",
+    "capturedAt": "2026-06-05T02:50:12Z",
+    "root": {
+      "nodeId": "inspector-node-seeded-weekly-business-root",
+      "kind": "dashboardOverview",
+      "role": "inputContext",
+      "owner": {
+        "type": "analysisTask"
+      },
+      "title": "周经营分析输入快照",
+      "summary": "生成历史周经营分析报告时使用的收入、退款和渠道上下文。",
+      "chips": ["Northstar Retail China", "Historical artifact input", "Revenue quality"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T02:50:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-seeded-weekly-business-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "确认收入",
+          "summary": "历史报告生成时关注的核心收入指标。",
+          "value": "收入增速 < -2%",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-recognized-revenue"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-seeded-weekly-business-table-sales",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "销售订单汇总表",
+              "summary": "提供收入确认主表输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sales-order"
+              }
+            },
+            {
+              "nodeId": "inspector-node-seeded-weekly-business-table-refund",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "退款订单表",
+              "summary": "提供退款率抬升的输入明细。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-refund-order"
+              }
+            }
+          ]
+        },
+        {
+          "nodeId": "inspector-node-seeded-weekly-business-document",
+          "kind": "knowledgeDocument",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "渠道经营周报第 17 期",
+          "summary": "补充华东渠道确认节奏的历史输入摘要。",
+          "sourceRef": {
+            "type": "knowledgeDocument",
+            "knowledgeDocumentId": "knowledge-document-channel-weekly-17"
+          }
+        }
+      ]
+    }
+  }' AS JSON),
+  '2026-06-05T10:50:12+08:00',
+  '2026-06-05T11:02:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  business_domain_id = VALUES(business_domain_id),
+  question = VALUES(question),
+  context_pack_json = VALUES(context_pack_json),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO conversations (
+  conversation_id,
+  workspace_id,
+  user_id,
+  current_run_id,
+  title,
+  status,
+  created_at,
+  updated_at
+) VALUES (
+  'conversation-seeded-weekly-business-report',
+  'workspace-northstar-retail-china',
+  'user-zoe',
+  'analysis-seeded-weekly-business-report',
+  '周经营分析报告历史工件',
+  'closed',
+  '2026-06-05T10:50:12+08:00',
+  '2026-06-05T11:02:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  current_run_id = VALUES(current_run_id),
+  title = VALUES(title),
+  status = VALUES(status),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO analysis_runs (
+  run_id,
+  workspace_id,
+  user_id,
+  analysis_task_id,
+  status,
+  phase,
+  outcome,
+  waiting_for,
+  created_at,
+  validating_at,
+  queued_at,
+  started_at,
+  waiting_since,
+  timeout_at,
+  cancel_requested_at,
+  cancelling_at,
+  completed_at,
+  failed_at,
+  cancelled_at,
+  expired_at,
+  rejected_at,
+  terminal_reason,
+  failure_code,
+  retryable,
+  retry_of_run_id,
+  original_run_id
+) VALUES (
+  'analysis-seeded-weekly-business-report',
+  'workspace-northstar-retail-china',
+  'user-zoe',
+  'analysis-task-seeded-weekly-business-report',
+  'completed',
+  'delivery',
+  'success',
+  NULL,
+  '2026-06-05T10:50:12+08:00',
+  NULL,
+  NULL,
+  '2026-06-05T10:51:12+08:00',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  '2026-06-05T11:02:12+08:00',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  'seeded_reference_artifact',
+  NULL,
+  FALSE,
+  NULL,
+  NULL
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  analysis_task_id = VALUES(analysis_task_id),
+  status = VALUES(status),
+  phase = VALUES(phase),
+  outcome = VALUES(outcome),
+  waiting_for = VALUES(waiting_for),
+  created_at = VALUES(created_at),
+  validating_at = VALUES(validating_at),
+  queued_at = VALUES(queued_at),
+  started_at = VALUES(started_at),
+  waiting_since = VALUES(waiting_since),
+  timeout_at = VALUES(timeout_at),
+  cancel_requested_at = VALUES(cancel_requested_at),
+  cancelling_at = VALUES(cancelling_at),
+  completed_at = VALUES(completed_at),
+  failed_at = VALUES(failed_at),
+  cancelled_at = VALUES(cancelled_at),
+  expired_at = VALUES(expired_at),
+  rejected_at = VALUES(rejected_at),
+  terminal_reason = VALUES(terminal_reason),
+  failure_code = VALUES(failure_code),
+  retryable = VALUES(retryable),
+  retry_of_run_id = VALUES(retry_of_run_id),
+  original_run_id = VALUES(original_run_id);
+
+INSERT INTO analysis_tasks (
+  analysis_task_id,
+  conversation_id,
+  workspace_id,
+  user_id,
+  business_domain_id,
+  question,
+  context_pack_json,
+  created_at,
+  updated_at
+) VALUES (
+  'analysis-task-sea-delivery-delay',
+  'conversation-sea-delivery-delay',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'business-domain-delivery-operations',
+  '解释 SEA 配送延迟率持续高位的主要原因，并给出下一步建议。',
+  CAST('{
+    "version": 1,
+    "suggestedPrompt": "请继续分析 SEA 配送延迟率持续高位的主要原因。",
+    "traceability": "direct_refs",
+    "capturedAt": "2026-06-05T03:18:12Z",
+    "root": {
+      "nodeId": "inspector-node-task-context-sea-root",
+      "kind": "dashboardOverview",
+      "role": "inputContext",
+      "owner": {
+        "type": "analysisTask"
+      },
+      "title": "SEA 履约状态总览",
+      "summary": "围绕 SEA 配送延迟率、区域履约波动和周经营报告继续追问。",
+      "chips": ["Northstar Retail SEA", "Last 7 days", "2 条来源"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T03:18:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-task-context-sea-report",
+          "kind": "report",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "SEA 周经营报告",
+          "summary": "围绕 SEA 渠道确认与履约延迟节奏继续追问。",
+          "sourceRef": {
+            "type": "report",
+            "reportId": "report-sea-weekly-operations"
+          }
+        },
+        {
+          "nodeId": "inspector-node-task-context-sea-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "SEA 配送延迟率",
+          "summary": "SEA 区域配送延迟率持续高位，需要继续解释履约瓶颈和下一步建议。",
+          "value": "配送延迟率 > 5.5% 进入关注",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-sea-delivery-delay-rate"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-task-context-sea-metric-source-1",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "SEA 履约配送表",
+              "summary": "聚合延迟订单和履约 SLA 口径。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sea-delivery-fulfillment"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }' AS JSON),
+  '2026-06-05T11:18:12+08:00',
+  '2026-06-05T11:18:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  business_domain_id = VALUES(business_domain_id),
+  question = VALUES(question),
+  context_pack_json = VALUES(context_pack_json),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO conversations (
+  conversation_id,
+  workspace_id,
+  user_id,
+  current_run_id,
+  title,
+  status,
+  created_at,
+  updated_at
+) VALUES (
+  'conversation-sea-delivery-delay',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'analysis-sea-delivery-delay',
+  'SEA 配送延迟异常',
+  'active',
+  '2026-06-05T11:18:12+08:00',
+  '2026-06-05T11:18:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  current_run_id = VALUES(current_run_id),
+  title = VALUES(title),
+  status = VALUES(status),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO analysis_runs (
+  run_id,
+  workspace_id,
+  user_id,
+  analysis_task_id,
+  status,
+  phase,
+  outcome,
+  waiting_for,
+  created_at,
+  validating_at,
+  queued_at,
+  started_at,
+  waiting_since,
+  timeout_at,
+  cancel_requested_at,
+  cancelling_at,
+  completed_at,
+  failed_at,
+  cancelled_at,
+  expired_at,
+  rejected_at,
+  terminal_reason,
+  failure_code,
+  retryable,
+  retry_of_run_id,
+  original_run_id
+) VALUES (
+  'analysis-sea-delivery-delay',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'analysis-task-sea-delivery-delay',
+  'created',
+  'intake',
+  NULL,
+  NULL,
+  '2026-06-05T11:18:12+08:00',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  analysis_task_id = VALUES(analysis_task_id),
+  status = VALUES(status),
+  phase = VALUES(phase),
+  outcome = VALUES(outcome),
+  waiting_for = VALUES(waiting_for),
+  created_at = VALUES(created_at),
+  validating_at = VALUES(validating_at),
+  queued_at = VALUES(queued_at),
+  started_at = VALUES(started_at),
+  waiting_since = VALUES(waiting_since),
+  timeout_at = VALUES(timeout_at),
+  cancel_requested_at = VALUES(cancel_requested_at),
+  cancelling_at = VALUES(cancelling_at),
+  completed_at = VALUES(completed_at),
+  failed_at = VALUES(failed_at),
+  cancelled_at = VALUES(cancelled_at),
+  expired_at = VALUES(expired_at),
+  rejected_at = VALUES(rejected_at),
+  terminal_reason = VALUES(terminal_reason),
+  failure_code = VALUES(failure_code),
+  retryable = VALUES(retryable),
+  retry_of_run_id = VALUES(retry_of_run_id),
+  original_run_id = VALUES(original_run_id);
+
+INSERT INTO analysis_tasks (
+  analysis_task_id,
+  conversation_id,
+  workspace_id,
+  user_id,
+  business_domain_id,
+  question,
+  context_pack_json,
+  created_at,
+  updated_at
+) VALUES (
+  'analysis-task-seeded-sea-weekly-operations-report',
+  'conversation-seeded-sea-weekly-operations-report',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'business-domain-delivery-operations',
+  '查看作为历史参考工件的 SEA 周经营报告。',
+  CAST('{
+    "version": 1,
+    "suggestedPrompt": "基于当时的延迟率和履约输入，生成历史 SEA 周经营报告。",
+    "traceability": "direct_refs",
+    "capturedAt": "2026-06-05T03:00:12Z",
+    "root": {
+      "nodeId": "inspector-node-seeded-sea-weekly-operations-root",
+      "kind": "dashboardOverview",
+      "role": "inputContext",
+      "owner": {
+        "type": "analysisTask"
+      },
+      "title": "SEA 周经营分析输入快照",
+      "summary": "生成历史 SEA 周经营报告时使用的履约与收入输入上下文。",
+      "chips": ["Northstar Retail SEA", "Historical artifact input", "Delivery operations"],
+      "timeRange": {
+        "key": "last_7_days",
+        "label": "Last 7 days"
+      },
+      "capturedAt": "2026-06-05T03:00:12Z",
+      "children": [
+        {
+          "nodeId": "inspector-node-seeded-sea-weekly-operations-metric",
+          "kind": "metric",
+          "role": "inputContext",
+          "owner": {
+            "type": "analysisTask"
+          },
+          "title": "SEA 配送延迟率",
+          "summary": "历史报告生成时关注的履约延迟指标。",
+          "value": "配送延迟率 > 5.5% 进入关注",
+          "sourceRef": {
+            "type": "metric",
+            "metricId": "metric-sea-delivery-delay-rate"
+          },
+          "children": [
+            {
+              "nodeId": "inspector-node-seeded-sea-weekly-operations-table-delay",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "SEA 履约配送表",
+              "summary": "提供延迟订单和履约 SLA 输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sea-delivery-fulfillment"
+              }
+            },
+            {
+              "nodeId": "inspector-node-seeded-sea-weekly-operations-table-sales",
+              "kind": "dataTable",
+              "role": "inputContext",
+              "owner": {
+                "type": "analysisTask"
+              },
+              "title": "SEA 销售订单汇总表",
+              "summary": "提供区域订单节奏与收入确认输入。",
+              "sourceRef": {
+                "type": "dataTable",
+                "tableId": "table-sea-sales-order"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }' AS JSON),
+  '2026-06-05T11:00:12+08:00',
+  '2026-06-05T11:12:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  conversation_id = VALUES(conversation_id),
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  business_domain_id = VALUES(business_domain_id),
+  question = VALUES(question),
+  context_pack_json = VALUES(context_pack_json),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO conversations (
+  conversation_id,
+  workspace_id,
+  user_id,
+  current_run_id,
+  title,
+  status,
+  created_at,
+  updated_at
+) VALUES (
+  'conversation-seeded-sea-weekly-operations-report',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'analysis-seeded-sea-weekly-operations-report',
+  'SEA 周经营报告历史工件',
+  'closed',
+  '2026-06-05T11:00:12+08:00',
+  '2026-06-05T11:12:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  current_run_id = VALUES(current_run_id),
+  title = VALUES(title),
+  status = VALUES(status),
+  created_at = VALUES(created_at),
+  updated_at = VALUES(updated_at);
+
+INSERT INTO analysis_runs (
+  run_id,
+  workspace_id,
+  user_id,
+  analysis_task_id,
+  status,
+  phase,
+  outcome,
+  waiting_for,
+  created_at,
+  validating_at,
+  queued_at,
+  started_at,
+  waiting_since,
+  timeout_at,
+  cancel_requested_at,
+  cancelling_at,
+  completed_at,
+  failed_at,
+  cancelled_at,
+  expired_at,
+  rejected_at,
+  terminal_reason,
+  failure_code,
+  retryable,
+  retry_of_run_id,
+  original_run_id
+) VALUES (
+  'analysis-seeded-sea-weekly-operations-report',
+  'workspace-northstar-retail-sea',
+  'user-zoe',
+  'analysis-task-seeded-sea-weekly-operations-report',
+  'completed',
+  'delivery',
+  'success',
+  NULL,
+  '2026-06-05T11:00:12+08:00',
+  NULL,
+  NULL,
+  '2026-06-05T11:01:12+08:00',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  '2026-06-05T11:12:12+08:00',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  'seeded_reference_artifact',
+  NULL,
+  FALSE,
+  NULL,
+  NULL
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  analysis_task_id = VALUES(analysis_task_id),
+  status = VALUES(status),
+  phase = VALUES(phase),
+  outcome = VALUES(outcome),
+  waiting_for = VALUES(waiting_for),
+  created_at = VALUES(created_at),
+  validating_at = VALUES(validating_at),
+  queued_at = VALUES(queued_at),
+  started_at = VALUES(started_at),
+  waiting_since = VALUES(waiting_since),
+  timeout_at = VALUES(timeout_at),
+  cancel_requested_at = VALUES(cancel_requested_at),
+  cancelling_at = VALUES(cancelling_at),
+  completed_at = VALUES(completed_at),
+  failed_at = VALUES(failed_at),
+  cancelled_at = VALUES(cancelled_at),
+  expired_at = VALUES(expired_at),
+  rejected_at = VALUES(rejected_at),
+  terminal_reason = VALUES(terminal_reason),
+  failure_code = VALUES(failure_code),
+  retryable = VALUES(retryable),
+  retry_of_run_id = VALUES(retry_of_run_id),
+  original_run_id = VALUES(original_run_id);
+
+INSERT INTO source_evidence (
+  source_evidence_id,
+  run_id,
+  source_type,
+  source_id,
+  title,
+  snippet,
+  metadata_json,
+  confidence,
+  created_at
+) VALUES
+(
+  'source-evidence-refund-watch',
+  'analysis-seeded-weekly-business-report',
+  'data_table',
+  'table-refund-order',
+  '退款异常证据摘要',
+  '记录近期退款率抬升和客服标签聚合后的证据摘要。',
+  CAST('{"displayCategory":"refund_watch"}' AS JSON),
+  0.84,
+  '2026-06-05T10:58:12+08:00'
+),
+(
+  'source-evidence-sea-delivery-delay',
+  'analysis-seeded-sea-weekly-operations-report',
+  'data_table',
+  'table-sea-delivery-fulfillment',
+  'SEA 延迟异常证据摘要',
+  '汇总港口拥堵、承运商履约异常和运营备注的证据摘要。',
+  CAST('{"displayCategory":"delivery_delay_watch"}' AS JSON),
+  0.87,
+  '2026-06-05T11:08:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  source_type = VALUES(source_type),
+  source_id = VALUES(source_id),
+  title = VALUES(title),
+  snippet = VALUES(snippet),
+  metadata_json = VALUES(metadata_json),
+  confidence = VALUES(confidence),
+  created_at = VALUES(created_at);
+
+INSERT INTO reports (
+  report_id,
+  run_id,
+  workspace_id,
+  title,
+  summary,
+  source_evidence_json,
+  created_at
+) VALUES
+(
+  'report-weekly-business',
+  'analysis-seeded-weekly-business-report',
+  'workspace-northstar-retail-china',
+  '周经营分析报告',
+  '围绕收入确认节奏、退款抬升和库存错配整理的周经营摘要。',
+  CAST('["source-evidence-refund-watch"]' AS JSON),
+  '2026-06-05T11:00:12+08:00'
+),
+(
+  'report-sea-weekly-operations',
+  'analysis-seeded-sea-weekly-operations-report',
+  'workspace-northstar-retail-sea',
+  'SEA 周经营报告',
+  '围绕 SEA 区域渠道确认和履约延迟整理的周经营摘要。',
+  CAST('["source-evidence-sea-delivery-delay"]' AS JSON),
+  '2026-06-05T11:10:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  run_id = VALUES(run_id),
+  workspace_id = VALUES(workspace_id),
+  title = VALUES(title),
+  summary = VALUES(summary),
+  source_evidence_json = VALUES(source_evidence_json),
+  created_at = VALUES(created_at);
+
+INSERT INTO report_sections (
+  report_section_id,
+  report_id,
+  title,
+  content,
+  created_at
+) VALUES
+(
+  'report-section-weekly-business-next-step',
+  'report-weekly-business',
+  '下一步动作',
+  '优先复核退款抬升原因和收入确认窗口，再检查库存错配是否影响确认节奏。',
+  '2026-06-05T11:01:12+08:00'
+),
+(
+  'report-section-sea-weekly-operations-next-step',
+  'report-sea-weekly-operations',
+  '下一步动作',
+  '优先核对港口拥堵与承运商履约异常，再复核 SEA 配送 SLA 与延迟订单聚合口径。',
+  '2026-06-05T11:11:12+08:00'
+)
+ON DUPLICATE KEY UPDATE
+  report_id = VALUES(report_id),
+  title = VALUES(title),
+  content = VALUES(content),
+  created_at = VALUES(created_at);

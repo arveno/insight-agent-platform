@@ -462,6 +462,9 @@ INSERT INTO auth_sessions (
     assert "users.row_count=1" in verify_result.stdout
     assert "workspaces.row_count=2" in verify_result.stdout
     assert "workspace_memberships.row_count=2" in verify_result.stdout
+    assert "data_sources.row_count=4" in verify_result.stdout
+    assert "data_tables.row_count=6" in verify_result.stdout
+    assert "knowledge_documents.row_count=3" in verify_result.stdout
     assert "metrics.china.row_count=4" in verify_result.stdout
     assert "metrics.sea.row_count=2" in verify_result.stdout
     assert "metric_context_sources.row_count=12" in verify_result.stdout
@@ -486,17 +489,31 @@ INSERT INTO auth_sessions (
     assert "metricContextSources.seaDeliveryDelay.exists=1" in verify_result.stdout
     assert "analysisTask.contextPack.root.kind=dashboardOverview" in verify_result.stdout
     assert "analysisTask.contextPack.reportId=report-weekly-business" in verify_result.stdout
-    assert "tables=19" in verify_result.stdout
+    assert "tables=22" in verify_result.stdout
+    assert "analysis_tasks.row_count=4" in verify_result.stdout
+    assert "conversations.row_count=4" in verify_result.stdout
+    assert "analysis_runs.row_count=4" in verify_result.stdout
     assert "execution_attempts.row_count=0" in verify_result.stdout
     assert "run_events.row_count=0" in verify_result.stdout
     assert "tool_calls.row_count=0" in verify_result.stdout
     assert "model_calls.row_count=0" in verify_result.stdout
-    assert "source_evidence.row_count=0" in verify_result.stdout
-    assert "reports.row_count=0" in verify_result.stdout
-    assert "report_sections.row_count=0" in verify_result.stdout
+    assert "source_evidence.row_count=2" in verify_result.stdout
+    assert "reports.row_count=2" in verify_result.stdout
+    assert "report_sections.row_count=2" in verify_result.stdout
     assert "decisions.row_count=0" in verify_result.stdout
     assert "messages.row_count=0" in verify_result.stdout
     assert "message_streams.row_count=0" in verify_result.stdout
+    assert "metricContextSources.unresolved.row_count=0" in verify_result.stdout
+    assert "dataTables.unresolvedDataSource.row_count=0" in verify_result.stdout
+    assert "sourceEvidence.unresolvedRun.row_count=0" in verify_result.stdout
+    assert "sourceEvidence.unresolvedSource.row_count=0" in verify_result.stdout
+    assert "sourceEvidence.invalidLifecycle.row_count=0" in verify_result.stdout
+    assert "reports.unresolvedRun.row_count=0" in verify_result.stdout
+    assert "reports.unresolvedSourceEvidence.row_count=0" in verify_result.stdout
+    assert "reports.invalidLifecycle.row_count=0" in verify_result.stdout
+    assert "reportSections.unresolvedReport.row_count=0" in verify_result.stdout
+    assert "contextPack.futureReferencedArtifact.row_count=0" in verify_result.stdout
+    assert "contextPack.selfProducedArtifact.row_count=0" in verify_result.stdout
     assert "status=created" in verify_result.stdout
     assert "phase=intake" in verify_result.stdout
     execution_attempt_repository = ExecutionAttemptRepository(RuntimeFoundationMysqlCli())
@@ -601,4 +618,4 @@ LIMIT 1;
 def test_runtime_foundation_query_verify_fails_without_seed(runtime_foundation_env: None) -> None:
     verify_result = run_runtime_foundation_command("query-verify", check=False)
     assert verify_result.returncode != 0
-    assert "Missing expected query verify line: analysis_tasks.row_count=1" in verify_result.stderr
+    assert "Missing expected query verify line:" in verify_result.stderr
