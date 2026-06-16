@@ -49,7 +49,9 @@ expected_lines=(
   "decisions.report_link.exists=1"
   "messages.assistant.report_link.exists=1"
   "messages.assistant.turn.reused=1"
+  "messages.assistant.source_evidence.non_empty=1"
   "messages.assistant.source_evidence.linkage.valid=1"
+  "reports.source_evidence.non_empty=1"
   "reports.source_evidence.linkage.valid=1"
   "message_streams.run.row_count=0"
   "run_events.verification.started.exists=1"
@@ -57,6 +59,9 @@ expected_lines=(
   "run_events.delivery.started.exists=1"
   "run_events.artifact.persisted.exists=1"
   "run_events.run.completed.exists=1"
+  "run_events.verification.started.before.verification.passed=1"
+  "run_events.verification.passed.before.delivery.started=1"
+  "run_events.delivery.started.before.artifact.persisted=1"
   "run_events.artifact.persisted.before.run.completed=1"
 )
 

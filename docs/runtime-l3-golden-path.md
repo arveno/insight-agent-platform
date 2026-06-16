@@ -380,12 +380,13 @@ assistant message 的最小语义必须同时覆盖：
 
 1. builder 必须遍历 `AnalysisTask.contextPack.root`，选择带 canonical `sourceRef` 的 traceable nodes。
 2. 优先选择 `knowledgeDocument / knowledgeChunk / dataTable / metric` 类型；如某类型尚未进入正式 `SourceRef` schema，只能在 contracts 明确后启用，不能伪造字段绕过。
-3. `sourceEvidenceId` 必须由 runtime 生成 canonical id，或按 `runId + sourceRef` 派生 deterministic id；不得冻结为 demo business ID。
-4. `sourceType` 必须从当前 node 的 `sourceRef.type` 映射而来。
-5. `sourceId` 必须回到 canonical source id，例如 `knowledgeDocumentId / knowledgeChunkId / tableId / metricId`。
-6. `title / snippet` 必须来自当前 context node 的 lightweight persisted fields，例如 `title / summary / description`。
-7. `metadata` 至少要能反查 `nodeId`、`sourceRef`、`toolCallIds`、`modelCallIds` 与 `traceability`。
-8. 如果当前 run 没有任何可用 `sourceRef`，delivery 必须 409 honest failure；不得补 fake `SourceEvidence`，不得继续完成 run。
+3. `SourceEvidence` 必须按 `sourceType + sourceId` 去重；同优先级保留 context tree 中第一次出现的 node。
+4. `sourceEvidenceId` 必须由 runtime 生成 run-scoped deterministic safe id，或按 `runId + hash(sourceType + ":" + sourceId)` 派生；不得冻结为 demo business ID，也不得把原始特殊字符 sourceId 直接拼进正式 ID。
+5. `sourceType` 必须从当前 node 的 `sourceRef.type` 映射而来。
+6. `sourceId` 必须回到 canonical source id，例如 `knowledgeDocumentId / knowledgeChunkId / tableId / metricId`。
+7. `title / snippet` 必须来自当前 context node 的 lightweight persisted fields，例如 `title / summary / description`。
+8. `metadata` 至少要能反查 `nodeId`、`sourceType`、`sourceId`、`sourceRef`、`toolCallIds`、`modelCallIds` 与 `traceability`。
+9. 如果当前 run 没有任何可用 `sourceRef`，delivery 必须 409 honest failure；不得补 fake `SourceEvidence`，不得继续完成 run。
 
 demo slice 当前的 revenue 文档、表和 metric 仍然是 acceptance sample；它们说明 smoke input 会长什么样，不代表 runtime 只能识别这些固定 source。
 
@@ -403,6 +404,7 @@ demo slice 当前的 revenue 文档、表和 metric 仍然是 acceptance sample�
 8. 首轮 delivery 的 `Decision.status` 固定为 `proposed`。
 
 demo slice 中的 `report-revenue-gap-q2 / decision-revenue-gap-q2` 仍然只是 acceptance sample snapshot，用于 contracts example 和 smoke 回归，不得被 runtime builder 当成配置读取。
+`POST /analysis-runs/{runId}/delivery/complete` 仍然是正式 HTTP 写入边界：auth 必须来自 `AuthenticatedContext`，`producerId` 只表示 runtime producer metadata，不能替代 user/workspace ownership。
 
 ## 10. Expected Feedback / BadCase / Evaluation
 
@@ -466,10 +468,11 @@ follow-up 规则：
 1. `analysis-task-revenue-gap-q2`、`conversation-revenue-gap-q2`、`analysis-q2-revenue-gap` 同链存在。
 2. 当前 run 下的 assistant message 与原 user submit message 绑定同一 `turnId`。
 3. `runEvent` sequence 连续递增，且存在 `verification.started / verification.passed / delivery.started / artifact.persisted / run.completed`。
-4. `artifact.persisted.sequence < run.completed.sequence`。
+4. 必须满足 `verification.started.sequence < verification.passed.sequence < delivery.started.sequence < artifact.persisted.sequence < run.completed.sequence`。
 5. 当前 `runId` 至少落地 `1` 条 `SourceEvidence`、`1` 个 `Report`、`1` 条 `ReportSection`、`1` 个 `Decision`。
-6. assistant message 与 report 的 `sourceEvidenceIds` / `sourceEvidence` 只能引用同一 `runId` 下已持久化的 `SourceEvidence`。
-7. `Decision.reportId` 必须回挂到同一 `runId` 下的正式 `Report`。
+6. assistant message 的 `sourceEvidenceIds` 必须非空，且每个 id 都能回挂到同一 `runId` 下已持久化的 `SourceEvidence`。
+7. report 的 `sourceEvidence` 必须非空，且每个 id 都能回挂到同一 `runId` 下已持久化的 `SourceEvidence`。
+8. `Decision.reportId` 必须回挂到同一 `runId` 下的正式 `Report`。
 
 ### 12.2 Smoke 目标
 

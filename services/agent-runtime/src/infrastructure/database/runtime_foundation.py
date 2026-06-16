@@ -2653,6 +2653,60 @@ SELECT JSON_OBJECT(
         items = _require_array(payload.get("items"), "Message.items")
         return cast(list[MessageRecord], items)
 
+    def list_by_run_id(self, run_id: str) -> list[MessageRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'messageId', message_id,
+          'conversationId', conversation_id,
+          'analysisTaskId', analysis_task_id,
+          'turnId', turn_id,
+          'runId', run_id,
+          'role', role,
+          'content', content,
+          'status', status,
+          'sourceEvidenceIds', source_evidence_ids_json,
+          'toolCallIds', tool_call_ids_json,
+          'reportId', report_id,
+          'createdAt', created_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          message_id,
+          conversation_id,
+          analysis_task_id,
+          turn_id,
+          run_id,
+          role,
+          content,
+          status,
+          source_evidence_ids_json,
+          tool_call_ids_json,
+          report_id,
+          created_at,
+          completed_at
+        FROM messages
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_messages
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Message.items")
+        return cast(list[MessageRecord], items)
+
 
 class MessageStreamRepository:
     """Repository boundary for MessageStream persistence and lookup."""

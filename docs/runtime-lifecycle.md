@@ -1023,6 +1023,8 @@ delivery completion 的正式 trigger：
 
 ```text
 POST /analysis-runs/{runId}/delivery/complete
+  -> HTTP auth / ownership 仍然来自 AuthenticatedContext
+  -> producerId 只作为 runtime producer metadata，不是授权凭证
   -> 只允许 status=running 且 phase=synthesis 或 phase=delivery
   -> 基于当前 run 已持久化的 ToolCall / ModelCall / AnalysisTask.contextPack.root / RunEvent trace 生成交付物
   -> 真实持久化 SourceEvidence / Report / Decision / Message
@@ -1036,12 +1038,16 @@ POST /analysis-runs/{runId}/delivery/complete
 delivery/complete 不得创建新的 ExecutionAttempt。
 delivery/complete 不得自动 dispatch。
 delivery/complete 不得读取 golden-path frozen IDs 作为 runtime business facts。
+delivery/complete 必须先证明当前 user/workspace 拥有该 run；不存在的 run 返回 404，跨 user/workspace 链不得完成。
+delivery/complete 必须验证 AnalysisRun / AnalysisTask / Conversation 同链一致：workspaceId、userId、analysisTaskId、conversationId、currentRunId 必须互相匹配。
 delivery/complete 必须要求至少一个 ToolCall.status=succeeded。
 delivery/complete 必须要求至少一个 ModelCall.status=succeeded。
 delivery/complete 必须要求 tool_call.completed / model_call.completed / synthesis.started RunEvent 已持久化。
 delivery/complete 不得把 failed / skipped / cancelled / pending ToolCall 或 ModelCall 产物包装成正式交付物。
 delivery/complete 必须从 AnalysisTask.contextPack.root 中真实存在的 traceable sourceRef 生成 SourceEvidence；没有可用 sourceRef 时必须 409 honest failure。
+delivery/complete 必须按 sourceType + sourceId 去重 SourceEvidence，并生成 run-scoped deterministic safe sourceEvidenceId。
 delivery/complete 生成的 assistant Message 必须复用同一 conversationId / analysisTaskId / runId 的 user submit turnId；找不到该 user turnId 时必须 409 honest failure。
+delivery/complete 如果发现 assistant Message / SourceEvidence / Report / Decision / run.completed 任一已存在，必须 409 INVALID_STATE，不能 overwrite。
 delivery/complete 成功前不得写 verification.passed。
 artifact.persisted 必须在 delivery artifacts 全部落库后写。
 run.completed 必须在 artifact.persisted 后写。

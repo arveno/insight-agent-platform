@@ -163,10 +163,13 @@ def _analysis_run_delivery_service() -> AnalysisRunDeliveryService:
         analysis_run_repository=AnalysisRunRepository(database),
         analysis_task_repository=AnalysisTaskRepository(database),
         conversation_repository=ConversationRepository(database),
+        decision_repository=DecisionRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
         message_repository=MessageRepository(database),
         model_call_repository=ModelCallRepository(database),
+        report_repository=ReportRepository(database),
         run_event_repository=RunEventRepository(database),
+        source_evidence_repository=SourceEvidenceRepository(database),
         tool_call_repository=ToolCallRepository(database),
     )
 
@@ -639,6 +642,7 @@ def release_analysis_run_worker(
 )
 def complete_analysis_run_delivery(
     request: DeliveryCompleteRequest,
+    context: AuthenticatedContext,
     run_id: str = Path(alias="runId"),
 ) -> AnalysisRunRecord | JSONResponse:
     """Persist delivery artifacts from persisted execution state and complete the run."""
@@ -646,12 +650,12 @@ def complete_analysis_run_delivery(
     delivery_service = _analysis_run_delivery_service()
 
     try:
-        return delivery_service.complete_delivery(run_id, request.producerId)
-    except AnalysisRunConversationNotFoundError:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"Conversation not found for AnalysisRun: {run_id}",
+        _get_owned_run(run_id, context)
+        return delivery_service.complete_delivery(
+            run_id,
+            request.producerId,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
         )
     except KeyError:
         return runtime_error_response(

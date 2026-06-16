@@ -1009,10 +1009,14 @@ decision_memory
 
 - `SourceEvidence` 必须从当前 `AnalysisRun` 绑定的 `AnalysisTask.contextPack.root` 中真实存在的 traceable `sourceRef` 派生，不得使用 builder 私有常量、golden path frozen ID 或 fake source。
 - `SourceEvidence` 必须绑定当前 `runId`，`sourceId` 必须回到 `sourceRef` 的 canonical business id。
+- `SourceEvidence` 必须按 `sourceType + sourceId` 去重；同优先级保留 context tree 中第一次出现的 node，不得因为重复 `sourceRef` 生成多条 formal evidence。
+- `sourceEvidenceId` 必须是 run-scoped deterministic safe id；允许按 `runId + hash(sourceType + ":" + sourceId)` 派生，但不得直接把原始 `sourceId`（包含 `/`、空格或其他不安全字符）拼进正式 ID。
 - 当前优先选择的 `sourceRef.type` 顺序是 `knowledgeDocument / knowledgeChunk / dataTable / metric`；若某类型尚未进入 machine-checkable `SourceRef` schema，只能作为未来扩展规则，不得伪造字段绕过 contracts。
 - `title / snippet` 必须来自当前 context node 的 `title / summary / description` 等 persisted lightweight context fields，不得凭空生成完整正文。
-- `metadata` 可以记录 `nodeId`、canonical `sourceRef`、关联的 `toolCallIds / modelCallIds` 与 `traceability`，但不得把 raw `ToolCall` output 或 raw `ModelCall` output 原样塞回 `SourceEvidence`。
+- `metadata` 可以记录 `nodeId`、`sourceType`、`sourceId`、canonical `sourceRef`、关联的 `toolCallIds / modelCallIds` 与 `traceability`，但不得把 raw `ToolCall` output 或 raw `ModelCall` output 原样塞回 `SourceEvidence`。
 - 如果当前 run 的 `contextPack.root` 中没有任何可用 `sourceRef`，delivery 必须诚实失败；不得补 fake `SourceEvidence`，不得继续生成 `Report / Decision / assistant Message`。
+- `/analysis-runs/{runId}/delivery/complete` 是真实 artifacts 写入边界；HTTP 授权必须来自 `AuthenticatedContext`，`producerId` 只能作为 runtime producer metadata，不能替代 user/workspace ownership 授权。
+- delivery completion 不得 overwrite 既有 formal artifacts；如果当前 run 已存在 assistant `Message`、`SourceEvidence`、`Report`、`Decision` 或 `run.completed` event，必须 409 `INVALID_STATE`。
 
 ## 12. Memory
 

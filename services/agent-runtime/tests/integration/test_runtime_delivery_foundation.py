@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 # mypy: disable-error-code="untyped-decorator"
+import hashlib
 import json
 from collections.abc import Iterator
 from copy import deepcopy
@@ -12,9 +13,15 @@ from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisTaskRepository,
+    ConversationRepository,
+    DecisionRepository,
     MessageRepository,
     ModelCallRepository,
+    ReportRepository,
+    RunEventRepository,
     RuntimeFoundationMysqlCli,
+    SourceEvidenceRepository,
     ToolCallRepository,
 )
 from src.infrastructure.model_gateway.gateway import ModelGateway
@@ -161,6 +168,46 @@ TASK_PAYLOAD_WITHOUT_DELIVERY_SOURCES = {
 }
 
 
+def build_payload_with_duplicate_source_refs() -> tuple[dict[str, Any], str]:
+    special_source_id = "table/sales order #1"
+    payload = deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES)
+    context_pack = cast(dict[str, Any], payload["contextPack"])
+    root = cast(dict[str, Any], context_pack["root"])
+    root["children"] = [
+        build_context_node(
+            node_id="context-table-sales-order-special-1",
+            kind="dataTable",
+            title="销售订单特殊快照",
+            summary="用于验证重复 sourceRef 会去重，且 ID 需要安全编码。",
+            source_ref={
+                "type": "dataTable",
+                "tableId": special_source_id,
+            },
+        ),
+        build_context_node(
+            node_id="context-table-sales-order-special-2",
+            kind="dataTable",
+            title="销售订单特殊快照副本",
+            summary="与前一个节点引用同一个 dataTable sourceRef。",
+            source_ref={
+                "type": "dataTable",
+                "tableId": special_source_id,
+            },
+        ),
+        build_context_node(
+            node_id="context-metric-recognized-revenue",
+            kind="metric",
+            title="确认收入",
+            summary="保留一个独立 sourceRef，避免只剩单条证据。",
+            source_ref={
+                "type": "metric",
+                "metricId": "metric-recognized-revenue",
+            },
+        ),
+    ]
+    return payload, special_source_id
+
+
 def response_json_dict(payload: object) -> dict[str, Any]:
     return cast(dict[str, Any], payload)
 
@@ -296,6 +343,216 @@ def assert_no_delivery_outputs(
 
 def runtime_database() -> RuntimeFoundationMysqlCli:
     return RuntimeFoundationMysqlCli()
+
+
+def select_workspace(client: TestClient, workspace_id: str) -> None:
+    response = client.post("/auth/select-workspace", json={"workspaceId": workspace_id})
+    assert response.status_code == 200, response.text
+
+
+def overwrite_analysis_task(
+    analysis_task_id: str,
+    *,
+    conversation_id: str | None = None,
+    user_id: str | None = None,
+    workspace_id: str | None = None,
+) -> None:
+    repository = AnalysisTaskRepository(runtime_database())
+    analysis_task = repository.get_by_analysis_task_id(analysis_task_id)
+    repository.create(
+        {
+            **analysis_task,
+            "conversationId": conversation_id or analysis_task["conversationId"],
+            "userId": user_id or analysis_task["userId"],
+            "workspaceId": workspace_id or analysis_task["workspaceId"],
+        }
+    )
+
+
+def overwrite_conversation(
+    conversation_id: str,
+    *,
+    current_run_id: str | None = None,
+    user_id: str | None = None,
+    workspace_id: str | None = None,
+) -> None:
+    repository = ConversationRepository(runtime_database())
+    conversation = repository.get_by_conversation_id(conversation_id)
+    repository.create(
+        {
+            **conversation,
+            "currentRunId": current_run_id or conversation["currentRunId"],
+            "userId": user_id or conversation["userId"],
+            "workspaceId": workspace_id or conversation["workspaceId"],
+        }
+    )
+
+
+def persist_existing_source_evidence(run_id: str) -> None:
+    SourceEvidenceRepository(runtime_database()).create(
+        {
+            "sourceEvidenceId": f"source-evidence-{run_id}-preexisting",
+            "runId": run_id,
+            "sourceType": "metric",
+            "sourceId": "metric-preexisting",
+            "title": "Preexisting SourceEvidence",
+            "snippet": "preexisting artifact",
+            "metadata": {},
+            "confidence": 0.8,
+            "createdAt": "2026-06-12T11:30:00Z",
+        }
+    )
+
+
+def persist_existing_report(run_id: str, *, workspace_id: str) -> None:
+    ReportRepository(runtime_database()).create(
+        {
+            "reportId": f"report-{run_id}-preexisting",
+            "runId": run_id,
+            "workspaceId": workspace_id,
+            "title": "Preexisting Report",
+            "summary": "preexisting artifact",
+            "sections": [
+                {
+                    "reportSectionId": f"report-section-{run_id}-preexisting",
+                    "reportId": f"report-{run_id}-preexisting",
+                    "title": "核心结论",
+                    "content": "preexisting artifact",
+                    "createdAt": "2026-06-12T11:30:00Z",
+                }
+            ],
+            "sourceEvidence": [f"source-evidence-{run_id}-preexisting"],
+            "createdAt": "2026-06-12T11:30:00Z",
+        }
+    )
+
+
+def persist_existing_decision(run_id: str, *, workspace_id: str) -> None:
+    DecisionRepository(runtime_database()).create(
+        {
+            "decisionId": f"decision-{run_id}-preexisting",
+            "workspaceId": workspace_id,
+            "runId": run_id,
+            "reportId": f"report-{run_id}-preexisting",
+            "title": "Preexisting Decision",
+            "status": "proposed",
+            "createdAt": "2026-06-12T11:30:00Z",
+        }
+    )
+
+
+def persist_existing_assistant_message(
+    *,
+    analysis_task_id: str,
+    conversation_id: str,
+    run_id: str,
+    turn_id: str,
+) -> None:
+    MessageRepository(runtime_database()).create(
+        {
+            "messageId": f"message-{run_id}-assistant-preexisting",
+            "conversationId": conversation_id,
+            "analysisTaskId": analysis_task_id,
+            "turnId": turn_id,
+            "runId": run_id,
+            "role": "assistant",
+            "content": "preexisting artifact",
+            "status": "completed",
+            "sourceEvidenceIds": [],
+            "toolCallIds": [],
+            "reportId": None,
+            "createdAt": "2026-06-12T11:30:00Z",
+            "completedAt": "2026-06-12T11:30:00Z",
+        }
+    )
+
+
+def persist_existing_run_completed_event(run_id: str) -> None:
+    run_events = RunEventRepository(runtime_database()).list_by_run_id(run_id)
+    sequence = int(run_events[-1]["sequence"]) + 1
+    RunEventRepository(runtime_database()).create(
+        {
+            "eventId": f"event-{run_id}-run-completed-preexisting",
+            "runId": run_id,
+            "eventType": "run.completed",
+            "status": "succeeded",
+            "phase": "delivery",
+            "sequence": sequence,
+            "actor": "analysis_runtime",
+            "occurredAt": "2026-06-12T11:30:00Z",
+            "summary": "preexisting artifact",
+            "parentEventId": None,
+            "refType": None,
+            "refId": None,
+            "errorCode": None,
+            "errorMessage": None,
+            "nodeName": "run.completed",
+            "agentName": "analysis_runtime",
+            "toolName": None,
+            "startedAt": "2026-06-12T11:30:00Z",
+            "completedAt": "2026-06-12T11:30:00Z",
+        }
+    )
+
+
+def persist_existing_source_evidence_case(
+    run_id: str,
+    workspace_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+    turn_id: str,
+) -> None:
+    _ = (workspace_id, analysis_task_id, conversation_id, turn_id)
+    persist_existing_source_evidence(run_id)
+
+
+def persist_existing_report_case(
+    run_id: str,
+    workspace_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+    turn_id: str,
+) -> None:
+    _ = (analysis_task_id, conversation_id, turn_id)
+    persist_existing_report(run_id, workspace_id=workspace_id)
+
+
+def persist_existing_decision_case(
+    run_id: str,
+    workspace_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+    turn_id: str,
+) -> None:
+    _ = (analysis_task_id, conversation_id, turn_id)
+    persist_existing_decision(run_id, workspace_id=workspace_id)
+
+
+def persist_existing_assistant_message_case(
+    run_id: str,
+    workspace_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+    turn_id: str,
+) -> None:
+    _ = workspace_id
+    persist_existing_assistant_message(
+        analysis_task_id=analysis_task_id,
+        conversation_id=conversation_id,
+        run_id=run_id,
+        turn_id=turn_id,
+    )
+
+
+def persist_existing_run_completed_case(
+    run_id: str,
+    workspace_id: str,
+    analysis_task_id: str,
+    conversation_id: str,
+    turn_id: str,
+) -> None:
+    _ = (workspace_id, analysis_task_id, conversation_id, turn_id)
+    persist_existing_run_completed_event(run_id)
 
 
 def overwrite_tool_call_status(
@@ -615,7 +872,10 @@ def test_delivery_complete_rejects_failed_model_call_status(
     assert get_run_payload(client, run_id)["status"] == "running"
 
 
-@pytest.mark.parametrize("event_type", ["tool_call.completed", "model_call.completed"])
+@pytest.mark.parametrize(
+    "event_type",
+    ["tool_call.completed", "model_call.completed", "synthesis.started"],
+)
 def test_delivery_complete_requires_completed_tool_and_model_run_events(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -640,6 +900,94 @@ def test_delivery_complete_requires_completed_tool_and_model_run_events(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert event_type in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+def test_delivery_complete_requires_authenticated_owner_workspace(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    select_workspace(client, "workspace-northstar-retail-sea")
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert response.status_code == 404
+    assert response.json()["errorCode"] == "NOT_FOUND"
+
+    select_workspace(client, "workspace-northstar-retail-china")
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+def test_delivery_complete_rejects_cross_object_workspace_or_identity_mismatch(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    analysis_task_id = submit_payload["analysisTask"]["analysisTaskId"]
+
+    overwrite_analysis_task(
+        analysis_task_id,
+        workspace_id="workspace-northstar-retail-sea",
+        user_id="user-mismatch",
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "workspaceId" in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+def test_delivery_complete_rejects_cross_object_conversation_binding_mismatch(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    overwrite_conversation(
+        conversation_id,
+        current_run_id="analysis-run-unrelated",
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "currentRunId" in response.json()["message"]
     assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
@@ -672,6 +1020,52 @@ def test_delivery_complete_requires_original_user_turn_binding(
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "user submit message turnId" in response.json()["message"]
     assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+@pytest.mark.parametrize(
+    ("artifact_type", "persist_artifact"),
+    [
+        ("source_evidence", persist_existing_source_evidence_case),
+        ("report", persist_existing_report_case),
+        ("decision", persist_existing_decision_case),
+        ("assistant_message", persist_existing_assistant_message_case),
+        ("run_completed", persist_existing_run_completed_case),
+    ],
+)
+def test_delivery_complete_rejects_preexisting_delivery_artifacts(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    artifact_type: str,
+    persist_artifact: Any,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    analysis_task_id = submit_payload["analysisTask"]["analysisTaskId"]
+    workspace_id = execution_state["workerResult"]["analysisRun"]["workspaceId"]
+
+    persist_artifact(
+        run_id,
+        workspace_id,
+        analysis_task_id,
+        conversation_id,
+        submit_payload["userMessage"]["turnId"],
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert artifact_type in response.json()["message"]
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
@@ -713,3 +1107,54 @@ def test_delivery_complete_rejects_repeat_completion_without_duplicate_artifacts
     assert len(reports) == 1
     assert len(decisions) == 1
     assert [message["role"] for message in messages] == ["user", "assistant"]
+
+
+def test_delivery_complete_deduplicates_source_refs_and_generates_safe_ids(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_payload, special_source_id = build_payload_with_duplicate_source_refs()
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=task_payload,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert response.status_code == 202, response.text
+
+    source_evidence_items = response_json_dict(
+        client.get(f"/analysis-runs/{run_id}/source-evidence").json()
+    )["items"]
+    reports = response_json_dict(client.get(f"/analysis-runs/{run_id}/reports").json())["items"]
+    messages = response_json_dict(client.get(f"/conversations/{conversation_id}/messages").json())[
+        "items"
+    ]
+
+    special_items = [
+        item for item in source_evidence_items if item["sourceId"] == special_source_id
+    ]
+    assert len(special_items) == 1
+    special_item = special_items[0]
+    expected_hash = hashlib.sha1(f"data_table:{special_source_id}".encode()).hexdigest()[:16]
+    expected_source_evidence_id = f"source-evidence-{run_id}-{expected_hash}"
+
+    assert special_item["sourceEvidenceId"] == expected_source_evidence_id
+    assert special_item["sourceEvidenceId"].startswith(f"source-evidence-{run_id}-")
+    assert "/" not in special_item["sourceEvidenceId"]
+    assert " " not in special_item["sourceEvidenceId"]
+    assert special_item["metadata"]["nodeId"] == "context-table-sales-order-special-1"
+    assert special_item["metadata"]["sourceId"] == special_source_id
+    assert special_item["metadata"]["sourceType"] == "data_table"
+
+    [report] = reports
+    [assistant_message] = [message for message in messages if message["role"] == "assistant"]
+    assert report["sourceEvidence"].count(expected_source_evidence_id) == 1
+    assert assistant_message["sourceEvidenceIds"].count(expected_source_evidence_id) == 1
+    assert len(report["sourceEvidence"]) == len(source_evidence_items)

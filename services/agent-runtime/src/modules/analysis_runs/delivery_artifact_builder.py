@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha1
 from typing import Any
 
 from src.infrastructure.database.runtime_foundation import (
@@ -180,9 +181,16 @@ def _require_succeeded_model_calls(model_calls: list[ModelCallRecord]) -> list[M
 
 
 def _require_run_event(run_events: list[RunEventRecord], event_type: str) -> None:
-    if not any(event["eventType"] == event_type for event in run_events):
+    matching_events = [event for event in run_events if event["eventType"] == event_type]
+    if not matching_events:
         raise DeliveryArtifactBuildError(
             f"Persisted RunEvent trace must include {event_type} before delivery."
+        )
+    if event_type.endswith(".completed") and not any(
+        event["completedAt"] is not None for event in matching_events
+    ):
+        raise DeliveryArtifactBuildError(
+            f"Persisted RunEvent trace must include a completed {event_type} before delivery."
         )
 
 
@@ -207,16 +215,20 @@ def _require_user_submit_message(
 
 
 def _collect_source_evidence_candidates(root: InspectorTreeNode) -> list[SourceEvidenceCandidate]:
-    candidates: list[tuple[int, int, SourceEvidenceCandidate]] = []
+    candidates_by_key: dict[tuple[str, str], tuple[int, int, SourceEvidenceCandidate]] = {}
 
     for index, node in enumerate(_iter_nodes(root)):
         source_ref = node.get("sourceRef")
         candidate = _build_source_candidate(node=node, source_ref=source_ref)
         if candidate is None:
             continue
-        candidates.append((SOURCE_PRIORITY[source_ref["type"]], index, candidate))
+        priority = SOURCE_PRIORITY[source_ref["type"]]
+        dedupe_key = (candidate.source_type, candidate.source_id)
+        existing = candidates_by_key.get(dedupe_key)
+        if existing is None or priority < existing[0]:
+            candidates_by_key[dedupe_key] = (priority, index, candidate)
 
-    ordered_candidates = sorted(candidates, key=lambda item: (item[0], item[1]))
+    ordered_candidates = sorted(candidates_by_key.values(), key=lambda item: (item[0], item[1]))
     return [candidate for _, _, candidate in ordered_candidates]
 
 
@@ -267,7 +279,9 @@ def _build_source_evidence(
 ) -> SourceEvidenceRecord:
     metadata: dict[str, Any] = {
         "nodeId": candidate.node["nodeId"],
+        "sourceId": candidate.source_id,
         "sourceRef": candidate.source_ref,
+        "sourceType": candidate.source_type,
         "toolCallIds": [tool_call["toolCallId"] for tool_call in tool_calls],
         "modelCallIds": [model_call["modelCallId"] for model_call in model_calls],
         "traceability": analysis_task["contextPack"]["traceability"]
@@ -278,6 +292,7 @@ def _build_source_evidence(
     return {
         "sourceEvidenceId": _build_source_evidence_id(
             run_id=analysis_run["runId"],
+            source_type=candidate.source_type,
             source_id=candidate.source_id,
         ),
         "runId": analysis_run["runId"],
@@ -365,8 +380,9 @@ def _report_subject(
     return question
 
 
-def _build_source_evidence_id(*, run_id: str, source_id: str) -> str:
-    return f"source-evidence-{run_id}-{source_id}"
+def _build_source_evidence_id(*, run_id: str, source_type: str, source_id: str) -> str:
+    digest = sha1(f"{source_type}:{source_id}".encode()).hexdigest()[:16]
+    return f"source-evidence-{run_id}-{digest}"
 
 
 def _generate_deterministic_message_id(*, run_id: str) -> str:

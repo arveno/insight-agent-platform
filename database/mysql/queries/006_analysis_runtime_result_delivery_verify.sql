@@ -111,6 +111,25 @@ SELECT CONCAT(
 ) AS check_line;
 
 SELECT CONCAT(
+  'messages.assistant.source_evidence.non_empty=',
+  (
+    EXISTS(
+      SELECT 1
+      FROM messages
+      WHERE run_id = '__RUN_ID__'
+        AND role = 'assistant'
+    )
+    AND NOT EXISTS(
+      SELECT 1
+      FROM messages
+      WHERE run_id = '__RUN_ID__'
+        AND role = 'assistant'
+        AND COALESCE(JSON_LENGTH(source_evidence_ids_json), 0) = 0
+    )
+  )
+) AS check_line;
+
+SELECT CONCAT(
   'messages.assistant.source_evidence.linkage.valid=',
   NOT EXISTS(
     SELECT 1
@@ -128,6 +147,23 @@ SELECT CONCAT(
     WHERE message.run_id = '__RUN_ID__'
       AND message.role = 'assistant'
       AND evidence.source_evidence_id IS NULL
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'reports.source_evidence.non_empty=',
+  (
+    EXISTS(
+      SELECT 1
+      FROM reports
+      WHERE run_id = '__RUN_ID__'
+    )
+    AND NOT EXISTS(
+      SELECT 1
+      FROM reports
+      WHERE run_id = '__RUN_ID__'
+        AND COALESCE(JSON_LENGTH(source_evidence_json), 0) = 0
+    )
   )
 ) AS check_line;
 
@@ -202,6 +238,48 @@ SELECT CONCAT(
     FROM run_events
     WHERE run_id = '__RUN_ID__'
       AND event_type = 'run.completed'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'run_events.verification.started.before.verification.passed=',
+  EXISTS(
+    SELECT 1
+    FROM run_events verification_started
+    INNER JOIN run_events verification_passed
+      ON verification_passed.run_id = verification_started.run_id
+    WHERE verification_started.run_id = '__RUN_ID__'
+      AND verification_started.event_type = 'verification.started'
+      AND verification_passed.event_type = 'verification.passed'
+      AND verification_started.sequence < verification_passed.sequence
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'run_events.verification.passed.before.delivery.started=',
+  EXISTS(
+    SELECT 1
+    FROM run_events verification_passed
+    INNER JOIN run_events delivery_started
+      ON delivery_started.run_id = verification_passed.run_id
+    WHERE verification_passed.run_id = '__RUN_ID__'
+      AND verification_passed.event_type = 'verification.passed'
+      AND delivery_started.event_type = 'delivery.started'
+      AND verification_passed.sequence < delivery_started.sequence
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'run_events.delivery.started.before.artifact.persisted=',
+  EXISTS(
+    SELECT 1
+    FROM run_events delivery_started
+    INNER JOIN run_events artifact_event
+      ON artifact_event.run_id = delivery_started.run_id
+    WHERE delivery_started.run_id = '__RUN_ID__'
+      AND delivery_started.event_type = 'delivery.started'
+      AND artifact_event.event_type = 'artifact.persisted'
+      AND delivery_started.sequence < artifact_event.sequence
   )
 ) AS check_line;
 
