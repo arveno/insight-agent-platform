@@ -406,6 +406,10 @@ describe("AnalysisPage", () => {
     });
     expect(screen.getByText("User")).toBeTruthy();
     expect(screen.getByText("解释华东区域收入增速放缓的主要原因，并给出下一步建议。")).toBeTruthy();
+    expect(screen.getByText("Run created · intake")).toBeTruthy();
+    expect(
+      screen.getByText("记录 AnalysisRun 已创建并绑定 AnalysisTask / Conversation。")
+    ).toBeTruthy();
     expect(screen.queryByText("Assistant")).toBeNull();
     expect(screen.queryByText(/write path 暂未实现/)).toBeNull();
     expect(screen.queryByText("结果摘要")).toBeNull();

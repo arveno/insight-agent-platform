@@ -39,6 +39,10 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
     return null;
   }
 
+  const showRunStartState =
+    session.currentRun.status === "created" &&
+    !session.messages.some((message) => message.role === "assistant");
+
   return (
     <CardSurface
       aria-label="Analysis conversation"
@@ -62,6 +66,22 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
         }
       }}
     >
+      {showRunStartState ? (
+        <div
+          style={{
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            padding: token.paddingLG
+          }}
+        >
+          <Space direction="vertical" size={4} style={{ width: "100%" }}>
+            <Typography.Text strong>
+              {`Run ${session.currentRun.status} · ${session.currentRun.phase}`}
+            </Typography.Text>
+            <Typography.Text type="secondary">{session.currentRun.stageSummary}</Typography.Text>
+          </Space>
+        </div>
+      ) : null}
+
       <AnalysisMessageList
         messages={controller.messages}
         onSelectMessageAnchor={controller.onSelectMessageAnchor}

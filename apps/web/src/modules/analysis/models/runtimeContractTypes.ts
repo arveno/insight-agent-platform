@@ -33,6 +33,7 @@ export type {
 };
 
 export type AnalysisRunStatus = AnalysisRunContract["status"];
+export type AnalysisRunPhase = AnalysisRunContract["phase"];
 export type AnalysisRunEventStatus = RunEventContract["status"];
 export type AnalysisRunEventType = RunEventContract["eventType"];
 export type ConversationStatus = ConversationContract["status"];

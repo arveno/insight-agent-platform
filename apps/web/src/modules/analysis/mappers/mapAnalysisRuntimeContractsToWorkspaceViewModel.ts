@@ -297,6 +297,7 @@ function mapCurrentRun(
     errorSummaryText: currentRun.failureCode
       ? `${currentRun.failureCode}${currentRun.terminalReason ? ` · ${currentRun.terminalReason}` : ""}`
       : (currentRun.terminalReason ?? "0 blocking issues"),
+    phase: currentRun.phase,
     runId: currentRun.runId,
     stageSummary:
       lastRunEvent?.summary ?? `当前运行停留在 ${currentRun.phase} / ${currentRun.status}。`,
