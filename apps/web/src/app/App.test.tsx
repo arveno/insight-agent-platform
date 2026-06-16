@@ -451,12 +451,11 @@ describe("App", () => {
 
     fireEvent.click(within(chinaCard).getByRole("button", { name: "进入工作区" }));
 
-    expect(await screen.findByText("经营状态总览")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "当前工作区" })).toBeTruthy();
     expect(window.location.pathname).toBe("/dashboard");
     expect(screen.getByText("Northstar Retail China")).toBeTruthy();
     expect(screen.getAllByText("Zoe Chen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("analyst").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "当前工作区" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "用户入口" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull();
     expect(screen.queryByRole("button", { name: "切换工作区" })).toBeNull();
@@ -470,7 +469,7 @@ describe("App", () => {
 
     renderAppAt("/dashboard");
 
-    expect(await screen.findByText("经营状态总览")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "当前工作区" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "用户入口" }));
     fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));

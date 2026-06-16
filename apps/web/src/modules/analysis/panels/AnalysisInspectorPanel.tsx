@@ -1,31 +1,28 @@
+import { useMemo } from "react";
 import type { InspectorTreeNode } from "@insight-agent/contracts/generated/typescript";
-import type { ReactNode } from "react";
-import { Tag } from "antd";
+import { Space, Tag, Tree, Typography } from "antd";
+import type { DataNode } from "antd/es/tree";
 
+import { useI18n } from "../../../shared/i18n/I18nProvider";
 import { SidePanel } from "../../../shared/layout/panels/SidePanel";
+import { ContextTreeNodeRow } from "../../../shared/ui/lists/ContextTreeNodeRow";
+import { CardSurface } from "../../../shared/ui/surfaces/CardSurface";
+import { normalizeContextSourceChipLabel } from "../../../shared/view-model/contextSourceDisplay";
 import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
-import { useCurrentWorkspaceBinding } from "../../../shared/workspace/CurrentWorkspaceBindingProvider";
+import { renderContextTreeNodeRow } from "../../../shared/view-model/contextTreeNodeDisplay";
 import type { AnalysisWorkspaceState } from "../hooks/useAnalysisWorkspaceController";
 import type { AnalysisSessionViewModel } from "../models/analysisViewModel";
 import type { InspectorSubject } from "../models/inspectorSubject";
 import type {
   AnalysisInspectorRoot,
-  AnalysisInspectorRootKey,
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createEvidenceRootNodeId,
-  createModelCallsRootNodeId,
-  createReportsRootNodeId,
-  createRunHistoryRootNodeId,
+  createContextRootNodeId,
   createRunTraceRootNodeId,
-  createToolCallsRootNodeId,
   findInspectorTreePathNodes
 } from "../models/inspectorTree";
 import type { AnalysisTaskContextPack } from "../models/runtimeContractTypes";
-import { AnalysisContextTreeViewport } from "./inspector/AnalysisContextTreeViewport";
-import { InspectorRootPanel } from "./inspector/InspectorRootPanel";
-import { InspectorTreeNodePanel } from "./inspector/InspectorTreeNodePanel";
 import {
   buildInspectorNodePresentation,
   getInspectorPresentationTitle
@@ -36,308 +33,172 @@ export type AnalysisInspectorPanelProps = {
   contextNodeDisplay?: ContextTreeNodeDisplayMap;
   draftContext?: AnalysisTaskContextPack;
   inspectorTreeState: AnalysisInspectorTreeState;
-  onPopInspectorPath: () => void;
+  onSetInspectorExpandedNodeIds: (nodeIds: string[]) => void;
   onSelectInspectorNode: (nodeId: string) => void;
-  onSelectInspectorRoot: (rootKey: AnalysisInspectorRootKey) => void;
   selectedInspectorSubject?: InspectorSubject;
   selectedSession?: AnalysisSessionViewModel;
   workspaceState: AnalysisWorkspaceState;
 };
 
-function getInspectorRootsViewTitle(
-  draftContext: AnalysisTaskContextPack | undefined,
-  selectedSubject: InspectorSubject | undefined
-): string {
-  if (draftContext) {
-    return "分析详情";
-  }
-
-  if (selectedSubject?.type === "analysisRun") {
-    return "本次运行";
-  }
-
-  if (selectedSubject?.type === "analysisTask") {
-    return "本次分析请求";
-  }
-
-  return "分析详情";
-}
-
-function createContextViewportBoundaryTags(args: {
-  draftContext?: AnalysisTaskContextPack;
-  selectedSession?: AnalysisSessionViewModel;
-  selectedSubject?: InspectorSubject;
-  workspaceName: string;
-}): ReactNode {
-  const root = args.selectedSession?.analysisTaskContextPack?.root ?? args.draftContext?.root;
-  const tags = [
-    root?.timeRange?.label,
-    args.workspaceName,
-    args.selectedSession
-      ? args.selectedSubject?.type === "analysisTask"
-        ? "分析请求上下文"
-        : "当前运行上下文"
-      : "草稿上下文"
-  ].filter(Boolean) as string[];
-
-  return (
-    <span style={{ columnGap: 8, display: "inline-flex", flexWrap: "wrap", rowGap: 8 }}>
-      {tags.map((tag) => (
-        <Tag bordered={false} key={tag}>
-          {tag}
-        </Tag>
-      ))}
-    </span>
-  );
-}
-
-function createRunTraceRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
+function createRequestContextRoot(args: {
+  analysisTaskId: string;
+  contextPack: AnalysisTaskContextPack;
+}): AnalysisInspectorRoot {
   return {
-    nodeId: createRunTraceRootNodeId(session.currentRun.runId),
-    kind: "runTraceRoot",
-    role: "traceEvent",
+    key: "context",
+    owner: args.contextPack.root.owner,
+    title: "Request Context",
+    tree: {
+      nodeId: createContextRootNodeId(args.analysisTaskId),
+      kind: "directory",
+      role: "directory",
+      owner: args.contextPack.root.owner,
+      title: "Request Context",
+      summary: args.contextPack.root.summary,
+      chips: args.contextPack.root.timeRange ? [args.contextPack.root.timeRange.label] : undefined,
+      children: [args.contextPack.root]
+    }
+  };
+}
+
+function createRunTraceRoot(session: AnalysisSessionViewModel): AnalysisInspectorRoot {
+  return {
+    key: "run-trace",
     owner: {
       runId: session.currentRun.runId,
       type: "analysisRun"
     },
     title: "Run Trace",
-    summary: session.currentRun.stageSummary,
-    children: session.runEvents.map((event) => ({
-      nodeId: event.eventId,
-      kind: "traceEvent",
-      role: "traceEvent",
+    tree: {
+      nodeId: createRunTraceRootNodeId(session.currentRun.runId),
+      kind: "directory",
+      role: "directory",
       owner: {
-        runId: event.runId,
+        runId: session.currentRun.runId,
         type: "analysisRun"
       },
-      title: event.title,
-      summary: event.summary,
-      value: event.timestampText,
-      chips: [event.status]
-    }))
-  };
-}
-
-function createRunHistoryRoot(session: AnalysisSessionViewModel): InspectorTreeNode {
-  return {
-    nodeId: createRunHistoryRootNodeId(session.analysisTaskId),
-    kind: "runHistoryRoot",
-    role: "directory",
-    owner: {
-      analysisTaskId: session.analysisTaskId,
-      type: "analysisTask"
-    },
-    title: "运行记录",
-    summary: "AnalysisTask 之下的执行实例列表。",
-    children: [
-      {
-        nodeId: session.currentRun.runId,
-        kind: "analysisRun",
-        role: "runOutput",
+      title: "Run Trace",
+      summary: session.currentRun.stageSummary,
+      chips: [session.currentRun.status, session.currentRun.phase],
+      children: session.runEvents.map((event) => ({
+        nodeId: event.eventId,
+        kind: "traceEvent",
+        role: "traceEvent",
         owner: {
-          runId: session.currentRun.runId,
+          runId: event.runId,
           type: "analysisRun"
         },
-        title: session.currentRun.runId,
-        summary: session.currentRun.stageSummary,
-        value: `${session.currentRun.status} · ${session.currentRun.updatedAtText}`,
-        sourceRef: {
-          runId: session.currentRun.runId,
-          type: "analysisRun"
-        }
-      }
-    ]
-  };
-}
-
-function createCollectionRoot(args: {
-  kind: "evidence" | "reports" | "tool-calls" | "model-calls";
-  nodes: InspectorTreeNode[];
-  runId: string;
-  summary: string;
-  title: string;
-}): InspectorTreeNode {
-  const nodeIdByKind: Record<typeof args.kind, string> = {
-    "evidence": createEvidenceRootNodeId(args.runId),
-    "model-calls": createModelCallsRootNodeId(args.runId),
-    "reports": createReportsRootNodeId(args.runId),
-    "tool-calls": createToolCallsRootNodeId(args.runId)
-  };
-
-  return {
-    nodeId: nodeIdByKind[args.kind as keyof typeof nodeIdByKind],
-    kind: args.kind,
-    role: "directory",
-    owner: {
-      runId: args.runId,
-      type: "analysisRun"
-    },
-    title: args.title,
-    summary: args.summary,
-    children: args.nodes
+        title: event.eventType,
+        summary: event.summary,
+        description: event.detail,
+        value: event.timestampText,
+        chips: [event.status, event.durationText, event.toolName, event.modelName].filter(
+          (value): value is string => Boolean(value)
+        )
+      }))
+    }
   };
 }
 
 export function buildAnalysisInspectorRoots(
-  session: AnalysisSessionViewModel,
-  subject: InspectorSubject | undefined
+  session: AnalysisSessionViewModel
 ): AnalysisInspectorRoot[] {
-  const contextRoot = session.analysisTaskContextPack?.root ?? null;
-  const runTraceRoot = createRunTraceRoot(session);
-  const reportRoot = createCollectionRoot({
-    kind: "reports",
-    nodes: session.reportPreview
-      ? [
-          {
-            nodeId: session.reportPreview.reportId,
-            kind: "report",
-            role: "runOutput",
-            owner: {
-              runId: session.reportPreview.runId,
-              type: "analysisRun"
-            },
-            title: session.reportPreview.title,
-            summary: session.reportPreview.summary,
-            sourceRef: {
-              reportId: session.reportPreview.reportId,
-              type: "report"
-            },
-            children: session.reportPreview.sections.map((section) => ({
-              nodeId: section.key,
-              kind: "reportSection",
-              role: "reportSection",
-              owner: {
-                reportId: session.reportPreview!.reportId,
-                type: "report"
-              },
-              title: section.title,
-              summary: section.content
-            }))
-          }
-        ]
-      : [],
-    runId: session.currentRun.runId,
-    summary: "本次运行产出的报告对象。",
-    title: "输出报告"
-  });
-  const evidenceRoot = createCollectionRoot({
-    kind: "evidence",
-    nodes: session.sourceEvidence.map((item) => ({
-      nodeId: item.sourceEvidenceId,
-      kind: "sourceEvidence",
-      role: "evidenceItem",
-      owner: {
-        runId: item.runId,
-        type: "analysisRun"
-      },
-      title: item.title,
-      summary: item.summary,
-      chips: [item.confidenceText],
-      sourceRef: {
-        sourceEvidenceId: item.sourceEvidenceId,
-        type: "sourceEvidence"
-      }
-    })),
-    runId: session.currentRun.runId,
-    summary: "本次运行绑定的证据项。",
-    title: "生成证据"
-  });
-  const toolRoot = createCollectionRoot({
-    kind: "tool-calls",
-    nodes: session.toolDetails.map((item) => ({
-      nodeId: item.toolCallId,
-      kind: "toolCall",
-      role: "toolCall",
-      owner: {
-        runId: item.runId,
-        type: "analysisRun"
-      },
-      title: item.toolName,
-      summary: item.summary,
-      sourceRef: {
-        toolCallId: item.toolCallId,
-        type: "toolCall"
-      }
-    })),
-    runId: session.currentRun.runId,
-    summary: "本次运行的工具调用。",
-    title: "Tool Call"
-  });
-  const modelRoot = createCollectionRoot({
-    kind: "model-calls",
-    nodes: session.modelDetails.map((item) => ({
-      nodeId: item.modelCallId,
-      kind: "modelCall",
-      role: "modelCall",
-      owner: {
-        runId: item.runId,
-        type: "analysisRun"
-      },
-      title: item.modelId,
-      summary: `${item.provider} · ${item.latencyText} · ${item.costText}`,
-      value: item.tokenUsageText,
-      sourceRef: {
-        modelCallId: item.modelCallId,
-        type: "modelCall"
-      }
-    })),
-    runId: session.currentRun.runId,
-    summary: "本次运行的模型调用。",
-    title: "Model Call"
-  });
-  const runHistoryRoot = createRunHistoryRoot(session);
-
-  if (subject?.type === "analysisTask") {
-    return [
-      ...(contextRoot
-        ? [
-            {
-              key: "context" as const,
-              owner: contextRoot.owner,
-              title: contextRoot.title,
-              tree: contextRoot
-            }
-          ]
-        : []),
-      {
-        key: "run-history",
-        owner: runHistoryRoot.owner,
-        title: "运行记录",
-        tree: runHistoryRoot
-      }
-    ];
-  }
-
   return [
-    {
-      key: "run-trace",
-      owner: runTraceRoot.owner,
-      title: "Run Trace",
-      tree: runTraceRoot
-    },
-    ...(contextRoot
+    createRunTraceRoot(session),
+    ...(session.analysisTaskContextPack
       ? [
-          {
-            key: "context" as const,
-            owner: contextRoot.owner,
-            title: contextRoot.title,
-            tree: contextRoot
-          }
+          createRequestContextRoot({
+            analysisTaskId: session.analysisTaskId,
+            contextPack: session.analysisTaskContextPack
+          })
         ]
-      : []),
-    ...(session.sourceEvidence.length > 0
-      ? [{ key: "evidence" as const, owner: evidenceRoot.owner, title: "生成证据", tree: evidenceRoot }]
-      : []),
-    ...(session.reportPreview
-      ? [{ key: "reports" as const, owner: reportRoot.owner, title: "输出报告", tree: reportRoot }]
-      : []),
-    ...(session.toolDetails.length > 0
-      ? [{ key: "tool-calls" as const, owner: toolRoot.owner, title: "Tool Call", tree: toolRoot }]
-      : []),
-    ...(session.modelDetails.length > 0
-      ? [{ key: "model-calls" as const, owner: modelRoot.owner, title: "Model Call", tree: modelRoot }]
       : [])
   ];
+}
+
+function buildTreeData(args: {
+  activeNodeId: string | null;
+  contextNodeDisplay?: ContextTreeNodeDisplayMap;
+  contextRootNodeId?: string;
+  node: InspectorTreeNode;
+  rootKey: AnalysisInspectorRoot["key"];
+  t: ReturnType<typeof useI18n>["t"];
+}): DataNode {
+  const { activeNodeId, contextNodeDisplay, contextRootNodeId, node, rootKey, t } = args;
+  const isContextNode = rootKey === "context" && node.nodeId !== contextRootNodeId;
+  const isTraceRoot = rootKey === "run-trace" && node.kind === "directory";
+  const secondaryText =
+    isTraceRoot || node.nodeId === contextRootNodeId ? node.summary ?? node.children?.[0]?.title : undefined;
+
+  return {
+    children: node.children?.map((child) =>
+      buildTreeData({
+        activeNodeId,
+        contextNodeDisplay,
+        contextRootNodeId,
+        node: child,
+        rootKey,
+        t
+      })
+    ),
+    key: node.nodeId,
+    title: isContextNode ? (
+      renderContextTreeNodeRow({
+        activeNodeId: activeNodeId ?? node.nodeId,
+        node,
+        nodeDisplay: contextNodeDisplay,
+        t
+      })
+    ) : (
+      <ContextTreeNodeRow
+        count={node.children?.length}
+        secondaryText={secondaryText}
+        selected={activeNodeId === node.nodeId}
+        title={node.title}
+        valueText={isTraceRoot ? undefined : node.value}
+      />
+    )
+  };
+}
+
+function findSelectedPath(
+  roots: AnalysisInspectorRoot[],
+  selectedNodeId: string | null
+): InspectorTreeNode[] | null {
+  if (roots.length === 0) {
+    return null;
+  }
+
+  if (selectedNodeId) {
+    for (const root of roots) {
+      const path = findInspectorTreePathNodes(root.tree, selectedNodeId);
+
+      if (path) {
+        return path;
+      }
+    }
+  }
+
+  return [roots[0]!.tree];
+}
+
+function renderChipList(args: {
+  chips: string[];
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  const chips = args.chips.map((chip) => normalizeContextSourceChipLabel(args.t, chip) ?? chip);
+
+  if (chips.length === 0) {
+    return null;
+  }
+
+  return (
+    <Space size={[8, 8]} wrap>
+      {chips.map((chip) => (
+        <Tag key={chip}>{chip}</Tag>
+      ))}
+    </Space>
+  );
 }
 
 export function AnalysisInspectorPanel({
@@ -345,71 +206,53 @@ export function AnalysisInspectorPanel({
   contextNodeDisplay,
   draftContext,
   inspectorTreeState,
-  onPopInspectorPath,
+  onSetInspectorExpandedNodeIds,
   onSelectInspectorNode,
-  onSelectInspectorRoot,
   selectedInspectorSubject,
   selectedSession,
   workspaceState
 }: AnalysisInspectorPanelProps) {
-  const { workspaceName } = useCurrentWorkspaceBinding();
-  const roots = selectedSession
-    ? buildAnalysisInspectorRoots(selectedSession, selectedInspectorSubject)
-    : draftContext
-      ? [
-          {
-            key: "context" as const,
-            owner: draftContext.root.owner,
-            title: draftContext.root.title,
-            tree: draftContext.root
-          }
-        ]
-      : [];
-  const shouldRenderDraftContextViewport = Boolean(draftContext && !selectedSession);
-
-  const activeRoot =
-    inspectorTreeState.rootKey === null
-      ? null
-      : roots.find((root) => root.key === inspectorTreeState.rootKey) ?? null;
-  const requestedMissingContextRoot = Boolean(
-    selectedSession && inspectorTreeState.rootKey === "context" && !activeRoot
+  const { t } = useI18n();
+  const roots = useMemo(
+    () =>
+      selectedSession
+        ? buildAnalysisInspectorRoots(selectedSession)
+        : draftContext
+          ? [
+              createRequestContextRoot({
+                analysisTaskId: "draft",
+                contextPack: draftContext
+              })
+            ]
+          : [],
+    [draftContext, selectedSession]
   );
-  const activeContextRoot =
-    activeRoot?.key === "context"
-      ? activeRoot.tree
-      : shouldRenderDraftContextViewport
-        ? draftContext!.root
-        : null;
-  const activeContextNodeDisplay = shouldRenderDraftContextViewport ? contextNodeDisplay : undefined;
-  const isContextViewport = Boolean(activeContextRoot);
-  const selectedPathNodes = activeRoot
-    ? findInspectorTreePathNodes(activeRoot.tree, inspectorTreeState.path)
-    : null;
+  const selectedPathNodes = useMemo(
+    () => findSelectedPath(roots, inspectorTreeState.selectedNodeId),
+    [inspectorTreeState.selectedNodeId, roots]
+  );
   const selectedNode = selectedPathNodes?.at(-1) ?? null;
   const selectedNodePresentation = selectedNode
     ? buildInspectorNodePresentation(selectedNode, selectedPathNodes?.slice(0, -1) ?? [])
     : null;
-  const panelTitle = selectedNodePresentation
-    ? isContextViewport
-      ? "上下文目录"
-      : getInspectorPresentationTitle(selectedNodePresentation, {
-          includeChildCount: selectedNode?.kind === "directory"
+  const treeData = useMemo(
+    () =>
+      roots.map((root) =>
+        buildTreeData({
+          activeNodeId: selectedNode?.nodeId ?? null,
+          contextNodeDisplay,
+          contextRootNodeId: root.key === "context" ? root.tree.nodeId : undefined,
+          node: root.tree,
+          rootKey: root.key,
+          t
         })
-    : isContextViewport
-      ? "上下文目录"
-      : getInspectorRootsViewTitle(draftContext, selectedInspectorSubject);
-  const panelDescription = isContextViewport
-    ? createContextViewportBoundaryTags({
-        draftContext,
-        selectedSession,
-        selectedSubject: selectedInspectorSubject,
-        workspaceName
-      })
-    : selectedNodePresentation?.description ?? contextPanelNote;
+      ),
+    [contextNodeDisplay, roots, selectedNode?.nodeId, t]
+  );
 
   return (
     <SidePanel
-      description={panelDescription}
+      description={contextPanelNote}
       empty={
         workspaceState.kind === "draft"
           ? {
@@ -417,30 +260,72 @@ export function AnalysisInspectorPanel({
               title: "分析详情"
             }
           : {
-              description: "当前消息没有可展示的分析详情。",
+              description:
+                selectedInspectorSubject?.type === "analysisTask"
+                  ? "当前分析请求没有可展示的上下文树。"
+                  : "当前消息没有可展示的分析详情。",
               title: "分析详情"
             }
       }
-      title={panelTitle}
+      title="分析详情"
     >
-      {requestedMissingContextRoot ? null : roots.length === 0 ? null : isContextViewport && activeContextRoot ? (
-        <AnalysisContextTreeViewport
-          initialPath={inspectorTreeState.path}
-          nodeDisplay={activeContextNodeDisplay}
-          onBack={selectedSession ? onPopInspectorPath : undefined}
-          root={activeContextRoot}
-          showBack={Boolean(selectedSession && activeRoot?.key === "context")}
-        />
-      ) : !activeRoot || !selectedNode ? (
-        <InspectorRootPanel onSelectRoot={onSelectInspectorRoot} roots={roots} />
-      ) : (
-        <InspectorTreeNodePanel
-          ancestors={selectedPathNodes?.slice(0, -1) ?? []}
-          node={selectedNode}
-          onBack={onPopInspectorPath}
-          onSelectChild={onSelectInspectorNode}
-          showBack={inspectorTreeState.path.length >= 1}
-        />
+      {roots.length === 0 ? null : (
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          <Tree
+            aria-label="Analysis inspector tree"
+            blockNode
+            expandedKeys={inspectorTreeState.expandedNodeIds}
+            onExpand={(keys) => onSetInspectorExpandedNodeIds(keys.map((key) => String(key)))}
+            onSelect={(selectedKeys) => {
+              const nodeId = selectedKeys[0];
+
+              if (nodeId) {
+                onSelectInspectorNode(String(nodeId));
+              }
+            }}
+            selectedKeys={selectedNode ? [selectedNode.nodeId] : []}
+            treeData={treeData}
+          />
+
+          {selectedNodePresentation ? (
+            <CardSurface>
+              <Space direction="vertical" size={8} style={{ width: "100%" }}>
+                {selectedNodePresentation.eyebrow ? (
+                  <Typography.Text type="secondary">
+                    {selectedNodePresentation.eyebrow}
+                  </Typography.Text>
+                ) : null}
+                <Typography.Text strong>
+                  {getInspectorPresentationTitle(selectedNodePresentation, {
+                    includeChildCount: selectedNode?.kind === "directory"
+                  })}
+                </Typography.Text>
+                {selectedNodePresentation.value ? (
+                  <Typography.Text>{selectedNodePresentation.value}</Typography.Text>
+                ) : null}
+                {selectedNodePresentation.description ? (
+                  <Typography.Paragraph style={{ margin: 0 }}>
+                    {selectedNodePresentation.description}
+                  </Typography.Paragraph>
+                ) : null}
+                {selectedNodePresentation.hasChildren ? (
+                  <Typography.Text type="secondary">
+                    {`包含 ${selectedNodePresentation.childCount} 个子节点`}
+                  </Typography.Text>
+                ) : null}
+                {renderChipList({
+                  chips: selectedNodePresentation.chips,
+                  t
+                })}
+                {selectedNodePresentation.disabledReason ? (
+                  <Typography.Text type="secondary">
+                    {selectedNodePresentation.disabledReason}
+                  </Typography.Text>
+                ) : null}
+              </Space>
+            </CardSurface>
+          ) : null}
+        </Space>
       )}
     </SidePanel>
   );

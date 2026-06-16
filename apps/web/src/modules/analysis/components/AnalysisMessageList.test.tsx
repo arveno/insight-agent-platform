@@ -42,7 +42,7 @@ const customMessages: AnalysisMessage[] = [
 ];
 
 describe("AnalysisMessageList", () => {
-  it("renders from messages and only lets assistant messages drive the inspector anchor", () => {
+  it("renders from messages and lets both user and assistant messages drive the inspector anchor", () => {
     const onSelectMessageAnchor = vi.fn();
 
     render(
@@ -63,10 +63,11 @@ describe("AnalysisMessageList", () => {
     expect(screen.getByText("只渲染传入的 assistant 消息。")).toBeTruthy();
     expect(screen.getByText("用户消息只表示本次问题，不作为右侧分析详情入口。")).toBeTruthy();
     expect(screen.queryByText("System")).toBeNull();
-    expect(screen.queryByRole("button", { name: /用户消息只表示本次问题/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /用户消息只表示本次问题/ }));
+    expect(onSelectMessageAnchor).toHaveBeenCalledWith("message-user-only");
 
     fireEvent.click(screen.getByRole("button", { name: /只渲染传入的 assistant 消息/ }));
     expect(onSelectMessageAnchor).toHaveBeenCalledWith("message-assistant-only");
-    expect(onSelectMessageAnchor).toHaveBeenCalledTimes(1);
+    expect(onSelectMessageAnchor).toHaveBeenCalledTimes(2);
   });
 });

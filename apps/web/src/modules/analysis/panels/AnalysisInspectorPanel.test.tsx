@@ -11,11 +11,15 @@ import {
   createMetricRiskViewModel,
   createMetricStatusViewModel
 } from "../../../shared/utils/viewModelState";
-import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
 import {
   formatMetricDisplayValue,
   formatMetricTrendLabel
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
+import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
+import {
+  createContextRootNodeId,
+  createRunTraceRootNodeId
+} from "../models/inspectorTree";
 import {
   AnalysisInspectorPanel,
   buildAnalysisInspectorRoots
@@ -125,7 +129,7 @@ function createSessionWithoutContextPack() {
 }
 
 describe("AnalysisInspectorPanel", () => {
-  it("renders dashboard draft context directly as a standardized context tree viewport", () => {
+  it("renders draft context inside the unified Request Context tree", () => {
     const draftContext = createDashboardDraftContext();
     const contextNodeDisplay = createDashboardContextNodeDisplay();
 
@@ -135,37 +139,25 @@ describe("AnalysisInspectorPanel", () => {
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
           contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
-          inspectorTreeState={{ path: [], rootKey: null }}
-          onPopInspectorPath={() => undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [createContextRootNodeId("draft"), draftContext.root.nodeId],
+            selectedNodeId: createContextRootNodeId("draft")
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedSession={undefined}
           workspaceState={{ kind: "draft" }}
         />
       </TestProviders>
     );
 
-    const rootNode = getTreeNodeByTitle("经营状态总览");
-    const metricSection = getTreeNodeByTitle("核心指标");
-    const riskSection = getTreeNodeByTitle("风险异常");
-    const reportEvidenceSection = getTreeNodeByTitle("报告与证据");
-
-    expect(screen.getByText("上下文目录")).toBeTruthy();
+    expect(screen.getByLabelText("Analysis inspector tree")).toBeTruthy();
+    expect(screen.getByText("Request Context")).toBeTruthy();
+    expect(screen.getByText("经营状态总览")).toBeTruthy();
     expect(screen.getByText("Last 30 days")).toBeTruthy();
-    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
-    expect(screen.getByText("草稿上下文")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: new RegExp(draftContext.root.title) })).toBeNull();
     expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
-    expect(screen.queryByText(draftContext.root.summary ?? "")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Request Context/ })).toBeNull();
     expect(screen.queryByText(/^Context$/)).toBeNull();
-    expect(screen.queryByText("包含内容")).toBeNull();
-    expect(screen.queryByText(/sourceEvidenceId:/)).toBeNull();
-    expect(screen.queryByText(/metricId:/)).toBeNull();
-    expect(screen.getByText("经营状态总览").closest("[data-context-tree-row-state='selected']")).toBeTruthy();
-    expect(normalizeTextContent(rootNode)).toContain("4 指标 · 3 风险 · 2 证据");
-    expect(normalizeTextContent(metricSection)).toMatch(/核心指标\s*4/);
-    expect(normalizeTextContent(riskSection)).toMatch(/风险异常\s*3/);
-    expect(normalizeTextContent(reportEvidenceSection)).toMatch(/报告与证据\s*2/);
   });
 
   it("reuses the dashboard route-state nodeDisplay for context-tree metric badges while still sanitizing report source chips", () => {
@@ -182,17 +174,16 @@ describe("AnalysisInspectorPanel", () => {
           contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
           inspectorTreeState={{
-            path: [
+            expandedNodeIds: [
+              createContextRootNodeId("draft"),
               draftContext.root.nodeId,
               metricSection.nodeId,
-              revenueMetric.nodeId,
-              revenueReport.nodeId
+              revenueMetric.nodeId
             ],
-            rootKey: null
+            selectedNodeId: revenueReport.nodeId
           }}
-          onPopInspectorPath={() => undefined}
+          onSetInspectorExpandedNodeIds={() => undefined}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedSession={undefined}
           workspaceState={{ kind: "draft" }}
         />
@@ -209,7 +200,7 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("报告 · 支撑报告")).toBeTruthy();
     expect(normalizeTextContent(reportNode)).not.toContain("supporting_report");
     expect(normalizeTextContent(reportNode)).not.toContain("report");
-    expect(screen.queryByText(/supporting_report|report/)).toBeNull();
+    expect(screen.queryAllByText(/supporting_report|report/)).toHaveLength(0);
     expect(screen.queryByText(/风险 medium|风险 high|风险 low/)).toBeNull();
   });
 
@@ -227,17 +218,16 @@ describe("AnalysisInspectorPanel", () => {
           contextNodeDisplay={contextNodeDisplay}
           draftContext={draftContext}
           inspectorTreeState={{
-            path: [
+            expandedNodeIds: [
+              createContextRootNodeId("draft"),
               draftContext.root.nodeId,
               metricSection.nodeId,
-              refundMetric.nodeId,
-              refundEvidence.nodeId
+              refundMetric.nodeId
             ],
-            rootKey: null
+            selectedNodeId: refundEvidence.nodeId
           }}
-          onPopInspectorPath={() => undefined}
+          onSetInspectorExpandedNodeIds={() => undefined}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedSession={undefined}
           workspaceState={{ kind: "draft" }}
         />
@@ -249,26 +239,24 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.getByText("证据 · 支撑证据")).toBeTruthy();
     expect(normalizeTextContent(evidenceNode)).not.toContain("supporting_evidence");
     expect(normalizeTextContent(evidenceNode)).not.toContain("sourceEvidence");
-    expect(screen.queryByText(/supporting_report|supporting_evidence|sourceEvidence/)).toBeNull();
+    expect(screen.queryAllByText(/supporting_report|supporting_evidence|sourceEvidence/)).toHaveLength(0);
   });
 
-  it("does not render a context root selector when the selected session has no context pack", () => {
+  it("does not surface a fake Request Context root when the selected session has no context pack", () => {
     const session = createSessionWithoutContextPack();
-    const roots = buildAnalysisInspectorRoots(session, {
-      type: "analysisRun",
-      analysisTaskId: session.analysisTaskId,
-      runId: session.currentRun.runId
-    });
+    const roots = buildAnalysisInspectorRoots(session);
 
     render(
       <TestProviders>
         <AnalysisInspectorPanel
           contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
           draftContext={undefined}
-          inspectorTreeState={{ path: [], rootKey: null }}
-          onPopInspectorPath={() => undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [createRunTraceRootNodeId(session.currentRun.runId)],
+            selectedNodeId: createRunTraceRootNodeId(session.currentRun.runId)
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedInspectorSubject={{
             type: "analysisRun",
             analysisTaskId: session.analysisTaskId,
@@ -281,57 +269,25 @@ describe("AnalysisInspectorPanel", () => {
     );
 
     expect(roots.find((root) => root.key === "context")).toBeUndefined();
-    expect(screen.getByText("本次运行")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Run Trace/ })).toBeTruthy();
-    expect(screen.queryByText("本次请求上下文")).toBeNull();
-    expect(screen.queryByText("当前请求没有附带上下文。")).toBeNull();
+    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.queryByText("Request Context")).toBeNull();
   });
 
-  it("shows the standard empty state instead of a fake context root when the selected session has no context pack", () => {
-    const session = createSessionWithoutContextPack();
-
-    render(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
-          draftContext={undefined}
-          inspectorTreeState={{
-            path: [],
-            rootKey: "context"
-          }}
-          onPopInspectorPath={() => undefined}
-          onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
-          selectedInspectorSubject={{
-            type: "analysisRun",
-            analysisTaskId: session.analysisTaskId,
-            runId: session.currentRun.runId
-          }}
-          selectedSession={session}
-          workspaceState={{ kind: "ready" }}
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByText("当前消息没有可展示的分析详情。")).toBeTruthy();
-    expect(screen.queryByLabelText("Analysis context tree viewport")).toBeNull();
-    expect(screen.queryByText("上下文目录")).toBeNull();
-    expect(screen.queryByText("本次请求上下文")).toBeNull();
-    expect(screen.queryByText("当前请求没有附带上下文。")).toBeNull();
-  });
-
-  it("defaults the draft context root to expanded and lets the user collapse it", async () => {
+  it("lets the unified tree collapse and expand request-context branches", async () => {
     const draftContext = createDashboardDraftContext();
+    const onSetInspectorExpandedNodeIds = vi.fn();
 
     render(
       <TestProviders>
         <AnalysisInspectorPanel
           contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
           draftContext={draftContext}
-          inspectorTreeState={{ path: [], rootKey: null }}
-          onPopInspectorPath={() => undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [createContextRootNodeId("draft"), draftContext.root.nodeId],
+            selectedNodeId: createContextRootNodeId("draft")
+          }}
+          onSetInspectorExpandedNodeIds={onSetInspectorExpandedNodeIds}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedSession={undefined}
           workspaceState={{ kind: "draft" }}
         />
@@ -346,49 +302,15 @@ describe("AnalysisInspectorPanel", () => {
     expect(rootSwitcher).toBeTruthy();
     fireEvent.click(rootSwitcher!);
 
-    expect(screen.getByText("经营状态总览")).toBeTruthy();
     await waitFor(() => {
-      expect(screen.queryByText("核心指标")).toBeNull();
+      expect(onSetInspectorExpandedNodeIds).toHaveBeenCalled();
     });
   });
 
-  it("keeps run roots view for analysis run subjects and opens context through the root selector", () => {
+  it("renders one unified inspector tree with Run Trace and Request Context as sibling roots", () => {
     const session = analysisStaticViewModel.sessions[0]!;
-    const onSelectInspectorRoot = vi.fn();
-
-    render(
-      <TestProviders>
-        <AnalysisInspectorPanel
-          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
-          draftContext={undefined}
-          inspectorTreeState={{ path: [], rootKey: null }}
-          onPopInspectorPath={() => undefined}
-          onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={onSelectInspectorRoot}
-          selectedInspectorSubject={{
-            type: "analysisRun",
-            analysisTaskId: session.analysisTaskId,
-            runId: session.currentRun.runId
-          }}
-          selectedSession={session}
-          workspaceState={{ kind: "ready" }}
-        />
-      </TestProviders>
-    );
-
-    expect(screen.getByText("本次运行")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Run Trace/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: new RegExp(session.analysisTaskContextPack!.root.title) })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: new RegExp(session.analysisTaskContextPack!.root.title) }));
-
-    expect(onSelectInspectorRoot).toHaveBeenCalledWith("context");
-  });
-
-  it("shows the selected session context root as a context tree viewport with a back action", () => {
-    const session = analysisStaticViewModel.sessions[0]!;
-    const onPopInspectorPath = vi.fn();
+    const runTraceRootNodeId = createRunTraceRootNodeId(session.currentRun.runId);
+    const requestContextRootNodeId = createContextRootNodeId(session.analysisTaskId);
 
     render(
       <TestProviders>
@@ -396,12 +318,11 @@ describe("AnalysisInspectorPanel", () => {
           contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
           draftContext={undefined}
           inspectorTreeState={{
-            path: [session.analysisTaskContextPack!.root.nodeId],
-            rootKey: "context"
+            expandedNodeIds: [runTraceRootNodeId, requestContextRootNodeId],
+            selectedNodeId: session.runEvents[0]?.eventId ?? runTraceRootNodeId
           }}
-          onPopInspectorPath={onPopInspectorPath}
+          onSetInspectorExpandedNodeIds={() => undefined}
           onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
           selectedInspectorSubject={{
             type: "analysisRun",
             analysisTaskId: session.analysisTaskId,
@@ -413,53 +334,44 @@ describe("AnalysisInspectorPanel", () => {
       </TestProviders>
     );
 
-    expect(screen.getByText("上下文目录")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "返回上一级" })).toBeTruthy();
-    expect(screen.getByText(session.analysisTaskContextPack!.root.title)).toBeTruthy();
-    expect(screen.queryByText(session.analysisTaskContextPack!.root.summary ?? "")).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
-    expect(onPopInspectorPath).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Analysis inspector tree")).toBeTruthy();
+    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getByText("Request Context")).toBeTruthy();
+    expect(screen.getAllByText("run.created").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Run Trace/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
   });
 
-  it("shows the draft empty state when no context pack is attached", () => {
+  it("selects roots and leaves through the unified tree callback instead of a root-card mode", () => {
+    const session = analysisStaticViewModel.sessions[0]!;
+    const onSelectInspectorNode = vi.fn();
+
     render(
       <TestProviders>
         <AnalysisInspectorPanel
-          contextPanelNote="右侧会显示当前草稿将要附带的分析详情。"
+          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
           draftContext={undefined}
-          inspectorTreeState={{ path: [], rootKey: null }}
-          onPopInspectorPath={() => undefined}
-          onSelectInspectorNode={() => undefined}
-          onSelectInspectorRoot={() => undefined}
-          selectedSession={undefined}
-          workspaceState={{ kind: "draft" }}
+          inspectorTreeState={{
+            expandedNodeIds: [
+              createRunTraceRootNodeId(session.currentRun.runId),
+              createContextRootNodeId(session.analysisTaskId)
+            ],
+            selectedNodeId: session.runEvents[0]?.eventId ?? createRunTraceRootNodeId(session.currentRun.runId)
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
+          onSelectInspectorNode={onSelectInspectorNode}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
         />
       </TestProviders>
     );
 
-    expect(screen.getAllByText("分析详情").length).toBeGreaterThan(0);
-    expect(screen.getByText("当前还没有附带上下文，可直接输入问题或从其他入口带入。")).toBeTruthy();
-  });
-
-  it("assigns report section nodes to the report owner instead of the analysis run owner", () => {
-    const session = analysisStaticViewModel.sessions[0]!;
-    const reportRoot = buildAnalysisInspectorRoots(session, {
-      type: "analysisRun",
-      analysisTaskId: session.analysisTaskId,
-      runId: session.currentRun.runId
-    }).find((root) => root.key === "reports");
-
-    const reportNode = reportRoot?.tree.children?.[0];
-    const sectionNode = reportNode?.children?.[0];
-
-    expect(reportNode?.owner).toEqual({
-      runId: session.currentRun.runId,
-      type: "analysisRun"
-    });
-    expect(sectionNode?.owner).toEqual({
-      reportId: session.reportPreview!.reportId,
-      type: "report"
-    });
+    fireEvent.click(screen.getByText("Request Context"));
+    expect(onSelectInspectorNode).toHaveBeenCalledWith(createContextRootNodeId(session.analysisTaskId));
   });
 });

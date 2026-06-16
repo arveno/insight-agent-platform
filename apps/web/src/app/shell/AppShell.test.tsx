@@ -324,9 +324,9 @@ describe("AppShell", () => {
     expect(within(main).queryByText("Feedback / Bad Case 入口")).toBeNull();
 
     expect(screen.getAllByText("Run Trace").length).toBeGreaterThan(0);
-    expect(screen.getByText("1. run.created")).toBeTruthy();
-    expect(screen.getByText("5. tool_call.completed")).toBeTruthy();
-    expect(screen.getByText("7. synthesis.started")).toBeTruthy();
+    expect(screen.getAllByText("run.created").length).toBeGreaterThan(0);
+    expect(screen.getByText("tool_call.completed")).toBeTruthy();
+    expect(screen.getByText("synthesis.started")).toBeTruthy();
     expect(screen.queryByText("Plan / Step / Tool Calling")).toBeNull();
     expect(screen.queryByText("Feedback / Bad Case 入口")).toBeNull();
     expect(screen.queryByText("报告补充入口")).toBeNull();
@@ -334,7 +334,7 @@ describe("AppShell", () => {
     expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 
-  it("opens and closes run trace event detail within the inspector without leaving analysis", async () => {
+  it("switches run trace event detail within the unified inspector without leaving analysis", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
     const fetchMock = installRuntimeFetchMock(goldenPath);
     window.history.replaceState(
@@ -349,19 +349,18 @@ describe("AppShell", () => {
       name: "Analysis session navigation"
     });
     const main = await screen.findByRole("region", { name: "Analysis conversation" });
-    const runCreatedButtonName = /运行轨迹 1\. run\.created/;
+    const runCreatedTreeItemName = /run\.created 11:08/;
 
-    fireEvent.click(screen.getByRole("button", { name: runCreatedButtonName }));
+    fireEvent.click(screen.getByRole("treeitem", { name: runCreatedTreeItemName }));
 
-    expect(screen.getByText("1. run.created")).toBeTruthy();
-    expect(screen.getByText("11:08")).toBeTruthy();
+    expect(screen.getAllByText("run.created").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("11:08").length).toBeGreaterThan(0);
     expect(screen.getByText("succeeded")).toBeTruthy();
     expect(screen.getByText("仅摘要")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /运行轨迹 2\. context\.bound/ })).toBeNull();
+    expect(screen.getByRole("treeitem", { name: /context\.bound 11:09/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "返回上一级" }));
-
-    expect(screen.getByRole("button", { name: runCreatedButtonName })).toBeTruthy();
+    expect(screen.getByRole("treeitem", { name: runCreatedTreeItemName })).toBeTruthy();
     expect(analysisNavigation).toBeTruthy();
     expect(within(main).getByText("点击消息查看本次运行。")).toBeTruthy();
     expect(screen.getAllByText("Run Trace").length).toBeGreaterThan(0);

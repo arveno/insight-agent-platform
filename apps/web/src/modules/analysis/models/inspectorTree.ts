@@ -23,9 +23,16 @@ export type AnalysisInspectorRoot = {
 };
 
 export type AnalysisInspectorTreeState = {
-  path: string[];
-  rootKey: AnalysisInspectorRootKey | null;
+  expandedNodeIds: string[];
+  selectedNodeId: string | null;
 };
+
+export function createEmptyInspectorTreeState(): AnalysisInspectorTreeState {
+  return {
+    expandedNodeIds: [],
+    selectedNodeId: null
+  };
+}
 
 export function createContextRootNodeId(analysisTaskId: string): string {
   return `inspector-root-context:${analysisTaskId}`;
@@ -61,52 +68,40 @@ export function createModelCallsRootNodeId(runId: string): string {
 
 export function findInspectorTreeNode(
   root: InspectorTreeNode,
-  path: string[]
+  nodeId: string
 ): InspectorTreeNode | null {
-  if (path.length === 0) {
-    return null;
+  if (root.nodeId === nodeId) {
+    return root;
   }
 
-  let current: InspectorTreeNode | null = root.nodeId === path[0] ? root : null;
+  for (const child of root.children ?? []) {
+    const match = findInspectorTreeNode(child, nodeId);
 
-  if (!current) {
-    return null;
-  }
-
-  for (const nodeId of path.slice(1)) {
-    current = current.children?.find((child) => child.nodeId === nodeId) ?? null;
-
-    if (!current) {
-      return null;
+    if (match) {
+      return match;
     }
   }
 
-  return current;
+  return null;
 }
 
 export function findInspectorTreePathNodes(
   root: InspectorTreeNode,
-  path: string[]
+  nodeId: string
 ): InspectorTreeNode[] | null {
-  if (path.length === 0 || root.nodeId !== path[0]) {
-    return null;
+  if (root.nodeId === nodeId) {
+    return [root];
   }
 
-  const nodes: InspectorTreeNode[] = [root];
-  let current: InspectorTreeNode = root;
+  for (const child of root.children ?? []) {
+    const childPath = findInspectorTreePathNodes(child, nodeId);
 
-  for (const nodeId of path.slice(1)) {
-    const nextNode = current.children?.find((child) => child.nodeId === nodeId) ?? null;
-
-    if (!nextNode) {
-      return null;
+    if (childPath) {
+      return [root, ...childPath];
     }
-
-    nodes.push(nextNode);
-    current = nextNode;
   }
 
-  return nodes;
+  return null;
 }
 
 export function getInspectorNodeEyebrow(node: InspectorTreeNode): string | undefined {

@@ -22,17 +22,12 @@ import type { AnalysisMessage } from "../models/analysisMessage";
 import type { AnalysisRun } from "../models/analysisRun";
 import type { InspectorSubject } from "../models/inspectorSubject";
 import type {
-  AnalysisInspectorRootKey,
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createDecisionsRootNodeId,
-  createEvidenceRootNodeId,
-  createModelCallsRootNodeId,
-  createReportsRootNodeId,
-  createRunHistoryRootNodeId,
+  createContextRootNodeId,
+  createEmptyInspectorTreeState,
   createRunTraceRootNodeId,
-  createToolCallsRootNodeId
 } from "../models/inspectorTree";
 import type { SubmitAnalysisDraftResponse } from "../models/runtimeContractTypes";
 
@@ -94,10 +89,10 @@ export type AnalysisWorkspaceController = {
   onComposerDraftChange: (value: string) => void;
   onComposerModeChange: (mode: AnalysisComposerMode) => void;
   onComposerStop: () => void;
-  onPopInspectorPath: () => void;
   onResetForNewAnalysis: () => void;
+  onSelectCurrentRun: () => void;
+  onSetInspectorExpandedNodeIds: (nodeIds: string[]) => void;
   onSelectInspectorNode: (nodeId: string) => void;
-  onSelectInspectorRoot: (rootKey: AnalysisInspectorRootKey) => void;
   onSelectMessageAnchor: (messageId: string) => void;
   onSelectModel: (key: string) => void;
   onSelectSession: (conversationId: string) => void;
@@ -200,48 +195,34 @@ function findLatestMessageByRole(
     .find((message) => message.role === role);
 }
 
-function getRootNodeId(
-  rootKey: AnalysisInspectorRootKey,
-  session: AnalysisSessionViewModel | undefined,
-  draftContext: AnalysisContextRouteState | undefined
-): string | null {
-  if (rootKey === "context") {
-    return (
-      session?.analysisTaskContextPack?.root.nodeId ??
-      draftContext?.root.nodeId ??
-      null
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
-
-  switch (rootKey) {
-    case "decisions":
-      return createDecisionsRootNodeId(session.currentRun.runId);
-    case "evidence":
-      return createEvidenceRootNodeId(session.currentRun.runId);
-    case "model-calls":
-      return createModelCallsRootNodeId(session.currentRun.runId);
-    case "reports":
-      return createReportsRootNodeId(session.currentRun.runId);
-    case "run-history":
-      return createRunHistoryRootNodeId(session.analysisTaskId);
-    case "run-trace":
-      return createRunTraceRootNodeId(session.currentRun.runId);
-    case "tool-calls":
-      return createToolCallsRootNodeId(session.currentRun.runId);
-    case "runtime-references":
-      return `inspector-root-runtime-references:${session.currentRun.runId}`;
-  }
-}
-
 function createRunSubject(session: AnalysisSessionViewModel): InspectorSubject {
   return {
     type: "analysisRun",
     analysisTaskId: session.analysisTaskId,
     runId: session.currentRun.runId
+  };
+}
+
+function createContextTreeState(
+  analysisTaskId: string,
+  contextRootNodeId?: string
+): AnalysisInspectorTreeState {
+  const rootNodeId = createContextRootNodeId(analysisTaskId);
+
+  return {
+    expandedNodeIds: [rootNodeId, contextRootNodeId].filter(
+      (nodeId): nodeId is string => Boolean(nodeId)
+    ),
+    selectedNodeId: rootNodeId
+  };
+}
+
+function createRunTraceTreeState(session: AnalysisSessionViewModel): AnalysisInspectorTreeState {
+  const rootNodeId = createRunTraceRootNodeId(session.currentRun.runId);
+
+  return {
+    expandedNodeIds: [rootNodeId],
+    selectedNodeId: session.runEvents[0]?.eventId ?? rootNodeId
   };
 }
 
@@ -292,7 +273,9 @@ export function useAnalysisWorkspaceController(
     InspectorSubject | undefined
   >(undefined);
   const [inspectorTreeState, setInspectorTreeState] = useState<AnalysisInspectorTreeState>(() =>
-    options.draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
+    options.draftContext
+      ? createContextTreeState("draft", options.draftContext.root.nodeId)
+      : createEmptyInspectorTreeState()
   );
 
   useEffect(() => {
@@ -362,7 +345,9 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
       setInspectorTreeState(
-        draftContext ? { path: [], rootKey: null } : { path: [], rootKey: null }
+        draftContext
+          ? createContextTreeState("draft", draftContext.root.nodeId)
+          : createEmptyInspectorTreeState()
       );
       setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
       setFollowUpDraft("");
@@ -377,10 +362,7 @@ export function useAnalysisWorkspaceController(
 
     setSelectedInspectorSubject(createRunSubject(selectedSession));
     setSelectedMessageId(latestAssistantMessage?.messageId ?? null);
-    setInspectorTreeState({
-      path: [createRunTraceRootNodeId(selectedSession.currentRun.runId)],
-      rootKey: "run-trace"
-    });
+    setInspectorTreeState(createRunTraceTreeState(selectedSession));
     setAnalysisDraft(selectedSession.inputComposer.initialDraft);
     setFollowUpDraft(selectedSession.followUpComposer.initialDraft);
   }, [draftContext, selectedSession, workspaceState.kind]);
@@ -446,16 +428,6 @@ export function useAnalysisWorkspaceController(
       setComposerState("idle");
       setInteractionMessage(createInteractionMessage("当前无法停止此次生成。"));
     },
-    onPopInspectorPath: () => {
-      setInspectorTreeState((current) =>
-        current.path.length <= 1
-          ? { path: [], rootKey: null }
-          : {
-              ...current,
-              path: current.path.slice(0, -1)
-            }
-      );
-    },
     onResetForNewAnalysis: () => {
       composerModeRef.current = "analysis";
       setComposerMode("analysis");
@@ -469,37 +441,60 @@ export function useAnalysisWorkspaceController(
       setSelectedConversationId(null);
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
-      setInspectorTreeState({ path: [], rootKey: null });
+      setInspectorTreeState(createEmptyInspectorTreeState());
       setInteractionMessage("");
+    },
+    onSelectCurrentRun: () => {
+      if (!selectedSession) {
+        return;
+      }
+
+      setSelectedInspectorSubject(createRunSubject(selectedSession));
+      setInspectorTreeState(createRunTraceTreeState(selectedSession));
+    },
+    onSetInspectorExpandedNodeIds: (nodeIds) => {
+      setInspectorTreeState((current) => ({
+        ...current,
+        expandedNodeIds: [...new Set(nodeIds)]
+      }));
     },
     onSelectInspectorNode: (nodeId) => {
       setInspectorTreeState((current) => ({
         ...current,
-        path: [...current.path, nodeId]
+        selectedNodeId: nodeId
       }));
-    },
-    onSelectInspectorRoot: (rootKey) => {
-      const rootNodeId = getRootNodeId(rootKey, selectedSession, draftContext);
-
-      if (!rootNodeId) {
-        return;
-      }
-
-      setInspectorTreeState({
-        path: [rootNodeId],
-        rootKey
-      });
     },
     onSelectMessageAnchor: (messageId) => {
       const message = selectedSession?.messages.find((item) => item.messageId === messageId);
 
-      if (!message || message.role !== "assistant") {
+      if (!message) {
         return;
       }
 
       const { analysisTaskId, runId } = message;
 
-      if (runId == null || analysisTaskId == null) {
+      if (analysisTaskId == null) {
+        return;
+      }
+
+      if (message.role === "user") {
+        if (!selectedSession?.analysisTaskContextPack) {
+          return;
+        }
+
+        setSelectedMessageId(messageId);
+        setSelectedInspectorSubject({
+          type: "analysisTask",
+          analysisTaskId,
+          runId: runId ?? undefined
+        });
+        setInspectorTreeState(
+          createContextTreeState(analysisTaskId, selectedSession.analysisTaskContextPack.root.nodeId)
+        );
+        return;
+      }
+
+      if (message.role !== "assistant" || runId == null) {
         return;
       }
 
@@ -509,10 +504,7 @@ export function useAnalysisWorkspaceController(
         analysisTaskId,
         runId
       });
-      setInspectorTreeState({
-        path: [createRunTraceRootNodeId(runId)],
-        rootKey: "run-trace"
-      });
+      setInspectorTreeState(createRunTraceTreeState(selectedSession!));
     },
     onSelectModel: (key) => {
       const nextModel = modelOptions.find((model) => model.key === key);
@@ -539,10 +531,7 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(createRunSubject(nextSession));
       setSelectedMessageId(findLatestMessageByRole(nextSession, "assistant")?.messageId ?? null);
       setComposerState("idle");
-      setInspectorTreeState({
-        path: [createRunTraceRootNodeId(nextSession.currentRun.runId)],
-        rootKey: "run-trace"
-      });
+      setInspectorTreeState(createRunTraceTreeState(nextSession));
       setInteractionMessage("");
     },
     onSessionSearchChange: setSessionSearchQuery,
@@ -616,12 +605,7 @@ export function useAnalysisWorkspaceController(
             loadedSession ? findLatestMessageByRole(loadedSession, "assistant")?.messageId ?? null : null
           );
           setInspectorTreeState(
-            loadedSession
-              ? {
-                  path: [createRunTraceRootNodeId(loadedSession.currentRun.runId)],
-                  rootKey: "run-trace"
-                }
-              : { path: [], rootKey: null }
+            loadedSession ? createRunTraceTreeState(loadedSession) : createEmptyInspectorTreeState()
           );
           setInteractionMessage("");
         } catch (error) {
