@@ -21,6 +21,7 @@ import type {
   WorkspaceMembership
 } from "@insight-agent/contracts/generated/typescript";
 import goldenPathExample from "../../../../packages/contracts/examples/analysis-runtime/golden-path.json";
+import { runtimeMetricsFixtures } from "../shared/test/fixtures/runtimeMetrics";
 
 import { App } from "./App";
 
@@ -264,6 +265,10 @@ function installAuthFetchMock(options?: {
       return Response.json({ success: true });
     }
 
+    if (url.endsWith("/metrics")) {
+      return Response.json({ items: runtimeMetricsFixtures });
+    }
+
     if (!goldenPath) {
       throw new Error(`Unhandled request: ${method} ${url}`);
     }
@@ -420,7 +425,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /登\s*录/ }));
 
     expect(await screen.findByRole("heading", { name: "选择工作区" })).toBeTruthy();
-    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.getAllByText("Northstar Retail China").length).toBeGreaterThan(0);
     expect(screen.getByText("Northstar Retail SEA")).toBeTruthy();
     expect(screen.getByText("analyst")).toBeTruthy();
     expect(screen.getByText("viewer")).toBeTruthy();
@@ -451,9 +456,9 @@ describe("App", () => {
 
     fireEvent.click(within(chinaCard).getByRole("button", { name: "进入工作区" }));
 
-    expect(await screen.findByRole("button", { name: "当前工作区" })).toBeTruthy();
+    expect(await screen.findByText("当前展示最近 30 天内的指标摘要、异常和报告入口。")).toBeTruthy();
     expect(window.location.pathname).toBe("/dashboard");
-    expect(screen.getByText("Northstar Retail China")).toBeTruthy();
+    expect(screen.getAllByText("Northstar Retail China").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Zoe Chen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("analyst").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "用户入口" })).toBeTruthy();
@@ -469,7 +474,7 @@ describe("App", () => {
 
     renderAppAt("/dashboard");
 
-    expect(await screen.findByRole("button", { name: "当前工作区" })).toBeTruthy();
+    expect(await screen.findByText("当前展示最近 30 天内的指标摘要、异常和报告入口。")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "用户入口" }));
     fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));
