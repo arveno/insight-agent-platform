@@ -44,6 +44,17 @@ services/agent-runtime/src/app/config.py
 
 前端只能使用浏览器可见配置，不允许暴露模型密钥、数据库连接串、向量库密钥。
 
+模型 Provider 配置固定规则如下：
+
+- `apps/web/.env.development.local` 只用于前端 Vite 本地配置，只允许 `VITE_*` 浏览器可见变量，不得放模型 Key。
+- 仓库根目录 `.env.model.local` 用于本地模型 provider secret，必须加入忽略规则，不纳入版本管理。
+- 仓库根目录 `.env.model.example` 是可提交模板，只提供非 secret 配置结构，不得包含真实 Key。
+- ECS preview 运行时模型 provider secret 目标路径固定为 `/opt/insight-agent-platform/env/model-provider.env`，不得回退到 `/opt/insight`。
+- active provider 通过 `IAP_MODEL_ACTIVE_PROVIDER` 选择；可以同时声明多个真实 provider 配置，但当前执行只能启用一个 active provider。
+- Provider API Key 必须通过 `.env`、ECS env 或 secret 注入；不得提交到仓库，不得粘贴到 issue / PR，不得打印到日志。
+- 不允许 `fake provider`、`mock provider`、`hardcoded response` 或本地 / 预览环境双轨 provider。
+- smoke、诊断和日志输出只允许表达 `apiKey=configured` 或等价非 secret 状态，不得打印真实 Key。
+
 ## 3. 必备环境变量占位
 
 ```text
