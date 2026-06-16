@@ -14,19 +14,19 @@ export type AnalysisConversationPaneProps = {
     | "composerState"
     | "composerViewModels"
     | "interactionMessage"
-    | "inspectorTreeState"
     | "messages"
     | "modelOptions"
     | "onComposerAccessoryClick"
     | "onComposerDraftChange"
     | "onComposerModeChange"
     | "onComposerStop"
+    | "onSelectCurrentRun"
     | "onSelectMessageAnchor"
     | "onSelectModel"
     | "onSubmitComposer"
-    | "selectedMessageId"
     | "selectedModelKey"
     | "selectedModelLabel"
+    | "selectedMessageId"
     | "selectedSession"
   >;
 };
@@ -67,11 +67,18 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
       }}
     >
       {showRunStartState ? (
-        <div
+        <button
+          onClick={controller.onSelectCurrentRun}
           style={{
+            background: "transparent",
+            border: 0,
             borderBottom: `1px solid ${token.colorBorderSecondary}`,
-            padding: token.paddingLG
+            cursor: "pointer",
+            padding: token.paddingLG,
+            textAlign: "left",
+            width: "100%"
           }}
+          type="button"
         >
           <Space direction="vertical" size={4} style={{ width: "100%" }}>
             <Typography.Text strong>
@@ -79,7 +86,7 @@ export function AnalysisConversationPane({ controller }: AnalysisConversationPan
             </Typography.Text>
             <Typography.Text type="secondary">{session.currentRun.stageSummary}</Typography.Text>
           </Space>
-        </div>
+        </button>
       ) : null}
 
       <AnalysisMessageList

@@ -10,6 +10,18 @@ export type AnalysisMessageListProps = {
   selectedMessageId: string | null;
 };
 
+function canSelectMessageAnchor(message: AnalysisMessage): boolean {
+  if (message.analysisTaskId == null) {
+    return false;
+  }
+
+  if (message.role === "user") {
+    return true;
+  }
+
+  return message.role === "assistant" && message.runId != null;
+}
+
 export function AnalysisMessageList({
   messages,
   onSelectMessageAnchor,
@@ -37,9 +49,7 @@ export function AnalysisMessageList({
             key={message.messageId}
             message={message}
             onSelect={
-              message.role === "assistant" && message.runId && message.analysisTaskId
-                ? () => onSelectMessageAnchor(message.messageId)
-                : undefined
+              canSelectMessageAnchor(message) ? () => onSelectMessageAnchor(message.messageId) : undefined
             }
           />
         ))}

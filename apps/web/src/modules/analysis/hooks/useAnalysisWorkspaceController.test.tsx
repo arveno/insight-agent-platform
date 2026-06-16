@@ -115,7 +115,10 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.currentRun).toBeUndefined();
     expect(result.current.selectedInspectorSubject).toBeUndefined();
     expect(result.current.selectedMessageId).toBeNull();
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+    expect(result.current.inspectorTreeState).toEqual({
+      expandedNodeIds: [],
+      selectedNodeId: null
+    });
     expect(result.current.composerMode).toBe("analysis");
   });
 
@@ -136,22 +139,10 @@ describe("useAnalysisWorkspaceController", () => {
 
     expect(result.current.draftContext).toEqual(draftContext);
     expect(result.current.composerDraft).toBe(draftContext.suggestedPrompt);
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
-
-    act(() => {
-      result.current.onSelectInspectorRoot("context");
-    });
-
     expect(result.current.inspectorTreeState).toEqual({
-      path: [draftContext.root.nodeId],
-      rootKey: "context"
+      expandedNodeIds: [draftContext.root.nodeId],
+      selectedNodeId: draftContext.root.nodeId
     });
-
-    act(() => {
-      result.current.onPopInspectorPath();
-    });
-
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
 
     act(() => {
       result.current.onResetForNewAnalysis();
@@ -160,7 +151,10 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.workspaceState.kind).toBe("draft");
     expect(result.current.draftContext).toBeUndefined();
     expect(result.current.composerDraft).toBe("");
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+    expect(result.current.inspectorTreeState).toEqual({
+      expandedNodeIds: [],
+      selectedNodeId: null
+    });
   });
 
   it("submits the canonical tree-shaped draft context and loads the created runtime workspace", async () => {
@@ -225,8 +219,8 @@ describe("useAnalysisWorkspaceController", () => {
       goldenPath.messages.find((message) => message.role === "assistant")?.messageId ?? null
     );
     expect(result.current.inspectorTreeState).toEqual({
-      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      rootKey: "run-trace"
+      expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
   });
 
@@ -270,7 +264,7 @@ describe("useAnalysisWorkspaceController", () => {
     });
   });
 
-  it("keeps assistant messages as the only inspector anchor and ignores user messages", async () => {
+  it("uses user messages as the request-context anchor and assistant messages as the run-trace anchor", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
     const viewModel = createGoldenPathWorkspaceViewModel(goldenPath);
     const loader = vi.fn().mockResolvedValue({
@@ -301,27 +295,24 @@ describe("useAnalysisWorkspaceController", () => {
     });
     expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
-      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      rootKey: "run-trace"
+      expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
-
-    act(() => {
-      result.current.onPopInspectorPath();
-    });
-
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
 
     act(() => {
       result.current.onSelectMessageAnchor(userMessage.messageId);
     });
 
     expect(result.current.selectedInspectorSubject).toEqual({
-      type: "analysisRun",
+      type: "analysisTask",
       analysisTaskId: goldenPath.analysisTask.analysisTaskId,
       runId: goldenPath.analysisRun.runId
     });
-    expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
-    expect(result.current.inspectorTreeState).toEqual({ path: [], rootKey: null });
+    expect(result.current.selectedMessageId).toBe(userMessage.messageId);
+    expect(result.current.inspectorTreeState).toEqual({
+      expandedNodeIds: [goldenPath.analysisTask.contextPack!.root.nodeId],
+      selectedNodeId: goldenPath.analysisTask.contextPack!.root.nodeId
+    });
 
     act(() => {
       result.current.onSelectMessageAnchor(assistantMessage.messageId);
@@ -334,8 +325,8 @@ describe("useAnalysisWorkspaceController", () => {
     });
     expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
-      path: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      rootKey: "run-trace"
+      expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
   });
 });

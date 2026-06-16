@@ -49,9 +49,8 @@ export function useAnalysisShellSlots({
         contextNodeDisplay={controller.draftContextNodeDisplay}
         draftContext={controller.draftContext}
         inspectorTreeState={controller.inspectorTreeState}
-        onPopInspectorPath={controller.onPopInspectorPath}
+        onSetInspectorExpandedNodeIds={controller.onSetInspectorExpandedNodeIds}
         onSelectInspectorNode={controller.onSelectInspectorNode}
-        onSelectInspectorRoot={controller.onSelectInspectorRoot}
         selectedInspectorSubject={controller.selectedInspectorSubject}
         selectedSession={controller.selectedSession}
         workspaceState={controller.workspaceState}
