@@ -14,9 +14,107 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
-from src.infrastructure.database.runtime_foundation import ToolCallRecord
+from src.infrastructure.database.runtime_foundation import AnalysisTaskRecord, ToolCallRecord
+from src.infrastructure.tool_registry.analysis_context_summary_tool import (
+    AnalysisContextSummaryOutput,
+    AnalysisContextSummaryTool,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ToolDefinition:
+    permission: str
+    risk_level: Literal["low", "medium", "high", "critical"]
+    tool_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ToolExecutionResult:
+    output: AnalysisContextSummaryOutput
+    tool_call: ToolCallRecord
+
+
+class ToolRegistryExecutionError(RuntimeError):
+    def __init__(self, tool_call: ToolCallRecord) -> None:
+        super().__init__(
+            tool_call["errorMessage"] or tool_call["errorType"] or "tool_registry_error"
+        )
+        self.tool_call = tool_call
+
+
+@dataclass(slots=True)
+class ToolRegistry:
+    """Registry-owned tool dispatcher for runtime execution."""
+
+    _analysis_context_summary_tool: AnalysisContextSummaryTool = AnalysisContextSummaryTool()
+
+    def definition(self, tool_name: str) -> ToolDefinition:
+        if tool_name != self._analysis_context_summary_tool.tool_name:
+            raise KeyError(tool_name)
+        return ToolDefinition(
+            permission="analysis.context.read",
+            risk_level="low",
+            tool_name=tool_name,
+        )
+
+    def execute(
+        self,
+        *,
+        analysis_task: AnalysisTaskRecord,
+        run_id: str,
+        started_at: str,
+        tool_call_id: str,
+        tool_name: str,
+    ) -> ToolExecutionResult:
+        definition = self.definition(tool_name)
+        try:
+            output = self._analysis_context_summary_tool.execute(analysis_task)
+        except Exception as exc:  # pragma: no cover - defensive classification boundary
+            raise ToolRegistryExecutionError(
+                {
+                    "toolCallId": tool_call_id,
+                    "runId": run_id,
+                    "toolName": definition.tool_name,
+                    "input": {
+                        "analysisTaskId": analysis_task["analysisTaskId"],
+                        "question": analysis_task["question"],
+                    },
+                    "output": None,
+                    "status": "failed",
+                    "riskLevel": definition.risk_level,
+                    "permission": definition.permission,
+                    "errorType": "handler_error",
+                    "errorMessage": str(exc)[:200],
+                    "startedAt": started_at,
+                    "completedAt": started_at,
+                }
+            ) from exc
+
+        return ToolExecutionResult(
+            output=output,
+            tool_call={
+                "toolCallId": tool_call_id,
+                "runId": run_id,
+                "toolName": definition.tool_name,
+                "input": {
+                    "analysisTaskId": analysis_task["analysisTaskId"],
+                    "question": analysis_task["question"],
+                    "traceability": analysis_task["contextPack"]["traceability"]
+                    if analysis_task["contextPack"] is not None
+                    else None,
+                },
+                "output": cast(dict[str, object], output),
+                "status": "succeeded",
+                "riskLevel": definition.risk_level,
+                "permission": definition.permission,
+                "errorType": None,
+                "errorMessage": None,
+                "startedAt": started_at,
+                "completedAt": started_at,
+            },
+        )
 
 
 @dataclass(frozen=True, slots=True)

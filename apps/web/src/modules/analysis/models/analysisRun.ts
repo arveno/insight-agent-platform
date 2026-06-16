@@ -22,6 +22,8 @@ export type AnalysisRunEvent = {
   inputSummary?: string;
   modelName?: string;
   outputSummary?: string;
+  refId?: string;
+  refType?: string;
   riskViewModel?: SharedRiskViewModel;
   runId: string;
   status: AnalysisRunEventStatus;

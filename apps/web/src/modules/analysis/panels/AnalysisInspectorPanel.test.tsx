@@ -118,6 +118,10 @@ function requireChildNode(parent: InspectorTreeNode, title: string): InspectorTr
   return node;
 }
 
+function collectNodeIds(node: InspectorTreeNode): string[] {
+  return [node.nodeId, ...(node.children?.flatMap((child) => collectNodeIds(child)) ?? [])];
+}
+
 function createSessionWithoutContextPack() {
   const session = analysisStaticViewModel.sessions[0]!;
 
@@ -330,6 +334,166 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByRole("button", { name: /Run Trace/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
     expect(container.querySelectorAll("aside .ant-card").length).toBe(1);
+  });
+
+  it("projects ToolCall and ModelCall nodes under the existing Run Trace tree", () => {
+    const baseSession = analysisStaticViewModel.sessions[0]!;
+    const toolDetail = baseSession.toolDetails[0]!;
+    const modelDetail = baseSession.modelDetails[0]!;
+    const toolEvent = baseSession.runEvents.find((event) => event.eventType === "tool_call.completed")!;
+    const modelEvent = {
+      ...baseSession.runEvents.find((event) => event.eventType === "synthesis.started")!,
+      eventId: "event-runtime-model-call-completed",
+      eventType: "model_call.completed" as const,
+      refId: modelDetail.modelCallId,
+      refType: "modelCall"
+    };
+    const session = {
+      ...baseSession,
+      runEvents: [
+        ...baseSession.runEvents.map((event) => {
+        if (event.eventId === toolEvent.eventId) {
+          return {
+            ...event,
+            refId: toolDetail.toolCallId,
+            refType: "toolCall"
+          };
+        }
+
+        return event;
+        }),
+        modelEvent
+      ]
+    };
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
+          draftContext={undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [
+              createRunTraceRootNodeId(session.currentRun.runId),
+              toolEvent.eventId,
+              modelEvent.eventId
+            ],
+            selectedNodeId: toolEvent.eventId
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
+          onSelectInspectorNode={() => undefined}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText(`ToolCall · ${toolDetail.toolName}`)).toBeTruthy();
+    expect(screen.getByText(`ModelCall · ${modelDetail.modelId}`)).toBeTruthy();
+    expect(screen.queryByText(/^Tool Calls$/)).toBeNull();
+    expect(screen.queryByText(/^Model Calls$/)).toBeNull();
+  });
+
+  it("keeps context and run-trace ownership separate while using occurrence-scoped ToolCall and ModelCall node ids", () => {
+    const baseSession = analysisStaticViewModel.sessions[0]!;
+    const toolDetail = baseSession.toolDetails[0]!;
+    const modelDetail = baseSession.modelDetails[0]!;
+    const toolEvent = baseSession.runEvents.find((event) => event.eventType === "tool_call.completed")!;
+    const modelEvent = {
+      ...baseSession.runEvents.find((event) => event.eventType === "synthesis.started")!,
+      eventId: "event-runtime-model-call-completed",
+      eventType: "model_call.completed" as const,
+      refId: modelDetail.modelCallId,
+      refType: "modelCall"
+    };
+    const repeatedToolEvent = {
+      ...toolEvent,
+      eventId: "event-runtime-tool-call-repeated",
+      refId: toolDetail.toolCallId,
+      refType: "toolCall" as const
+    };
+    const session = {
+      ...baseSession,
+      runEvents: [
+        ...baseSession.runEvents.map((event) => {
+          if (event.eventId === toolEvent.eventId) {
+            return {
+              ...event,
+              refId: toolDetail.toolCallId,
+              refType: "toolCall"
+            };
+          }
+
+          return event;
+        }),
+        repeatedToolEvent,
+        modelEvent
+      ]
+    };
+
+    const roots = buildAnalysisInspectorRoots(session);
+    const runTraceRoot = roots.find((root) => root.key === "run-trace")!;
+    const contextRoot = roots.find((root) => root.key === "context")!;
+    const toolTraceEvent = requireChildNode(runTraceRoot.tree, toolEvent.eventType);
+    const repeatedToolTraceEvent = runTraceRoot.tree.children?.find(
+      (eventNode) => eventNode.nodeId === repeatedToolEvent.eventId
+    )!;
+    const modelTraceEvent = runTraceRoot.tree.children?.find(
+      (eventNode) => eventNode.nodeId === modelEvent.eventId
+    )!;
+    const toolOccurrence = requireChildNode(toolTraceEvent, `ToolCall · ${toolDetail.toolName}`);
+    const repeatedToolOccurrence = requireChildNode(
+      repeatedToolTraceEvent,
+      `ToolCall · ${toolDetail.toolName}`
+    );
+    const modelOccurrence = requireChildNode(modelTraceEvent, `ModelCall · ${modelDetail.modelId}`);
+    const allNodeIds = roots.flatMap((root) => collectNodeIds(root.tree));
+
+    expect(contextRoot.owner).toEqual({
+      analysisTaskId: session.analysisTaskId,
+      type: "analysisTask"
+    });
+    expect(contextRoot.tree.owner).toEqual({
+      analysisTaskId: session.analysisTaskId,
+      type: "analysisTask"
+    });
+    expect(runTraceRoot.owner).toEqual({
+      runId: session.currentRun.runId,
+      type: "analysisRun"
+    });
+    expect(runTraceRoot.tree.owner).toEqual({
+      runId: session.currentRun.runId,
+      type: "analysisRun"
+    });
+    expect(toolOccurrence.owner).toEqual({
+      runId: session.currentRun.runId,
+      type: "analysisRun"
+    });
+    expect(toolOccurrence.sourceRef).toEqual({
+      type: "toolCall",
+      toolCallId: toolDetail.toolCallId
+    });
+    expect(toolOccurrence.nodeId).toBe(`${toolEvent.eventId}:toolCall:${toolDetail.toolCallId}`);
+    expect(toolOccurrence.nodeId).not.toBe(toolDetail.toolCallId);
+    expect(repeatedToolOccurrence.nodeId).toBe(
+      `${repeatedToolEvent.eventId}:toolCall:${toolDetail.toolCallId}`
+    );
+    expect(repeatedToolOccurrence.nodeId).not.toBe(toolOccurrence.nodeId);
+    expect(modelOccurrence.owner).toEqual({
+      runId: session.currentRun.runId,
+      type: "analysisRun"
+    });
+    expect(modelOccurrence.sourceRef).toEqual({
+      type: "modelCall",
+      modelCallId: modelDetail.modelCallId
+    });
+    expect(modelOccurrence.nodeId).toBe(`${modelEvent.eventId}:modelCall:${modelDetail.modelCallId}`);
+    expect(modelOccurrence.nodeId).not.toBe(modelDetail.modelCallId);
+    expect(new Set(allNodeIds).size).toBe(allNodeIds.length);
   });
 
   it("selects actual tree roots and leaves through the unified tree callback instead of a root-card mode", () => {

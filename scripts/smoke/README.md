@@ -18,3 +18,13 @@ belong here.
   ```bash
   uv run --project services/agent-runtime python scripts/smoke/model-provider-readiness.py --env-file .env.model.local --provider zhipu
   ```
+
+- `runtime-worker-model-execution.py`：`#240` 的本地真实执行 smoke。脚本会在本地
+  `mysql` 容器上执行 `migrate / seed`，然后通过 canonical
+  `POST /analysis-tasks/submit` + `POST /analysis-runs/{runId}/dispatch` 创建并推进 run，
+  再调用真实 `Tool Registry` 与 `Model Gateway` 路径，最后执行 run-scoped query verify。
+  推荐命令：
+
+  ```bash
+  uv run --project services/agent-runtime python scripts/smoke/runtime-worker-model-execution.py --env-file .env.model.local
+  ```

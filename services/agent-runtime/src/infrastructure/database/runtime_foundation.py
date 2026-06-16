@@ -279,7 +279,7 @@ class InspectorTreeNode(TypedDict):
     capturedAt: NotRequired[str]
     asOfAt: NotRequired[str]
     sourceRef: NotRequired[SourceRef]
-    children: NotRequired[list["InspectorTreeNode"]]
+    children: NotRequired[list[InspectorTreeNode]]
     disabledReason: NotRequired[str]
 
 
@@ -1705,7 +1705,12 @@ SELECT JSON_OBJECT(
         items = _require_array(payload.get("items"), "Metric.items")
         return cast(list[MetricRecord], items)
 
-    def get_by_metric_id_and_workspace_id(self, metric_id: str, *, workspace_id: str) -> MetricRecord:
+    def get_by_metric_id_and_workspace_id(
+        self,
+        metric_id: str,
+        *,
+        workspace_id: str,
+    ) -> MetricRecord:
         sql = f"""
 SELECT JSON_OBJECT(
   'metricId', metric_id,
@@ -2841,6 +2846,27 @@ class AnalysisRunLifecycleRepository:
                 _run_event_insert_sql(run_event),
             ]
         )
+
+    def record_execution_state(
+        self,
+        *,
+        analysis_run: AnalysisRunRecord | None = None,
+        execution_attempt: ExecutionAttemptRecord | None = None,
+        model_call: ModelCallRecord | None = None,
+        run_events: Sequence[RunEventRecord] = (),
+        tool_call: ToolCallRecord | None = None,
+    ) -> None:
+        statements: list[str] = []
+        if analysis_run is not None:
+            statements.append(_analysis_run_upsert_sql(analysis_run))
+        if execution_attempt is not None:
+            statements.append(_execution_attempt_upsert_sql(execution_attempt))
+        if tool_call is not None:
+            statements.append(_tool_call_upsert_sql(tool_call))
+        if model_call is not None:
+            statements.append(_model_call_upsert_sql(model_call))
+        statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
+        self._database.execute_transaction(statements)
 
     def complete_delivery(
         self,
