@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -343,6 +344,126 @@ def test_runtime_foundation_env_provides_migrated_schema(runtime_foundation_env:
     assert analysis_task_count == {"count": 0}
 
 
+def test_runtime_foundation_migration_backfills_messages_analysis_task_id_schema(
+    runtime_foundation_env: None,
+) -> None:
+    seed_result = run_runtime_foundation_command("seed")
+    assert seed_result.returncode == 0, seed_result.stderr
+
+    drop_column_result = run_runtime_foundation_command(
+        "exec-sql",
+        input_text="""
+SET @messages_has_analysis_task_id_index := (
+  SELECT COUNT(*)
+  FROM information_schema.statistics
+  WHERE table_schema = DATABASE()
+    AND table_name = 'messages'
+    AND index_name = 'idx_messages_analysis_task_id'
+);
+SET @drop_messages_analysis_task_id_index_sql := IF(
+  @messages_has_analysis_task_id_index = 1,
+  'ALTER TABLE messages DROP INDEX idx_messages_analysis_task_id',
+  'SELECT 1'
+);
+PREPARE drop_messages_analysis_task_id_index_stmt FROM @drop_messages_analysis_task_id_index_sql;
+EXECUTE drop_messages_analysis_task_id_index_stmt;
+DEALLOCATE PREPARE drop_messages_analysis_task_id_index_stmt;
+
+SET @messages_has_analysis_task_id := (
+  SELECT COUNT(*)
+  FROM information_schema.columns
+  WHERE table_schema = DATABASE()
+    AND table_name = 'messages'
+    AND column_name = 'analysis_task_id'
+);
+SET @drop_messages_analysis_task_id_column_sql := IF(
+  @messages_has_analysis_task_id = 1,
+  'ALTER TABLE messages DROP COLUMN analysis_task_id',
+  'SELECT 1'
+);
+PREPARE drop_messages_analysis_task_id_column_stmt FROM @drop_messages_analysis_task_id_column_sql;
+EXECUTE drop_messages_analysis_task_id_column_stmt;
+DEALLOCATE PREPARE drop_messages_analysis_task_id_column_stmt;
+""",
+    )
+    assert drop_column_result.returncode == 0, drop_column_result.stderr
+
+    insert_legacy_message_result = run_runtime_foundation_command(
+        "exec-sql",
+        input_text=f"""
+INSERT INTO messages (
+  message_id,
+  conversation_id,
+  turn_id,
+  run_id,
+  role,
+  content,
+  status,
+  source_evidence_ids_json,
+  tool_call_ids_json,
+  report_id,
+  created_at,
+  completed_at
+) VALUES (
+  'message-legacy-without-analysis-task-id',
+  '{CONVERSATION_ID}',
+  'turn-legacy-without-analysis-task-id',
+  '{RUN_ID}',
+  'user',
+  'legacy submit message without analysis_task_id column',
+  'completed',
+  JSON_ARRAY(),
+  JSON_ARRAY(),
+  NULL,
+  '2026-06-05T11:08:12+08:00',
+  '2026-06-05T11:08:12+08:00'
+);
+""",
+    )
+    assert (
+        insert_legacy_message_result.returncode == 0
+    ), insert_legacy_message_result.stderr
+
+    migrate_result = run_runtime_foundation_command("migrate")
+    assert migrate_result.returncode == 0, migrate_result.stderr
+
+    schema_result = run_runtime_foundation_command(
+        "query-json",
+        input_text="""
+SELECT JSON_OBJECT(
+  'hasAnalysisTaskIdColumn',
+  EXISTS(
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'messages'
+      AND column_name = 'analysis_task_id'
+  ),
+  'hasAnalysisTaskIdIndex',
+  EXISTS(
+    SELECT 1
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'messages'
+      AND index_name = 'idx_messages_analysis_task_id'
+  ),
+  'legacyMessageAnalysisTaskId',
+  (
+    SELECT analysis_task_id
+    FROM messages
+    WHERE message_id = 'message-legacy-without-analysis-task-id'
+  )
+);
+""",
+    )
+    assert schema_result.returncode == 0, schema_result.stderr
+    assert json.loads(schema_result.stdout.strip()) == {
+        "hasAnalysisTaskIdColumn": 1,
+        "hasAnalysisTaskIdIndex": 1,
+        "legacyMessageAnalysisTaskId": ANALYSIS_TASK_ID,
+    }
+
+
 def test_runtime_foundation_repositories_round_trip_frozen_chain(
     runtime_foundation_env: None,
 ) -> None:
@@ -502,6 +623,8 @@ INSERT INTO auth_sessions (
     assert "report_sections.row_count=2" in verify_result.stdout
     assert "decisions.row_count=0" in verify_result.stdout
     assert "messages.row_count=0" in verify_result.stdout
+    assert "messages.analysisTaskIdColumn.exists=1" in verify_result.stdout
+    assert "messages.submitUserMessageMissingAnalysisTaskId.row_count=0" in verify_result.stdout
     assert "message_streams.row_count=0" in verify_result.stdout
     assert "metricContextSources.unresolved.row_count=0" in verify_result.stdout
     assert "dataTables.unresolvedDataSource.row_count=0" in verify_result.stdout

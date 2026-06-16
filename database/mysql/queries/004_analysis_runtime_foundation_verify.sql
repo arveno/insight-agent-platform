@@ -161,6 +161,26 @@ FROM decisions;
 SELECT CONCAT('messages.row_count=', COUNT(*)) AS check_line
 FROM messages;
 
+SELECT CONCAT(
+  'messages.analysisTaskIdColumn.exists=',
+  EXISTS(
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'messages'
+      AND column_name = 'analysis_task_id'
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'messages.submitUserMessageMissingAnalysisTaskId.row_count=',
+  COUNT(*)
+) AS check_line
+FROM messages
+WHERE role = 'user'
+  AND run_id IS NOT NULL
+  AND analysis_task_id IS NULL;
+
 SELECT CONCAT('message_streams.row_count=', COUNT(*)) AS check_line
 FROM message_streams;
 
