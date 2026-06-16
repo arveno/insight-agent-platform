@@ -32,6 +32,69 @@ export type AnalysisInspectorPanelProps = {
   workspaceState: AnalysisWorkspaceState;
 };
 
+function createRunTraceToolCallOccurrenceNodeId(eventId: string, toolCallId: string): string {
+  return `${eventId}:toolCall:${toolCallId}`;
+}
+
+function createRunTraceModelCallOccurrenceNodeId(eventId: string, modelCallId: string): string {
+  return `${eventId}:modelCall:${modelCallId}`;
+}
+
+function createRunTraceEventChildren(args: {
+  event: AnalysisSessionViewModel["runEvents"][number];
+  modelDetailById: Map<string, AnalysisSessionViewModel["modelDetails"][number]>;
+  toolDetailById: Map<string, AnalysisSessionViewModel["toolDetails"][number]>;
+}): InspectorTreeNode[] | undefined {
+  const { event, modelDetailById, toolDetailById } = args;
+  const children: InspectorTreeNode[] = [];
+
+  if (event.refType === "toolCall" && event.refId) {
+    const toolDetail = toolDetailById.get(event.refId);
+
+    if (toolDetail) {
+      children.push({
+        nodeId: createRunTraceToolCallOccurrenceNodeId(event.eventId, toolDetail.toolCallId),
+        kind: "toolCall",
+        role: "toolCall",
+        owner: {
+          runId: toolDetail.runId,
+          type: "analysisRun"
+        },
+        sourceRef: {
+          type: "toolCall",
+          toolCallId: toolDetail.toolCallId
+        },
+        title: `ToolCall · ${toolDetail.toolName}`,
+        value: toolDetail.summary
+      });
+    }
+  }
+
+  if (event.refType === "modelCall" && event.refId) {
+    const modelDetail = modelDetailById.get(event.refId);
+
+    if (modelDetail) {
+      children.push({
+        nodeId: createRunTraceModelCallOccurrenceNodeId(event.eventId, modelDetail.modelCallId),
+        kind: "modelCall",
+        role: "modelCall",
+        owner: {
+          runId: modelDetail.runId,
+          type: "analysisRun"
+        },
+        sourceRef: {
+          type: "modelCall",
+          modelCallId: modelDetail.modelCallId
+        },
+        title: `ModelCall · ${modelDetail.modelId}`,
+        value: `${modelDetail.provider} · ${modelDetail.tokenUsageText} tok · ${modelDetail.latencyText}`
+      });
+    }
+  }
+
+  return children.length > 0 ? children : undefined;
+}
+
 function createContextRoot(contextPack: AnalysisTaskContextPack): AnalysisInspectorRoot {
   return {
     key: "context",
@@ -67,54 +130,7 @@ function createRunTraceRoot(session: AnalysisSessionViewModel): AnalysisInspecto
       title: "Run Trace",
       summary: session.currentRun.stageSummary,
       chips: [session.currentRun.status, session.currentRun.phase],
-      children: session.runEvents.map((event) => {
-        const children: InspectorTreeNode[] = [];
-
-        if (event.refType === "toolCall" && event.refId) {
-          const toolDetail = toolDetailById.get(event.refId);
-
-          if (toolDetail) {
-            children.push({
-              nodeId: toolDetail.toolCallId,
-              kind: "toolCall",
-              role: "toolCall",
-              owner: {
-                runId: toolDetail.runId,
-                type: "analysisRun"
-              },
-              sourceRef: {
-                type: "toolCall",
-                toolCallId: toolDetail.toolCallId
-              },
-              title: `ToolCall · ${toolDetail.toolName}`,
-              value: toolDetail.summary
-            });
-          }
-        }
-
-        if (event.refType === "modelCall" && event.refId) {
-          const modelDetail = modelDetailById.get(event.refId);
-
-          if (modelDetail) {
-            children.push({
-              nodeId: modelDetail.modelCallId,
-              kind: "modelCall",
-              role: "modelCall",
-              owner: {
-                runId: modelDetail.runId,
-                type: "analysisRun"
-              },
-              sourceRef: {
-                type: "modelCall",
-                modelCallId: modelDetail.modelCallId
-              },
-              title: `ModelCall · ${modelDetail.modelId}`,
-              value: `${modelDetail.provider} · ${modelDetail.tokenUsageText} tok · ${modelDetail.latencyText}`
-            });
-          }
-        }
-
-        return {
+      children: session.runEvents.map((event) => ({
           nodeId: event.eventId,
           kind: "traceEvent",
           role: "traceEvent",
@@ -129,9 +145,12 @@ function createRunTraceRoot(session: AnalysisSessionViewModel): AnalysisInspecto
           chips: [event.status, event.durationText, event.toolName, event.modelName].filter(
             (value): value is string => Boolean(value)
           ),
-          children: children.length > 0 ? children : undefined
-        };
-      })
+          children: createRunTraceEventChildren({
+            event,
+            modelDetailById,
+            toolDetailById
+          })
+        }))
     }
   };
 }
