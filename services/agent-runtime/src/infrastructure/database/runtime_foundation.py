@@ -1664,7 +1664,7 @@ SELECT JSON_OBJECT(
           'ownerTeam', owner_team,
           'formulaSummary', formula_summary,
           'thresholdSummary', threshold_summary,
-          'contextSources', {_metric_context_sources_json_sql('ordered_metrics.metric_id')},
+          'contextSources', {_metric_context_sources_json_sql("ordered_metrics.metric_id")},
           'createdAt', created_at,
           'updatedAt', updated_at
         ) AS metric_payload
@@ -1728,7 +1728,7 @@ SELECT JSON_OBJECT(
   'ownerTeam', owner_team,
   'formulaSummary', formula_summary,
   'thresholdSummary', threshold_summary,
-  'contextSources', {_metric_context_sources_json_sql('metrics.metric_id')},
+  'contextSources', {_metric_context_sources_json_sql("metrics.metric_id")},
   'createdAt', created_at,
   'updatedAt', updated_at
 )
@@ -2871,26 +2871,19 @@ class AnalysisRunLifecycleRepository:
     def complete_delivery(
         self,
         analysis_run: AnalysisRunRecord,
-        tool_call: ToolCallRecord,
-        model_call: ModelCallRecord,
         source_evidence: Sequence[SourceEvidenceRecord],
         report: ReportRecord,
         decision: DecisionRecord,
         message: MessageRecord,
-        message_streams: Sequence[MessageStreamRecord],
         run_events: Sequence[RunEventRecord],
     ) -> None:
-        statements = [
-            _analysis_run_upsert_sql(analysis_run),
-            _tool_call_upsert_sql(tool_call),
-            _model_call_upsert_sql(model_call),
-        ]
+        statements: list[str] = []
         statements.extend(_source_evidence_upsert_sql(item) for item in source_evidence)
         statements.append(_report_upsert_sql(report))
         statements.extend(_report_section_upsert_sql(section) for section in report["sections"])
         statements.append(_decision_upsert_sql(decision))
         statements.append(_message_upsert_sql(message))
-        statements.extend(_message_stream_upsert_sql(item) for item in message_streams)
+        statements.append(_analysis_run_upsert_sql(analysis_run))
         statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
         self._database.execute_transaction(statements)
 

@@ -6,6 +6,7 @@ import subprocess
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -115,8 +116,9 @@ def login_client(
     )
     assert login_response.status_code == 200, login_response.text
 
-    login_payload = login_response.json()
-    current_workspace_id = login_payload["authSession"]["currentWorkspaceId"]
+    login_payload = cast(dict[str, object], login_response.json())
+    auth_session = cast(dict[str, object], login_payload["authSession"])
+    current_workspace_id = auth_session["currentWorkspaceId"]
     if workspace_id is not None and workspace_id != current_workspace_id:
         select_workspace_response = client.post(
             "/auth/select-workspace",

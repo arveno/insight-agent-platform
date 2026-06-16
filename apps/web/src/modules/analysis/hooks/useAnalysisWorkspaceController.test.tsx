@@ -264,7 +264,7 @@ describe("useAnalysisWorkspaceController", () => {
     });
   });
 
-  it("uses user messages as the request-context anchor and assistant messages as the run-trace anchor", async () => {
+  it("keeps assistant/current-run as the only message-driven inspector anchor", async () => {
     const goldenPath = goldenPathExample as GoldenPathExample;
     const viewModel = createGoldenPathWorkspaceViewModel(goldenPath);
     const loader = vi.fn().mockResolvedValue({
@@ -304,14 +304,14 @@ describe("useAnalysisWorkspaceController", () => {
     });
 
     expect(result.current.selectedInspectorSubject).toEqual({
-      type: "analysisTask",
+      type: "analysisRun",
       analysisTaskId: goldenPath.analysisTask.analysisTaskId,
       runId: goldenPath.analysisRun.runId
     });
-    expect(result.current.selectedMessageId).toBe(userMessage.messageId);
+    expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
-      expandedNodeIds: [goldenPath.analysisTask.contextPack!.root.nodeId],
-      selectedNodeId: goldenPath.analysisTask.contextPack!.root.nodeId
+      expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
 
     act(() => {

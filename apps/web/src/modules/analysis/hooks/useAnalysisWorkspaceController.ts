@@ -463,36 +463,15 @@ export function useAnalysisWorkspaceController(
         return;
       }
 
-      const { analysisTaskId, runId } = message;
-
-      if (analysisTaskId == null) {
-        return;
-      }
-
-      if (message.role === "user") {
-        if (!selectedSession?.analysisTaskContextPack) {
-          return;
-        }
-
-        setSelectedMessageId(messageId);
-        setSelectedInspectorSubject({
-          type: "analysisTask",
-          analysisTaskId,
-          runId: runId ?? undefined
-        });
-        setInspectorTreeState(createContextTreeState(selectedSession.analysisTaskContextPack.root.nodeId));
-        return;
-      }
-
-      if (message.role !== "assistant" || runId == null) {
+      if (message.role !== "assistant" || message.analysisTaskId == null || message.runId == null) {
         return;
       }
 
       setSelectedMessageId(messageId);
       setSelectedInspectorSubject({
         type: "analysisRun",
-        analysisTaskId,
-        runId
+        analysisTaskId: message.analysisTaskId,
+        runId: message.runId
       });
       setInspectorTreeState(createRunTraceTreeState(selectedSession!));
     },

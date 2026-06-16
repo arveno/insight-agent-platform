@@ -122,7 +122,7 @@ Code
 - `Request Context` 可以保留为内部语义锚点，但不能渲染为 synthetic visible wrapper root。
 - `Analysis Inspector` 内导航默认只在同一棵树内切换展开态与选中节点，不默认触发浏览器返回、同 tab 跳页或替换当前 Analysis 页面。
 - Analysis 当前不提供 roots-card mode、selected-node detail card、detail back-stack 或 `返回上一级` 主交互。
-- user message 选中后，Inspector 选中实际 `contextPack.root` 节点。
+- user message 不驱动当前正式 Analysis Inspector。
 - assistant message / current AnalysisRun 选中后，Inspector 选中 `Run Trace` root。
 - submit 成功拿到真实 `runId` 后，Inspector 自动选中当前 `analysisRun(runId)` 的 `Run Trace` root。
 - 本切片不提供 Home button。
@@ -132,7 +132,7 @@ Code
 - 如果没有 stable href，`Open full source` 必须禁用并给出诚实原因，不能伪造可打开入口。
 - default Inspector view 固定如下：
   - assistant message selected -> `Run Trace` root
-  - user message selected -> actual `contextPack.root`
+  - submitted user message does not become Inspector root anchor
   - blank draft -> empty / draft context
   - Dashboard context draft -> actual `contextPack.root`
 

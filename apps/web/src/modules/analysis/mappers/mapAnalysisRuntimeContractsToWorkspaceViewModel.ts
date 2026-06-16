@@ -217,9 +217,9 @@ function mapMessages(messages: MessageContract[]): AnalysisMessage[] {
     createdAt: message.createdAt,
     footerText:
       message.role === "assistant" && message.runId
-        ? "点击消息查看本次运行。"
-        : message.role === "user" && message.analysisTaskId
-          ? "点击消息查看本次请求上下文。"
+        ? "点击 assistant 消息查看本次运行。"
+        : message.role === "user"
+          ? "本条消息只记录用户问题。"
           : undefined,
     messageId: message.messageId,
     metaText:
@@ -452,7 +452,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
 
   return {
     contextPanelNote:
-      options?.contextPanelNote ?? "点击消息后，右侧会显示对应的分析详情与上下文。",
+      options?.contextPanelNote ?? "右侧会围绕当前运行显示分析详情与上下文。",
     modelOptions: options?.modelOptions ?? defaultModelOptions,
     sessions: [session]
   };

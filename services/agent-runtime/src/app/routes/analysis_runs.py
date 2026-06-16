@@ -47,6 +47,7 @@ from src.infrastructure.database.runtime_foundation import (
     DecisionRepository,
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
+    MessageRepository,
     ModelCallRepository,
     ReportRepository,
     RunEventRepository,
@@ -54,6 +55,7 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRepository,
     ToolCallRepository,
 )
+from src.modules.analysis_runs.delivery_service import AnalysisRunDeliveryService
 from src.modules.analysis_runs.lifecycle_service import (
     AnalysisRunConversationNotFoundError,
     AnalysisRunInvalidStateError,
@@ -128,6 +130,10 @@ def _model_call_repository() -> ModelCallRepository:
     return ModelCallRepository(_runtime_foundation_database())
 
 
+def _message_repository() -> MessageRepository:
+    return MessageRepository(_runtime_foundation_database())
+
+
 def _report_repository() -> ReportRepository:
     return ReportRepository(_runtime_foundation_database())
 
@@ -148,6 +154,20 @@ def _analysis_run_lifecycle_service() -> AnalysisRunLifecycleService:
         execution_attempt_repository=ExecutionAttemptRepository(database),
         run_event_repository=RunEventRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
+    )
+
+
+def _analysis_run_delivery_service() -> AnalysisRunDeliveryService:
+    database = _runtime_foundation_database()
+    return AnalysisRunDeliveryService(
+        analysis_run_repository=AnalysisRunRepository(database),
+        analysis_task_repository=AnalysisTaskRepository(database),
+        conversation_repository=ConversationRepository(database),
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        model_call_repository=ModelCallRepository(database),
+        run_event_repository=RunEventRepository(database),
+        tool_call_repository=ToolCallRepository(database),
     )
 
 
@@ -621,12 +641,12 @@ def complete_analysis_run_delivery(
     request: DeliveryCompleteRequest,
     run_id: str = Path(alias="runId"),
 ) -> AnalysisRunRecord | JSONResponse:
-    """Persist delivery artifacts and move a running/delivery run into completed."""
+    """Persist delivery artifacts from persisted execution state and complete the run."""
 
-    lifecycle_service = _analysis_run_lifecycle_service()
+    delivery_service = _analysis_run_delivery_service()
 
     try:
-        return lifecycle_service.complete_delivery(run_id, request.producerId)
+        return delivery_service.complete_delivery(run_id, request.producerId)
     except AnalysisRunConversationNotFoundError:
         return runtime_error_response(
             status_code=404,
