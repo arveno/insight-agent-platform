@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -27,7 +27,7 @@ class ModelProviderReadinessReport:
     base_url: str
     chat_completions_path: str
     chat_completions_url: str
-    api_key: str
+    api_key: str = field(repr=False)
     api_key_status: str
 
 
@@ -43,6 +43,7 @@ class ModelProviderSmokeResult:
     completion_tokens: int | None = None
     total_tokens: int | None = None
     error_type: str | None = None
+    error_detail: str | None = None
 
     @property
     def exit_code(self) -> int:
@@ -192,6 +193,25 @@ def _extract_usage(
     )
 
 
+def _sanitize_error_detail(detail: object, *, api_key: str) -> str:
+    raw_detail = str(detail)
+    sanitized = raw_detail.replace(api_key, "[redacted]")
+    sanitized = sanitized.replace("Authorization", "[redacted-header]")
+    sanitized = sanitized.replace("Bearer", "[redacted-token]")
+    return sanitized
+
+
+def _build_error_detail(
+    exc: object,
+    *,
+    detail: object,
+    api_key: str,
+) -> str:
+    return (
+        f"{type(exc).__name__}: {_sanitize_error_detail(detail, api_key=api_key)}"
+    )[:200]
+
+
 def run_provider_smoke(
     readiness: ModelProviderReadinessReport,
     *,
@@ -251,9 +271,11 @@ def run_provider_smoke(
             status=status,
             latency_ms=latency_ms,
             error_type=f"http_{exc.code}",
+            error_detail=_sanitize_error_detail(exc.reason, api_key=readiness.api_key),
         )
-    except (URLError, TimeoutError):
+    except (URLError, TimeoutError) as exc:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
+        reason = exc.reason if isinstance(exc, URLError) else exc
         return ModelProviderSmokeResult(
             provider=readiness.provider,
             model=readiness.model,
@@ -262,8 +284,13 @@ def run_provider_smoke(
             status="network_error",
             latency_ms=latency_ms,
             error_type="network_error",
+            error_detail=_build_error_detail(
+                exc,
+                detail=reason,
+                api_key=readiness.api_key,
+            ),
         )
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         return ModelProviderSmokeResult(
             provider=readiness.provider,
@@ -273,4 +300,9 @@ def run_provider_smoke(
             status="provider_error",
             latency_ms=latency_ms,
             error_type="invalid_response",
+            error_detail=_build_error_detail(
+                exc,
+                detail=exc,
+                api_key=readiness.api_key,
+            ),
         )

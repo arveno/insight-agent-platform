@@ -41,6 +41,7 @@ def print_readiness(
     completion_tokens: int | None = None,
     total_tokens: int | None = None,
     error_type: str | None = None,
+    error_detail: str | None = None,
 ) -> None:
     print(f"provider={provider}")
     print(f"model={model}")
@@ -58,6 +59,8 @@ def print_readiness(
         print(f"usage.totalTokens={total_tokens}")
     if error_type is not None:
         print(f"errorType={error_type}")
+    if error_detail is not None:
+        print(f"errorDetail={error_detail}")
 
 
 def main() -> int:
@@ -80,7 +83,10 @@ def main() -> int:
     except ModelGatewayConfigurationError as exc:
         provider_name = (args.provider or settings.model_gateway.active_provider or "<missing>").strip()
         print(f"provider={provider_name or '<missing>'}")
-        print("apiKey=configured")
+        if exc.code == "missing_api_key":
+            print("apiKey=missing")
+        else:
+            print("apiKey=unknown")
         print(f"status={exc.code}")
         print(f"errorType={exc.code}")
         return 2
@@ -104,6 +110,7 @@ def main() -> int:
         completion_tokens=result.completion_tokens,
         total_tokens=result.total_tokens,
         error_type=result.error_type,
+        error_detail=result.error_detail,
     )
     return result.exit_code
 

@@ -4,7 +4,7 @@ import io
 import json
 from http.client import HTTPMessage
 from typing import Literal, cast
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 import pytest
@@ -100,6 +100,19 @@ def test_build_model_provider_readiness_masks_api_key(
     assert readiness.model == "Qwen/Qwen3.5-4B"
     assert readiness.base_url == "https://api.siliconflow.cn/v1"
     assert readiness.chat_completions_url == "https://api.siliconflow.cn/v1/chat/completions"
+    assert readiness.api_key_status == "configured"
+
+
+def test_build_model_provider_readiness_repr_hides_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_real_provider_env(monkeypatch)
+
+    readiness = build_model_provider_readiness_report(get_settings())
+    readiness_repr = repr(readiness)
+
+    assert "siliconflow-secret" not in readiness_repr
+    assert "api_key=" not in readiness_repr
     assert readiness.api_key_status == "configured"
 
 
@@ -201,3 +214,25 @@ def test_run_provider_smoke_classifies_auth_error(
     assert result.status == "auth_error"
     assert result.api_key_status == "configured"
     assert result.total_tokens is None
+
+
+def test_run_provider_smoke_sanitizes_network_error_detail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_real_provider_env(monkeypatch)
+    readiness = build_model_provider_readiness_report(get_settings())
+
+    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+        del request, timeout
+        raise URLError(
+            "Authorization Bearer siliconflow-secret " + ("x" * 300),
+        )
+
+    result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
+
+    assert result.status == "network_error"
+    assert result.error_type == "network_error"
+    assert result.error_detail is not None
+    assert "siliconflow-secret" not in result.error_detail
+    assert "Authorization" not in result.error_detail
+    assert len(result.error_detail) <= 200
