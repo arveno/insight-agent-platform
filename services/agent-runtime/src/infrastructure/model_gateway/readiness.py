@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 import time
 from dataclasses import dataclass, field
 from typing import Protocol
@@ -11,6 +12,7 @@ from urllib.parse import urlsplit
 from urllib.request import Request
 from urllib.request import urlopen as urllib_urlopen
 
+import certifi
 from src.app.config import ModelGatewaySettings, ModelProviderSettings, Settings
 from src.infrastructure.model_gateway.errors import ModelGatewayConfigurationError
 from src.infrastructure.model_gateway.routing import (
@@ -57,7 +59,12 @@ class ModelProviderSmokeResult:
 
 
 class UrlopenCallable(Protocol):
-    def __call__(self, request: Request, timeout: float) -> ResponseLike:
+    def __call__(
+        self,
+        request: Request,
+        timeout: float,
+        context: ssl.SSLContext,
+    ) -> ResponseLike:
         ...
 
 
@@ -193,6 +200,10 @@ def _extract_usage(
     )
 
 
+def build_model_provider_tls_context() -> ssl.SSLContext:
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 def _sanitize_error_detail(detail: object, *, api_key: str) -> str:
     raw_detail = str(detail)
     sanitized = raw_detail.replace(api_key, "[redacted]")
@@ -223,6 +234,7 @@ def run_provider_smoke(
 ) -> ModelProviderSmokeResult:
     _ = enable_thinking
     urlopen_callable = urllib_urlopen if urlopen is None else urlopen
+    tls_context = build_model_provider_tls_context()
     payload = {
         "model": readiness.model,
         "messages": [{"role": "user", "content": "Reply with OK."}],
@@ -241,7 +253,11 @@ def run_provider_smoke(
 
     started_at = time.perf_counter()
     try:
-        with urlopen_callable(request, timeout=timeout_ms / 1000) as response:
+        with urlopen_callable(
+            request,
+            timeout=timeout_ms / 1000,
+            context=tls_context,
+        ) as response:
             raw_body = response.read().decode("utf-8")
             decoded_payload = json.loads(raw_body)
             if not isinstance(decoded_payload, dict):

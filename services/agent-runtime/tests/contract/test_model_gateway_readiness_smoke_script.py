@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -36,7 +37,7 @@ def test_model_provider_readiness_smoke_script_reports_missing_api_key(
     )
 
     result = subprocess.run(
-        ["python3", str(SMOKE_SCRIPT_PATH), "--env-file", str(env_file)],
+        [sys.executable, str(SMOKE_SCRIPT_PATH), "--env-file", str(env_file)],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -67,7 +68,7 @@ def test_model_provider_readiness_smoke_script_reports_unknown_api_key_on_missin
     )
 
     result = subprocess.run(
-        ["python3", str(SMOKE_SCRIPT_PATH), "--env-file", str(env_file)],
+        [sys.executable, str(SMOKE_SCRIPT_PATH), "--env-file", str(env_file)],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

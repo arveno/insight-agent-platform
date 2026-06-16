@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import io
 import json
+import ssl
 from http.client import HTTPMessage
 from typing import Literal, cast
 from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
+import certifi
 import pytest
 from src.app.config import get_settings
+from src.infrastructure.model_gateway import readiness as readiness_module
 from src.infrastructure.model_gateway.errors import ModelGatewayConfigurationError
 from src.infrastructure.model_gateway.readiness import (
     build_model_provider_readiness_report,
@@ -116,6 +119,26 @@ def test_build_model_provider_readiness_repr_hides_api_key(
     assert readiness.api_key_status == "configured"
 
 
+def test_build_model_provider_tls_context_uses_certifi_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    expected_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+    monkeypatch.setattr(certifi, "where", lambda: "/tmp/test-certifi.pem")
+
+    def fake_create_default_context(*, cafile: str | None = None) -> ssl.SSLContext:
+        captured["cafile"] = cafile
+        return expected_context
+
+    monkeypatch.setattr(ssl, "create_default_context", fake_create_default_context)
+
+    context = readiness_module.build_model_provider_tls_context()
+
+    assert context is expected_context
+    assert captured["cafile"] == "/tmp/test-certifi.pem"
+
+
 def test_build_model_provider_readiness_rejects_missing_api_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -166,10 +189,18 @@ def test_run_provider_smoke_reports_masked_success(
     readiness = build_model_provider_readiness_report(get_settings())
 
     captured_request: dict[str, object] = {}
+    expected_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
-    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
+    monkeypatch.setattr(
+        readiness_module,
+        "build_model_provider_tls_context",
+        lambda: expected_context,
+    )
+
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
         captured_request["request"] = request
         captured_request["timeout"] = timeout
+        captured_request["context"] = context
         return FakeResponse(
             {
                 "usage": {
@@ -186,6 +217,7 @@ def test_run_provider_smoke_reports_masked_success(
     assert request.full_url == "https://api.siliconflow.cn/v1/chat/completions"
     assert request.get_header("Authorization") == "Bearer siliconflow-secret"
     assert captured_request["timeout"] == 30.0
+    assert captured_request["context"] is expected_context
     assert result.status == "ok"
     assert result.api_key_status == "configured"
     assert result.prompt_tokens == 11
@@ -199,8 +231,8 @@ def test_run_provider_smoke_classifies_auth_error(
     configure_real_provider_env(monkeypatch)
     readiness = build_model_provider_readiness_report(get_settings())
 
-    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
-        del request, timeout
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
+        del request, timeout, context
         raise HTTPError(
             readiness.chat_completions_url,
             401,
@@ -222,8 +254,8 @@ def test_run_provider_smoke_sanitizes_network_error_detail(
     configure_real_provider_env(monkeypatch)
     readiness = build_model_provider_readiness_report(get_settings())
 
-    def fake_urlopen(request: object, timeout: float) -> FakeResponse:
-        del request, timeout
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
+        del request, timeout, context
         raise URLError(
             "Authorization Bearer siliconflow-secret " + ("x" * 300),
         )
