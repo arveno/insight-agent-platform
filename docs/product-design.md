@@ -183,6 +183,10 @@ Report / Source Evidence / Trace / ToolCall / ModelCall / Job
   - evidence action -> evidence node/subtree
 - context tree 只存轻量目录快照和 canonical `sourceRef`，不得重复完整 `Report / Evidence / Metric / Data / Knowledge` 对象内容。
 - 同一个业务对象在不同 owner / role 下可以形成不同 tree node occurrence；例如同一 `reportId` 可以同时是 `AnalysisTask` 的 `inputContext`，也可以是 `AnalysisRun` 的 `runtimeReferencedSource` 或 `runOutput`。
+- 右侧 Inspector tree 是 product graph projection，不是 page-private data model。
+- 每个页面选择自己的 selected subject，并投影 subject-scoped roots。
+- 同一个业务对象可以通过 canonical `sourceRef` 出现在多个 projections 中。
+- 页面渲染可以不同，但对象 identity 与 `InspectorTreeNode / sourceRef / owner / role` 语义必须保持 single-track。
 - 旧 flat `DraftContextPack` 不是正式方向，不保留长期兼容路径。
 - 结果追问不能覆盖原始 run 或 report，只能产生新的 AnalysisTask / AnalysisRun 关联链路。
 - 用户发送后进入标准化单轨 submit transaction：create or reuse `Conversation` -> create `AnalysisTask` with typed `contextPack` snapshot -> create initial `AnalysisRun` -> create `User Message` bound to `conversationId / analysisTaskId / runId` -> update `Conversation.currentRunId`。
