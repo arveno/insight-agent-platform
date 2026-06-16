@@ -332,6 +332,68 @@ describe("AnalysisInspectorPanel", () => {
     expect(container.querySelectorAll("aside .ant-card").length).toBe(1);
   });
 
+  it("projects ToolCall and ModelCall nodes under the existing Run Trace tree", () => {
+    const baseSession = analysisStaticViewModel.sessions[0]!;
+    const toolDetail = baseSession.toolDetails[0]!;
+    const modelDetail = baseSession.modelDetails[0]!;
+    const toolEvent = baseSession.runEvents.find((event) => event.eventType === "tool_call.completed")!;
+    const modelEvent = {
+      ...baseSession.runEvents.find((event) => event.eventType === "synthesis.started")!,
+      eventId: "event-runtime-model-call-completed",
+      eventType: "model_call.completed" as const,
+      refId: modelDetail.modelCallId,
+      refType: "modelCall"
+    };
+    const session = {
+      ...baseSession,
+      runEvents: [
+        ...baseSession.runEvents.map((event) => {
+        if (event.eventId === toolEvent.eventId) {
+          return {
+            ...event,
+            refId: toolDetail.toolCallId,
+            refType: "toolCall"
+          };
+        }
+
+        return event;
+        }),
+        modelEvent
+      ]
+    };
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          contextPanelNote="点击消息后，右侧会显示对应的分析详情与上下文。"
+          draftContext={undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [
+              createRunTraceRootNodeId(session.currentRun.runId),
+              toolEvent.eventId,
+              modelEvent.eventId
+            ],
+            selectedNodeId: toolEvent.eventId
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
+          onSelectInspectorNode={() => undefined}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText(`ToolCall · ${toolDetail.toolName}`)).toBeTruthy();
+    expect(screen.getByText(`ModelCall · ${modelDetail.modelId}`)).toBeTruthy();
+    expect(screen.queryByText(/^Tool Calls$/)).toBeNull();
+    expect(screen.queryByText(/^Model Calls$/)).toBeNull();
+  });
+
   it("selects actual tree roots and leaves through the unified tree callback instead of a root-card mode", () => {
     const session = analysisStaticViewModel.sessions[0]!;
     const onSelectInspectorNode = vi.fn();
