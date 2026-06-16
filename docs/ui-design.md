@@ -113,30 +113,31 @@ Code
 - Inspector 是统一的可插拔上下文插槽。
 - 页面可以选择是否启用 Inspector。
 - 页面通过当前选中对象提供 `inspectorContext`。
-- Inspector 根据 `subjectType` 插入 subject-scoped roots 与 selected node detail，但 Analysis 当前固定为单一 unified tree。
+- Inspector 根据 `subjectType` 插入 subject-scoped display model；Analysis 当前固定为一棵标准 unified tree。
+- 不同模块/页面可以提供不同的 tree / subtree display model，但右侧辅助区结构必须保持为一棵标准 tree。
 - `AnalysisInspectorPanel` 是 Analysis 页面内部的 unified Inspector tree browser，不是浏览器 back stack 的替身。
-- `Run Trace` 与 `Request Context` 是 Analysis Inspector 当前固定可见的 sibling roots。
-- `Request Context` 只是 Analysis Inspector 的一个 root，不等于整个 Inspector。
+- `Run Trace` 是 Analysis Inspector 的一个可见 root；实际的 `AnalysisTask.contextPack.root` 是另一个可见 context root。
+- `Request Context` 可以保留为内部语义锚点，但不能渲染为 synthetic visible wrapper root。
 - `Analysis Inspector` 内导航默认只在同一棵树内切换展开态与选中节点，不默认触发浏览器返回、同 tab 跳页或替换当前 Analysis 页面。
-- Analysis 当前不提供 roots-card mode、detail back-stack 或 `返回上一级` 主交互。
-- user message 是 `Request Context` 主锚点。
-- assistant message / current AnalysisRun / `run.created` 是 `Run Trace` 主锚点。
-- submit 成功拿到真实 `runId` 后，Inspector 自动选中当前 `analysisRun(runId)` 的 `Run Trace`。
+- Analysis 当前不提供 roots-card mode、selected-node detail card、detail back-stack 或 `返回上一级` 主交互。
+- user message 选中后，Inspector 选中实际 `contextPack.root` 节点。
+- assistant message / current AnalysisRun 选中后，Inspector 选中 `Run Trace` root。
+- submit 成功拿到真实 `runId` 后，Inspector 自动选中当前 `analysisRun(runId)` 的 `Run Trace` root。
 - 本切片不提供 Home button。
 - Inspector 不得依赖 browser back。
 - 最终来源详情层可以提供 `Open full source` 次级动作；在此之前，Inspector 主导航应停留在 Analysis 页面内部。
 - `Open full source` 必须依赖由 canonical contract ID 推导出的 stable href，在新浏览器 tab 打开，不得替换当前 Analysis 页面，也不得清空 `conversation / run / draft / inspector` 状态。
 - 如果没有 stable href，`Open full source` 必须禁用并给出诚实原因，不能伪造可打开入口。
 - default Inspector view 固定如下：
-  - assistant message selected -> `Run Trace`
-  - user message selected -> `Request Context`
+  - assistant message selected -> `Run Trace` root
+  - user message selected -> actual `contextPack.root`
   - blank draft -> empty / draft context
-  - Dashboard context draft -> `Request Context`
+  - Dashboard context draft -> actual `contextPack.root`
 
 默认策略：
 
 - `Dashboard` 不启用通用详情型 Inspector；如当前阶段需要右侧辅助区，其形态固定为标准化 `Context Tree Viewport`。
-- `Analysis` 需要 Inspector；当前固定为 unified `Run Trace / Request Context` tree + selected node detail，后续再扩展更多 subject roots。
+- `Analysis` 需要 Inspector；当前固定为 one unified tree renderer，显示 `Run Trace` root 与实际 `contextPack.root`，不渲染 synthetic `Request Context` wrapper 或 selected-node detail card，后续再扩展更多 subject roots。
 - `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
 - `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
 - `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
@@ -316,7 +317,7 @@ Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级�
 ### AI Platform Presentation Boundary
 
 - UI 只展示标准化 `Contract / 聚合对象 -> ViewModel -> Page Composition` 结果，不展示底层 runtime 的 raw 输出。
-- `Conversation Workspace = Analysis`：主区承接 `Conversation / Chat`，Inspector 承接 unified `Run Trace / Request Context` tree 与当前 selected node detail；页面不得展示 `LangGraph raw state`、`Tool raw output`、`raw provider response`。
+- `Conversation Workspace = Analysis`：主区承接 `Conversation / Chat`，Inspector 承接一棵标准 tree（显示 `Run Trace` root 与实际 `contextPack.root`，不显示 synthetic `Request Context` wrapper 或 selected-node detail card）；页面不得展示 `LangGraph raw state`、`Tool raw output`、`raw provider response`。
 - `Reader Page = Reports`：只展示结构化 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence`，不得把模型 markdown 原文直接当正式报告资产。
 - `Overview Page = Metrics / Platform Operations`：只展示当前 Workspace 的只读语义摘要、平台健康摘要和 Analysis 草稿态入口；入口只表示导航或草稿态，不创建真实 conversation、run、Job 或部署执行。
 - `Management Page = Data & Knowledge / Models & Tools / Governance / Settings`：承接资产、配置、治理和默认策略入口，但不自造执行链路，也不把 Management Page 写成孤岛。
