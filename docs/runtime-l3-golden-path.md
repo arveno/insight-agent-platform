@@ -25,6 +25,12 @@ packages/contracts/examples/analysis-runtime/golden-path.json
 
 该 example 当前表达的是这条切片的 contracts-backed terminal snapshot，不等同于完整自动化实现，也不替代本文的验收约束。
 
+补充边界：
+
+- 本文档中的 frozen demo IDs 只用于 acceptance example、smoke input 与 regression path。
+- frozen demo IDs 不是 runtime delivery builder 的业务事实源。
+- `#232` delivery builder 必须从当前 `AnalysisRun` 的 persisted state 生成 artifacts，不得从本文或 contracts example 读取业务常量来驱动 runtime。
+
 如本文与当前 `docs/contracts.md`、`packages/contracts/**` 中的 `AnalysisTaskContextPack` 或 `InspectorTreeNode` 正式结构发生冲突，以 tree-shaped `AnalysisTaskContextPack` 正式口径为准。
 
 ## 1. 验收边界
@@ -291,8 +297,8 @@ businessDomainId = business-domain-revenue-quality
 本切片的第一轮会话最少应出现以下消息形态：
 
 1. `system` message：只描述从 `Metrics` 带入的上下文草稿，不承载结果。
-2. `user` message：内容固定为 demo question，绑定 `turnId = turn-revenue-gap-q2-1`。
-3. `assistant` message：绑定 `runId = analysis-q2-revenue-gap`、`reportId = report-revenue-gap-q2`，并引用 `2` 条 `sourceEvidenceIds`。
+2. `user` message：内容固定为 demo question，绑定该次 submit 的 canonical `turnId`。
+3. `assistant` message：绑定同一个 `conversationId / analysisTaskId / runId`，复用原 user submit message 的 `turnId`，回挂当前 run 生成的 `reportId`，并引用当前 run 已持久化的 `sourceEvidenceIds`。
 
 assistant message 的最小语义必须同时覆盖：
 
@@ -368,43 +374,35 @@ assistant message 的最小语义必须同时覆盖：
 
 ## 8. Expected SourceEvidence
 
-本切片的最小交付要求是 `2` 条标准化 `SourceEvidence`：
+本切片的最小交付要求是：当前 run 至少产出 `1` 条标准化 `SourceEvidence`，并且这些证据都必须从当前 `AnalysisTask.contextPack.root` 中真实存在的 traceable `sourceRef` 派生。
 
-| sourceEvidenceId                         | sourceType           | sourceId                               | 作用                           |
-| ---------------------------------------- | -------------------- | -------------------------------------- | ------------------------------ |
-| `source-evidence-channel-weekly-17`      | `knowledge_document` | `knowledge-document-channel-weekly-17` | 支撑“华东渠道确认延迟”的主结论 |
-| `source-evidence-inventory-note-east-04` | `knowledge_document` | `knowledge-document-inventory-east-04` | 支撑“促销库存错配”的次结论     |
+固定规则：
 
-同时，本切片的上游 context 必须能反查到：
+1. builder 必须遍历 `AnalysisTask.contextPack.root`，选择带 canonical `sourceRef` 的 traceable nodes。
+2. 优先选择 `knowledgeDocument / knowledgeChunk / dataTable / metric` 类型；如某类型尚未进入正式 `SourceRef` schema，只能在 contracts 明确后启用，不能伪造字段绕过。
+3. `sourceEvidenceId` 必须由 runtime 生成 canonical id，或按 `runId + sourceRef` 派生 deterministic id；不得冻结为 demo business ID。
+4. `sourceType` 必须从当前 node 的 `sourceRef.type` 映射而来。
+5. `sourceId` 必须回到 canonical source id，例如 `knowledgeDocumentId / knowledgeChunkId / tableId / metricId`。
+6. `title / snippet` 必须来自当前 context node 的 lightweight persisted fields，例如 `title / summary / description`。
+7. `metadata` 至少要能反查 `nodeId`、`sourceRef`、`toolCallIds`、`modelCallIds` 与 `traceability`。
+8. 如果当前 run 没有任何可用 `sourceRef`，delivery 必须 409 honest failure；不得补 fake `SourceEvidence`，不得继续完成 run。
 
-- `metric-recognized-revenue`
-- `table-sales-order`
-- `table-refund-order`
-
-第一条 L3 slice 允许把 metric / table 保留为 context pack 与工具输入来源，而不是要求它们在首轮输出中都落成 `SourceEvidence`。
+demo slice 当前的 revenue 文档、表和 metric 仍然是 acceptance sample；它们说明 smoke input 会长什么样，不代表 runtime 只能识别这些固定 source。
 
 ## 9. Expected Report
 
-本切片的报告对象固定为：
+本切片的 runtime report / decision 生成规则固定如下：
 
-| 字段       | 冻结值                                                      |
-| ---------- | ----------------------------------------------------------- |
-| `reportId` | `report-revenue-gap-q2`                                     |
-| `title`    | `收入异常分析摘要`                                          |
-| `summary`  | 形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作 |
+1. `reportId` 必须由 runtime 生成 canonical id，或按当前 `runId` 派生 deterministic id；不得冻结为 demo business ID。
+2. `Report.title` 必须从当前 `Conversation.title` 与 `AnalysisTask.question` 派生。
+3. `Report.summary` 必须把 succeeded `ToolCall`、succeeded `ModelCall` 与 selected `SourceEvidence` 归一化成 formal summary；不得把 raw model output 直接当成正式 `Report`。
+4. `Report.sections` 至少包含 `核心结论 / 证据引用 / 下一步动作`，内容必须来自当前 run 的 persisted execution state 和 selected `SourceEvidence`。
+5. `Report.sourceEvidence` 只能引用当前 `runId` 下已持久化的 `SourceEvidence.sourceEvidenceId`。
+6. `Decision.decisionId` 必须由 runtime 生成 canonical id，或按当前 `runId / reportId` 派生 deterministic id；不得冻结为 demo business ID。
+7. `Decision.title` 必须从 `Report` 结论与 `AnalysisTask.question` 派生。
+8. 首轮 delivery 的 `Decision.status` 固定为 `proposed`。
 
-最小报告结构必须包括：
-
-1. `summary` 字段，可独立表达主结论。
-2. `sourceEvidence` 字段，至少引用 `2` 条证据。
-3. `sections` 字段，至少包含 `下一步动作` 段落。
-4. `Decision` 入口，固定回挂 `decision-revenue-gap-q2`。
-
-后续实现可以把 `sections` 扩展为 `核心结论 / 证据引用 / 下一步动作`，但不得去掉：
-
-- report summary
-- evidence ref
-- action / decision 入口
+demo slice 中的 `report-revenue-gap-q2 / decision-revenue-gap-q2` 仍然只是 acceptance sample snapshot，用于 contracts example 和 smoke 回归，不得被 runtime builder 当成配置读取。
 
 ## 10. Expected Feedback / BadCase / Evaluation
 
@@ -466,12 +464,12 @@ follow-up 规则：
 后续自动化必须能验证：
 
 1. `analysis-task-revenue-gap-q2`、`conversation-revenue-gap-q2`、`analysis-q2-revenue-gap` 同链存在。
-2. `message-revenue-gap-q2-user` 与 `message-revenue-gap-q2-assistant` 绑定同一 `turnId`。
-3. `message-stream-revenue-gap-q2-*` sequence 连续递增，且存在 `stream.completed`。
-4. `runEvent` sequence 连续递增，且存在 `run.completed`。
-5. `report-revenue-gap-q2` 引用 `2` 条 `SourceEvidence`。
-6. `decision-revenue-gap-q2` 回挂到 `report-revenue-gap-q2`。
-7. feedback / bad case / evaluation 落地后，`feedbackId -> badCaseId / evaluationRunId` 可反查。
+2. 当前 run 下的 assistant message 与原 user submit message 绑定同一 `turnId`。
+3. `runEvent` sequence 连续递增，且存在 `verification.started / verification.passed / delivery.started / artifact.persisted / run.completed`。
+4. `artifact.persisted.sequence < run.completed.sequence`。
+5. 当前 `runId` 至少落地 `1` 条 `SourceEvidence`、`1` 个 `Report`、`1` 条 `ReportSection`、`1` 个 `Decision`。
+6. assistant message 与 report 的 `sourceEvidenceIds` / `sourceEvidence` 只能引用同一 `runId` 下已持久化的 `SourceEvidence`。
+7. `Decision.reportId` 必须回挂到同一 `runId` 下的正式 `Report`。
 
 ### 12.2 Smoke 目标
 
@@ -480,8 +478,8 @@ follow-up 规则：
 1. 用户可从 `Metrics` 的 `metric-recognized-revenue` 进入 Analysis 草稿态。
 2. 用户发送问题后创建 conversation 和 run。
 3. 后端可读出 run、events、messages、source evidence、report。
-4. SSE live 与 replay history 都能回放同一条 assistant 输出链。
-5. 用户可从 report 进入 feedback，并看到后续 bad case / evaluation 入口。
+4. 当前 smoke 只验证 persisted delivery artifacts 和 run-scoped linkage，不把 MessageStream / SSE / replay 当作本切片成功门槛。
+5. 如环境缺少真实 provider config，smoke 必须诚实输出 skipped，而不是伪装成 full provider path pass。
 
 ### 12.3 当前命令责任
 
@@ -509,9 +507,9 @@ follow-up 规则：
    - Inspector 可查看 run trace
    - 对话区出现 assistant 输出
 7. 打开 report / evidence 入口，确认：
-   - `report-revenue-gap-q2` 可读
-   - `2` 条 `SourceEvidence` 可追溯
-   - `decision-revenue-gap-q2` 可见
+   - 当前 run 生成的 `Report` 可读
+   - 当前 run 生成的 `SourceEvidence` 可追溯
+   - 当前 run 生成的 `Decision` 可见
 8. 提交 feedback，确认后续 bad case / evaluation 入口存在。
 9. 通过结果页或 evidence / report 入口发起 follow-up。
 

@@ -11,7 +11,12 @@ import pytest
 from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
-from src.infrastructure.database.runtime_foundation import RuntimeFoundationMysqlCli
+from src.infrastructure.database.runtime_foundation import (
+    MessageRepository,
+    ModelCallRepository,
+    RuntimeFoundationMysqlCli,
+    ToolCallRepository,
+)
 from src.infrastructure.model_gateway.gateway import ModelGateway
 from src.infrastructure.model_gateway.readiness import UrlopenCallable
 from src.infrastructure.tool_registry.registry import ToolRegistry
@@ -19,77 +24,103 @@ from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
 from tests.integration.conftest import login_client, seed_runtime_foundation
 
 DELIVERY_PRODUCER_ID = "delivery-producer-runtime"
+EXPECTED_SOURCE_IDS = [
+    "knowledge-document-channel-weekly-17",
+    "knowledge-document-inventory-east-04",
+    "table-sales-order",
+    "table-refund-order",
+    "metric-recognized-revenue",
+]
+EXPECTED_REPORT_SECTION_TITLES = ["核心结论", "证据引用", "下一步动作"]
 
 
-def build_context_pack(include_delivery_sources: bool) -> dict[str, Any]:
+def build_context_node(
+    *,
+    node_id: str,
+    kind: str,
+    title: str,
+    summary: str,
+    source_ref: dict[str, str] | None,
+) -> dict[str, Any]:
+    node: dict[str, Any] = {
+        "nodeId": node_id,
+        "kind": kind,
+        "role": "inputContext",
+        "owner": {"type": "analysisTask"},
+        "title": title,
+        "summary": summary,
+    }
+    if source_ref is not None:
+        node["sourceRef"] = source_ref
+    return node
+
+
+def build_context_pack(include_source_refs: bool) -> dict[str, Any]:
+    def maybe_source_ref(source_ref: dict[str, str]) -> dict[str, str] | None:
+        return source_ref if include_source_refs else None
+
     children: list[dict[str, Any]] = [
-        {
-            "nodeId": "context-metric-recognized-revenue",
-            "kind": "metric",
-            "role": "inputContext",
-            "owner": {"type": "analysisTask"},
-            "title": "确认收入",
-            "summary": "当前异常指标来源。",
-            "sourceRef": {
-                "type": "metric",
-                "metricId": "metric-recognized-revenue",
-            },
-        },
-        {
-            "nodeId": "context-table-sales-order",
-            "kind": "dataTable",
-            "role": "inputContext",
-            "owner": {"type": "analysisTask"},
-            "title": "销售订单表",
-            "summary": "用于核对确认收入的订单明细。",
-            "sourceRef": {
-                "type": "dataTable",
-                "tableId": "table-sales-order",
-            },
-        },
-        {
-            "nodeId": "context-table-refund-order",
-            "kind": "dataTable",
-            "role": "inputContext",
-            "owner": {"type": "analysisTask"},
-            "title": "退款订单表",
-            "summary": "用于排除退款激增是否主导收入异常。",
-            "sourceRef": {
-                "type": "dataTable",
-                "tableId": "table-refund-order",
-            },
-        },
+        build_context_node(
+            node_id="context-metric-recognized-revenue",
+            kind="metric",
+            title="确认收入",
+            summary="当前异常指标来源。",
+            source_ref=maybe_source_ref(
+                {
+                    "type": "metric",
+                    "metricId": "metric-recognized-revenue",
+                }
+            ),
+        ),
+        build_context_node(
+            node_id="context-table-sales-order",
+            kind="dataTable",
+            title="销售订单表",
+            summary="用于核对确认收入的订单明细。",
+            source_ref=maybe_source_ref(
+                {
+                    "type": "dataTable",
+                    "tableId": "table-sales-order",
+                }
+            ),
+        ),
+        build_context_node(
+            node_id="context-table-refund-order",
+            kind="dataTable",
+            title="退款订单表",
+            summary="用于排除退款激增是否主导收入异常。",
+            source_ref=maybe_source_ref(
+                {
+                    "type": "dataTable",
+                    "tableId": "table-refund-order",
+                }
+            ),
+        ),
+        build_context_node(
+            node_id="context-knowledge-document-channel-weekly-17",
+            kind="knowledgeDocument",
+            title="渠道周报第 17 期",
+            summary="华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。",
+            source_ref=maybe_source_ref(
+                {
+                    "type": "knowledgeDocument",
+                    "knowledgeDocumentId": "knowledge-document-channel-weekly-17",
+                }
+            ),
+        ),
+        build_context_node(
+            node_id="context-knowledge-document-inventory-east-04",
+            kind="knowledgeDocument",
+            title="华东库存复核记录",
+            summary="促销期间部分 SKU 库存错配，影响渠道交付与确认节奏。",
+            source_ref=maybe_source_ref(
+                {
+                    "type": "knowledgeDocument",
+                    "knowledgeDocumentId": "knowledge-document-inventory-east-04",
+                }
+            ),
+        ),
     ]
-
-    if include_delivery_sources:
-        children.extend(
-            [
-                {
-                    "nodeId": "context-knowledge-document-channel-weekly-17",
-                    "kind": "knowledgeDocument",
-                    "role": "inputContext",
-                    "owner": {"type": "analysisTask"},
-                    "title": "渠道周报第 17 期",
-                    "summary": "华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。",
-                    "sourceRef": {
-                        "type": "knowledgeDocument",
-                        "knowledgeDocumentId": "knowledge-document-channel-weekly-17",
-                    },
-                },
-                {
-                    "nodeId": "context-knowledge-document-inventory-east-04",
-                    "kind": "knowledgeDocument",
-                    "role": "inputContext",
-                    "owner": {"type": "analysisTask"},
-                    "title": "华东库存复核记录",
-                    "summary": "促销期间部分 SKU 库存错配，影响渠道交付与确认节奏。",
-                    "sourceRef": {
-                        "type": "knowledgeDocument",
-                        "knowledgeDocumentId": "knowledge-document-inventory-east-04",
-                    },
-                },
-            ]
-        )
 
     return {
         "version": 1,
@@ -117,14 +148,15 @@ def build_context_pack(include_delivery_sources: bool) -> dict[str, Any]:
 TASK_PAYLOAD_WITH_DELIVERY_SOURCES = {
     "businessDomainId": "business-domain-revenue-quality",
     "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
-    "contextPack": build_context_pack(include_delivery_sources=True),
+    "contextPack": build_context_pack(include_source_refs=True),
     "title": "收入增速异常",
 }
+
 
 TASK_PAYLOAD_WITHOUT_DELIVERY_SOURCES = {
     "businessDomainId": "business-domain-revenue-quality",
     "question": "解释华东区域收入增速低于阈值的主要原因，并给出下一步建议。",
-    "contextPack": build_context_pack(include_delivery_sources=False),
+    "contextPack": build_context_pack(include_source_refs=False),
     "title": "收入增速异常",
 }
 
@@ -262,6 +294,81 @@ def assert_no_delivery_outputs(
     assert [message["role"] for message in messages] == ["user"]
 
 
+def runtime_database() -> RuntimeFoundationMysqlCli:
+    return RuntimeFoundationMysqlCli()
+
+
+def overwrite_tool_call_status(
+    run_id: str,
+    *,
+    status: str,
+    error_message: str | None,
+) -> None:
+    repository = ToolCallRepository(runtime_database())
+    [tool_call] = repository.list_by_run_id(run_id)
+    repository.create(
+        {
+            **tool_call,
+            "status": cast(Any, status),
+            "errorType": "tool_failure" if error_message else None,
+            "errorMessage": error_message,
+        }
+    )
+
+
+def overwrite_model_call_status(
+    run_id: str,
+    *,
+    status: str,
+    error_message: str | None,
+) -> None:
+    repository = ModelCallRepository(runtime_database())
+    [model_call] = repository.list_by_run_id(run_id)
+    repository.create(
+        {
+            **model_call,
+            "status": cast(Any, status),
+            "errorType": "model_failure" if error_message else None,
+            "errorMessage": error_message,
+        }
+    )
+
+
+def remove_run_event(run_id: str, *, event_type: str) -> None:
+    runtime_database().execute_sql(
+        f"""
+DELETE FROM run_events
+WHERE run_id = '{run_id}'
+  AND event_type = '{event_type}';
+"""
+    )
+
+
+def detach_submit_user_message_turn_binding(
+    *,
+    conversation_id: str,
+    run_id: str,
+) -> None:
+    repository = MessageRepository(runtime_database())
+    user_message = next(
+        message
+        for message in repository.list_by_conversation_id(conversation_id)
+        if message["role"] == "user" and message["runId"] == run_id
+    )
+    repository.create(
+        {
+            **user_message,
+            "runId": None,
+        }
+    )
+
+
+def get_run_payload(client: TestClient, run_id: str) -> dict[str, Any]:
+    response = client.get(f"/analysis-runs/{run_id}")
+    assert response.status_code == 200, response.text
+    return response_json_dict(response.json())
+
+
 def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -295,6 +402,7 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     ]
     assert len(tool_calls) == 1
     assert tool_calls[0]["toolName"] == "analysis_context_summary"
+    assert tool_calls[0]["status"] == "succeeded"
 
     model_calls = response_json_dict(client.get(f"/analysis-runs/{run_id}/model-calls").json())[
         "items"
@@ -302,60 +410,72 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     assert len(model_calls) == 1
     assert model_calls[0]["provider"] == "siliconflow"
     assert model_calls[0]["modelId"] == "Qwen/Qwen3.5-4B"
+    assert model_calls[0]["status"] == "succeeded"
 
     source_evidence_items = response_json_dict(
         client.get(f"/analysis-runs/{run_id}/source-evidence").json()
     )["items"]
-    assert [item["sourceEvidenceId"] for item in source_evidence_items] == [
-        "source-evidence-channel-weekly-17",
-        "source-evidence-inventory-note-east-04",
-    ]
+    assert len(source_evidence_items) == len(EXPECTED_SOURCE_IDS)
+    assert [item["sourceId"] for item in source_evidence_items] == EXPECTED_SOURCE_IDS
     assert [item["sourceType"] for item in source_evidence_items] == [
         "knowledge_document",
         "knowledge_document",
+        "data_table",
+        "data_table",
+        "metric",
     ]
-    assert [item["sourceId"] for item in source_evidence_items] == [
-        "knowledge-document-channel-weekly-17",
-        "knowledge-document-inventory-east-04",
-    ]
+    for item in source_evidence_items:
+        metadata = item["metadata"]
+        assert metadata["nodeId"].startswith("context-")
+        assert metadata["sourceRef"]["type"] in {
+            "knowledgeDocument",
+            "dataTable",
+            "metric",
+        }
+        assert metadata["toolCallIds"] == [tool_calls[0]["toolCallId"]]
+        assert metadata["modelCallIds"] == [model_calls[0]["modelCallId"]]
+        assert metadata["traceability"] == "direct_refs"
 
     reports = response_json_dict(client.get(f"/analysis-runs/{run_id}/reports").json())["items"]
     assert len(reports) == 1
     report = reports[0]
-    assert report["reportId"] == "report-revenue-gap-q2"
+    assert report["reportId"] == f"report-{run_id}"
     assert report["runId"] == run_id
-    assert report["title"] == "收入异常分析摘要"
-    assert report["summary"] == "形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作"
-    assert [section["title"] for section in report["sections"]] == [
-        "核心结论",
-        "证据引用",
-        "下一步动作",
-    ]
+    assert report["title"] == "收入增速异常 分析报告"
+    assert report["summary"] == (
+        "围绕“收入增速异常”整理了 5 条可追溯来源，"
+        "并结合 1 次 ToolCall 与 1 次 ModelCall 形成正式交付结论。"
+    )
+    assert [section["title"] for section in report["sections"]] == EXPECTED_REPORT_SECTION_TITLES
+    assert [section["reportId"] for section in report["sections"]] == [report["reportId"]] * 3
     assert report["sourceEvidence"] == [
-        "source-evidence-channel-weekly-17",
-        "source-evidence-inventory-note-east-04",
+        item["sourceEvidenceId"] for item in source_evidence_items
     ]
 
     decisions = response_json_dict(client.get(f"/analysis-runs/{run_id}/decisions").json())["items"]
     assert len(decisions) == 1
     decision = decisions[0]
-    assert decision["decisionId"] == "decision-revenue-gap-q2"
+    assert decision["decisionId"] == f"decision-{run_id}"
     assert decision["workspaceId"] == completed_run["workspaceId"]
     assert decision["runId"] == run_id
     assert decision["reportId"] == report["reportId"]
+    assert decision["title"] == "收入增速异常 下一步决策"
     assert decision["status"] == "proposed"
 
     messages = response_json_dict(client.get(f"/conversations/{conversation_id}/messages").json())[
         "items"
     ]
     assert [message["role"] for message in messages] == ["user", "assistant"]
+    user_message = messages[0]
     assistant_message = messages[-1]
     assert assistant_message["analysisTaskId"] == analysis_task_id
     assert assistant_message["runId"] == run_id
+    assert assistant_message["turnId"] == user_message["turnId"]
     assert assistant_message["status"] == "completed"
     assert assistant_message["reportId"] == report["reportId"]
     assert assistant_message["sourceEvidenceIds"] == report["sourceEvidence"]
     assert assistant_message["toolCallIds"] == [tool_calls[0]["toolCallId"]]
+    assert "收入增速异常" in assistant_message["content"]
 
     message_stream = response_json_dict(
         client.get(
@@ -369,6 +489,8 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     event_types = [event["eventType"] for event in events]
     assert event_types.count("tool_call.completed") == 1
     assert event_types.count("model_call.completed") == 1
+    assert event_types.count("verification.started") == 1
+    assert event_types.count("verification.passed") == 1
     assert event_types[-5:] == [
         "verification.started",
         "verification.passed",
@@ -396,7 +518,7 @@ def test_delivery_complete_rejects_execution_state_before_persisted_synthesis(
     assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
 
 
-def test_delivery_complete_fails_honestly_when_required_canonical_sources_are_missing(
+def test_delivery_complete_fails_honestly_when_context_pack_has_no_traceable_source_refs(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -417,10 +539,10 @@ def test_delivery_complete_fails_honestly_when_required_canonical_sources_are_mi
 
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
-    assert "knowledge document source refs" in response.json()["message"]
+    assert "usable sourceRef" in response.json()["message"]
     assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
 
-    persisted_run = response_json_dict(client.get(f"/analysis-runs/{run_id}").json())
+    persisted_run = get_run_payload(client, run_id)
     assert persisted_run["status"] == "running"
     assert persisted_run["phase"] == "synthesis"
 
@@ -429,3 +551,165 @@ def test_delivery_complete_fails_honestly_when_required_canonical_sources_are_mi
     assert "verification.started" not in event_types
     assert "artifact.persisted" not in event_types
     assert "run.completed" not in event_types
+
+
+def test_delivery_complete_rejects_failed_tool_call_status(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    overwrite_tool_call_status(
+        run_id,
+        status="failed",
+        error_message="tool failed after persisted synthesis state setup",
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "succeeded ToolCall" in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["status"] == "running"
+
+
+def test_delivery_complete_rejects_failed_model_call_status(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    overwrite_model_call_status(
+        run_id,
+        status="failed",
+        error_message="model failed after persisted synthesis state setup",
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "succeeded ModelCall" in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["status"] == "running"
+
+
+@pytest.mark.parametrize("event_type", ["tool_call.completed", "model_call.completed"])
+def test_delivery_complete_requires_completed_tool_and_model_run_events(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    event_type: str,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    remove_run_event(run_id, event_type=event_type)
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert event_type in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+def test_delivery_complete_requires_original_user_turn_binding(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    worker_result = execution_state["workerResult"]
+    run_id = worker_result["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    detach_submit_user_message_turn_binding(
+        conversation_id=conversation_id,
+        run_id=run_id,
+    )
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "user submit message turnId" in response.json()["message"]
+    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert get_run_payload(client, run_id)["phase"] == "synthesis"
+
+
+def test_delivery_complete_rejects_repeat_completion_without_duplicate_artifacts(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    first_response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert first_response.status_code == 202, first_response.text
+
+    second_response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert second_response.status_code == 409
+    assert second_response.json()["errorCode"] == "INVALID_STATE"
+
+    source_evidence_items = response_json_dict(
+        client.get(f"/analysis-runs/{run_id}/source-evidence").json()
+    )["items"]
+    reports = response_json_dict(client.get(f"/analysis-runs/{run_id}/reports").json())["items"]
+    decisions = response_json_dict(client.get(f"/analysis-runs/{run_id}/decisions").json())["items"]
+    messages = response_json_dict(client.get(f"/conversations/{conversation_id}/messages").json())[
+        "items"
+    ]
+    assert len(source_evidence_items) == len(EXPECTED_SOURCE_IDS)
+    assert len(reports) == 1
+    assert len(decisions) == 1
+    assert [message["role"] for message in messages] == ["user", "assistant"]

@@ -329,6 +329,8 @@ function renderRuntimeNodeValue(node: InspectorTreeNode) {
         onClick={(event) => {
           event.stopPropagation();
         }}
+        rel="noreferrer"
+        target="_blank"
       >
         Open full source
       </Typography.Link>

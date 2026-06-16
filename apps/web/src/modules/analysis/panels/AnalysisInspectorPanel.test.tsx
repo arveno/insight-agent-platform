@@ -377,6 +377,10 @@ describe("AnalysisInspectorPanel", () => {
 
     const openSourceLinks = screen.getAllByRole("link", { name: "Open full source" });
     expect(openSourceLinks.length).toBeGreaterThan(0);
+    openSourceLinks.forEach((link) => {
+      expect((link as HTMLAnchorElement).getAttribute("target")).toBe("_blank");
+      expect((link as HTMLAnchorElement).getAttribute("rel")).toBe("noreferrer");
+    });
     expect(
       openSourceLinks.some((link) =>
         (link as HTMLAnchorElement).href.includes(

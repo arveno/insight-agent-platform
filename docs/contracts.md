@@ -1005,6 +1005,15 @@ analysis_memory
 decision_memory
 ```
 
+`#232` 首条 runtime delivery slice 的生成边界固定如下：
+
+- `SourceEvidence` 必须从当前 `AnalysisRun` 绑定的 `AnalysisTask.contextPack.root` 中真实存在的 traceable `sourceRef` 派生，不得使用 builder 私有常量、golden path frozen ID 或 fake source。
+- `SourceEvidence` 必须绑定当前 `runId`，`sourceId` 必须回到 `sourceRef` 的 canonical business id。
+- 当前优先选择的 `sourceRef.type` 顺序是 `knowledgeDocument / knowledgeChunk / dataTable / metric`；若某类型尚未进入 machine-checkable `SourceRef` schema，只能作为未来扩展规则，不得伪造字段绕过 contracts。
+- `title / snippet` 必须来自当前 context node 的 `title / summary / description` 等 persisted lightweight context fields，不得凭空生成完整正文。
+- `metadata` 可以记录 `nodeId`、canonical `sourceRef`、关联的 `toolCallIds / modelCallIds` 与 `traceability`，但不得把 raw `ToolCall` output 或 raw `ModelCall` output 原样塞回 `SourceEvidence`。
+- 如果当前 run 的 `contextPack.root` 中没有任何可用 `sourceRef`，delivery 必须诚实失败；不得补 fake `SourceEvidence`，不得继续生成 `Report / Decision / assistant Message`。
+
 ## 12. Memory
 
 MemoryItem 表示系统长期记住的信息。
@@ -1093,7 +1102,29 @@ sourceEvidence
 createdAt
 ```
 
+`#232` runtime delivery 的 Report 生成规则固定如下：
+
+- `reportId` 必须由 runtime 生成 canonical id，或按当前 `runId` 派生 deterministic id；不得写死业务样例 ID。
+- `title` 必须从当前 `Conversation.title` 与 `AnalysisTask.question` 派生，不得由 builder 私有 frozen title 单独决定。
+- `summary` 必须是对当前 run 的 succeeded `ToolCall`、succeeded `ModelCall` 与 selected `SourceEvidence` 的结构化归一化结果；不得把 raw model output 直接当 formal `Report`。
+- `sections` 至少要有 `核心结论 / 证据引用 / 下一步动作` 三类正式段落，内容必须来自当前 run 的 persisted execution state 与 selected `SourceEvidence`。
+- `sourceEvidence` 必须只引用当前 `runId` 下已经持久化的 `SourceEvidence.sourceEvidenceId`。
+- `Report` 是正式交付物，不是任意 message body、tool output 或 model output 的别名。
+
 Decision 用于记录建议是否被采纳以及后续效果。
+
+`#232` runtime delivery 的 Decision 生成规则固定如下：
+
+- `decisionId` 必须由 runtime 生成 canonical id，或按当前 `runId / reportId` 派生 deterministic id；不得写死业务样例 ID。
+- `Decision` 必须绑定同一个 `runId / reportId`。
+- `title` 必须从当前 `Report` 结论与 `AnalysisTask.question` 派生。
+- 首轮 delivery 的 `status` 固定为 `proposed`。
+
+assistant `Message` 的 delivery 绑定规则固定如下：
+
+- assistant `Message` 必须绑定同一个 `conversationId / analysisTaskId / runId / reportId`。
+- assistant `Message.turnId` 必须复用同一 submit turn 上原 user message 的 `turnId`，不得在 delivery completion 时新造第二个 `turnId`。
+- 如果找不到同一 `conversationId / analysisTaskId / runId` 下的 user submit message，delivery 必须返回 honest failure，不得伪造 assistant message 或继续完成 run。
 
 ## 17. ViewModel / Mapper 规则
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
-from uuid import uuid4
 
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRecord,
@@ -20,31 +19,12 @@ from src.infrastructure.database.runtime_foundation import (
     ToolCallRecord,
 )
 
-REPORT_ID = "report-revenue-gap-q2"
-REPORT_TITLE = "收入异常分析摘要"
-REPORT_SUMMARY = "形成“确认延迟 + 库存错配”的主结论，并给出渠道与库存复核动作"
-DECISION_ID = "decision-revenue-gap-q2"
-DECISION_TITLE = "复核华东渠道确认周期与库存错配"
-
-REQUIRED_DELIVERY_SOURCES: tuple[dict[str, str], ...] = (
-    {
-        "knowledgeDocumentId": "knowledge-document-channel-weekly-17",
-        "sourceEvidenceId": "source-evidence-channel-weekly-17",
-        "fallbackTitle": "渠道周报第 17 期",
-        "fallbackSnippet": "华东渠道存在确认延迟，影响 2026 Q2 收入确认节奏。",
-    },
-    {
-        "knowledgeDocumentId": "knowledge-document-inventory-east-04",
-        "sourceEvidenceId": "source-evidence-inventory-note-east-04",
-        "fallbackTitle": "华东库存复核记录",
-        "fallbackSnippet": "促销期间部分 SKU 库存错配，影响渠道交付与确认节奏。",
-    },
-)
-TRACEABLE_UPSTREAM_CONTEXT_REFS: tuple[tuple[str, str], ...] = (
-    ("metric", "metric-recognized-revenue"),
-    ("dataTable", "table-sales-order"),
-    ("dataTable", "table-refund-order"),
-)
+SOURCE_PRIORITY = {
+    "knowledgeDocument": 0,
+    "knowledgeChunk": 1,
+    "dataTable": 2,
+    "metric": 3,
+}
 
 
 class DeliveryArtifactBuildError(RuntimeError):
@@ -57,6 +37,14 @@ class DeliveryArtifacts:
     decision: DecisionRecord
     report: ReportRecord
     source_evidence: list[SourceEvidenceRecord]
+
+
+@dataclass(frozen=True, slots=True)
+class SourceEvidenceCandidate:
+    node: InspectorTreeNode
+    source_id: str
+    source_ref: dict[str, Any]
+    source_type: str
 
 
 def build_delivery_artifacts(
@@ -74,103 +62,96 @@ def build_delivery_artifacts(
     if context_pack is None:
         raise DeliveryArtifactBuildError("AnalysisTask.contextPack.root is required for delivery.")
 
-    if len(tool_calls) == 0:
+    _assert_no_duplicate_assistant_message(messages, analysis_run["runId"])
+
+    succeeded_tool_calls = _require_succeeded_tool_calls(tool_calls)
+    succeeded_model_calls = _require_succeeded_model_calls(model_calls)
+    _require_run_event(run_events, "tool_call.completed")
+    _require_run_event(run_events, "model_call.completed")
+    _require_run_event(run_events, "synthesis.started")
+
+    user_submit_message = _require_user_submit_message(
+        messages=messages,
+        analysis_task_id=analysis_run["analysisTaskId"],
+        run_id=analysis_run["runId"],
+    )
+
+    source_candidates = _collect_source_evidence_candidates(context_pack["root"])
+    if not source_candidates:
         raise DeliveryArtifactBuildError(
-            "Persisted ToolCall records are required before delivery artifacts can be built."
-        )
-    if len(model_calls) == 0:
-        raise DeliveryArtifactBuildError(
-            "Persisted ModelCall records are required before delivery artifacts can be built."
-        )
-    if not any(event["eventType"] == "synthesis.started" for event in run_events):
-        raise DeliveryArtifactBuildError(
-            "Persisted RunEvent trace must include synthesis.started before delivery."
+            "AnalysisTask.contextPack.root must contain at least one usable sourceRef "
+            "before delivery artifacts can be generated."
         )
 
-    required_source_nodes = _resolve_required_source_nodes(context_pack["root"])
     source_evidence = [
         _build_source_evidence(
             analysis_run=analysis_run,
             analysis_task=analysis_task,
-            node=required_source_nodes[source_spec["knowledgeDocumentId"]],
-            source_spec=source_spec,
-            tool_calls=tool_calls,
-            model_calls=model_calls,
+            candidate=candidate,
+            model_calls=succeeded_model_calls,
             occurred_at=occurred_at,
+            tool_calls=succeeded_tool_calls,
         )
-        for source_spec in REQUIRED_DELIVERY_SOURCES
+        for candidate in source_candidates
     ]
 
-    evidence_titles = [item["title"] for item in source_evidence]
-    tool_summary = _extract_tool_summary(tool_calls[-1])
-    report_sections = [
-        _build_report_section(
-            report_section_id="report-section-revenue-gap-q2-core-conclusion",
-            report_id=REPORT_ID,
-            title="核心结论",
-            content=(
-                "华东收入异常主要由渠道确认延迟与库存错配共同造成，"
-                "当前证据不支持把整体价格体系失效作为主结论。"
-            ),
-            occurred_at=occurred_at,
-        ),
-        _build_report_section(
-            report_section_id="report-section-revenue-gap-q2-evidence",
-            report_id=REPORT_ID,
-            title="证据引用",
-            content=(
-                f"正式证据引用来自《{evidence_titles[0]}》与《{evidence_titles[1]}》，"
-                f"并结合已持久化 ToolCall 结论“{tool_summary}”完成交付归档。"
-            ),
-            occurred_at=occurred_at,
-        ),
-        _build_report_section(
-            report_section_id="report-section-revenue-gap-q2-next-step",
-            report_id=REPORT_ID,
-            title="下一步动作",
-            content="先复核华东渠道确认周期，再联动盘点促销 SKU 的库存与交付节奏。",
-            occurred_at=occurred_at,
-        ),
-    ]
+    report_id = f"report-{analysis_run['runId']}"
+    report_title = _build_report_title(conversation=conversation, analysis_task=analysis_task)
+    report_summary = (
+        f"围绕“{_report_subject(conversation=conversation, analysis_task=analysis_task)}”"
+        f"整理了 {len(source_evidence)} 条可追溯来源，并结合 "
+        f"{len(succeeded_tool_calls)} 次 ToolCall 与 {len(succeeded_model_calls)} 次 ModelCall "
+        "形成正式交付结论。"
+    )
+    report_sections = _build_report_sections(
+        analysis_task=analysis_task,
+        model_calls=succeeded_model_calls,
+        occurred_at=occurred_at,
+        report_id=report_id,
+        source_evidence=source_evidence,
+        tool_calls=succeeded_tool_calls,
+    )
     report: ReportRecord = {
-        "reportId": REPORT_ID,
+        "reportId": report_id,
         "runId": analysis_run["runId"],
         "workspaceId": analysis_run["workspaceId"],
-        "title": REPORT_TITLE,
-        "summary": REPORT_SUMMARY,
+        "title": report_title,
+        "summary": report_summary,
         "sections": report_sections,
         "sourceEvidence": [item["sourceEvidenceId"] for item in source_evidence],
         "createdAt": occurred_at,
     }
+    decision_title = (
+        f"{_report_subject(conversation=conversation, analysis_task=analysis_task)} 下一步决策"
+    )
     decision: DecisionRecord = {
-        "decisionId": DECISION_ID,
+        "decisionId": f"decision-{analysis_run['runId']}",
         "workspaceId": analysis_run["workspaceId"],
         "runId": analysis_run["runId"],
         "reportId": report["reportId"],
-        "title": DECISION_TITLE,
+        "title": decision_title,
         "status": "proposed",
         "createdAt": occurred_at,
     }
     assistant_message: MessageRecord = {
-        "messageId": _generate_canonical_id("message"),
+        "messageId": _generate_deterministic_message_id(run_id=analysis_run["runId"]),
         "conversationId": conversation["conversationId"],
         "analysisTaskId": analysis_run["analysisTaskId"],
-        "turnId": _generate_canonical_id("turn"),
+        "turnId": user_submit_message["turnId"],
         "runId": analysis_run["runId"],
         "role": "assistant",
         "content": (
-            f"{REPORT_SUMMARY}。证据来自《{evidence_titles[0]}》和《{evidence_titles[1]}》。"
-            "建议优先复核渠道确认周期与库存错配。"
+            f"{report_summary} "
+            f"当前正式证据包括 {len(source_evidence)} 条来源，"
+            f"可直接进入《{report['title']}》与决策节点继续跟进。"
         ),
         "status": "completed",
         "sourceEvidenceIds": report["sourceEvidence"],
-        "toolCallIds": [tool_call["toolCallId"] for tool_call in tool_calls],
+        "toolCallIds": [tool_call["toolCallId"] for tool_call in succeeded_tool_calls],
         "reportId": report["reportId"],
         "createdAt": occurred_at,
         "completedAt": occurred_at,
     }
-
-    _assert_no_duplicate_assistant_message(messages, analysis_run["runId"])
 
     return DeliveryArtifacts(
         assistant_message=assistant_message,
@@ -180,78 +161,236 @@ def build_delivery_artifacts(
     )
 
 
-def _resolve_required_source_nodes(root: InspectorTreeNode) -> dict[str, InspectorTreeNode]:
-    by_document_id = {
-        knowledge_document_id: node
-        for node in _iter_nodes(root)
-        for knowledge_document_id in [_get_knowledge_document_id(node)]
-        if knowledge_document_id is not None
-    }
-    missing = [
-        source_spec["knowledgeDocumentId"]
-        for source_spec in REQUIRED_DELIVERY_SOURCES
-        if source_spec["knowledgeDocumentId"] not in by_document_id
-    ]
-    if missing:
+def _require_succeeded_tool_calls(tool_calls: list[ToolCallRecord]) -> list[ToolCallRecord]:
+    succeeded = [tool_call for tool_call in tool_calls if tool_call["status"] == "succeeded"]
+    if not succeeded:
         raise DeliveryArtifactBuildError(
-            "Missing required canonical knowledge document source refs in "
-            "AnalysisTask.contextPack.root: " + ", ".join(missing)
+            "At least one succeeded ToolCall is required before delivery artifacts can be built."
+        )
+    return succeeded
+
+
+def _require_succeeded_model_calls(model_calls: list[ModelCallRecord]) -> list[ModelCallRecord]:
+    succeeded = [model_call for model_call in model_calls if model_call["status"] == "succeeded"]
+    if not succeeded:
+        raise DeliveryArtifactBuildError(
+            "At least one succeeded ModelCall is required before delivery artifacts can be built."
+        )
+    return succeeded
+
+
+def _require_run_event(run_events: list[RunEventRecord], event_type: str) -> None:
+    if not any(event["eventType"] == event_type for event in run_events):
+        raise DeliveryArtifactBuildError(
+            f"Persisted RunEvent trace must include {event_type} before delivery."
         )
 
-    available_context_refs = {
-        (source_type, source_id)
-        for node in _iter_nodes(root)
-        for source_type, source_id in [_get_context_ref(node)]
-        if source_type is not None and source_id is not None
-    }
-    missing_context_refs = [
-        source_id
-        for source_type, source_id in TRACEABLE_UPSTREAM_CONTEXT_REFS
-        if (source_type, source_id) not in available_context_refs
-    ]
-    if missing_context_refs:
-        raise DeliveryArtifactBuildError(
-            "Missing required traceable upstream context refs in AnalysisTask.contextPack.root: "
-            + ", ".join(missing_context_refs)
-        )
 
-    return by_document_id
+def _require_user_submit_message(
+    *,
+    messages: list[MessageRecord],
+    analysis_task_id: str,
+    run_id: str,
+) -> MessageRecord:
+    for message in messages:
+        if (
+            message["role"] == "user"
+            and message["analysisTaskId"] == analysis_task_id
+            and message["runId"] == run_id
+        ):
+            return message
+
+    raise DeliveryArtifactBuildError(
+        "Persisted delivery state is missing the original user submit message turnId "
+        "for the current conversationId / analysisTaskId / runId."
+    )
+
+
+def _collect_source_evidence_candidates(root: InspectorTreeNode) -> list[SourceEvidenceCandidate]:
+    candidates: list[tuple[int, int, SourceEvidenceCandidate]] = []
+
+    for index, node in enumerate(_iter_nodes(root)):
+        source_ref = node.get("sourceRef")
+        candidate = _build_source_candidate(node=node, source_ref=source_ref)
+        if candidate is None:
+            continue
+        candidates.append((SOURCE_PRIORITY[source_ref["type"]], index, candidate))
+
+    ordered_candidates = sorted(candidates, key=lambda item: (item[0], item[1]))
+    return [candidate for _, _, candidate in ordered_candidates]
+
+
+def _build_source_candidate(
+    *,
+    node: InspectorTreeNode,
+    source_ref: object,
+) -> SourceEvidenceCandidate | None:
+    if not isinstance(source_ref, dict):
+        return None
+
+    source_type = source_ref.get("type")
+    if source_type not in SOURCE_PRIORITY:
+        return None
+
+    if source_type == "knowledgeDocument":
+        source_id = source_ref.get("knowledgeDocumentId")
+        evidence_source_type = "knowledge_document"
+    elif source_type == "knowledgeChunk":
+        source_id = source_ref.get("knowledgeChunkId")
+        evidence_source_type = "knowledge_chunk"
+    elif source_type == "dataTable":
+        source_id = source_ref.get("tableId")
+        evidence_source_type = "data_table"
+    else:
+        source_id = source_ref.get("metricId")
+        evidence_source_type = "metric"
+
+    if not isinstance(source_id, str) or not source_id.strip():
+        return None
+
+    return SourceEvidenceCandidate(
+        node=node,
+        source_id=source_id,
+        source_ref=source_ref,
+        source_type=evidence_source_type,
+    )
 
 
 def _build_source_evidence(
     *,
     analysis_run: AnalysisRunRecord,
     analysis_task: AnalysisTaskRecord,
-    node: InspectorTreeNode,
-    source_spec: dict[str, str],
-    tool_calls: list[ToolCallRecord],
+    candidate: SourceEvidenceCandidate,
     model_calls: list[ModelCallRecord],
     occurred_at: str,
+    tool_calls: list[ToolCallRecord],
 ) -> SourceEvidenceRecord:
-    snippet = node.get("summary") or source_spec["fallbackSnippet"]
-    title = node.get("title") or source_spec["fallbackTitle"]
-
     metadata: dict[str, Any] = {
-        "knowledgeDocumentId": source_spec["knowledgeDocumentId"],
+        "nodeId": candidate.node["nodeId"],
+        "sourceRef": candidate.source_ref,
         "toolCallIds": [tool_call["toolCallId"] for tool_call in tool_calls],
         "modelCallIds": [model_call["modelCallId"] for model_call in model_calls],
         "traceability": analysis_task["contextPack"]["traceability"]
-        if analysis_task["contextPack"]
+        if analysis_task["contextPack"] is not None
         else None,
-        "upstreamContextRefs": [source_id for _, source_id in TRACEABLE_UPSTREAM_CONTEXT_REFS],
     }
 
     return {
-        "sourceEvidenceId": source_spec["sourceEvidenceId"],
+        "sourceEvidenceId": _build_source_evidence_id(
+            run_id=analysis_run["runId"],
+            source_id=candidate.source_id,
+        ),
         "runId": analysis_run["runId"],
-        "sourceType": "knowledge_document",
-        "sourceId": source_spec["knowledgeDocumentId"],
-        "title": title,
-        "snippet": snippet,
+        "sourceType": candidate.source_type,
+        "sourceId": candidate.source_id,
+        "title": candidate.node.get("title") or candidate.source_id,
+        "snippet": _build_snippet(candidate.node),
         "metadata": metadata,
-        "confidence": 0.86 if source_spec["sourceEvidenceId"].endswith("17") else 0.82,
+        "confidence": _confidence_for_source_type(candidate.source_type),
         "createdAt": occurred_at,
     }
+
+
+def _build_report_sections(
+    *,
+    analysis_task: AnalysisTaskRecord,
+    model_calls: list[ModelCallRecord],
+    occurred_at: str,
+    report_id: str,
+    source_evidence: list[SourceEvidenceRecord],
+    tool_calls: list[ToolCallRecord],
+) -> list[ReportSectionRecord]:
+    evidence_titles = "、".join(f"《{item['title']}》" for item in source_evidence[:3])
+    if len(source_evidence) > 3:
+        evidence_titles = f"{evidence_titles} 等 {len(source_evidence)} 条来源"
+
+    tool_summary = _extract_tool_summary(tool_calls[-1])
+    model_call = model_calls[-1]
+    run_id = tool_calls[-1]["runId"]
+
+    return [
+        _build_report_section(
+            report_section_id=f"report-section-{run_id}-core-conclusion",
+            report_id=report_id,
+            title="核心结论",
+            content=(
+                f"当前问题“{analysis_task['question']}”已完成 delivery 前置校验，"
+                f"并基于 {len(tool_calls)} 次 succeeded ToolCall 与 "
+                f"{len(model_calls)} 次 succeeded ModelCall 进入正式交付。"
+            ),
+            occurred_at=occurred_at,
+        ),
+        _build_report_section(
+            report_section_id=f"report-section-{run_id}-evidence",
+            report_id=report_id,
+            title="证据引用",
+            content=(
+                f"正式证据引用来自 {evidence_titles}。"
+                f"最近一次 ToolCall 摘要为“{tool_summary}”，"
+                f"最近一次 ModelCall 由 {model_call['provider']} / {model_call['modelId']} 完成。"
+            ),
+            occurred_at=occurred_at,
+        ),
+        _build_report_section(
+            report_section_id=f"report-section-{run_id}-next-step",
+            report_id=report_id,
+            title="下一步动作",
+            content=(
+                "基于当前 report、decision 与已持久化 SourceEvidence，"
+                "优先复核最高优先级来源，再继续扩展 follow-up 分析。"
+            ),
+            occurred_at=occurred_at,
+        ),
+    ]
+
+
+def _build_report_title(
+    *,
+    conversation: ConversationRecord,
+    analysis_task: AnalysisTaskRecord,
+) -> str:
+    return f"{_report_subject(conversation=conversation, analysis_task=analysis_task)} 分析报告"
+
+
+def _report_subject(
+    *,
+    conversation: ConversationRecord,
+    analysis_task: AnalysisTaskRecord,
+) -> str:
+    conversation_title: str = conversation["title"]
+    if conversation_title.strip():
+        return conversation_title
+
+    question: str = analysis_task["question"]
+    return question
+
+
+def _build_source_evidence_id(*, run_id: str, source_id: str) -> str:
+    return f"source-evidence-{run_id}-{source_id}"
+
+
+def _generate_deterministic_message_id(*, run_id: str) -> str:
+    return f"message-{run_id}-assistant"
+
+
+def _build_snippet(node: InspectorTreeNode) -> str:
+    for field in ("summary", "description", "title"):
+        value = node.get(field)
+        if isinstance(value, str) and value.strip():
+            return value
+
+    node_id: str = node["nodeId"]
+    return node_id
+
+
+def _confidence_for_source_type(source_type: str) -> float:
+    if source_type == "knowledge_document":
+        return 0.86
+    if source_type == "knowledge_chunk":
+        return 0.84
+    if source_type == "data_table":
+        return 0.82
+    return 0.8
 
 
 def _build_report_section(
@@ -283,10 +422,6 @@ def _assert_no_duplicate_assistant_message(
 
 
 def _extract_tool_summary(tool_call: ToolCallRecord) -> str:
-    error_message = tool_call["errorMessage"]
-    if isinstance(error_message, str) and error_message:
-        return error_message
-
     output = tool_call["output"]
     if isinstance(output, dict):
         for key in ("conclusion", "summary", "result", "message"):
@@ -302,35 +437,6 @@ def _iter_nodes(node: InspectorTreeNode) -> list[InspectorTreeNode]:
     for child in node.get("children", []) or []:
         nodes.extend(_iter_nodes(child))
     return nodes
-
-
-def _get_knowledge_document_id(node: InspectorTreeNode) -> str | None:
-    source_ref = node.get("sourceRef")
-    if not isinstance(source_ref, dict):
-        return None
-    if source_ref.get("type") != "knowledgeDocument":
-        return None
-    knowledge_document_id = source_ref.get("knowledgeDocumentId")
-    return knowledge_document_id if isinstance(knowledge_document_id, str) else None
-
-
-def _get_context_ref(node: InspectorTreeNode) -> tuple[str | None, str | None]:
-    source_ref = node.get("sourceRef")
-    if not isinstance(source_ref, dict):
-        return (None, None)
-
-    source_type = source_ref.get("type")
-    if source_type == "metric":
-        metric_id = source_ref.get("metricId")
-        return ("metric", metric_id if isinstance(metric_id, str) else None)
-    if source_type == "dataTable":
-        table_id = source_ref.get("tableId")
-        return ("dataTable", table_id if isinstance(table_id, str) else None)
-    return (None, None)
-
-
-def _generate_canonical_id(prefix: str) -> str:
-    return f"{prefix}-{uuid4().hex}"
 
 
 def utc_timestamp() -> str:
