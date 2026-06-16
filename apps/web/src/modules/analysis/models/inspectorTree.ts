@@ -34,10 +34,6 @@ export function createEmptyInspectorTreeState(): AnalysisInspectorTreeState {
   };
 }
 
-export function createContextRootNodeId(analysisTaskId: string): string {
-  return `inspector-root-context:${analysisTaskId}`;
-}
-
 export function createRunTraceRootNodeId(runId: string): string {
   return `inspector-root-run-trace:${runId}`;
 }

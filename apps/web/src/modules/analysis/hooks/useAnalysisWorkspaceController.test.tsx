@@ -19,7 +19,6 @@ import goldenPathExample from "../../../../../../packages/contracts/examples/ana
 
 import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "../mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel";
 import {
-  createContextRootNodeId,
   createRunTraceRootNodeId
 } from "../models/inspectorTree";
 import {
@@ -141,8 +140,8 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.draftContext).toEqual(draftContext);
     expect(result.current.composerDraft).toBe(draftContext.suggestedPrompt);
     expect(result.current.inspectorTreeState).toEqual({
-      expandedNodeIds: [createContextRootNodeId("draft"), draftContext.root.nodeId],
-      selectedNodeId: createContextRootNodeId("draft")
+      expandedNodeIds: [draftContext.root.nodeId],
+      selectedNodeId: draftContext.root.nodeId
     });
 
     act(() => {
@@ -221,8 +220,7 @@ describe("useAnalysisWorkspaceController", () => {
     );
     expect(result.current.inspectorTreeState).toEqual({
       expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      selectedNodeId:
-        goldenPath.runEvents[0]?.eventId ?? createRunTraceRootNodeId(goldenPath.analysisRun.runId)
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
   });
 
@@ -298,8 +296,7 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
       expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      selectedNodeId:
-        goldenPath.runEvents[0]?.eventId ?? createRunTraceRootNodeId(goldenPath.analysisRun.runId)
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
 
     act(() => {
@@ -313,11 +310,8 @@ describe("useAnalysisWorkspaceController", () => {
     });
     expect(result.current.selectedMessageId).toBe(userMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
-      expandedNodeIds: [
-        createContextRootNodeId(goldenPath.analysisTask.analysisTaskId),
-        goldenPath.analysisTask.contextPack!.root.nodeId
-      ],
-      selectedNodeId: createContextRootNodeId(goldenPath.analysisTask.analysisTaskId)
+      expandedNodeIds: [goldenPath.analysisTask.contextPack!.root.nodeId],
+      selectedNodeId: goldenPath.analysisTask.contextPack!.root.nodeId
     });
 
     act(() => {
@@ -332,8 +326,7 @@ describe("useAnalysisWorkspaceController", () => {
     expect(result.current.selectedMessageId).toBe(assistantMessage.messageId);
     expect(result.current.inspectorTreeState).toEqual({
       expandedNodeIds: [createRunTraceRootNodeId(goldenPath.analysisRun.runId)],
-      selectedNodeId:
-        goldenPath.runEvents[0]?.eventId ?? createRunTraceRootNodeId(goldenPath.analysisRun.runId)
+      selectedNodeId: createRunTraceRootNodeId(goldenPath.analysisRun.runId)
     });
   });
 });

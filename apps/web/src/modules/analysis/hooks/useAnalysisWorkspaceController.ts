@@ -25,7 +25,6 @@ import type {
   AnalysisInspectorTreeState
 } from "../models/inspectorTree";
 import {
-  createContextRootNodeId,
   createEmptyInspectorTreeState,
   createRunTraceRootNodeId,
 } from "../models/inspectorTree";
@@ -203,17 +202,12 @@ function createRunSubject(session: AnalysisSessionViewModel): InspectorSubject {
   };
 }
 
-function createContextTreeState(
-  analysisTaskId: string,
-  contextRootNodeId?: string
-): AnalysisInspectorTreeState {
-  const rootNodeId = createContextRootNodeId(analysisTaskId);
-
+function createContextTreeState(contextRootNodeId?: string): AnalysisInspectorTreeState {
   return {
-    expandedNodeIds: [rootNodeId, contextRootNodeId].filter(
+    expandedNodeIds: [contextRootNodeId].filter(
       (nodeId): nodeId is string => Boolean(nodeId)
     ),
-    selectedNodeId: rootNodeId
+    selectedNodeId: contextRootNodeId ?? null
   };
 }
 
@@ -222,7 +216,7 @@ function createRunTraceTreeState(session: AnalysisSessionViewModel): AnalysisIns
 
   return {
     expandedNodeIds: [rootNodeId],
-    selectedNodeId: session.runEvents[0]?.eventId ?? rootNodeId
+    selectedNodeId: rootNodeId
   };
 }
 
@@ -274,7 +268,7 @@ export function useAnalysisWorkspaceController(
   >(undefined);
   const [inspectorTreeState, setInspectorTreeState] = useState<AnalysisInspectorTreeState>(() =>
     options.draftContext
-      ? createContextTreeState("draft", options.draftContext.root.nodeId)
+      ? createContextTreeState(options.draftContext.root.nodeId)
       : createEmptyInspectorTreeState()
   );
 
@@ -345,9 +339,7 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
       setInspectorTreeState(
-        draftContext
-          ? createContextTreeState("draft", draftContext.root.nodeId)
-          : createEmptyInspectorTreeState()
+        draftContext ? createContextTreeState(draftContext.root.nodeId) : createEmptyInspectorTreeState()
       );
       setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
       setFollowUpDraft("");
@@ -488,9 +480,7 @@ export function useAnalysisWorkspaceController(
           analysisTaskId,
           runId: runId ?? undefined
         });
-        setInspectorTreeState(
-          createContextTreeState(analysisTaskId, selectedSession.analysisTaskContextPack.root.nodeId)
-        );
+        setInspectorTreeState(createContextTreeState(selectedSession.analysisTaskContextPack.root.nodeId));
         return;
       }
 
