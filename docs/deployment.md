@@ -54,6 +54,7 @@ services/agent-runtime/src/app/config.py
 - Provider API Key 必须通过 `.env`、ECS env 或 secret 注入；不得提交到仓库，不得粘贴到 issue / PR，不得打印到日志。
 - 不允许 `fake provider`、`mock provider`、`hardcoded response` 或本地 / 预览环境双轨 provider。
 - smoke、诊断和日志输出只允许表达 `apiKey=configured` 或等价非 secret 状态，不得打印真实 Key。
+- 真实 provider readiness smoke 使用 `scripts/smoke/model-provider-readiness.py`；本地可通过 `--env-file .env.model.local` 运行，ECS 可通过 `--env-file /opt/insight-agent-platform/env/model-provider.env` 运行。
 
 ## 3. 必备环境变量占位
 
