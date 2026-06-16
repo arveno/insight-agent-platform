@@ -17,10 +17,6 @@ from src.infrastructure.database.runtime_foundation import (
     RunEventRecord,
     RunEventRepository,
 )
-from src.modules.analysis_runs.delivery_foundation import (
-    FOUNDATION_PRODUCER_ID,
-    build_foundation_delivery_artifacts,
-)
 
 ANALYSIS_RUNTIME_ACTOR = "analysis_runtime"
 ANALYSIS_RUNTIME_AGENT = "analysis-runtime"
@@ -36,16 +32,12 @@ WORKER_LOST_SUMMARY = "记录 Worker lease 丢失，AnalysisRun 进入 expired �
 RUN_CANCEL_REQUESTED_SUMMARY = "记录用户已请求取消当前 AnalysisRun。"
 RUN_CANCELLING_SUMMARY = "记录 AnalysisRun 已进入 cancelling 过渡。"
 RUN_CANCELLED_SUMMARY = "记录 AnalysisRun 已进入 cancelled 终态。"
-DELIVERY_STARTED_SUMMARY = "记录当前 AnalysisRun 已进入 delivery artifact 持久化。"
-ARTIFACT_PERSISTED_SUMMARY = "记录当前 AnalysisRun 的 delivery artifacts 已完成持久化。"
-RUN_COMPLETED_SUMMARY = "记录当前 AnalysisRun 已在 artifacts 落地后进入 completed 终态。"
 ALLOWED_USER_RETRY_STATUSES = frozenset({"failed", "expired", "cancelled"})
 ALLOWED_CANCEL_WAITING_FOR = frozenset({"approval", "user_input", "external_dependency"})
 CANCEL_INVALID_STATE_MESSAGE = (
     "AnalysisRun must be queued/queueing, running/execution, or waiting for "
     "approval/user_input/external_dependency before cancellation."
 )
-DELIVERY_INVALID_STATE_MESSAGE = "AnalysisRun must be running/delivery before delivery completion."
 
 DISPATCH_EVENT_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("validation.started", "preflight", "记录 AnalysisRun 已开始输入校验。"),
@@ -482,71 +474,6 @@ class AnalysisRunLifecycleService:
         )
         return cancelled_run
 
-    def complete_delivery(
-        self,
-        run_id: str,
-        producer_id: str,
-    ) -> AnalysisRunRecord:
-        analysis_run = self.analysis_run_repository.get_by_run_id(run_id)
-
-        if analysis_run["status"] != "running" or analysis_run["phase"] != "delivery":
-            raise AnalysisRunInvalidStateError(DELIVERY_INVALID_STATE_MESSAGE)
-        if producer_id != FOUNDATION_PRODUCER_ID:
-            raise AnalysisRunInvalidStateError(
-                f"Unsupported delivery producer for AnalysisRun completion: {producer_id}"
-            )
-
-        try:
-            conversation = self.conversation_repository.get_by_current_run_id(run_id)
-        except KeyError as exc:
-            raise AnalysisRunConversationNotFoundError(run_id) from exc
-
-        completed_at = _utc_timestamp(datetime.now(UTC))
-        delivery_artifacts = build_foundation_delivery_artifacts(
-            analysis_run=analysis_run,
-            conversation=conversation,
-            occurred_at=completed_at,
-        )
-        completed_run: AnalysisRunRecord = {
-            **analysis_run,
-            "status": "completed",
-            "phase": "delivery",
-            "outcome": "success",
-            "waitingFor": None,
-            "completedAt": completed_at,
-            "failedAt": None,
-            "cancelledAt": None,
-            "expiredAt": None,
-            "rejectedAt": None,
-            "failureCode": None,
-            "terminalReason": "Delivery artifacts persisted.",
-            "retryable": False,
-        }
-
-        next_sequence = self._next_run_event_sequence(run_id)
-        run_events = build_delivery_run_events(
-            run_id=run_id,
-            occurred_at=completed_at,
-            tool_call_id=delivery_artifacts.tool_execution.tool_call["toolCallId"],
-            tool_name=delivery_artifacts.tool_execution.tool_call["toolName"],
-            model_call_id=delivery_artifacts.model_generation.model_call["modelCallId"],
-            report_id=delivery_artifacts.report_artifacts.report["reportId"],
-            sequence_start=next_sequence,
-        )
-
-        self.lifecycle_repository.complete_delivery(
-            completed_run,
-            delivery_artifacts.tool_execution.tool_call,
-            delivery_artifacts.model_generation.model_call,
-            delivery_artifacts.source_evidence,
-            delivery_artifacts.report_artifacts.report,
-            delivery_artifacts.report_artifacts.decision,
-            delivery_artifacts.assistant_message,
-            delivery_artifacts.message_streams,
-            run_events,
-        )
-        return completed_run
-
     def _next_run_event_sequence(self, run_id: str) -> int:
         run_events = self.run_event_repository.list_by_run_id(run_id)
         if not run_events:
@@ -576,9 +503,7 @@ class AnalysisRunLifecycleService:
         try:
             execution_attempt = self.execution_attempt_repository.get_by_attempt_id(attempt_id)
         except KeyError as exc:
-            raise AnalysisRunInvalidStateError(
-                f"ExecutionAttempt not found: {attempt_id}"
-            ) from exc
+            raise AnalysisRunInvalidStateError(f"ExecutionAttempt not found: {attempt_id}") from exc
         if execution_attempt["runId"] != run_id:
             raise AnalysisRunInvalidStateError("ExecutionAttempt.runId does not match run_id.")
         if execution_attempt["status"] != "running":
@@ -948,140 +873,3 @@ def build_run_cancelled_event(
         "startedAt": occurred_at,
         "completedAt": occurred_at,
     }
-
-
-def build_delivery_run_events(
-    *,
-    run_id: str,
-    occurred_at: str,
-    tool_call_id: str,
-    tool_name: str,
-    model_call_id: str,
-    report_id: str,
-    sequence_start: int,
-) -> list[RunEventRecord]:
-    definitions: tuple[tuple[str, str, str, str, str | None, str | None], ...] = (
-        (
-            "tool_call.requested",
-            "succeeded",
-            "tool_execution",
-            "记录当前运行已向 Tool Registry 发起指标摘要调用。",
-            "tool_call",
-            tool_call_id,
-        ),
-        (
-            "tool_call.policy_checked",
-            "succeeded",
-            "tool_execution",
-            "记录当前工具调用已完成权限与风险校验。",
-            "tool_call",
-            tool_call_id,
-        ),
-        (
-            "tool_call.started",
-            "running",
-            "tool_execution",
-            "记录当前工具调用已开始执行。",
-            "tool_call",
-            tool_call_id,
-        ),
-        (
-            "tool_call.completed",
-            "succeeded",
-            "tool_execution",
-            "记录当前工具调用已完成并返回结构化结果。",
-            "tool_call",
-            tool_call_id,
-        ),
-        (
-            "model_call.started",
-            "running",
-            "synthesis",
-            "记录当前运行已通过 Model Gateway 发起总结生成。",
-            "model_call",
-            model_call_id,
-        ),
-        (
-            "model_call.completed",
-            "succeeded",
-            "synthesis",
-            "记录当前模型调用已完成总结生成。",
-            "model_call",
-            model_call_id,
-        ),
-        (
-            "evidence.retrieved",
-            "succeeded",
-            "evidence_binding",
-            "记录当前运行已召回标准化证据候选。",
-            None,
-            None,
-        ),
-        (
-            "evidence.bound",
-            "succeeded",
-            "evidence_binding",
-            "记录当前运行已把证据对象绑定到 runId。",
-            None,
-            None,
-        ),
-        (
-            "synthesis.started",
-            "succeeded",
-            "synthesis",
-            "记录当前运行已开始综合结论与交付物编排。",
-            None,
-            None,
-        ),
-        (
-            "delivery.started",
-            "succeeded",
-            "delivery",
-            DELIVERY_STARTED_SUMMARY,
-            "report",
-            report_id,
-        ),
-        (
-            "artifact.persisted",
-            "succeeded",
-            "delivery",
-            ARTIFACT_PERSISTED_SUMMARY,
-            "report",
-            report_id,
-        ),
-        (
-            "run.completed",
-            "succeeded",
-            "delivery",
-            RUN_COMPLETED_SUMMARY,
-            None,
-            None,
-        ),
-    )
-
-    run_events: list[RunEventRecord] = []
-    for offset, (event_type, status, phase, summary, ref_type, ref_id) in enumerate(definitions):
-        run_events.append(
-            {
-                "eventId": _generate_canonical_id("event"),
-                "runId": run_id,
-                "eventType": event_type,
-                "status": status,  # type: ignore[typeddict-item]
-                "phase": phase,  # type: ignore[typeddict-item]
-                "sequence": sequence_start + offset,
-                "actor": ANALYSIS_RUNTIME_ACTOR,
-                "occurredAt": occurred_at,
-                "summary": summary,
-                "parentEventId": None,
-                "refType": ref_type,
-                "refId": ref_id,
-                "errorCode": None,
-                "errorMessage": None,
-                "nodeName": event_type,
-                "agentName": ANALYSIS_RUNTIME_AGENT,
-                "toolName": tool_name if event_type.startswith("tool_call.") else None,
-                "startedAt": occurred_at,
-                "completedAt": occurred_at,
-            }
-        )
-    return run_events

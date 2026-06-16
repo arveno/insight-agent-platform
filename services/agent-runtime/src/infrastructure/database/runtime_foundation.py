@@ -1664,7 +1664,7 @@ SELECT JSON_OBJECT(
           'ownerTeam', owner_team,
           'formulaSummary', formula_summary,
           'thresholdSummary', threshold_summary,
-          'contextSources', {_metric_context_sources_json_sql('ordered_metrics.metric_id')},
+          'contextSources', {_metric_context_sources_json_sql("ordered_metrics.metric_id")},
           'createdAt', created_at,
           'updatedAt', updated_at
         ) AS metric_payload
@@ -1728,7 +1728,7 @@ SELECT JSON_OBJECT(
   'ownerTeam', owner_team,
   'formulaSummary', formula_summary,
   'thresholdSummary', threshold_summary,
-  'contextSources', {_metric_context_sources_json_sql('metrics.metric_id')},
+  'contextSources', {_metric_context_sources_json_sql("metrics.metric_id")},
   'createdAt', created_at,
   'updatedAt', updated_at
 )
@@ -2653,6 +2653,60 @@ SELECT JSON_OBJECT(
         items = _require_array(payload.get("items"), "Message.items")
         return cast(list[MessageRecord], items)
 
+    def list_by_run_id(self, run_id: str) -> list[MessageRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'messageId', message_id,
+          'conversationId', conversation_id,
+          'analysisTaskId', analysis_task_id,
+          'turnId', turn_id,
+          'runId', run_id,
+          'role', role,
+          'content', content,
+          'status', status,
+          'sourceEvidenceIds', source_evidence_ids_json,
+          'toolCallIds', tool_call_ids_json,
+          'reportId', report_id,
+          'createdAt', created_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          message_id,
+          conversation_id,
+          analysis_task_id,
+          turn_id,
+          run_id,
+          role,
+          content,
+          status,
+          source_evidence_ids_json,
+          tool_call_ids_json,
+          report_id,
+          created_at,
+          completed_at
+        FROM messages
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_messages
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Message.items")
+        return cast(list[MessageRecord], items)
+
 
 class MessageStreamRepository:
     """Repository boundary for MessageStream persistence and lookup."""
@@ -2871,26 +2925,19 @@ class AnalysisRunLifecycleRepository:
     def complete_delivery(
         self,
         analysis_run: AnalysisRunRecord,
-        tool_call: ToolCallRecord,
-        model_call: ModelCallRecord,
         source_evidence: Sequence[SourceEvidenceRecord],
         report: ReportRecord,
         decision: DecisionRecord,
         message: MessageRecord,
-        message_streams: Sequence[MessageStreamRecord],
         run_events: Sequence[RunEventRecord],
     ) -> None:
-        statements = [
-            _analysis_run_upsert_sql(analysis_run),
-            _tool_call_upsert_sql(tool_call),
-            _model_call_upsert_sql(model_call),
-        ]
+        statements: list[str] = []
         statements.extend(_source_evidence_upsert_sql(item) for item in source_evidence)
         statements.append(_report_upsert_sql(report))
         statements.extend(_report_section_upsert_sql(section) for section in report["sections"])
         statements.append(_decision_upsert_sql(decision))
         statements.append(_message_upsert_sql(message))
-        statements.extend(_message_stream_upsert_sql(item) for item in message_streams)
+        statements.append(_analysis_run_upsert_sql(analysis_run))
         statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
         self._database.execute_transaction(statements)
 

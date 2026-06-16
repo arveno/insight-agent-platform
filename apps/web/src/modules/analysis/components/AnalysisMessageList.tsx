@@ -11,15 +11,7 @@ export type AnalysisMessageListProps = {
 };
 
 function canSelectMessageAnchor(message: AnalysisMessage): boolean {
-  if (message.analysisTaskId == null) {
-    return false;
-  }
-
-  if (message.role === "user") {
-    return true;
-  }
-
-  return message.role === "assistant" && message.runId != null;
+  return message.analysisTaskId != null && message.role === "assistant" && message.runId != null;
 }
 
 export function AnalysisMessageList({

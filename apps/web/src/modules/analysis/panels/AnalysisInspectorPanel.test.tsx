@@ -17,6 +17,9 @@ import {
 } from "../../../api/adapters/buildMetricAnalysisContextPack";
 import { analysisStaticViewModel } from "../fixtures/analysisStaticViewModel";
 import {
+  createDecisionsRootNodeId,
+  createEvidenceRootNodeId,
+  createReportsRootNodeId,
   createRunTraceRootNodeId
 } from "../models/inspectorTree";
 import {
@@ -334,6 +337,63 @@ describe("AnalysisInspectorPanel", () => {
     expect(screen.queryByRole("button", { name: /Run Trace/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "返回上一级" })).toBeNull();
     expect(container.querySelectorAll("aside .ant-card").length).toBe(1);
+  });
+
+  it("renders Evidence, Report, and Decision sibling roots with minimum source-open affordances", () => {
+    const session = analysisStaticViewModel.sessions[0]!;
+
+    render(
+      <TestProviders>
+        <AnalysisInspectorPanel
+          contextPanelNote="右侧会围绕当前运行显示分析详情与上下文。"
+          draftContext={undefined}
+          inspectorTreeState={{
+            expandedNodeIds: [
+              createRunTraceRootNodeId(session.currentRun.runId),
+              createEvidenceRootNodeId(session.currentRun.runId),
+              createReportsRootNodeId(session.currentRun.runId),
+              createDecisionsRootNodeId(session.currentRun.runId)
+            ],
+            selectedNodeId: createRunTraceRootNodeId(session.currentRun.runId)
+          }}
+          onSetInspectorExpandedNodeIds={() => undefined}
+          onSelectInspectorNode={() => undefined}
+          selectedInspectorSubject={{
+            type: "analysisRun",
+            analysisTaskId: session.analysisTaskId,
+            runId: session.currentRun.runId
+          }}
+          selectedSession={session}
+          workspaceState={{ kind: "ready" }}
+        />
+      </TestProviders>
+    );
+
+    expect(screen.getByText("Run Trace")).toBeTruthy();
+    expect(screen.getByText("Evidence")).toBeTruthy();
+    expect(screen.getByText("Report")).toBeTruthy();
+    expect(screen.getByText("Decision")).toBeTruthy();
+    expect(screen.getByText(session.analysisTaskContextPack!.root.title)).toBeTruthy();
+
+    const openSourceLinks = screen.getAllByRole("link", { name: "Open full source" });
+    expect(openSourceLinks.length).toBeGreaterThan(0);
+    openSourceLinks.forEach((link) => {
+      expect((link as HTMLAnchorElement).getAttribute("target")).toBe("_blank");
+      expect((link as HTMLAnchorElement).getAttribute("rel")).toBe("noreferrer");
+    });
+    expect(
+      openSourceLinks.some((link) =>
+        (link as HTMLAnchorElement).href.includes(
+          "/data-knowledge#source-evidence:source-evidence-channel-weekly-17"
+        )
+      )
+    ).toBe(true);
+    expect(
+      openSourceLinks.some((link) =>
+        (link as HTMLAnchorElement).href.includes("/reports#report:report-revenue-gap-q2")
+      )
+    ).toBe(true);
+    expect(screen.getByText("当前决策暂无独立来源页。")).toBeTruthy();
   });
 
   it("projects ToolCall and ModelCall nodes under the existing Run Trace tree", () => {

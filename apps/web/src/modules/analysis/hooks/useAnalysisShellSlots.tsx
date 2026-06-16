@@ -43,7 +43,7 @@ export function useAnalysisShellSlots({
       <AnalysisInspectorPanel
         contextPanelNote={
           controller.selectedSession
-            ? "点击消息后，右侧会显示对应的分析详情与上下文。"
+            ? "右侧会围绕当前运行显示分析详情与上下文。"
             : "右侧会显示当前草稿将要附带的分析详情。"
         }
         contextNodeDisplay={controller.draftContextNodeDisplay}
