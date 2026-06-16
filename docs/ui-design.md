@@ -114,7 +114,9 @@ Code
 - 页面可以选择是否启用 Inspector。
 - 页面通过当前选中对象提供 `inspectorContext`。
 - Inspector 根据 `subjectType` 插入 subject-scoped display model；Analysis 当前固定为一棵标准 unified tree。
-- 不同模块/页面可以提供不同的 tree / subtree display model，但右侧辅助区结构必须保持为一棵标准 tree。
+- System-wide Inspector 只允许一套 shared `InspectorTreeNode` tree structure 和一套 shared tree renderer。
+- 页面只提供 `selectedSubject` 和 subject-scoped roots / subtree projection；不得创建 `DashboardTree`、`AnalysisTree`、`ReportTree` 这类 page-private second tree model。
+- 不同模块/页面可以提供不同的 roots / subtree projection，但右侧辅助区结构必须保持为同一棵标准 tree。
 - `AnalysisInspectorPanel` 是 Analysis 页面内部的 unified Inspector tree browser，不是浏览器 back stack 的替身。
 - `Run Trace` 是 Analysis Inspector 的一个可见 root；实际的 `AnalysisTask.contextPack.root` 是另一个可见 context root。
 - `Request Context` 可以保留为内部语义锚点，但不能渲染为 synthetic visible wrapper root。
@@ -136,11 +138,22 @@ Code
 
 默认策略：
 
-- `Dashboard` 不启用通用详情型 Inspector；如当前阶段需要右侧辅助区，其形态固定为标准化 `Context Tree Viewport`。
-- `Analysis` 需要 Inspector；当前固定为 one unified tree renderer，显示 `Run Trace` root 与实际 `contextPack.root`，不渲染 synthetic `Request Context` wrapper 或 selected-node detail card，后续再扩展更多 subject roots。
-- `Reports` 可选启用 Inspector，用于报告段落、证据、反馈和来源上下文。
+- `Dashboard` 不启用通用详情型 Inspector；如当前阶段需要右侧辅助区，其形态固定为标准化 `Context Tree Viewport`，它可以作为 context producer tree，但必须复用同一 `InspectorTreeNode` shape。
+- `Analysis` 需要 Inspector；selected scope 固定为 `conversationId + analysisTaskId + runId`。当前固定为 one unified tree renderer，roots 由 `AnalysisTask.contextPack.root` 与 `AnalysisRun` owned roots 组成，不渲染 synthetic `Request Context` wrapper 或 selected-node detail card，后续再扩展更多 subject roots。
+- `AnalysisTask.contextPack.root` 是 sibling root，owner 固定为 `analysisTaskId`。
+- `Run Trace` 是 sibling root，owner 固定为 `runId`。
+- `Evidence / Report / Decision` 在 `#232` 后可以作为 `runId` owned sibling roots 加入；`Run Trace` 也可以通过 `sourceRef` occurrences 引用同一 artifacts。
+- `Reports` 可选启用 Inspector；selected subject 可以是 `reportId`，tree 是 report-scoped projection，但仍必须使用同一 `InspectorTreeNode` shape，不得再建 report-specific second tree model。
 - `Data & Knowledge` 使用轻量 Inspector，固定承接 `Workspace Overview`、`Readonly Boundary`、`Quality & Operations Summary`、`Actions`、`Technical Boundary`。
 - `Metrics / Models & Tools / Governance / Platform Operations` 第一版默认不强制启用 Inspector。
+
+System-wide tree semantics：
+
+- `nodeId` 是 tree occurrence identity。
+- `sourceRef` 是 canonical business identity。
+- `owner` 表示当前节点归属给谁。
+- `role` 表示该节点为什么出现在当前树里。
+- 同一个 `sourceRef` 可以在不同页面、不同 roots、不同 `owner / role` 下重复出现，不做全局去重。
 
 ### Dashboard Context Tree Viewport
 

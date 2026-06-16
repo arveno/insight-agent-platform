@@ -317,6 +317,55 @@ assistant message 的最小语义必须同时覆盖：
 - replay / history 未来只能走 `MessageStream` records 的 HTTP JSON 读取。
 - `RunEvent` 不承载 token delta。
 
+## Post-#240 Delivery Boundary
+
+`#240` 已经完成这条 L3 主链的真实 execution-state slice。`#232` 不是 standalone demo closure，而是 `#240` 的 delivery-artifact continuation。
+
+`#240` 已经建立的 persisted execution state 固定如下：
+
+- `AnalysisRun` 已经过 submit-to-run foundation。
+- worker 已经 claim 当前 run。
+- minimal LangGraph path 已经执行。
+- `Tool Registry` 已经中介至少一次 `ToolCall`。
+- `Model Gateway` 已经中介至少一次 real `ModelCall`。
+- `ExecutionAttempt / RunEvent / ToolCall / ModelCall` 已经落在同一个 `runId` 上。
+- run 会在 delivery 之前诚实停下，当前方向通常停在 `running / synthesis`。
+
+`#232` 必须从这份 persisted execution state 继续，而不是重新发明独立报告路径。
+
+`#232` input 固定如下：
+
+- `conversationId`
+- `analysisTaskId`
+- `runId`
+- `AnalysisTask.contextPack.root`
+- persisted `RunEvent` records
+- persisted `ToolCall` records
+- persisted `ModelCall` records
+- current `AnalysisRun` lifecycle state
+
+`#232` output 固定如下：
+
+- `SourceEvidence`
+- `Report`
+- `ReportSection`
+- `Decision`
+- assistant `Message` summary
+- `verification / delivery / artifact / completed` `RunEvents`
+- `AnalysisRun completed / delivery`
+
+`#232` forbidden 固定如下：
+
+- independent report generation path
+- route-direct model call
+- service-direct tool call outside `Tool Registry`
+- raw model output as formal `Report`
+- fake `SourceEvidence`
+- evidence hidden only in assistant `Message`
+- `run.completed` before artifacts are persisted
+- `MessageStream / SSE / replay / re-entry`
+- `Feedback / BadCase / Evaluation`
+
 ## 8. Expected SourceEvidence
 
 本切片的最小交付要求是 `2` 条标准化 `SourceEvidence`：
