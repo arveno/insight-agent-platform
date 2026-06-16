@@ -331,6 +331,7 @@ Analysis 会话能力承载在 Analysis 页面，不新增 Conversation 一级�
 
 - UI 只展示标准化 `Contract / 聚合对象 -> ViewModel -> Page Composition` 结果，不展示底层 runtime 的 raw 输出。
 - `Conversation Workspace = Analysis`：主区承接 `Conversation / Chat`，Inspector 承接一棵标准 tree（显示 `Run Trace` root 与实际 `contextPack.root`，不显示 synthetic `Request Context` wrapper 或 selected-node detail card）；页面不得展示 `LangGraph raw state`、`Tool raw output`、`raw provider response`。
+- assistant live/replay 文本主线固定留在 `Conversation / Chat`；`MessageStream` snapshot / replay 不得漂移到 Inspector 或变成第二套会话页面。
 - `Reader Page = Reports`：只展示结构化 `Report / ReportSection / Decision / ActionSuggestion / SourceEvidence`，不得把模型 markdown 原文直接当正式报告资产。
 - `Overview Page = Metrics / Platform Operations`：只展示当前 Workspace 的只读语义摘要、平台健康摘要和 Analysis 草稿态入口；入口只表示导航或草稿态，不创建真实 conversation、run、Job 或部署执行。
 - `Management Page = Data & Knowledge / Models & Tools / Governance / Settings`：承接资产、配置、治理和默认策略入口，但不自造执行链路，也不把 Management Page 写成孤岛。

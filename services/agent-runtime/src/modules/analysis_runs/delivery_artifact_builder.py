@@ -19,6 +19,10 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRecord,
     ToolCallRecord,
 )
+from src.modules.analysis_runs.message_streaming import (
+    generate_assistant_message_id,
+    is_delivery_promotable_placeholder,
+)
 
 SOURCE_PRIORITY = {
     "knowledgeDocument": 0,
@@ -62,8 +66,6 @@ def build_delivery_artifacts(
     context_pack = analysis_task["contextPack"]
     if context_pack is None:
         raise DeliveryArtifactBuildError("AnalysisTask.contextPack.root is required for delivery.")
-
-    _assert_no_duplicate_assistant_message(messages, analysis_run["runId"])
 
     succeeded_tool_calls = _require_succeeded_tool_calls(tool_calls)
     succeeded_model_calls = _require_succeeded_model_calls(model_calls)
@@ -134,25 +136,22 @@ def build_delivery_artifacts(
         "status": "proposed",
         "createdAt": occurred_at,
     }
-    assistant_message: MessageRecord = {
-        "messageId": _generate_deterministic_message_id(run_id=analysis_run["runId"]),
-        "conversationId": conversation["conversationId"],
-        "analysisTaskId": analysis_run["analysisTaskId"],
-        "turnId": user_submit_message["turnId"],
-        "runId": analysis_run["runId"],
-        "role": "assistant",
-        "content": (
-            f"{report_summary} "
-            f"当前正式证据包括 {len(source_evidence)} 条来源，"
-            f"可直接进入《{report['title']}》与决策节点继续跟进。"
-        ),
-        "status": "completed",
-        "sourceEvidenceIds": report["sourceEvidence"],
-        "toolCallIds": [tool_call["toolCallId"] for tool_call in succeeded_tool_calls],
-        "reportId": report["reportId"],
-        "createdAt": occurred_at,
-        "completedAt": occurred_at,
-    }
+    assistant_message_content = (
+        f"{report_summary} "
+        f"当前正式证据包括 {len(source_evidence)} 条来源，"
+        f"可直接进入《{report['title']}》与决策节点继续跟进。"
+    )
+    assistant_message = _build_delivery_assistant_message(
+        analysis_run=analysis_run,
+        analysis_task=analysis_task,
+        messages=messages,
+        occurred_at=occurred_at,
+        report=report,
+        succeeded_tool_calls=succeeded_tool_calls,
+        conversation=conversation,
+        turn_id=user_submit_message["turnId"],
+        content=assistant_message_content,
+    )
 
     return DeliveryArtifacts(
         assistant_message=assistant_message,
@@ -385,8 +384,71 @@ def _build_source_evidence_id(*, run_id: str, source_type: str, source_id: str) 
     return f"source-evidence-{run_id}-{digest}"
 
 
-def _generate_deterministic_message_id(*, run_id: str) -> str:
-    return f"message-{run_id}-assistant"
+def _build_delivery_assistant_message(
+    *,
+    analysis_run: AnalysisRunRecord,
+    analysis_task: AnalysisTaskRecord,
+    messages: list[MessageRecord],
+    occurred_at: str,
+    report: ReportRecord,
+    succeeded_tool_calls: list[ToolCallRecord],
+    conversation: ConversationRecord,
+    turn_id: str,
+    content: str,
+) -> MessageRecord:
+    assistant_messages = [
+        message
+        for message in messages
+        if message["role"] == "assistant" and message["runId"] == analysis_run["runId"]
+    ]
+    tool_call_ids = [tool_call["toolCallId"] for tool_call in succeeded_tool_calls]
+    deterministic_message_id = generate_assistant_message_id(run_id=analysis_run["runId"])
+
+    if not assistant_messages:
+        return {
+            "messageId": deterministic_message_id,
+            "conversationId": conversation["conversationId"],
+            "analysisTaskId": analysis_run["analysisTaskId"],
+            "turnId": turn_id,
+            "runId": analysis_run["runId"],
+            "role": "assistant",
+            "content": content,
+            "status": "completed",
+            "sourceEvidenceIds": report["sourceEvidence"],
+            "toolCallIds": tool_call_ids,
+            "reportId": report["reportId"],
+            "createdAt": occurred_at,
+            "completedAt": occurred_at,
+        }
+
+    if len(assistant_messages) != 1:
+        raise DeliveryArtifactBuildError(
+            "Delivery completion requires at most one assistant_message per runId before "
+            "placeholder promotion."
+        )
+
+    placeholder_message = assistant_messages[0]
+    if not is_delivery_promotable_placeholder(
+        placeholder_message,
+        analysis_task_id=analysis_task["analysisTaskId"],
+        conversation_id=conversation["conversationId"],
+        run_id=analysis_run["runId"],
+        turn_id=turn_id,
+    ):
+        raise DeliveryArtifactBuildError(
+            "assistant_message already exists for runId "
+            f"{analysis_run['runId']} but does not satisfy placeholder promotion rules."
+        )
+
+    return {
+        **placeholder_message,
+        "content": content,
+        "status": "completed",
+        "sourceEvidenceIds": report["sourceEvidence"],
+        "toolCallIds": tool_call_ids,
+        "reportId": report["reportId"],
+        "completedAt": occurred_at,
+    }
 
 
 def _build_snippet(node: InspectorTreeNode) -> str:
@@ -424,17 +486,6 @@ def _build_report_section(
         "content": content,
         "createdAt": occurred_at,
     }
-
-
-def _assert_no_duplicate_assistant_message(
-    messages: list[MessageRecord],
-    run_id: str,
-) -> None:
-    if any(message["role"] == "assistant" and message["runId"] == run_id for message in messages):
-        raise DeliveryArtifactBuildError(
-            "Assistant Message already exists for runId "
-            f"{run_id}; refusing duplicate delivery completion."
-        )
 
 
 def _extract_tool_summary(tool_call: ToolCallRecord) -> str:

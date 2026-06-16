@@ -32,6 +32,10 @@ from src.infrastructure.database.runtime_foundation import (
     MessageStreamRepository,
     RuntimeFoundationPyMySqlDatabase,
 )
+from src.modules.analysis_runs.message_streaming import (
+    MessageStreamStateError,
+    validate_message_stream_chain,
+)
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 AuthenticatedContext = Annotated[
@@ -215,13 +219,21 @@ def stream_conversation_message(
             conversation_id=conversation_id,
         )
     except KeyError:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"Message not found: {message_id}",
+        return _message_not_found_or_mismatched_response(
+            context=context,
+            conversation_id=conversation_id,
+            message_id=message_id,
         )
 
     message_streams = _message_stream_repository().list_by_message_id(message_id)
+    try:
+        validate_message_stream_chain(message=message, message_streams=message_streams)
+    except MessageStreamStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
     if accept is not None and "text/event-stream" in accept:
         return StreamingResponse(
             _encode_message_stream_sse(message_streams),
@@ -236,3 +248,42 @@ def _encode_message_stream_sse(
     for message_stream in message_streams:
         payload = json.dumps(message_stream, ensure_ascii=False, separators=(",", ":"))
         yield f"event: {message_stream['eventType']}\ndata: {payload}\n\n"
+
+
+def _message_not_found_or_mismatched_response(
+    *,
+    context: AuthenticatedRequestContext,
+    conversation_id: str,
+    message_id: str,
+) -> JSONResponse:
+    try:
+        message = _message_repository().get_by_message_id(message_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found: {message_id}",
+        )
+
+    try:
+        _conversation_repository().get_by_conversation_id_and_owner(
+            message["conversationId"],
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found: {message_id}",
+        )
+
+    return runtime_error_response(
+        status_code=409,
+        error_code="INVALID_STATE",
+        message=(
+            "MessageStream replay requires the requested conversationId and messageId to share "
+            f"the same persisted object chain; conversationId={conversation_id} "
+            f"messageId={message_id} mismatched the owned Conversation / Message binding."
+        ),
+    )

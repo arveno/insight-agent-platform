@@ -13,6 +13,8 @@ from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
     ExecutionAttemptRepository,
+    MessageRepository,
+    MessageStreamRepository,
     ModelCallRepository,
     ReportRepository,
     RuntimeFoundationMysqlCli,
@@ -282,12 +284,34 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     messages = response_json_dict(
         client.get(f"/conversations/{conversation_id}/messages").json()
     )["items"]
-    assert [message["role"] for message in messages] == ["user"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["messageId"] == f"message-{run_id}-assistant"
+    assert assistant_message["status"] == "streaming"
+    assert assistant_message["reportId"] is None
+    assert assistant_message["sourceEvidenceIds"] == []
+    assert assistant_message["toolCallIds"] == [result["toolCall"]["toolCallId"]]
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    assert replay_items
+    assert [item["sequence"] for item in replay_items] == list(range(len(replay_items)))
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert replay_items[-1]["eventType"] == "stream.completed"
 
     database = RuntimeFoundationMysqlCli()
     assert len(ExecutionAttemptRepository(database).list_by_run_id(run_id)) == 1
     assert len(ToolCallRepository(database).list_by_run_id(run_id)) == 1
     assert len(ModelCallRepository(database).list_by_run_id(run_id)) == 1
+    assert len(MessageRepository(database).list_by_run_id(run_id)) == 2
+    persisted_stream_rows = MessageStreamRepository(database).list_by_message_id(
+        assistant_message["messageId"]
+    )
+    assert len(persisted_stream_rows) == len(replay_items)
     assert SourceEvidenceRepository(database).list_by_run_id(run_id) == []
     assert ReportRepository(database).list_by_run_id(run_id) == []
 
@@ -321,3 +345,18 @@ def test_worker_execution_persists_failed_model_call_without_fake_completion(
     assert client.get(f"/analysis-runs/{run_id}/source-evidence").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/reports").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/decisions").json() == {"items": []}
+    conversation_id = dispatched["submit"]["conversation"]["conversationId"]
+    messages = response_json_dict(
+        client.get(f"/conversations/{conversation_id}/messages").json()
+    )["items"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["status"] == "failed"
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    assert [item["eventType"] for item in replay_items] == ["stream.started", "stream.failed"]

@@ -17,6 +17,9 @@ from src.infrastructure.database.runtime_foundation import (
     ConversationRepository,
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
+    MessageRecord,
+    MessageRepository,
+    MessageStreamRepository,
     ModelCallRecord,
     RunEventRecord,
     RunEventRepository,
@@ -32,6 +35,12 @@ from src.infrastructure.tool_registry.registry import (
     ToolRegistryExecutionError,
 )
 from src.modules.analysis_runs.lifecycle_service import AnalysisRunLifecycleService
+from src.modules.analysis_runs.message_streaming import (
+    RuntimeMessageStreamService,
+    build_message_stream_record,
+    build_placeholder_assistant_message,
+    chunk_message_stream_deltas,
+)
 
 PROMPT_VERSION_ID = "prompt-runtime-worker-synthesis-v1"
 TOOL_NAME = "analysis_context_summary"
@@ -71,12 +80,14 @@ RunOutcome = Literal[
 class WorkerExecutionState(TypedDict):
     analysis_run: AnalysisRunRecord
     analysis_task: AnalysisTaskRecord
+    assistant_message: MessageRecord | None
     execution_attempt: ExecutionAttemptRecord
     model_call: ModelCallRecord | None
     model_output: str | None
     next_sequence: int
     tool_call: ToolCallRecord | None
     tool_summary: str | None
+    user_submit_message: MessageRecord
 
 
 class AnalysisRunExecutionResult(TypedDict):
@@ -95,6 +106,8 @@ class AnalysisRunExecutionWorker:
     _analysis_run_repository: AnalysisRunRepository = field(init=False)
     _analysis_task_repository: AnalysisTaskRepository = field(init=False)
     _execution_attempt_repository: ExecutionAttemptRepository = field(init=False)
+    _message_repository: MessageRepository = field(init=False)
+    _message_stream_service: RuntimeMessageStreamService = field(init=False)
     _run_event_repository: RunEventRepository = field(init=False)
     _lifecycle_repository: AnalysisRunLifecycleRepository = field(init=False)
     _lifecycle_service: AnalysisRunLifecycleService = field(init=False)
@@ -103,6 +116,7 @@ class AnalysisRunExecutionWorker:
         self._analysis_run_repository = AnalysisRunRepository(self.database)
         self._analysis_task_repository = AnalysisTaskRepository(self.database)
         self._execution_attempt_repository = ExecutionAttemptRepository(self.database)
+        self._message_repository = MessageRepository(self.database)
         self._run_event_repository = RunEventRepository(self.database)
         self._lifecycle_repository = AnalysisRunLifecycleRepository(self.database)
         self._lifecycle_service = AnalysisRunLifecycleService(
@@ -113,6 +127,11 @@ class AnalysisRunExecutionWorker:
             lifecycle_repository=self._lifecycle_repository,
             worker_id=self.worker_id,
         )
+        self._message_stream_service = RuntimeMessageStreamService(
+            lifecycle_repository=self._lifecycle_repository,
+            message_repository=self._message_repository,
+            message_stream_repository=MessageStreamRepository(self.database),
+        )
 
     def execute_run(self, run_id: str) -> AnalysisRunExecutionResult:
         analysis_run = self._lifecycle_service.claim_for_execution(run_id, self.worker_id)
@@ -120,15 +139,21 @@ class AnalysisRunExecutionWorker:
         analysis_task = self._analysis_task_repository.get_by_analysis_task_id(
             analysis_run["analysisTaskId"]
         )
+        user_submit_message = self._require_user_submit_message(
+            analysis_task_id=analysis_run["analysisTaskId"],
+            run_id=run_id,
+        )
         initial_state: WorkerExecutionState = {
             "analysis_run": analysis_run,
             "analysis_task": analysis_task,
+            "assistant_message": None,
             "execution_attempt": execution_attempt,
             "model_call": None,
             "model_output": None,
             "next_sequence": self._next_sequence(run_id),
             "tool_call": None,
             "tool_summary": None,
+            "user_submit_message": user_submit_message,
         }
         graph = cast(Any, self._build_graph())
         final_state = cast(WorkerExecutionState, graph.invoke(initial_state))
@@ -433,6 +458,29 @@ class AnalysisRunExecutionWorker:
             model_call=running_model_call,
             run_events=[started_event],
         )
+        placeholder_message = build_placeholder_assistant_message(
+            analysis_task_id=state["analysis_task"]["analysisTaskId"],
+            conversation_id=state["analysis_task"]["conversationId"],
+            created_at=started_at,
+            run_id=run["runId"],
+            tool_call_ids=(
+                [state["tool_call"]["toolCallId"]] if state["tool_call"] is not None else []
+            ),
+            turn_id=state["user_submit_message"]["turnId"],
+        )
+        started_stream = build_message_stream_record(
+            conversation_id=placeholder_message["conversationId"],
+            message_id=placeholder_message["messageId"],
+            run_id=run["runId"],
+            sequence=0,
+            event_type="stream.started",
+            delta="",
+            occurred_at=started_at,
+        )
+        assistant_message = self._message_stream_service.persist_runtime_message_stream(
+            message=placeholder_message,
+            message_streams=[started_stream],
+        )
         next_sequence = state["next_sequence"] + 1
 
         try:
@@ -444,6 +492,27 @@ class AnalysisRunExecutionWorker:
                 started_at=started_at,
             )
         except ModelGatewayInvocationError as exc:
+            failed_message = _update_message(
+                assistant_message,
+                content=assistant_message["content"],
+                status="failed",
+                completedAt=exc.model_call["completedAt"] or started_at,
+            )
+            failed_stream = build_message_stream_record(
+                conversation_id=assistant_message["conversationId"],
+                message_id=assistant_message["messageId"],
+                run_id=run["runId"],
+                sequence=1,
+                event_type="stream.failed",
+                delta="",
+                occurred_at=exc.model_call["completedAt"] or started_at,
+                error_code=exc.model_call["errorType"],
+                error_message=exc.model_call["errorMessage"],
+            )
+            self._message_stream_service.persist_runtime_message_stream(
+                message=failed_message,
+                message_streams=[failed_stream],
+            )
             failed_attempt = _update_execution_attempt(
                 state["execution_attempt"],
                 failureCode=exc.model_call["errorType"],
@@ -494,12 +563,47 @@ class AnalysisRunExecutionWorker:
             return {
                 **state,
                 "analysis_run": failed_run,
+                "assistant_message": failed_message,
                 "execution_attempt": failed_attempt,
                 "model_call": exc.model_call,
                 "model_output": None,
                 "next_sequence": next_sequence + len(failure_events),
             }
 
+        delta_chunks = chunk_message_stream_deltas(model_result.output_text)
+        completed_streams = [
+            build_message_stream_record(
+                conversation_id=assistant_message["conversationId"],
+                message_id=assistant_message["messageId"],
+                run_id=run["runId"],
+                sequence=index + 1,
+                event_type="stream.delta",
+                delta=chunk,
+                occurred_at=model_result.model_call["completedAt"] or started_at,
+            )
+            for index, chunk in enumerate(delta_chunks)
+        ]
+        completed_streams.append(
+            build_message_stream_record(
+                conversation_id=assistant_message["conversationId"],
+                message_id=assistant_message["messageId"],
+                run_id=run["runId"],
+                sequence=len(completed_streams) + 1,
+                event_type="stream.completed",
+                delta="",
+                occurred_at=model_result.model_call["completedAt"] or started_at,
+            )
+        )
+        updated_message = _update_message(
+            assistant_message,
+            content=model_result.output_text,
+            status="streaming",
+            completedAt=None,
+        )
+        persisted_message = self._message_stream_service.persist_runtime_message_stream(
+            message=updated_message,
+            message_streams=completed_streams,
+        )
         completed_event = self._build_run_event(
             event_type="model_call.completed",
             occurred_at=model_result.model_call["completedAt"] or started_at,
@@ -519,6 +623,7 @@ class AnalysisRunExecutionWorker:
         return {
             **state,
             "analysis_run": run,
+            "assistant_message": persisted_message,
             "model_call": model_result.model_call,
             "model_output": model_result.output_text,
             "next_sequence": next_sequence + 1,
@@ -613,6 +718,25 @@ class AnalysisRunExecutionWorker:
             return 0
         return run_events[-1]["sequence"] + 1
 
+    def _require_user_submit_message(
+        self,
+        *,
+        analysis_task_id: str,
+        run_id: str,
+    ) -> MessageRecord:
+        run_messages = self._message_repository.list_by_run_id(run_id)
+        for message in run_messages:
+            if (
+                message["role"] == "user"
+                and message["analysisTaskId"] == analysis_task_id
+                and message["runId"] == run_id
+            ):
+                return message
+        raise RuntimeError(
+            "Worker execution requires the persisted user submit Message bound to "
+            f"runId {run_id}."
+        )
+
 
 def _build_failed_run(
     *,
@@ -656,6 +780,13 @@ def _update_tool_call(
     **updates: object,
 ) -> ToolCallRecord:
     return cast(ToolCallRecord, {**tool_call, **updates})
+
+
+def _update_message(
+    message: MessageRecord,
+    **updates: object,
+) -> MessageRecord:
+    return cast(MessageRecord, {**message, **updates})
 
 
 def _generate_canonical_id(prefix: str) -> str:

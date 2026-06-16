@@ -5,7 +5,9 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunLifecycleRepository,
     AnalysisRunRecord,
     AnalysisRunRepository,
     AnalysisTaskContextPack,
@@ -31,6 +33,12 @@ from src.infrastructure.database.runtime_foundation import (
     SourceEvidenceRepository,
     ToolCallRecord,
     ToolCallRepository,
+)
+from src.modules.analysis_runs.message_streaming import (
+    MessageStreamStateError,
+    RuntimeMessageStreamService,
+    build_message_stream_record,
+    build_placeholder_assistant_message,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -544,6 +552,208 @@ def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) 
     assert message_stream_repository.list_by_message_id("message-revenue-gap-q2-assistant") == (
         message_stream_records
     )
+
+
+def test_runtime_message_stream_service_allows_idempotent_duplicate_sequence_payload(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_repository = MessageRepository(database)
+    message_stream_repository = MessageStreamRepository(database)
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=message_repository,
+        message_stream_repository=message_stream_repository,
+    )
+    placeholder_message = build_placeholder_assistant_message(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    initial_stream_rows = [
+        build_message_stream_record(
+            conversation_id=CONVERSATION_ID,
+            message_id=placeholder_message["messageId"],
+            run_id=RUN_ID,
+            sequence=0,
+            event_type="stream.started",
+            delta="",
+            occurred_at="2026-06-05T11:22:00+08:00",
+        ),
+        build_message_stream_record(
+            conversation_id=CONVERSATION_ID,
+            message_id=placeholder_message["messageId"],
+            run_id=RUN_ID,
+            sequence=1,
+            event_type="stream.delta",
+            delta="华东收入增速放缓与渠道确认延迟、",
+            occurred_at="2026-06-05T11:23:00+08:00",
+        ),
+    ]
+
+    service.persist_runtime_message_stream(
+        message=placeholder_message,
+        message_streams=initial_stream_rows,
+    )
+    service.persist_runtime_message_stream(
+        message=placeholder_message,
+        message_streams=initial_stream_rows,
+    )
+
+    persisted_rows = message_stream_repository.list_by_message_id(placeholder_message["messageId"])
+    assert persisted_rows == initial_stream_rows
+
+
+def test_runtime_message_stream_service_rejects_duplicate_sequence_with_different_payload(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_repository = MessageRepository(database)
+    message_stream_repository = MessageStreamRepository(database)
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=message_repository,
+        message_stream_repository=message_stream_repository,
+    )
+    placeholder_message = build_placeholder_assistant_message(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    service.persist_runtime_message_stream(
+        message=placeholder_message,
+        message_streams=[
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=0,
+                event_type="stream.started",
+                delta="",
+                occurred_at="2026-06-05T11:22:00+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=1,
+                event_type="stream.delta",
+                delta="华东收入增速放缓与渠道确认延迟、",
+                occurred_at="2026-06-05T11:23:00+08:00",
+            ),
+        ],
+    )
+
+    with pytest.raises(MessageStreamStateError, match="exact same payload"):
+        service.persist_runtime_message_stream(
+            message=placeholder_message,
+            message_streams=[
+                build_message_stream_record(
+                    conversation_id=CONVERSATION_ID,
+                    message_id=placeholder_message["messageId"],
+                    run_id=RUN_ID,
+                    sequence=1,
+                    event_type="stream.delta",
+                    delta="不同 payload 不允许覆盖同一 sequence。",
+                    occurred_at="2026-06-05T11:23:00+08:00",
+                )
+            ],
+        )
+
+
+def test_runtime_message_stream_service_rejects_append_after_terminal(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_repository = MessageRepository(database)
+    message_stream_repository = MessageStreamRepository(database)
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=message_repository,
+        message_stream_repository=message_stream_repository,
+    )
+    placeholder_message = build_placeholder_assistant_message(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    service.persist_runtime_message_stream(
+        message={
+            **placeholder_message,
+            "content": "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+        },
+        message_streams=[
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=0,
+                event_type="stream.started",
+                delta="",
+                occurred_at="2026-06-05T11:22:00+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=1,
+                event_type="stream.delta",
+                delta="收入增速下滑主要来自华东核心渠道确认延迟",
+                occurred_at="2026-06-05T11:23:00+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=2,
+                event_type="stream.completed",
+                delta="",
+                occurred_at="2026-06-05T11:24:00+08:00",
+            ),
+        ],
+    )
+
+    with pytest.raises(MessageStreamStateError, match="after a terminal event"):
+        service.persist_runtime_message_stream(
+            message={
+                **placeholder_message,
+                "content": "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+            },
+            message_streams=[
+                build_message_stream_record(
+                    conversation_id=CONVERSATION_ID,
+                    message_id=placeholder_message["messageId"],
+                    run_id=RUN_ID,
+                    sequence=3,
+                    event_type="stream.delta",
+                    delta="terminal 之后禁止继续追加。",
+                    occurred_at="2026-06-05T11:25:00+08:00",
+                )
+            ],
+        )
 
 
 def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) -> None:

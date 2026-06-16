@@ -204,8 +204,15 @@ scripts/smoke/
 - 创建 workspace
 - 创建 analysis task
 - 创建 analysis run
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` JSON replay
 - SSE / run events 基础链路
 - contract response check
+
+当前 runtime delivery / replay smoke 入口：
+
+- `scripts/smoke/runtime-result-delivery.py`
+- 本地真实 provider 推荐运行方式：`uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file .env.model.local`
+- 该 smoke 必须覆盖 `submit -> dispatch -> worker execute -> MessageStream replay -> delivery promote -> query verify`，且日志只允许输出 `apiKey=configured` 等非 secret 状态。
 
 ## 9. Load Test
 

@@ -330,6 +330,7 @@ def assert_no_delivery_outputs(
     *,
     run_id: str,
     conversation_id: str,
+    expect_placeholder_assistant: bool = False,
 ) -> None:
     assert client.get(f"/analysis-runs/{run_id}/source-evidence").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/reports").json() == {"items": []}
@@ -338,7 +339,16 @@ def assert_no_delivery_outputs(
     messages = response_json_dict(client.get(f"/conversations/{conversation_id}/messages").json())[
         "items"
     ]
-    assert [message["role"] for message in messages] == ["user"]
+    if not expect_placeholder_assistant:
+        assert [message["role"] for message in messages] == ["user"]
+        return
+
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["status"] == "streaming"
+    assert assistant_message["reportId"] is None
+    assert assistant_message["sourceEvidenceIds"] == []
+    assert assistant_message["completedAt"] is None
 
 
 def runtime_database() -> RuntimeFoundationMysqlCli:
@@ -626,6 +636,113 @@ def get_run_payload(client: TestClient, run_id: str) -> dict[str, Any]:
     return response_json_dict(response.json())
 
 
+def test_runtime_execution_persists_placeholder_and_non_empty_json_replay_before_delivery(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
+
+    messages = response_json_dict(client.get(f"/conversations/{conversation_id}/messages").json())[
+        "items"
+    ]
+    user_message = messages[0]
+    assistant_message = messages[-1]
+    assert assistant_message["messageId"] == f"message-{run_id}-assistant"
+    assert assistant_message["analysisTaskId"] == submit_payload["analysisTask"]["analysisTaskId"]
+    assert assistant_message["turnId"] == user_message["turnId"]
+    assert assistant_message["toolCallIds"]
+    assert assistant_message["content"] == "华东收入增速放缓与渠道确认延迟、库存错配有关。"
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    assert len(replay_items) >= 2
+    assert [item["sequence"] for item in replay_items] == list(range(len(replay_items)))
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert replay_items[-1]["eventType"] == "stream.completed"
+    assert replay_items[-1]["status"] == "completed"
+    assert all(item["messageId"] == assistant_message["messageId"] for item in replay_items)
+    assert all(item["conversationId"] == conversation_id for item in replay_items)
+    assert all(item["runId"] == run_id for item in replay_items)
+
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
+
+
+def test_message_stream_replay_requires_owned_conversation(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{run_id}-assistant"
+
+    select_workspace(client, "workspace-northstar-retail-sea")
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["errorCode"] == "NOT_FOUND"
+
+
+def test_message_stream_replay_rejects_same_owner_cross_conversation_mismatch(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    assistant_message_id = f"message-{run_id}-assistant"
+
+    other_conversation_response = client.post(
+        "/conversations",
+        json={"title": "同 owner 但不同 conversation"},
+    )
+    assert other_conversation_response.status_code == 201, other_conversation_response.text
+    other_conversation_id = response_json_dict(other_conversation_response.json())["conversationId"]
+
+    response = client.get(
+        f"/conversations/{other_conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "mismatched the owned Conversation / Message binding" in response.json()["message"]
+
+
 def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -640,6 +757,18 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     run_id = worker_result["analysisRun"]["runId"]
     conversation_id = submit_payload["conversation"]["conversationId"]
     analysis_task_id = submit_payload["analysisTask"]["analysisTaskId"]
+    pre_delivery_messages = response_json_dict(
+        client.get(f"/conversations/{conversation_id}/messages").json()
+    )["items"]
+    pre_delivery_assistant_message = pre_delivery_messages[-1]
+    pre_delivery_replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{pre_delivery_assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    assert pre_delivery_assistant_message["status"] == "streaming"
+    assert pre_delivery_replay_items
 
     response = client.post(
         f"/analysis-runs/{run_id}/delivery/complete",
@@ -725,6 +854,7 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     assert [message["role"] for message in messages] == ["user", "assistant"]
     user_message = messages[0]
     assistant_message = messages[-1]
+    assert assistant_message["messageId"] == pre_delivery_assistant_message["messageId"]
     assert assistant_message["analysisTaskId"] == analysis_task_id
     assert assistant_message["runId"] == run_id
     assert assistant_message["turnId"] == user_message["turnId"]
@@ -740,7 +870,7 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
             headers={"accept": "application/json"},
         ).json()
     )["items"]
-    assert message_stream == []
+    assert message_stream == pre_delivery_replay_items
 
     events = response_json_dict(client.get(f"/analysis-runs/{run_id}/events").json())["items"]
     event_types = [event["eventType"] for event in events]
@@ -772,7 +902,11 @@ def test_delivery_complete_rejects_execution_state_before_persisted_synthesis(
 
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+    )
 
 
 def test_delivery_complete_fails_honestly_when_context_pack_has_no_traceable_source_refs(
@@ -797,7 +931,12 @@ def test_delivery_complete_fails_honestly_when_context_pack_has_no_traceable_sou
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "usable sourceRef" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
 
     persisted_run = get_run_payload(client, run_id)
     assert persisted_run["status"] == "running"
@@ -837,7 +976,12 @@ def test_delivery_complete_rejects_failed_tool_call_status(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "succeeded ToolCall" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["status"] == "running"
 
 
@@ -868,7 +1012,12 @@ def test_delivery_complete_rejects_failed_model_call_status(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "succeeded ModelCall" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["status"] == "running"
 
 
@@ -900,7 +1049,12 @@ def test_delivery_complete_requires_completed_tool_and_model_run_events(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert event_type in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
@@ -926,7 +1080,12 @@ def test_delivery_complete_requires_authenticated_owner_workspace(
     assert response.json()["errorCode"] == "NOT_FOUND"
 
     select_workspace(client, "workspace-northstar-retail-china")
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
@@ -958,7 +1117,12 @@ def test_delivery_complete_rejects_cross_object_workspace_or_identity_mismatch(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "workspaceId" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
@@ -988,7 +1152,12 @@ def test_delivery_complete_rejects_cross_object_conversation_binding_mismatch(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "currentRunId" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
@@ -1019,7 +1188,12 @@ def test_delivery_complete_requires_original_user_turn_binding(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "user submit message turnId" in response.json()["message"]
-    assert_no_delivery_outputs(client, run_id=run_id, conversation_id=conversation_id)
+    assert_no_delivery_outputs(
+        client,
+        run_id=run_id,
+        conversation_id=conversation_id,
+        expect_placeholder_assistant=True,
+    )
     assert get_run_payload(client, run_id)["phase"] == "synthesis"
 
 
