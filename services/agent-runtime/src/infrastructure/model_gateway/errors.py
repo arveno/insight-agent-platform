@@ -11,3 +11,28 @@
 原因：
 模型供应商错误格式不同，统一映射可以保证前后端契约稳定和故障排查一致。
 """
+
+from __future__ import annotations
+
+from typing import Literal
+
+ModelGatewayConfigurationErrorCode = Literal[
+    "missing_config",
+    "missing_api_key",
+    "unsupported_api_format",
+    "invalid_base_url",
+    "invalid_provider",
+]
+
+
+class ModelGatewayConfigurationError(ValueError):
+    """Model Gateway 配置缺失或不合法时的统一错误。"""
+
+    def __init__(
+        self,
+        code: ModelGatewayConfigurationErrorCode,
+        detail: str,
+    ) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
