@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+import json
+import time
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 
 from src.infrastructure.database.runtime_foundation import (
@@ -25,10 +27,19 @@ MESSAGE_STREAM_EVENT_STATUS: dict[str, str] = {
     "stream.cancelled": "cancelled",
 }
 CHUNK_BOUNDARY_CHARACTERS = ("。", "！", "？", "；", "：", "，", "、", "\n", " ")
+MESSAGE_STREAM_HEARTBEAT_EVENT_TYPE = "heartbeat"
+MESSAGE_STREAM_HEARTBEAT_PAYLOAD = {"status": "waiting"}
+DEFAULT_MESSAGE_STREAM_SSE_HEARTBEAT_SECONDS = 2.0
+DEFAULT_MESSAGE_STREAM_SSE_POLL_SECONDS = 0.2
+DEFAULT_MESSAGE_STREAM_SSE_MAX_TAIL_SECONDS = 15.0
 
 
 class MessageStreamStateError(RuntimeError):
     """Raised when Message / MessageStream persistence would violate runtime semantics."""
+
+
+class MessageStreamCursorError(RuntimeError):
+    """Raised when SSE resume cursor input is invalid."""
 
 
 def generate_assistant_message_id(*, run_id: str) -> str:
@@ -404,6 +415,86 @@ class RuntimeMessageStreamService:
             return self.message_repository.get_by_message_id(message_id)
         except KeyError:
             return None
+
+
+@dataclass(slots=True)
+class PersistedMessageStreamSseTailService:
+    message_stream_repository: MessageStreamRepository
+    heartbeat_interval_seconds: float = DEFAULT_MESSAGE_STREAM_SSE_HEARTBEAT_SECONDS
+    poll_interval_seconds: float = DEFAULT_MESSAGE_STREAM_SSE_POLL_SECONDS
+    max_tail_seconds: float = DEFAULT_MESSAGE_STREAM_SSE_MAX_TAIL_SECONDS
+    monotonic: Callable[[], float] = time.monotonic
+    sleep: Callable[[float], None] = time.sleep
+
+    def stream(
+        self,
+        *,
+        message: MessageRecord,
+        last_event_id: str | None,
+    ) -> Iterator[str]:
+        next_sequence = resolve_message_stream_next_sequence(last_event_id=last_event_id)
+        started_at = self.monotonic()
+        next_heartbeat_at = started_at + self.heartbeat_interval_seconds
+
+        while True:
+            message_streams = self.message_stream_repository.list_by_message_id(
+                message["messageId"]
+            )
+            validate_message_stream_chain(message=message, message_streams=message_streams)
+
+            while next_sequence < len(message_streams):
+                message_stream = message_streams[next_sequence]
+                yield encode_message_stream_sse_row(message_stream)
+                next_sequence += 1
+                if message_stream["eventType"] in TERMINAL_MESSAGE_STREAM_EVENT_TYPES:
+                    return
+
+            if _terminal_message_stream(message_streams) is not None:
+                return
+
+            now = self.monotonic()
+            elapsed = now - started_at
+            if elapsed >= self.max_tail_seconds:
+                return
+
+            if now >= next_heartbeat_at:
+                yield encode_message_stream_heartbeat_sse()
+                next_heartbeat_at = now + self.heartbeat_interval_seconds
+
+            remaining = max(self.max_tail_seconds - elapsed, 0.0)
+            self.sleep(min(self.poll_interval_seconds, remaining))
+
+
+def resolve_message_stream_next_sequence(*, last_event_id: str | None) -> int:
+    if last_event_id is None:
+        return 0
+
+    normalized = last_event_id.strip()
+    if not normalized:
+        raise MessageStreamCursorError("Last-Event-ID must be a non-negative integer.")
+
+    try:
+        sequence = int(normalized)
+    except ValueError as exc:
+        raise MessageStreamCursorError("Last-Event-ID must be a non-negative integer.") from exc
+
+    if sequence < 0:
+        raise MessageStreamCursorError("Last-Event-ID must be a non-negative integer.")
+    return sequence + 1
+
+
+def encode_message_stream_sse_row(message_stream: MessageStreamRecord) -> str:
+    payload = json.dumps(message_stream, ensure_ascii=False, separators=(",", ":"))
+    return (
+        f"id: {message_stream['sequence']}\n"
+        f"event: {message_stream['eventType']}\n"
+        f"data: {payload}\n\n"
+    )
+
+
+def encode_message_stream_heartbeat_sse() -> str:
+    payload = json.dumps(MESSAGE_STREAM_HEARTBEAT_PAYLOAD, separators=(",", ":"))
+    return f"event: {MESSAGE_STREAM_HEARTBEAT_EVENT_TYPE}\ndata: {payload}\n\n"
 
 
 def _resolve_runtime_message(

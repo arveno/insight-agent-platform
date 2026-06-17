@@ -35,11 +35,15 @@ from src.infrastructure.database.runtime_foundation import (
     ToolCallRepository,
 )
 from src.modules.analysis_runs.message_streaming import (
+    MessageStreamCursorError,
     MessageStreamStateError,
+    PersistedMessageStreamSseTailService,
     RuntimeMessageStreamService,
     build_message_stream_record,
     build_placeholder_assistant_message,
+    encode_message_stream_heartbeat_sse,
     is_delivery_promotable_placeholder,
+    resolve_message_stream_next_sequence,
     validate_message_stream_replay_message,
 )
 
@@ -351,6 +355,16 @@ def build_message_stream_records() -> list[MessageStreamRecord]:
             "errorMessage": None,
         },
     ]
+
+
+def parse_sse_frame(frame: str) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for raw_line in frame.strip().splitlines():
+        if not raw_line:
+            continue
+        key, _, value = raw_line.partition(":")
+        parsed[key] = value.lstrip()
+    return parsed
 
 
 def test_runtime_foundation_env_provides_migrated_schema(runtime_foundation_env: None) -> None:
@@ -758,6 +772,267 @@ def test_runtime_message_stream_service_fail_lifecycle_uses_failure_class_and_is
     assert persisted_rows[-1]["errorCode"] == "provider_timeout"
     assert persisted_rows[-1]["errorMessage"] == "The read operation timed out"
     assert len(terminal_rows) == 1
+
+
+def test_resolve_message_stream_next_sequence_from_last_event_id() -> None:
+    assert resolve_message_stream_next_sequence(last_event_id=None) == 0
+    assert resolve_message_stream_next_sequence(last_event_id="0") == 1
+    assert resolve_message_stream_next_sequence(last_event_id=" 2 ") == 3
+
+
+def test_resolve_message_stream_next_sequence_rejects_invalid_last_event_id() -> None:
+    with pytest.raises(MessageStreamCursorError, match="Last-Event-ID"):
+        resolve_message_stream_next_sequence(last_event_id="-1")
+
+    with pytest.raises(MessageStreamCursorError, match="Last-Event-ID"):
+        resolve_message_stream_next_sequence(last_event_id="not-a-sequence")
+
+
+def test_persisted_message_stream_sse_tail_service_replays_from_last_event_id(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    placeholder_message = build_placeholder_assistant_message(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=MessageStreamRepository(database),
+    ).persist_runtime_message_stream(
+        message={
+            **placeholder_message,
+            "content": "收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+        },
+        message_streams=[
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=0,
+                event_type="stream.started",
+                delta="",
+                occurred_at="2026-06-05T11:22:00+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=1,
+                event_type="stream.delta",
+                delta="收入增速下滑主要来自",
+                occurred_at="2026-06-05T11:23:00+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=2,
+                event_type="stream.delta",
+                delta="华东核心渠道确认延迟与促销库存错配。",
+                occurred_at="2026-06-05T11:23:01+08:00",
+            ),
+            build_message_stream_record(
+                conversation_id=CONVERSATION_ID,
+                message_id=placeholder_message["messageId"],
+                run_id=RUN_ID,
+                sequence=3,
+                event_type="stream.completed",
+                delta="",
+                occurred_at="2026-06-05T11:23:02+08:00",
+            ),
+        ],
+    )
+
+    tail_service = PersistedMessageStreamSseTailService(
+        message_stream_repository=MessageStreamRepository(database),
+        heartbeat_interval_seconds=60.0,
+        poll_interval_seconds=0.01,
+        max_tail_seconds=0.05,
+        monotonic=lambda: 0.0,
+        sleep=lambda _: None,
+    )
+
+    frames = list(
+        tail_service.stream(
+            message=placeholder_message,
+            last_event_id="1",
+        )
+    )
+    parsed_frames = [parse_sse_frame(frame) for frame in frames]
+
+    assert [frame["id"] for frame in parsed_frames] == ["2", "3"]
+    assert [frame["event"] for frame in parsed_frames] == ["stream.delta", "stream.completed"]
+
+
+def test_persisted_message_stream_sse_tail_service_emits_existing_then_new_rows_and_closes(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_stream_repository = MessageStreamRepository(database)
+    stream_service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=message_stream_repository,
+    )
+    assistant_message = stream_service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    clock = {"now": 0.0}
+    completed = {"done": False}
+
+    def monotonic() -> float:
+        return clock["now"]
+
+    def sleep(seconds: float) -> None:
+        clock["now"] += seconds
+        if not completed["done"]:
+            stream_service.complete_assistant_stream_from_model_output(
+                message=assistant_message,
+                model_call=build_model_call_record(),
+                output_text="收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+            )
+            completed["done"] = True
+
+    tail_service = PersistedMessageStreamSseTailService(
+        message_stream_repository=message_stream_repository,
+        heartbeat_interval_seconds=60.0,
+        poll_interval_seconds=0.01,
+        max_tail_seconds=0.1,
+        monotonic=monotonic,
+        sleep=sleep,
+    )
+
+    frames = list(tail_service.stream(message=assistant_message, last_event_id=None))
+    parsed_frames = [parse_sse_frame(frame) for frame in frames]
+
+    assert parsed_frames[0]["id"] == "0"
+    assert parsed_frames[0]["event"] == "stream.started"
+    assert parsed_frames[-1]["event"] == "stream.completed"
+    assert [int(frame["id"]) for frame in parsed_frames] == list(range(len(parsed_frames)))
+
+
+def test_persisted_message_stream_sse_tail_service_includes_failed_terminal_event(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_stream_repository = MessageStreamRepository(database)
+    stream_service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=message_stream_repository,
+    )
+    assistant_message = stream_service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    failed_message = stream_service.fail_assistant_stream_from_model_call(
+        message=assistant_message,
+        model_call={
+            **build_model_call_record(),
+            "status": "failed",
+            "errorType": "timeout_error",
+            "errorMessage": "The read operation timed out",
+            "failureClass": "provider_timeout",
+            "completedAt": "2026-06-05T11:24:00+08:00",
+            "retryable": True,
+            "timeoutMs": 30000,
+            "rawErrorRedacted": "The read operation timed out",
+        },
+    )
+
+    frames = list(
+        PersistedMessageStreamSseTailService(
+            message_stream_repository=message_stream_repository,
+            heartbeat_interval_seconds=60.0,
+            poll_interval_seconds=0.01,
+            max_tail_seconds=0.05,
+            monotonic=lambda: 0.0,
+            sleep=lambda _: None,
+        ).stream(message=failed_message, last_event_id=None)
+    )
+    parsed_frames = [parse_sse_frame(frame) for frame in frames]
+
+    assert parsed_frames[-1]["event"] == "stream.failed"
+    assert '"errorCode":"provider_timeout"' in parsed_frames[-1]["data"]
+
+
+def test_persisted_message_stream_sse_tail_service_heartbeat_is_not_persisted(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    message_stream_repository = MessageStreamRepository(database)
+    stream_service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=message_stream_repository,
+    )
+    assistant_message = stream_service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    clock = {"now": 0.0}
+
+    def monotonic() -> float:
+        return clock["now"]
+
+    def sleep(seconds: float) -> None:
+        clock["now"] += seconds
+
+    frames = list(
+        PersistedMessageStreamSseTailService(
+            message_stream_repository=message_stream_repository,
+            heartbeat_interval_seconds=0.01,
+            poll_interval_seconds=0.01,
+            max_tail_seconds=0.03,
+            monotonic=monotonic,
+            sleep=sleep,
+        ).stream(message=assistant_message, last_event_id=None)
+    )
+    parsed_frames = [parse_sse_frame(frame) for frame in frames]
+    persisted_rows = message_stream_repository.list_by_message_id(assistant_message["messageId"])
+
+    assert encode_message_stream_heartbeat_sse() in frames
+    assert parsed_frames[0]["event"] == "stream.started"
+    assert any(frame["event"] == "heartbeat" for frame in parsed_frames[1:])
+    assert len(persisted_rows) == 1
+    assert all(row["eventType"] != "heartbeat" for row in persisted_rows)
 
 
 def test_runtime_message_stream_service_rejects_terminal_message_without_terminal_stream(

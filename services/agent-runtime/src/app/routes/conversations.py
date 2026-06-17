@@ -1,7 +1,5 @@
 """Conversation HTTP boundary for Analysis workspace foundation APIs."""
 
-import json
-from collections.abc import Iterator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Path, status
@@ -33,12 +31,14 @@ from src.infrastructure.database.runtime_foundation import (
     ConversationRepository,
     MessageRecord,
     MessageRepository,
-    MessageStreamRecord,
     MessageStreamRepository,
     RuntimeFoundationPyMySqlDatabase,
 )
 from src.modules.analysis_runs.message_streaming import (
+    MessageStreamCursorError,
     MessageStreamStateError,
+    PersistedMessageStreamSseTailService,
+    resolve_message_stream_next_sequence,
     validate_message_stream_chain,
     validate_message_stream_replay_message,
 )
@@ -57,6 +57,10 @@ NOT_IMPLEMENTED_RESPONSE: dict[int | str, dict[str, Any]] = {
 }
 
 FOUNDATION_ERROR_RESPONSE: dict[int | str, dict[str, Any]] = {
+    400: {
+        "description": "Request parameters are invalid for the runtime route contract.",
+        "model": RuntimeRequestErrorResponse,
+    },
     404: {
         "description": "Requested AnalysisTask or Conversation was not found.",
         "model": RuntimeRequestErrorResponse,
@@ -101,6 +105,10 @@ def _message_repository() -> MessageRepository:
 
 def _message_stream_repository() -> MessageStreamRepository:
     return MessageStreamRepository(_runtime_foundation_database())
+
+
+def _message_stream_sse_tail_service() -> PersistedMessageStreamSseTailService:
+    return PersistedMessageStreamSseTailService(_message_stream_repository())
 
 
 @router.post(
@@ -215,6 +223,7 @@ def stream_conversation_message(
     conversation_id: str = Path(alias="conversationId"),
     message_id: str = Path(alias="messageId"),
     accept: str | None = Header(default=None),
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
 ) -> dict[str, object] | JSONResponse | StreamingResponse:
     """Serve MessageStream replay as JSON or SSE from the same persisted record chain."""
 
@@ -268,19 +277,20 @@ def stream_conversation_message(
             message=f"MessageStream replay chain not found for messageId: {message_id}",
         )
     if accept is not None and "text/event-stream" in accept:
-        return StreamingResponse(
-            _encode_message_stream_sse(message_streams),
-            media_type="text/event-stream",
-        )
+        try:
+            resolve_message_stream_next_sequence(last_event_id=last_event_id)
+            stream_iterator = _message_stream_sse_tail_service().stream(
+                message=message,
+                last_event_id=last_event_id,
+            )
+        except MessageStreamCursorError as exc:
+            return runtime_error_response(
+                status_code=400,
+                error_code="INVALID_REQUEST",
+                message=str(exc),
+            )
+        return StreamingResponse(stream_iterator, media_type="text/event-stream")
     return {"items": message_streams}
-
-
-def _encode_message_stream_sse(
-    message_streams: list[MessageStreamRecord],
-) -> Iterator[str]:
-    for message_stream in message_streams:
-        payload = json.dumps(message_stream, ensure_ascii=False, separators=(",", ":"))
-        yield f"event: {message_stream['eventType']}\ndata: {payload}\n\n"
 
 
 def _message_not_found_or_mismatched_response(
