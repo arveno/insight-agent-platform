@@ -54,6 +54,7 @@ services/agent-runtime/src/app/config.py
 - Provider API Key 必须通过 `.env`、ECS env 或 secret 注入；不得提交到仓库，不得粘贴到 issue / PR，不得打印到日志。
 - 不允许 `fake provider`、`mock provider`、`hardcoded response` 或本地 / 预览环境双轨 provider。
 - smoke、诊断和日志输出只允许表达 `apiKey=configured` 或等价非 secret 状态，不得打印真实 Key。
+- Model Gateway failure diagnosis 只能输出 safe redacted message；不得打印 API key、Authorization header、`.env.model.local` 内容或完整 provider raw secret。
 - 真实 provider readiness smoke 使用 `scripts/smoke/model-provider-readiness.py`；本地推荐从仓库根目录通过 `uv run --project services/agent-runtime python scripts/smoke/model-provider-readiness.py --env-file .env.model.local` 运行。ECS 仅在 `/opt/insight-agent-platform/current` 已部署该脚本时，才允许通过 `--env-file /opt/insight-agent-platform/env/model-provider.env` 执行 remote smoke。
 
 ## 3. 必备环境变量占位
@@ -207,6 +208,35 @@ scripts/smoke/
 - SSE / run events 基础链路
 - contract response check
 
+### 8.1 Model Provider Structured Failure Smoke
+
+真实模型 smoke 失败时，输出必须至少包含：
+
+```text
+status
+runId
+provider
+model
+failureClass
+errorType
+safeErrorMessage
+httpStatus
+providerErrorCode
+latencyMs
+timeoutMs
+retryable
+retryAfterMs
+suggestedAction
+```
+
+补充规则：
+
+- `scripts/smoke/model-provider-readiness.py` 用于 provider readiness 与单次调用结构化诊断。
+- `scripts/smoke/runtime-result-delivery.py` 在 runtime 执行失败时，必须转向 failure-path query verify，输出结构化失败诊断，而不是只打印 generic `status=failed`。
+- failureClass 必须能区分 `timeout / rate limit / auth / quota / model not found / 5xx / schema error / code bug`。
+- 判断 provider/env issue 与 PR regression 时，必须优先做 baseline branch 对照，而不是凭猜测归因。
+- `#248` 当前只实现 retryability classification，不包含 silent fallback，也不自动切到第二 provider mainline。
+
 ## 9. Load Test
 
 Load Test 放在：
@@ -242,6 +272,14 @@ scripts/failure-simulation/
 - memory unavailable
 - evaluation failure
 - SSE disconnect
+
+`#164` Ops Gate 对模型 provider failure 的最小门禁影响如下：
+
+- migration 必须包含 `ModelCall` 结构化 failure metadata 落库能力。
+- query verify 必须覆盖至少一个 classified failure path，并验证 `ModelCall / RunEvent / AnalysisRun` 一致性。
+- smoke 必须能输出非敏感结构化失败诊断。
+- deploy / rollback 必须明确新增字段为 additive nullable columns；若需要 schema rollback，必须在旧代码退出依赖后按逆序 drop 新增列。
+- remote preview smoke 必须使用真实 provider env，并在失败时保留结构化 failure 证据。
 
 ## 11. 回滚与排障
 

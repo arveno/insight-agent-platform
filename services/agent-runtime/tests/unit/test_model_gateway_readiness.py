@@ -223,6 +223,8 @@ def test_run_provider_smoke_reports_masked_success(
     assert result.prompt_tokens == 11
     assert result.completion_tokens == 7
     assert result.total_tokens == 18
+    assert result.failure_class is None
+    assert result.retryable is None
 
 
 def test_run_provider_smoke_classifies_auth_error(
@@ -243,9 +245,15 @@ def test_run_provider_smoke_classifies_auth_error(
 
     result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
 
-    assert result.status == "auth_error"
+    assert result.status == "failed"
+    assert result.failure_class == "provider_auth_error"
+    assert result.error_type == "http_401"
+    assert result.http_status == 401
+    assert result.safe_error_message == "unauthorized"
     assert result.api_key_status == "configured"
     assert result.total_tokens is None
+    assert result.retryable is False
+    assert result.suggested_action == "fix_provider_env_or_configuration"
 
 
 def test_run_provider_smoke_sanitizes_network_error_detail(
@@ -262,9 +270,53 @@ def test_run_provider_smoke_sanitizes_network_error_detail(
 
     result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
 
-    assert result.status == "network_error"
+    assert result.status == "failed"
+    assert result.failure_class == "provider_network_error"
     assert result.error_type == "network_error"
-    assert result.error_detail is not None
-    assert "siliconflow-secret" not in result.error_detail
-    assert "Authorization" not in result.error_detail
-    assert len(result.error_detail) <= 200
+    assert result.raw_error_redacted is not None
+    assert "siliconflow-secret" not in result.raw_error_redacted
+    assert "Authorization" not in result.raw_error_redacted
+    assert len(result.raw_error_redacted) <= 500
+    assert result.retryable is True
+    assert result.suggested_action == "retry_and_compare_baseline_provider_health"
+
+
+def test_run_provider_smoke_classifies_quota_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_real_provider_env(monkeypatch)
+    readiness = build_model_provider_readiness_report(get_settings())
+
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
+        del request, timeout, context
+        raise HTTPError(
+            readiness.chat_completions_url,
+            429,
+            "Too Many Requests",
+            hdrs=HTTPMessage(),
+            fp=io.BytesIO(
+                b'{"error":{"message":"insufficient quota for current account",'
+                b'"code":"insufficient_quota"}}'
+            ),
+        )
+
+    result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
+
+    assert result.failure_class == "provider_quota_error"
+    assert result.retryable is False
+
+
+def test_run_provider_smoke_classifies_certificate_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_real_provider_env(monkeypatch)
+    readiness = build_model_provider_readiness_report(get_settings())
+
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
+        del request, timeout, context
+        raise URLError(ssl.SSLCertVerificationError("certificate verify failed"))
+
+    result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
+
+    assert result.failure_class == "provider_cert_error"
+    assert result.retryable is False

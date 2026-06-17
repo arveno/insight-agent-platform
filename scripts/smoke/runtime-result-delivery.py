@@ -29,6 +29,9 @@ from src.infrastructure.tool_registry.registry import ToolRegistry
 from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
 
 RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts" / "migration" / "runtime_foundation.sh"
+MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
+    REPO_ROOT / "scripts" / "migration" / "model_gateway_failure_verify.sh"
+)
 RUNTIME_RESULT_DELIVERY_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "runtime_result_delivery_verify.sh"
 )
@@ -289,6 +292,29 @@ def main() -> int:
             run_id, conversation_id = submit_and_dispatch(client)
 
             execution_result = build_worker().execute_run(run_id)
+            execution_attempt = execution_result["executionAttempt"]
+            if (
+                execution_result["analysisRun"]["status"] != "running"
+                or execution_result["analysisRun"]["phase"] != "synthesis"
+                or execution_attempt["status"] != "released"
+            ):
+                verify_env = os.environ.copy()
+                verify_env.update(env_overrides)
+                verify_env["IAP_RUNTIME_VERIFY_RUN_ID"] = run_id
+                failure_verify_result = subprocess.run(
+                    [str(MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT)],
+                    cwd=REPO_ROOT,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                    env=verify_env,
+                )
+                if failure_verify_result.stdout:
+                    print(failure_verify_result.stdout, end="")
+                if failure_verify_result.stderr:
+                    print(failure_verify_result.stderr, file=sys.stderr, end="")
+                return failure_verify_result.returncode or 1
+
             delivery_response = client.post(
                 f"/analysis-runs/{run_id}/delivery/complete",
                 json={"producerId": DELIVERY_PRODUCER_ID},
@@ -313,8 +339,6 @@ def main() -> int:
             )["items"]
 
         analysis_run = response_json_dict(delivery_response.json())
-        execution_attempt = execution_result["executionAttempt"]
-
         print(f"runId={analysis_run['runId']}")
         print(f"status={analysis_run['status']}")
         print(f"phase={analysis_run['phase']}")

@@ -15,6 +15,8 @@ def test_model_provider_readiness_smoke_script_exposes_masked_cli_surface() -> N
     assert 'parser.add_argument("--env-file"' in source
     assert 'parser.add_argument("--provider"' in source
     assert "apiKey=" in source
+    assert "failureClass=" in source
+    assert "suggestedAction=" in source
     assert "/opt/insight-agent-platform/env/model-provider.env" not in source
 
 

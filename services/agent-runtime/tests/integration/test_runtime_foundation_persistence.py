@@ -245,6 +245,14 @@ def build_model_call_record() -> ModelCallRecord:
         "status": "succeeded",
         "errorType": None,
         "errorMessage": None,
+        "failureClass": None,
+        "httpStatus": None,
+        "providerErrorCode": None,
+        "providerRequestId": None,
+        "timeoutMs": None,
+        "retryable": None,
+        "retryAfterMs": None,
+        "rawErrorRedacted": None,
         "startedAt": "2026-06-05T11:20:00+08:00",
         "completedAt": "2026-06-05T11:22:00+08:00",
     }
@@ -544,6 +552,38 @@ def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) 
     assert message_stream_repository.list_by_message_id("message-revenue-gap-q2-assistant") == (
         message_stream_records
     )
+
+
+def test_model_call_repository_round_trips_failure_metadata(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    failed_model_call = {
+        **build_model_call_record(),
+        "modelCallId": "model-call-analysis-q2-revenue-gap-timeout",
+        "provider": "siliconflow",
+        "modelId": "Qwen/Qwen3.5-4B",
+        "status": "failed",
+        "errorType": "network_error",
+        "errorMessage": "The read operation timed out",
+        "failureClass": "provider_timeout",
+        "httpStatus": None,
+        "providerErrorCode": None,
+        "providerRequestId": "request-timeout-001",
+        "timeoutMs": 30000,
+        "retryable": True,
+        "retryAfterMs": None,
+        "rawErrorRedacted": "The read operation timed out",
+    }
+
+    model_call_repository = ModelCallRepository(database)
+    model_call_repository.create(failed_model_call)
+
+    assert model_call_repository.list_by_run_id(RUN_ID) == [failed_model_call]
 
 
 def test_runtime_foundation_seed_and_query_verify(runtime_foundation_env: None) -> None:

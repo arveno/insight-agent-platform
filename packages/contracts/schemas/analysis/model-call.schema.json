@@ -62,43 +62,58 @@
     "status": {
       "description": "模型调用状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
       "type": "string",
-      "enum": [
-        "pending",
-        "running",
-        "succeeded",
-        "failed",
-        "skipped",
-        "cancelled"
-      ]
+      "enum": ["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
     },
     "errorType": {
       "description": "模型调用失败时的标准错误类型；成功或未结束时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "errorMessage": {
-      "description": "模型调用失败时的错误说明；成功或未结束时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "description": "模型调用失败时的安全错误说明；成功或未结束时为 null。",
+      "type": ["string", "null"]
+    },
+    "failureClass": {
+      "description": "稳定失败分类；成功或未结束时为 null。",
+      "type": ["string", "null"]
+    },
+    "httpStatus": {
+      "description": "HTTP provider failure 的状态码；非 HTTP 失败或成功时为 null。",
+      "type": ["integer", "null"]
+    },
+    "providerErrorCode": {
+      "description": "Provider body 中提取的稳定错误码；没有时为 null。",
+      "type": ["string", "null"]
+    },
+    "providerRequestId": {
+      "description": "Provider request id 或 trace id；没有时为 null。",
+      "type": ["string", "null"]
+    },
+    "timeoutMs": {
+      "description": "当 failureClass=provider_timeout 时记录的 timeout 门限毫秒数；其他情况为 null。",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "retryable": {
+      "description": "本次失败按运行策略是否允许 retry；成功或未结束时为 null。",
+      "type": ["boolean", "null"]
+    },
+    "retryAfterMs": {
+      "description": "Provider 返回的 retry-after 毫秒数；没有时为 null。",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "rawErrorRedacted": {
+      "description": "Provider 原始错误的安全脱敏摘要；成功或未结束时为 null。",
+      "type": ["string", "null"]
     },
     "startedAt": {
       "description": "模型调用开始时间；尚未开始时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     },
     "completedAt": {
       "description": "模型调用结束时间；运行中或尚未结束时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     }
   }

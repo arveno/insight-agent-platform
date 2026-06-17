@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import io
 import json
+import os
+import ssl
+import subprocess
 from collections.abc import Iterator
 from copy import deepcopy
+from http.client import HTTPMessage
+from pathlib import Path
 from typing import Any, cast
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request
 
 import pytest
@@ -23,6 +29,11 @@ from src.infrastructure.model_gateway.gateway import ModelGateway
 from src.infrastructure.tool_registry.registry import ToolRegistry
 from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
 from tests.integration.conftest import login_client, seed_runtime_foundation
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
+    REPO_ROOT / "scripts" / "migration" / "model_gateway_failure_verify.sh"
+)
 
 TASK_PAYLOAD = {
     "businessDomainId": "business-domain-revenue-quality",
@@ -136,9 +147,141 @@ def fake_model_http_429(
         url=request.full_url,
         code=429,
         msg="Too Many Requests",
-        hdrs=None,
-        fp=None,
+        hdrs=_http_headers({"Retry-After": "12", "X-Request-Id": "request-rate-limit-429"}),
+        fp=io.BytesIO(
+            b'{"error":{"message":"rate limit exceeded","code":"rate_limit_exceeded"}}'
+        ),
     )
+
+
+def fake_model_http_401(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (timeout, context)
+    raise HTTPError(
+        url=request.full_url,
+        code=401,
+        msg="Unauthorized",
+        hdrs=_http_headers({"X-Request-Id": "request-auth-401"}),
+        fp=io.BytesIO(b'{"error":{"message":"invalid api key","code":"invalid_api_key"}}'),
+    )
+
+
+def fake_model_http_404_model_not_found(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (timeout, context)
+    raise HTTPError(
+        url=request.full_url,
+        code=404,
+        msg="Not Found",
+        hdrs=_http_headers({"X-Request-Id": "request-model-404"}),
+        fp=io.BytesIO(b'{"error":{"message":"model not found","code":"model_not_found"}}'),
+    )
+
+
+def fake_model_http_503(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (timeout, context)
+    raise HTTPError(
+        url=request.full_url,
+        code=503,
+        msg="Service Unavailable",
+        hdrs=_http_headers({"Retry-After": "30", "X-Request-Id": "request-server-503"}),
+        fp=io.BytesIO(b'{"error":{"message":"service unavailable","code":"server_overloaded"}}'),
+    )
+
+
+def fake_model_timeout(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (request, timeout, context)
+    raise TimeoutError("The read operation timed out")
+
+
+def fake_model_invalid_json(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (request, timeout, context)
+    return FakeRawResponse(b"{not-json")
+
+
+def fake_model_quota_429(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (timeout, context)
+    raise HTTPError(
+        url=request.full_url,
+        code=429,
+        msg="Too Many Requests",
+        hdrs=_http_headers({"X-Request-Id": "request-quota-429"}),
+        fp=io.BytesIO(
+            b'{"error":{"message":"insufficient quota for current account",'
+            b'"code":"insufficient_quota"}}'
+        ),
+    )
+
+
+def fake_model_cert_error(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (request, timeout, context)
+    raise URLError(ssl.SSLCertVerificationError("certificate verify failed"))
+
+
+def fake_model_network_error(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (request, timeout, context)
+    raise URLError("connection reset by peer")
+
+
+def fake_model_worker_integration_bug(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (request, timeout, context)
+    raise RuntimeError("worker integration contract broke")
+
+
+class FakeRawResponse:
+    def __init__(self, payload: bytes, *, status: int = 200) -> None:
+        self._payload = payload
+        self.status = status
+
+    def read(self) -> bytes:
+        return self._payload
+
+    def __enter__(self) -> FakeRawResponse:
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> bool | None:
+        return None
+
+
+def _http_headers(values: dict[str, str]) -> HTTPMessage:
+    headers = HTTPMessage()
+    for key, value in values.items():
+        headers[key] = value
+    return headers
 
 
 def configure_model_gateway_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -147,7 +290,10 @@ def configure_model_gateway_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "IAP_MODEL_PROVIDER_SILICONFLOW_API_FORMAT",
         "openai_chat_completions",
     )
-    monkeypatch.setenv("IAP_MODEL_PROVIDER_SILICONFLOW_BASE_URL", "https://api.siliconflow.cn/v1")
+    monkeypatch.setenv(
+        "IAP_MODEL_PROVIDER_SILICONFLOW_BASE_URL",
+        "https://api.siliconflow.cn/v1",
+    )
     monkeypatch.setenv(
         "IAP_MODEL_PROVIDER_SILICONFLOW_CHAT_COMPLETIONS_PATH",
         "/chat/completions",
@@ -201,6 +347,27 @@ def build_worker(*, urlopen: object) -> AnalysisRunExecutionWorker:
     )
 
 
+def build_worker_with_gateway(*, model_gateway: ModelGateway) -> AnalysisRunExecutionWorker:
+    return AnalysisRunExecutionWorker(
+        database=RuntimeFoundationMysqlCli(),
+        model_gateway=model_gateway,
+        tool_registry=ToolRegistry(),
+    )
+
+
+def execute_worker(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    urlopen: object,
+) -> tuple[dict[str, Any], str]:
+    configure_model_gateway_env(monkeypatch)
+    dispatched = create_dispatched_submit_run(client)
+    run_id = dispatched["analysisRun"]["runId"]
+    worker = build_worker(urlopen=urlopen)
+    return worker.execute_run(run_id), run_id
+
+
 def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -229,6 +396,9 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     assert result["modelCall"]["inputTokens"] == 42
     assert result["modelCall"]["outputTokens"] == 18
     assert result["modelCall"]["latencyMs"] >= 0
+    assert result["modelCall"]["failureClass"] is None
+    assert result["modelCall"]["retryable"] is None
+    assert result["modelCall"]["rawErrorRedacted"] is None
 
     run_response = client.get(f"/analysis-runs/{run_id}")
     assert run_response.status_code == 200
@@ -292,32 +462,200 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     assert ReportRepository(database).list_by_run_id(run_id) == []
 
 
-def test_worker_execution_persists_failed_model_call_without_fake_completion(
+@pytest.mark.parametrize(
+    ("urlopen", "expected"),
+    [
+        (
+            fake_model_timeout,
+            {
+                "failureClass": "provider_timeout",
+                "errorType": "timeout_error",
+                "httpStatus": None,
+                "providerErrorCode": None,
+                "providerRequestId": None,
+                "timeoutMs": 30000,
+                "retryable": True,
+                "retryAfterMs": None,
+            },
+        ),
+        (
+            fake_model_http_429,
+            {
+                "failureClass": "provider_rate_limit",
+                "errorType": "http_429",
+                "httpStatus": 429,
+                "providerErrorCode": "rate_limit_exceeded",
+                "providerRequestId": "request-rate-limit-429",
+                "timeoutMs": None,
+                "retryable": True,
+                "retryAfterMs": 12000,
+            },
+        ),
+        (
+            fake_model_http_401,
+            {
+                "failureClass": "provider_auth_error",
+                "errorType": "http_401",
+                "httpStatus": 401,
+                "providerErrorCode": "invalid_api_key",
+                "providerRequestId": "request-auth-401",
+                "timeoutMs": None,
+                "retryable": False,
+                "retryAfterMs": None,
+            },
+        ),
+        (
+            fake_model_http_404_model_not_found,
+            {
+                "failureClass": "provider_model_not_found",
+                "errorType": "http_404",
+                "httpStatus": 404,
+                "providerErrorCode": "model_not_found",
+                "providerRequestId": "request-model-404",
+                "timeoutMs": None,
+                "retryable": False,
+                "retryAfterMs": None,
+            },
+        ),
+        (
+            fake_model_http_503,
+            {
+                "failureClass": "provider_5xx",
+                "errorType": "http_503",
+                "httpStatus": 503,
+                "providerErrorCode": "server_overloaded",
+                "providerRequestId": "request-server-503",
+                "timeoutMs": None,
+                "retryable": True,
+                "retryAfterMs": 30000,
+            },
+        ),
+        (
+            fake_model_invalid_json,
+            {
+                "failureClass": "provider_response_schema_error",
+                "errorType": "invalid_response_json",
+                "httpStatus": None,
+                "providerErrorCode": None,
+                "providerRequestId": None,
+                "timeoutMs": None,
+                "retryable": False,
+                "retryAfterMs": None,
+            },
+        ),
+    ],
+)
+def test_worker_execution_classifies_failed_model_calls(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    urlopen: object,
+    expected: dict[str, object],
 ) -> None:
-    configure_model_gateway_env(monkeypatch)
-    dispatched = create_dispatched_submit_run(client)
-    run_id = dispatched["analysisRun"]["runId"]
-
-    worker = build_worker(urlopen=fake_model_http_429)
-    result = worker.execute_run(run_id)
+    result, run_id = execute_worker(client, monkeypatch, urlopen=urlopen)
 
     assert result["analysisRun"]["runId"] == run_id
     assert result["analysisRun"]["status"] == "failed"
     assert result["analysisRun"]["phase"] == "synthesis"
     assert result["analysisRun"]["outcome"] == "model_failure"
+    assert result["analysisRun"]["failureCode"] == expected["failureClass"]
+    assert result["analysisRun"]["retryable"] == expected["retryable"]
     assert result["executionAttempt"]["status"] == "failed"
+    assert result["executionAttempt"]["failureCode"] == expected["failureClass"]
     assert result["toolCall"]["status"] == "succeeded"
     assert result["modelCall"]["status"] == "failed"
-    assert result["modelCall"]["errorType"] == "http_429"
+    assert result["modelCall"]["failureClass"] == expected["failureClass"]
+    assert result["modelCall"]["errorType"] == expected["errorType"]
+    assert result["modelCall"]["httpStatus"] == expected["httpStatus"]
+    assert result["modelCall"]["providerErrorCode"] == expected["providerErrorCode"]
+    assert result["modelCall"]["providerRequestId"] == expected["providerRequestId"]
+    assert result["modelCall"]["timeoutMs"] == expected["timeoutMs"]
+    assert result["modelCall"]["retryable"] == expected["retryable"]
+    assert result["modelCall"]["retryAfterMs"] == expected["retryAfterMs"]
+    assert result["modelCall"]["rawErrorRedacted"] is not None
+    assert "Authorization" not in result["modelCall"]["rawErrorRedacted"]
+    assert "Bearer " not in result["modelCall"]["rawErrorRedacted"]
 
     events = response_json_dict(client.get(f"/analysis-runs/{run_id}/events").json())["items"]
     event_types = [item["eventType"] for item in events]
     assert "model_call.failed" in event_types
     assert event_types[-1] == "run.failed"
     assert "run.completed" not in event_types
+    model_failed_event = next(item for item in events if item["eventType"] == "model_call.failed")
+    run_failed_event = next(item for item in events if item["eventType"] == "run.failed")
+    assert model_failed_event["errorCode"] == expected["failureClass"]
+    assert run_failed_event["errorCode"] == expected["failureClass"]
+    assert model_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
+    assert run_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
+
+    persisted_model_call = response_json_dict(
+        client.get(f"/analysis-runs/{run_id}/model-calls").json()
+    )["items"][0]
+    assert persisted_model_call == result["modelCall"]
 
     assert client.get(f"/analysis-runs/{run_id}/source-evidence").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/reports").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/decisions").json() == {"items": []}
+
+
+def test_worker_execution_classifies_worker_integration_bug(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeWorkerIntegrationGateway:
+        def describe_target(self) -> object:
+            return type(
+                "Target",
+                (),
+                {"provider": "siliconflow", "model_id": "Qwen/Qwen3.5-4B"},
+            )()
+
+        def generate_text(self, **_: object) -> object:
+            raise RuntimeError("worker integration contract broke")
+
+    configure_model_gateway_env(monkeypatch)
+    dispatched = create_dispatched_submit_run(client)
+    run_id = dispatched["analysisRun"]["runId"]
+    worker = build_worker_with_gateway(
+        model_gateway=cast(ModelGateway, FakeWorkerIntegrationGateway())
+    )
+    result = worker.execute_run(run_id)
+
+    assert result["analysisRun"]["status"] == "failed"
+    assert result["analysisRun"]["failureCode"] == "worker_integration_bug"
+    assert result["analysisRun"]["retryable"] is False
+    assert result["executionAttempt"]["failureCode"] == "worker_integration_bug"
+    assert result["modelCall"]["failureClass"] == "worker_integration_bug"
+    assert result["modelCall"]["errorType"] == "worker_integration_error"
+    assert result["modelCall"]["errorMessage"] == "worker integration contract broke"
+    assert result["modelCall"]["retryable"] is False
+
+    events = response_json_dict(client.get(f"/analysis-runs/{run_id}/events").json())["items"]
+    model_failed_event = next(item for item in events if item["eventType"] == "model_call.failed")
+    run_failed_event = next(item for item in events if item["eventType"] == "run.failed")
+    assert model_failed_event["errorCode"] == "worker_integration_bug"
+    assert run_failed_event["errorCode"] == "worker_integration_bug"
+
+
+def test_worker_failure_query_verify_reports_structured_timeout_classification(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, run_id = execute_worker(client, monkeypatch, urlopen=fake_model_timeout)
+
+    verify_result = subprocess.run(
+        [str(MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT), run_id, "provider_timeout"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+        check=False,
+    )
+
+    assert verify_result.returncode == 0, verify_result.stderr
+    assert "failureClass=provider_timeout" in verify_result.stdout
+    assert "analysisRun.failureCode=provider_timeout" in verify_result.stdout
+    assert "run_events.model_call.failed.errorCode=provider_timeout" in verify_result.stdout
+    assert "run_events.run.failed.errorCode=provider_timeout" in verify_result.stdout
+    assert "retryable=1" in verify_result.stdout
+    assert "secrets.authorization.exposed=0" in verify_result.stdout
+    assert "suggestedAction=retry_and_compare_baseline_provider_health" in verify_result.stdout
