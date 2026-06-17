@@ -32,6 +32,7 @@ bash scripts/deploy/ecs/bootstrap.sh
 
 - 安装基础依赖
 - 通过 Docker 官方 apt repository 安装 Docker Engine 与 Docker Compose plugin
+- 安装 ECS host-side remote smoke 所需的 `uv`
 - 创建 `/opt/insight-agent-platform/**` 目录布局
 - 创建默认 `2G` swap（如果系统尚无 active swap）
 - 启用并启动 Docker
@@ -74,6 +75,7 @@ bash scripts/deploy/ecs/verify-bootstrap.sh --hello-world
 - swap status
 - Docker version
 - Docker Compose version
+- `uv` version
 - Docker service status
 - `/opt/insight-agent-platform/**` 目录布局
 - 当前监听端口
@@ -235,11 +237,23 @@ pnpm deploy:ecs-preview
 - 本地执行 `pnpm --dir apps/web build`
 - 同步 `apps/web/dist` 到 `/opt/insight-agent-platform/shared/frontend`
 - 同步 `deploy/docker/**` 到 `/opt/insight-agent-platform/deploy/docker`
-- 同步可重复的 runtime build context 到 `/opt/insight-agent-platform/repo`
+- 同步已部署源码快照到 `/opt/insight-agent-platform/current`
+- 确保 ECS host 上可用 `uv`
 - 在 ECS 上 `docker compose build agent-runtime`
 - 在 ECS 上 `docker compose up -d mysql redis agent-runtime caddy`
 - 运行 `migration -> seed -> query verify`
 - 输出 `/login` 访问地址
+
+其中 ECS preview `query verify` 允许环境中已经存在累计的 runtime artifact 行；它验证 seed minimum 和链路 invariant，不要求历史 runtime row_count 固定不变。
+
+remote runtime delivery smoke 标准入口：
+
+```bash
+cd /opt/insight-agent-platform/current
+UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" \
+uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py \
+  --env-file /opt/insight-agent-platform/env/model-provider.env
+```
 
 只做 dry-run：
 
