@@ -152,10 +152,13 @@ Agent Runtime 必须可以通过 Docker 启动。
 - `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
 - `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`；用于 infra foundation 验证，不代表 runnable app deploy。
 - `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL localhost-only bind / ping、Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
+- `scripts/deploy/ecs/verify-preview-small-config.sh`：本地 preview-small compose guard；使用 example env 执行 `docker compose config --services`，默认服务只允许 `mysql / redis / caddy / agent-runtime`，并显式拒绝 `agent-worker / milvus / milvus-lite`。
+- `scripts/deploy/ecs/check-preview-small-capacity.sh`：capacity preflight；用于人工在 ECS 上或显式授权的远端执行前做内存、load、根分区和 swap 状态检查，不运行 Docker。
+- `scripts/deploy/ecs/restore-preview-small-runtime-only.sh`：runtime-only restore 入口；必须由 human 手工执行或显式远端授权后执行，只恢复 `mysql / redis / caddy / agent-runtime`，不运行 `uv`、`pytest`、frontend tests 或 full smoke。
 - `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up，以及 `migration -> seed -> query verify`。当前默认 deploy 路径不包含 `agent-worker`，也不自动触发 host-side full smoke。
 - ECS preview `query verify` 必须兼容已累计的 runtime artifact；seed baseline 使用 minimum/invariant 校验，不得依赖历史 row_count 固定不变。
 - `scripts/smoke/ecs-preview-lightweight.sh`：ECS `preview-small` 轻量 smoke 入口；复用 auth/session curl 级检查，不运行 `uv`、`pytest`、Python full smoke、provider 模型或 `agent-worker`。
-- `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/runtime/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
+- `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
 - `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
 
 ECS compose infra 的基础镜像来源通过 compose env 配置，不应再依赖 ECS 手工 `docker tag redis:7` 作为正式流程。Preview 环境可以把 `REDIS_IMAGE` 指向 ACR VPC registry，例如 `<registry-vpc>/<namespace>/redis:7`；`ACR Personal Edition` 仅作为 preview 镜像来源，不作为 production registry。Production 后续应切换到 `ACR Enterprise Edition` 或等价生产级 registry。
@@ -233,13 +236,18 @@ scripts/smoke/
 当前 `preview-small` smoke 分层固定如下：
 
 - Local full smoke：`scripts/smoke/runtime-result-delivery.py`，标准运行位置是开发机，标准 provider env 是 `.env.model.local`。
-- ECS lightweight smoke：`scripts/smoke/ecs-preview-lightweight.sh`，复用 `scripts/smoke/ecs-preview-auth.sh` 的 curl/auth/session/workspace 检查，不调用 provider 模型，不依赖 `agent-worker`，不运行 `uv` full smoke。
+- ECS lightweight smoke：`scripts/smoke/ecs-preview-lightweight.sh`，复用 `scripts/smoke/ecs-preview-auth.sh` 的 curl/auth/session/workspace 检查，不调用 provider 模型，不依赖 `agent-worker`，不运行 `uv` full smoke；health check 固定使用 `/health`。
 - ECS host-side full smoke：不是当前 `preview-small` 标准路径；只有 human 明确授权并设置 `IAP_ALLOW_ECS_HOST_FULL_SMOKE=1` 时，才允许手工运行。
+
+为避免再次出现 preview-small 默认栈越界或资源耗尽，当前额外要求如下：
+
+- preview-small compose guard 必须先通过 `scripts/deploy/ecs/verify-preview-small-config.sh`。
+- capacity preflight 必须在任何人工恢复或显式远端恢复前通过 `scripts/deploy/ecs/check-preview-small-capacity.sh`。
+- runtime-only restore 路径固定为 `scripts/deploy/ecs/restore-preview-small-runtime-only.sh`；该路径只允许恢复 `mysql / redis / caddy / agent-runtime`。
 
 至少覆盖：
 
 - `/health`
-- `/runtime/health`
 - `/login`
 - `/auth/login`
 - `/auth/me`
@@ -259,6 +267,9 @@ scripts/smoke/
 - ECS lightweight smoke 标准入口：`bash scripts/smoke/ecs-preview-lightweight.sh`
 - ECS host-side full smoke 只作为人肉授权的手工 fallback：`cd /opt/insight-agent-platform/current && IAP_ALLOW_ECS_HOST_FULL_SMOKE=1 UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file /opt/insight-agent-platform/env/model-provider.env`
 - 上述 host-side fallback 不是当前 `preview-small` 标准验证路径；如需执行，`uv` 依赖源仍应与 preview image build 保持一致，未显式覆盖时默认走 `https://mirrors.aliyun.com/pypi/simple/`。
+- preview-small compose guard 入口：`bash scripts/deploy/ecs/verify-preview-small-config.sh`
+- capacity preflight 入口：`bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- runtime-only restore 入口：`IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
 - `deploy-preview-app.sh` 必须把 `scripts/smoke/runtime-result-delivery.py`、`database/mysql/queries/*.sql`、`services/agent-runtime/**` 同步到 `/opt/insight-agent-platform/current`
 - 当前 SiliconFlow smoke 默认模型固定为 `Qwen/Qwen2.5-7B-Instruct`
 - `Qwen/Qwen3.5-4B` 与 `Qwen/Qwen3-8B` timeout 作为 provider/model health evidence 记录在 `#164`，不是新的 provider secret 来源

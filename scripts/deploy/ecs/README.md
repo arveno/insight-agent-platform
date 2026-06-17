@@ -31,6 +31,12 @@
 - frontend tests
 - heavy diagnostics
 
+强制保护入口：
+
+- `bash scripts/deploy/ecs/verify-preview-small-config.sh`
+- `bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- `IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
+
 ## 前置条件
 
 - 目标主机是 `Ubuntu 24.04` 或兼容 Docker 官方 apt 仓库的 `Debian` 环境。
@@ -374,6 +380,8 @@ bash scripts/rollback/ecs-compose-infra.sh --reset-data
 
 How to restore runtime-only preview safely:
 
+- run `bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- run `IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
 - do not run host-side full smoke
 - do not start worker
 - validate only `/health` and lightweight endpoints

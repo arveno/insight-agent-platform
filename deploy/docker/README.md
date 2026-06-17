@@ -13,5 +13,6 @@
 
 Current preview-small compose is runtime-only.
 `agent-worker` is not part of the default small preview profile.
+Use `scripts/deploy/ecs/verify-preview-small-config.sh` to enforce that the default compose service set stays limited to `mysql / redis / caddy / agent-runtime`.
 
 本阶段完成的是 preview runnable app slice，不是完整 `#164`。当前仍未在这里完成 `agent-worker`、`Milvus Lite`、完整 runtime smoke 或 rollback versioning。
