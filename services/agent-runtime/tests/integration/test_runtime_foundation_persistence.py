@@ -39,6 +39,8 @@ from src.modules.analysis_runs.message_streaming import (
     RuntimeMessageStreamService,
     build_message_stream_record,
     build_placeholder_assistant_message,
+    is_delivery_promotable_placeholder,
+    validate_message_stream_replay_message,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -650,6 +652,191 @@ def test_runtime_message_stream_service_allows_idempotent_duplicate_sequence_pay
     assert persisted_rows == initial_stream_rows
 
 
+def test_runtime_message_stream_service_start_complete_lifecycle_keeps_placeholder_promotable(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=MessageStreamRepository(database),
+    )
+    assistant_message = service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    completed_message = service.complete_assistant_stream_from_model_output(
+        message=assistant_message,
+        model_call=build_model_call_record(),
+        output_text="收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+    )
+
+    persisted_rows = MessageStreamRepository(database).list_by_message_id(completed_message["messageId"])
+    terminal_rows = [
+        row
+        for row in persisted_rows
+        if row["eventType"] in {"stream.completed", "stream.failed", "stream.cancelled"}
+    ]
+
+    assert completed_message["status"] == "streaming"
+    assert completed_message["completedAt"] is None
+    assert is_delivery_promotable_placeholder(
+        completed_message,
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        run_id=RUN_ID,
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    assert [row["sequence"] for row in persisted_rows] == list(range(len(persisted_rows)))
+    assert persisted_rows[0]["eventType"] == "stream.started"
+    assert persisted_rows[-1]["eventType"] == "stream.completed"
+    assert len(terminal_rows) == 1
+
+
+def test_runtime_message_stream_service_fail_lifecycle_uses_failure_class_and_is_idempotent(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=MessageStreamRepository(database),
+    )
+    assistant_message = service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    failed_model_call = {
+        **build_model_call_record(),
+        "status": "failed",
+        "errorType": "timeout_error",
+        "errorMessage": "The read operation timed out",
+        "failureClass": "provider_timeout",
+        "completedAt": "2026-06-05T11:24:00+08:00",
+        "retryable": True,
+        "timeoutMs": 30000,
+        "rawErrorRedacted": "The read operation timed out",
+    }
+
+    failed_message = service.fail_assistant_stream_from_model_call(
+        message=assistant_message,
+        model_call=failed_model_call,
+    )
+    repeated_message = service.fail_assistant_stream_from_model_call(
+        message=failed_message,
+        model_call=failed_model_call,
+    )
+
+    persisted_rows = MessageStreamRepository(database).list_by_message_id(failed_message["messageId"])
+    terminal_rows = [
+        row
+        for row in persisted_rows
+        if row["eventType"] in {"stream.completed", "stream.failed", "stream.cancelled"}
+    ]
+
+    assert repeated_message == failed_message
+    assert failed_message["status"] == "failed"
+    assert failed_message["completedAt"] == "2026-06-05T11:24:00+08:00"
+    assert persisted_rows[0]["eventType"] == "stream.started"
+    assert persisted_rows[-1]["eventType"] == "stream.failed"
+    assert persisted_rows[-1]["errorCode"] == "provider_timeout"
+    assert persisted_rows[-1]["errorMessage"] == "The read operation timed out"
+    assert len(terminal_rows) == 1
+
+
+def test_runtime_message_stream_service_rejects_terminal_message_without_terminal_stream(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=MessageStreamRepository(database),
+    )
+    assistant_message = service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    with pytest.raises(MessageStreamStateError, match="Terminal assistant Message requires"):
+        service.persist_runtime_message_stream(
+            message={
+                **assistant_message,
+                "status": "failed",
+                "completedAt": "2026-06-05T11:24:00+08:00",
+            },
+        )
+
+
+def test_runtime_message_stream_service_rejects_second_terminal_event(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=MessageRepository(database),
+        message_stream_repository=MessageStreamRepository(database),
+    )
+    assistant_message = service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+    completed_message = service.complete_assistant_stream_from_model_output(
+        message=assistant_message,
+        model_call=build_model_call_record(),
+        output_text="收入增速下滑主要来自华东核心渠道确认延迟与促销库存错配。",
+    )
+    failed_model_call = {
+        **build_model_call_record(),
+        "status": "failed",
+        "errorType": "timeout_error",
+        "errorMessage": "The read operation timed out",
+        "failureClass": "provider_timeout",
+        "completedAt": "2026-06-05T11:24:00+08:00",
+        "retryable": True,
+        "timeoutMs": 30000,
+        "rawErrorRedacted": "The read operation timed out",
+    }
+
+    with pytest.raises(MessageStreamStateError, match="exact same payload|after a terminal event"):
+        service.fail_assistant_stream_from_model_call(
+            message=completed_message,
+            model_call=failed_model_call,
+        )
+
+
 def test_runtime_message_stream_service_rejects_duplicate_sequence_with_different_payload(
     runtime_foundation_env: None,
 ) -> None:
@@ -792,6 +979,14 @@ def test_runtime_message_stream_service_rejects_append_after_terminal(
                     occurred_at="2026-06-05T11:25:00+08:00",
                 )
             ],
+        )
+
+
+def test_validate_message_stream_replay_rejects_non_assistant_message() -> None:
+    with pytest.raises(MessageStreamStateError, match="assistant Message owner"):
+        validate_message_stream_replay_message(
+            message=build_message_records()[0],
+            has_message_streams=False,
         )
 
 

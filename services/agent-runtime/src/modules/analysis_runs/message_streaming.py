@@ -9,6 +9,7 @@ from src.infrastructure.database.runtime_foundation import (
     MessageRepository,
     MessageStreamRecord,
     MessageStreamRepository,
+    ModelCallRecord,
 )
 
 PRE_DELIVERY_MESSAGE_STATUSES = frozenset({"created", "streaming"})
@@ -197,6 +198,37 @@ def validate_message_stream_chain(
     if terminal_indexes and terminal_indexes[0] != len(message_streams) - 1:
         raise MessageStreamStateError("MessageStream terminal event must be the final sequence.")
 
+    terminal_event = (
+        message_streams[terminal_indexes[0]]
+        if terminal_indexes
+        else None
+    )
+    if message["status"] in TERMINAL_MESSAGE_STREAM_STATUSES:
+        expected_terminal_event_type = {
+            "completed": "stream.completed",
+            "failed": "stream.failed",
+            "cancelled": "stream.cancelled",
+        }[message["status"]]
+        if terminal_event is None:
+            raise MessageStreamStateError(
+                "Terminal assistant Message requires a terminal MessageStream event."
+            )
+        if terminal_event["eventType"] != expected_terminal_event_type:
+            raise MessageStreamStateError(
+                "Assistant Message terminal status must match the terminal MessageStream outcome."
+            )
+
+    if terminal_event is not None and terminal_event["eventType"] in {
+        "stream.failed",
+        "stream.cancelled",
+    }:
+        expected_message_status = MESSAGE_STREAM_EVENT_STATUS[terminal_event["eventType"]]
+        if message["status"] != expected_message_status:
+            raise MessageStreamStateError(
+                "Failed or cancelled MessageStream terminal event must match assistant Message "
+                "status."
+            )
+
 
 def validate_message_stream_replay_message(
     *,
@@ -232,12 +264,15 @@ class RuntimeMessageStreamService:
             proposed_message=message,
         )
         existing_streams = self.message_stream_repository.list_by_message_id(message["messageId"])
-        validate_message_stream_chain(message=resolved_message, message_streams=existing_streams)
 
         rows_to_persist = _resolve_message_stream_appends(
             existing_message_streams=existing_streams,
             proposed_message_streams=message_streams,
             message=resolved_message,
+        )
+        validate_message_stream_chain(
+            message=resolved_message,
+            message_streams=[*existing_streams, *rows_to_persist],
         )
 
         should_write_message = existing_message is None or existing_message != resolved_message
@@ -249,6 +284,120 @@ class RuntimeMessageStreamService:
             message_streams=rows_to_persist,
         )
         return resolved_message
+
+    def start_assistant_stream(
+        self,
+        *,
+        analysis_task_id: str,
+        conversation_id: str,
+        created_at: str,
+        run_id: str,
+        tool_call_ids: list[str],
+        turn_id: str,
+    ) -> MessageRecord:
+        placeholder_message = build_placeholder_assistant_message(
+            analysis_task_id=analysis_task_id,
+            conversation_id=conversation_id,
+            created_at=created_at,
+            run_id=run_id,
+            tool_call_ids=tool_call_ids,
+            turn_id=turn_id,
+        )
+        started_stream = build_message_stream_record(
+            conversation_id=conversation_id,
+            message_id=placeholder_message["messageId"],
+            run_id=run_id,
+            sequence=0,
+            event_type="stream.started",
+            delta="",
+            occurred_at=created_at,
+        )
+        return self.persist_runtime_message_stream(
+            message=placeholder_message,
+            message_streams=[started_stream],
+        )
+
+    def complete_assistant_stream_from_model_output(
+        self,
+        *,
+        message: MessageRecord,
+        model_call: ModelCallRecord,
+        output_text: str,
+    ) -> MessageRecord:
+        occurred_at = _message_stream_occurred_at(message=message, model_call=model_call)
+        delta_chunks = chunk_message_stream_deltas(output_text)
+        completed_streams = [
+            build_message_stream_record(
+                conversation_id=message["conversationId"],
+                message_id=message["messageId"],
+                run_id=message["runId"],
+                sequence=index + 1,
+                event_type="stream.delta",
+                delta=chunk,
+                occurred_at=occurred_at,
+            )
+            for index, chunk in enumerate(delta_chunks)
+        ]
+        completed_streams.append(
+            build_message_stream_record(
+                conversation_id=message["conversationId"],
+                message_id=message["messageId"],
+                run_id=message["runId"],
+                sequence=len(completed_streams) + 1,
+                event_type="stream.completed",
+                delta="",
+                occurred_at=occurred_at,
+            )
+        )
+        updated_message = {
+            **message,
+            "content": output_text,
+            "status": "streaming",
+            "completedAt": None,
+        }
+        return self.persist_runtime_message_stream(
+            message=updated_message,
+            message_streams=completed_streams,
+        )
+
+    def fail_assistant_stream_from_model_call(
+        self,
+        *,
+        message: MessageRecord,
+        model_call: ModelCallRecord,
+    ) -> MessageRecord:
+        failure_class = model_call["failureClass"]
+        if not failure_class:
+            raise MessageStreamStateError(
+                "Failed assistant stream requires model_call.failureClass."
+            )
+
+        occurred_at = _message_stream_occurred_at(message=message, model_call=model_call)
+        existing_streams = self.message_stream_repository.list_by_message_id(message["messageId"])
+        terminal_stream = _terminal_message_stream(existing_streams)
+        terminal_sequence = (
+            terminal_stream["sequence"] if terminal_stream is not None else len(existing_streams)
+        )
+        failed_stream = build_message_stream_record(
+            conversation_id=message["conversationId"],
+            message_id=message["messageId"],
+            run_id=message["runId"],
+            sequence=terminal_sequence,
+            event_type="stream.failed",
+            delta="",
+            occurred_at=occurred_at,
+            error_code=failure_class,
+            error_message=model_call["errorMessage"],
+        )
+        failed_message = {
+            **message,
+            "status": "failed",
+            "completedAt": occurred_at,
+        }
+        return self.persist_runtime_message_stream(
+            message=failed_message,
+            message_streams=[failed_stream],
+        )
 
     def _get_existing_message(self, message_id: str) -> MessageRecord | None:
         try:
@@ -389,3 +538,22 @@ def _resolve_message_stream_appends(
 
     validate_message_stream_chain(message=message, message_streams=combined_message_streams)
     return rows_to_persist
+
+
+def _terminal_message_stream(
+    message_streams: Sequence[MessageStreamRecord],
+) -> MessageStreamRecord | None:
+    if (
+        message_streams
+        and message_streams[-1]["eventType"] in TERMINAL_MESSAGE_STREAM_EVENT_TYPES
+    ):
+        return message_streams[-1]
+    return None
+
+
+def _message_stream_occurred_at(
+    *,
+    message: MessageRecord,
+    model_call: ModelCallRecord,
+) -> str:
+    return model_call["completedAt"] or model_call["startedAt"] or message["createdAt"]

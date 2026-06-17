@@ -36,6 +36,11 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "model_gateway_failure_verify.sh"
 )
+TERMINAL_MESSAGE_STREAM_EVENT_TYPES = {
+    "stream.completed",
+    "stream.failed",
+    "stream.cancelled",
+}
 
 TASK_PAYLOAD = {
     "businessDomainId": "business-domain-revenue-quality",
@@ -389,6 +394,22 @@ def execute_worker(
     return worker.execute_run(run_id), run_id, conversation_id
 
 
+def assert_message_stream_lifecycle(
+    replay_items: list[dict[str, Any]],
+    *,
+    terminal_event_type: str,
+) -> dict[str, Any]:
+    assert replay_items
+    assert [item["sequence"] for item in replay_items] == list(range(len(replay_items)))
+    terminal_items = [
+        item for item in replay_items if item["eventType"] in TERMINAL_MESSAGE_STREAM_EVENT_TYPES
+    ]
+    assert len(terminal_items) == 1
+    assert replay_items[-1]["eventType"] == terminal_event_type
+    assert terminal_items[0] == replay_items[-1]
+    return replay_items[-1]
+
+
 def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -487,10 +508,13 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
             headers={"accept": "application/json"},
         ).json()
     )["items"]
-    assert replay_items
-    assert [item["sequence"] for item in replay_items] == list(range(len(replay_items)))
+    terminal_item = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.completed",
+    )
     assert replay_items[0]["eventType"] == "stream.started"
-    assert replay_items[-1]["eventType"] == "stream.completed"
+    assert terminal_item["errorCode"] is None
+    assert terminal_item["errorMessage"] is None
 
     database = RuntimeFoundationMysqlCli()
     assert len(ExecutionAttemptRepository(database).list_by_run_id(run_id)) == 1
@@ -668,6 +692,7 @@ def test_worker_execution_classifies_failed_model_calls(
     assert [message["role"] for message in messages] == ["user", "assistant"]
     assistant_message = messages[-1]
     assert assistant_message["status"] == "failed"
+    assert assistant_message["completedAt"] is not None
 
     replay_items = response_json_dict(
         client.get(
@@ -675,7 +700,13 @@ def test_worker_execution_classifies_failed_model_calls(
             headers={"accept": "application/json"},
         ).json()
     )["items"]
-    assert [item["eventType"] for item in replay_items] == ["stream.started", "stream.failed"]
+    failed_terminal = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.failed",
+    )
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert failed_terminal["errorCode"] == expected["failureClass"]
+    assert failed_terminal["errorMessage"] == result["modelCall"]["errorMessage"]
 
 
 def test_worker_execution_classifies_worker_integration_bug(
@@ -696,6 +727,7 @@ def test_worker_execution_classifies_worker_integration_bug(
     configure_model_gateway_env(monkeypatch)
     dispatched = create_dispatched_submit_run(client)
     run_id = dispatched["analysisRun"]["runId"]
+    conversation_id = dispatched["submit"]["conversation"]["conversationId"]
     worker = build_worker_with_gateway(
         model_gateway=cast(ModelGateway, FakeWorkerIntegrationGateway())
     )
@@ -715,6 +747,29 @@ def test_worker_execution_classifies_worker_integration_bug(
     run_failed_event = next(item for item in events if item["eventType"] == "run.failed")
     assert model_failed_event["errorCode"] == "worker_integration_bug"
     assert run_failed_event["errorCode"] == "worker_integration_bug"
+    assert run_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
+
+    messages = response_json_dict(
+        client.get(f"/conversations/{conversation_id}/messages").json()
+    )["items"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["status"] == "failed"
+    assert assistant_message["completedAt"] is not None
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    failed_terminal = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.failed",
+    )
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert failed_terminal["errorCode"] == "worker_integration_bug"
+    assert failed_terminal["errorMessage"] == result["modelCall"]["errorMessage"]
 
 
 def test_worker_failure_query_verify_reports_structured_timeout_classification(

@@ -1246,6 +1246,11 @@ RunEvent 不承载 token delta。
 前端实时渲染 assistant 增量时，事实源是 MessageStream，不是 RunEvent。
 JSON replay 只返回 persisted MessageStream rows，不得重新调用模型或再生成 Message / Report / Decision / SourceEvidence。
 replay 必须验证 `Conversation / Message / AnalysisRun / AnalysisTask` 的 owner-scoped chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 返回 `404`。
+一旦 runtime 写入 assistant placeholder 与 `stream.started`，后续 MessageStream 必须最终进入且只进入一个 terminal event。
+terminal event 只能是 `stream.completed`、`stream.failed` 或 `stream.cancelled`，并且必须是最后一条 sequence。
+`RuntimeMessageStreamService` 是 runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口；worker_service 只调用 start / complete / fail lifecycle API，不得散落维护 terminal sequence、terminal uniqueness 或 assistant terminal status。
+`stream.failed.errorCode` 必须使用 `ModelCall.failureClass`，`stream.failed.errorMessage` 必须使用已脱敏的 `ModelCall.errorMessage`。
+failure path 也必须 terminalize assistant Message / MessageStream；不得留下只有 `stream.started` 的半开 stream。
 ```
 
 ---

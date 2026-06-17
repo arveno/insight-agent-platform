@@ -35,9 +35,6 @@ from src.infrastructure.tool_registry.registry import ToolRegistry, ToolRegistry
 from src.modules.analysis_runs.lifecycle_service import AnalysisRunLifecycleService
 from src.modules.analysis_runs.message_streaming import (
     RuntimeMessageStreamService,
-    build_message_stream_record,
-    build_placeholder_assistant_message,
-    chunk_message_stream_deltas,
 )
 
 PROMPT_VERSION_ID = "prompt-runtime-worker-synthesis-v1"
@@ -464,7 +461,7 @@ class AnalysisRunExecutionWorker:
             model_call=running_model_call,
             run_events=[started_event],
         )
-        placeholder_message = build_placeholder_assistant_message(
+        assistant_message = self._message_stream_service.start_assistant_stream(
             analysis_task_id=state["analysis_task"]["analysisTaskId"],
             conversation_id=state["analysis_task"]["conversationId"],
             created_at=started_at,
@@ -473,19 +470,6 @@ class AnalysisRunExecutionWorker:
                 [state["tool_call"]["toolCallId"]] if state["tool_call"] is not None else []
             ),
             turn_id=state["user_submit_message"]["turnId"],
-        )
-        started_stream = build_message_stream_record(
-            conversation_id=placeholder_message["conversationId"],
-            message_id=placeholder_message["messageId"],
-            run_id=run["runId"],
-            sequence=0,
-            event_type="stream.started",
-            delta="",
-            occurred_at=started_at,
-        )
-        assistant_message = self._message_stream_service.persist_runtime_message_stream(
-            message=placeholder_message,
-            message_streams=[started_stream],
         )
         next_sequence = state["next_sequence"] + 1
 
@@ -498,26 +482,9 @@ class AnalysisRunExecutionWorker:
                 started_at=started_at,
             )
         except ModelGatewayInvocationError as exc:
-            failed_message = _update_message(
-                assistant_message,
-                content=assistant_message["content"],
-                status="failed",
-                completedAt=exc.model_call["completedAt"] or started_at,
-            )
-            failed_stream = build_message_stream_record(
-                conversation_id=assistant_message["conversationId"],
-                message_id=assistant_message["messageId"],
-                run_id=run["runId"],
-                sequence=1,
-                event_type="stream.failed",
-                delta="",
-                occurred_at=exc.model_call["completedAt"] or started_at,
-                error_code=exc.model_call["errorType"],
-                error_message=exc.model_call["errorMessage"],
-            )
-            self._message_stream_service.persist_runtime_message_stream(
-                message=failed_message,
-                message_streams=[failed_stream],
+            failed_message = self._message_stream_service.fail_assistant_stream_from_model_call(
+                message=assistant_message,
+                model_call=exc.model_call,
             )
             failed_attempt = _update_execution_attempt(
                 state["execution_attempt"],
@@ -604,6 +571,10 @@ class AnalysisRunExecutionWorker:
                 phase="synthesis",
                 retryable=failed_model_call["retryable"],
             )
+            failed_message = self._message_stream_service.fail_assistant_stream_from_model_call(
+                message=assistant_message,
+                model_call=failed_model_call,
+            )
             failure_events = [
                 self._build_run_event(
                     event_type="model_call.failed",
@@ -639,45 +610,19 @@ class AnalysisRunExecutionWorker:
             return {
                 **state,
                 "analysis_run": failed_run,
+                "assistant_message": failed_message,
                 "execution_attempt": failed_attempt,
                 "model_call": failed_model_call,
                 "model_output": None,
                 "next_sequence": next_sequence + len(failure_events),
             }
 
-        delta_chunks = chunk_message_stream_deltas(model_result.output_text)
-        completed_streams = [
-            build_message_stream_record(
-                conversation_id=assistant_message["conversationId"],
-                message_id=assistant_message["messageId"],
-                run_id=run["runId"],
-                sequence=index + 1,
-                event_type="stream.delta",
-                delta=chunk,
-                occurred_at=model_result.model_call["completedAt"] or started_at,
+        persisted_message = (
+            self._message_stream_service.complete_assistant_stream_from_model_output(
+                message=assistant_message,
+                model_call=model_result.model_call,
+                output_text=model_result.output_text,
             )
-            for index, chunk in enumerate(delta_chunks)
-        ]
-        completed_streams.append(
-            build_message_stream_record(
-                conversation_id=assistant_message["conversationId"],
-                message_id=assistant_message["messageId"],
-                run_id=run["runId"],
-                sequence=len(completed_streams) + 1,
-                event_type="stream.completed",
-                delta="",
-                occurred_at=model_result.model_call["completedAt"] or started_at,
-            )
-        )
-        updated_message = _update_message(
-            assistant_message,
-            content=model_result.output_text,
-            status="streaming",
-            completedAt=None,
-        )
-        persisted_message = self._message_stream_service.persist_runtime_message_stream(
-            message=updated_message,
-            message_streams=completed_streams,
         )
         completed_event = self._build_run_event(
             event_type="model_call.completed",
@@ -856,13 +801,6 @@ def _update_tool_call(
     **updates: object,
 ) -> ToolCallRecord:
     return cast(ToolCallRecord, {**tool_call, **updates})
-
-
-def _update_message(
-    message: MessageRecord,
-    **updates: object,
-) -> MessageRecord:
-    return cast(MessageRecord, {**message, **updates})
 
 
 def _generate_canonical_id(prefix: str) -> str:
