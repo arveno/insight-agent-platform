@@ -1199,6 +1199,8 @@ conversationId / messageId / turnId / messageStreamId 已进入正式 contracts�
 
 ```text
 Conversation 承接会话主线和 currentRunId 引用。
+Same conversation 保持线性主线；同一时刻最多只允许一个 non-terminal AnalysisRun / assistant stream。
+Different conversations 可以并发运行与并发 streaming。
 Message 展示 conversation 内容。
 MessageStream 传输流式输出。
 MessageStream 是 assistant Message child resource，不是 RunEvent alias。
@@ -1229,8 +1231,11 @@ GET /conversations/{conversationId}/messages/{messageId}/stream
 当前冻结的 read surface：
 
 ```text
+GET /conversations
+GET /conversations/{conversationId}
 GET /conversations/{conversationId}/messages
 GET /conversations/{conversationId}/messages/{messageId}/stream
+GET /analysis-runs/{runId}
 GET /analysis-runs/{runId}/tool-calls
 GET /analysis-runs/{runId}/model-calls
 GET /analysis-runs/{runId}/source-evidence
@@ -1244,6 +1249,9 @@ GET /analysis-runs/{runId}/decisions
 stream.completed 表示消息流结束，不表示 AnalysisRun 已 completed。
 RunEvent 不承载 token delta。
 前端实时渲染 assistant 增量时，事实源是 MessageStream，不是 RunEvent。
+frontend 必须从 backend submit / conversation list / message list flow 获取 assistant messageId。
+frontend 刷新 / re-entry 时必须先用 JSON replay 恢复 persisted MessageStream，再用 SSE + Last-Event-ID 继续 live reconnect。
+frontend 不得绕过 backend same-conversation busy policy 创建第二条 active run。
 JSON replay 只返回 persisted MessageStream rows，不得重新调用模型或再生成 Message / Report / Decision / SourceEvidence。
 replay 必须验证 `Conversation / Message / AnalysisRun / AnalysisTask` 的 owner-scoped chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 返回 `404`。
 一旦 runtime 写入 assistant placeholder 与 `stream.started`，后续 MessageStream 必须最终进入且只进入一个 terminal event。
@@ -1251,6 +1259,7 @@ terminal event 只能是 `stream.completed`、`stream.failed` 或 `stream.cancel
 `RuntimeMessageStreamService` 是 runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口；worker_service 只调用 start / complete / fail lifecycle API，不得散落维护 terminal sequence、terminal uniqueness 或 assistant terminal status。
 `stream.failed.errorCode` 必须使用 `ModelCall.failureClass`，`stream.failed.errorMessage` 必须使用已脱敏的 `ModelCall.errorMessage`。
 failure path 也必须 terminalize assistant Message / MessageStream；不得留下只有 `stream.started` 的半开 stream。
+`Conversation.currentRunId` 当前表示该会话最近一次正式绑定的 canonical runId 引用；它不是 active-run 唯一性本身，same-conversation serialization 必须由 backend active-run guard 显式执行。
 ```
 
 ---

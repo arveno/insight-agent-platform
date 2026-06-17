@@ -182,6 +182,18 @@ def _get_owned_run(run_id: str, context: AuthenticatedRequestContext) -> Analysi
     )
 
 
+def _conversation_busy_response(active_run: AnalysisRunRecord) -> JSONResponse:
+    return runtime_error_response(
+        status_code=409,
+        error_code="CONVERSATION_BUSY",
+        message=(
+            "Conversation already has an active AnalysisRun; same conversation remains linear "
+            f"and cannot start another run until runId={active_run['runId']} "
+            f"status={active_run['status']} reaches a terminal state."
+        ),
+    )
+
+
 @router.post(
     "",
     response_model=AnalysisRunResponse,
@@ -219,6 +231,14 @@ def create_analysis_run(
             error_code="NOT_FOUND",
             message=f"Conversation not found: {analysis_task['conversationId']}",
         )
+
+    active_run = _analysis_run_repository().find_active_by_conversation_id_and_owner(
+        conversation["conversationId"],
+        workspace_id=context.workspaceId,
+        user_id=context.userId,
+    )
+    if active_run is not None:
+        return _conversation_busy_response(active_run)
 
     now = utc_timestamp()
     analysis_run: AnalysisRunRecord = {
@@ -296,7 +316,20 @@ def dispatch_analysis_run(
     lifecycle_service = _analysis_run_lifecycle_service()
 
     try:
-        _get_owned_run(run_id, context)
+        analysis_run = _get_owned_run(run_id, context)
+        analysis_task = _analysis_task_repository().get_by_analysis_task_id_and_owner(
+            analysis_run["analysisTaskId"],
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+        active_run = _analysis_run_repository().find_active_by_conversation_id_and_owner(
+            analysis_task["conversationId"],
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+            exclude_run_id=run_id,
+        )
+        if active_run is not None:
+            return _conversation_busy_response(active_run)
         return lifecycle_service.dispatch(run_id)
     except KeyError:
         return runtime_error_response(

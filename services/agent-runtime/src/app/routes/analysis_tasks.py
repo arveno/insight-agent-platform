@@ -22,6 +22,7 @@ from src.app.routes.runtime_contracts import (
 )
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunLifecycleRepository,
+    AnalysisRunRepository,
     AnalysisTaskContextPack,
     AnalysisTaskRecord,
     AnalysisTaskRepository,
@@ -31,6 +32,7 @@ from src.infrastructure.database.runtime_foundation import (
 from src.modules.conversations.analysis_service import (
     AnalysisDraftConversationMismatchError,
     AnalysisSubmitService,
+    ConversationBusyError,
     SubmitAnalysisDraftCommand,
     bind_analysis_task_context_pack,
 )
@@ -71,6 +73,7 @@ def _analysis_task_repository() -> AnalysisTaskRepository:
 def _submit_service() -> AnalysisSubmitService:
     database = _runtime_foundation_database()
     return AnalysisSubmitService(
+        analysis_run_repository=AnalysisRunRepository(database),
         analysis_task_repository=AnalysisTaskRepository(database),
         conversation_repository=ConversationRepository(database),
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
@@ -185,6 +188,12 @@ def submit_analysis_draft(
         return runtime_error_response(
             status_code=409,
             error_code="MISMATCH",
+            message=str(error),
+        )
+    except ConversationBusyError as error:
+        return runtime_error_response(
+            status_code=409,
+            error_code="CONVERSATION_BUSY",
             message=str(error),
         )
 

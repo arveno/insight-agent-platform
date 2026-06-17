@@ -320,6 +320,24 @@ class ConversationRecord(TypedDict):
     updatedAt: str
 
 
+class ConversationListItemRecord(TypedDict):
+    """Conversation list item projection for owner-scoped re-entry surfaces."""
+
+    conversationId: str
+    workspaceId: str
+    userId: str
+    currentRunId: str | None
+    activeRunId: str | None
+    activeRunStatus: str | None
+    title: str
+    status: Literal["active", "archived", "closed"]
+    latestMessageId: str | None
+    latestAssistantMessageId: str | None
+    latestAssistantMessageStatus: str | None
+    createdAt: str
+    updatedAt: str
+
+
 class AnalysisRunRecord(TypedDict):
     """AnalysisRun contract-shaped persistence record."""
 
@@ -376,6 +394,15 @@ class AnalysisRunRecord(TypedDict):
     retryable: bool | None
     retryOfRunId: str | None
     originalRunId: str | None
+
+
+TERMINAL_ANALYSIS_RUN_STATUSES = (
+    "rejected",
+    "cancelled",
+    "failed",
+    "completed",
+    "expired",
+)
 
 
 class RunEventRecord(TypedDict):
@@ -592,6 +619,10 @@ def _sql_literal(value: str | None) -> str:
         return "NULL"
     escaped = value.replace("\\", "\\\\").replace("'", "''")
     return f"'{escaped}'"
+
+
+def _sql_literal_joined(values: Sequence[str]) -> str:
+    return ", ".join(_sql_literal(value) for value in values)
 
 
 def _nullable_int_literal(value: int | None) -> str:
@@ -1967,6 +1998,109 @@ LIMIT 1;
             raise KeyError(run_id)
         return cast(ConversationRecord, payload)
 
+    def list_by_owner_with_projection(
+        self,
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> list[ConversationListItemRecord]:
+        terminal_statuses = _sql_literal_joined(TERMINAL_ANALYSIS_RUN_STATUSES)
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'conversationId', conversation_id,
+          'workspaceId', workspace_id,
+          'userId', user_id,
+          'currentRunId', current_run_id,
+          'activeRunId', active_run_id,
+          'activeRunStatus', active_run_status,
+          'title', title,
+          'status', status,
+          'latestMessageId', latest_message_id,
+          'latestAssistantMessageId', latest_assistant_message_id,
+          'latestAssistantMessageStatus', latest_assistant_message_status,
+          'createdAt', created_at,
+          'updatedAt', updated_at
+        )
+      )
+      FROM (
+        SELECT
+          conversation.conversation_id,
+          conversation.workspace_id,
+          conversation.user_id,
+          conversation.current_run_id,
+          conversation.title,
+          conversation.status,
+          conversation.created_at,
+          conversation.updated_at,
+          (
+            SELECT analysis_run.run_id
+            FROM analysis_runs analysis_run
+            INNER JOIN analysis_tasks analysis_task
+              ON analysis_task.analysis_task_id = analysis_run.analysis_task_id
+            WHERE analysis_task.conversation_id = conversation.conversation_id
+              AND analysis_run.workspace_id = conversation.workspace_id
+              AND analysis_run.user_id = conversation.user_id
+              AND analysis_run.status NOT IN ({terminal_statuses})
+            ORDER BY analysis_run.created_at DESC, analysis_run.id DESC
+            LIMIT 1
+          ) AS active_run_id,
+          (
+            SELECT analysis_run.status
+            FROM analysis_runs analysis_run
+            INNER JOIN analysis_tasks analysis_task
+              ON analysis_task.analysis_task_id = analysis_run.analysis_task_id
+            WHERE analysis_task.conversation_id = conversation.conversation_id
+              AND analysis_run.workspace_id = conversation.workspace_id
+              AND analysis_run.user_id = conversation.user_id
+              AND analysis_run.status NOT IN ({terminal_statuses})
+            ORDER BY analysis_run.created_at DESC, analysis_run.id DESC
+            LIMIT 1
+          ) AS active_run_status,
+          (
+            SELECT message.message_id
+            FROM messages message
+            WHERE message.conversation_id = conversation.conversation_id
+            ORDER BY message.created_at DESC, message.id DESC
+            LIMIT 1
+          ) AS latest_message_id,
+          (
+            SELECT message.message_id
+            FROM messages message
+            WHERE message.conversation_id = conversation.conversation_id
+              AND message.role = 'assistant'
+            ORDER BY message.created_at DESC, message.id DESC
+            LIMIT 1
+          ) AS latest_assistant_message_id,
+          (
+            SELECT message.status
+            FROM messages message
+            WHERE message.conversation_id = conversation.conversation_id
+              AND message.role = 'assistant'
+            ORDER BY message.created_at DESC, message.id DESC
+            LIMIT 1
+          ) AS latest_assistant_message_status
+        FROM conversations conversation
+        WHERE conversation.workspace_id = {_sql_literal(workspace_id)}
+          AND conversation.user_id = {_sql_literal(user_id)}
+        ORDER BY conversation.updated_at DESC, conversation.id DESC
+      ) ordered_conversations
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "ConversationList.items")
+        return cast(list[ConversationListItemRecord], items)
+
 
 class AnalysisRunRepository:
     """Repository boundary for AnalysisRun foundation persistence."""
@@ -2061,6 +2195,64 @@ LIMIT 1;
         payload = self._database.query_json_object(sql)
         if payload is None:
             raise KeyError(run_id)
+        return _coerce_analysis_run_retryable(payload)
+
+    def find_active_by_conversation_id_and_owner(
+        self,
+        conversation_id: str,
+        *,
+        workspace_id: str,
+        user_id: str,
+        exclude_run_id: str | None = None,
+    ) -> AnalysisRunRecord | None:
+        terminal_statuses = _sql_literal_joined(TERMINAL_ANALYSIS_RUN_STATUSES)
+        exclude_clause = (
+            ""
+            if exclude_run_id is None
+            else f"  AND analysis_run.run_id <> {_sql_literal(exclude_run_id)}\n"
+        )
+        sql = f"""
+SELECT JSON_OBJECT(
+  'runId', analysis_run.run_id,
+  'workspaceId', analysis_run.workspace_id,
+  'userId', analysis_run.user_id,
+  'analysisTaskId', analysis_run.analysis_task_id,
+  'status', analysis_run.status,
+  'phase', analysis_run.phase,
+  'outcome', analysis_run.outcome,
+  'waitingFor', analysis_run.waiting_for,
+  'createdAt', analysis_run.created_at,
+  'validatingAt', analysis_run.validating_at,
+  'queuedAt', analysis_run.queued_at,
+  'startedAt', analysis_run.started_at,
+  'waitingSince', analysis_run.waiting_since,
+  'timeoutAt', analysis_run.timeout_at,
+  'cancelRequestedAt', analysis_run.cancel_requested_at,
+  'cancellingAt', analysis_run.cancelling_at,
+  'completedAt', analysis_run.completed_at,
+  'failedAt', analysis_run.failed_at,
+  'cancelledAt', analysis_run.cancelled_at,
+  'expiredAt', analysis_run.expired_at,
+  'rejectedAt', analysis_run.rejected_at,
+  'terminalReason', analysis_run.terminal_reason,
+  'failureCode', analysis_run.failure_code,
+  'retryable', analysis_run.retryable,
+  'retryOfRunId', analysis_run.retry_of_run_id,
+  'originalRunId', analysis_run.original_run_id
+)
+FROM analysis_runs analysis_run
+INNER JOIN analysis_tasks analysis_task
+  ON analysis_task.analysis_task_id = analysis_run.analysis_task_id
+WHERE analysis_task.conversation_id = {_sql_literal(conversation_id)}
+  AND analysis_run.workspace_id = {_sql_literal(workspace_id)}
+  AND analysis_run.user_id = {_sql_literal(user_id)}
+  AND analysis_run.status NOT IN ({terminal_statuses})
+{exclude_clause}ORDER BY analysis_run.created_at DESC, analysis_run.id DESC
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return None
         return _coerce_analysis_run_retryable(payload)
 
     def get_by_analysis_task_id(self, analysis_task_id: str) -> AnalysisRunRecord:

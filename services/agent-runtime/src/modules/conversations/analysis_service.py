@@ -24,6 +24,7 @@ from uuid import uuid4
 from src.infrastructure.database.runtime_foundation import (
     AnalysisRunLifecycleRepository,
     AnalysisRunRecord,
+    AnalysisRunRepository,
     AnalysisTaskContextPack,
     AnalysisTaskRecord,
     AnalysisTaskRepository,
@@ -36,6 +37,10 @@ from src.modules.analysis_runs.lifecycle_service import build_run_created_event
 
 class AnalysisDraftConversationMismatchError(RuntimeError):
     """Submit request mismatched the persisted Conversation chain."""
+
+
+class ConversationBusyError(RuntimeError):
+    """Submit request attempted to start a new run in a busy Conversation."""
 
 
 @dataclass(frozen=True)
@@ -126,21 +131,25 @@ def derive_conversation_title(question: str, explicit_title: str | None) -> str:
 
 
 class AnalysisSubmitService:
-    """Canonical draft submit orchestration for Conversation / AnalysisTask / AnalysisRun / Message."""
+    """Canonical draft submit orchestration for Conversation / AnalysisTask / AnalysisRun."""
 
     def __init__(
         self,
         *,
+        analysis_run_repository: AnalysisRunRepository,
         analysis_task_repository: AnalysisTaskRepository,
         conversation_repository: ConversationRepository,
         lifecycle_repository: AnalysisRunLifecycleRepository,
     ) -> None:
+        self._analysis_run_repository = analysis_run_repository
         self._analysis_task_repository = analysis_task_repository
         self._conversation_repository = conversation_repository
         self._lifecycle_repository = lifecycle_repository
 
     def submit_draft(self, command: SubmitAnalysisDraftCommand) -> SubmitAnalysisDraftResult:
         conversation = self._load_or_create_conversation(command)
+        self._validate_conversation_chain(command, conversation)
+        self._assert_conversation_not_busy(command, conversation)
         now = _utc_timestamp()
         analysis_task_id = _generate_canonical_id("analysis-task")
 
@@ -250,3 +259,22 @@ class AnalysisSubmitService:
                 raise AnalysisDraftConversationMismatchError(
                     f"Conversation.{field_name} does not match request.{field_name}"
                 )
+
+    def _assert_conversation_not_busy(
+        self,
+        command: SubmitAnalysisDraftCommand,
+        conversation: ConversationRecord,
+    ) -> None:
+        active_run = self._analysis_run_repository.find_active_by_conversation_id_and_owner(
+            conversation["conversationId"],
+            workspace_id=command.workspaceId,
+            user_id=command.userId,
+        )
+        if active_run is None:
+            return
+
+        raise ConversationBusyError(
+            "Conversation already has an active AnalysisRun; same conversation remains linear "
+            f"and cannot accept a new submit until runId={active_run['runId']} "
+            f"status={active_run['status']} reaches a terminal state."
+        )

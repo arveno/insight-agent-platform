@@ -22,7 +22,14 @@ class RuntimeRequestErrorResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    errorCode: Literal["NOT_FOUND", "MISMATCH", "INVALID_STATE", "UNAUTHORIZED", "FORBIDDEN"]
+    errorCode: Literal[
+        "NOT_FOUND",
+        "MISMATCH",
+        "INVALID_STATE",
+        "CONVERSATION_BUSY",
+        "UNAUTHORIZED",
+        "FORBIDDEN",
+    ]
     message: str
 
 
@@ -432,6 +439,52 @@ class ConversationResponse(BaseModel):
     status: Literal["active", "archived", "closed"]
     createdAt: str
     updatedAt: str
+
+
+class ConversationListItemResponse(BaseModel):
+    """Conversation list item response enriched for re-entry and active-run discovery."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversationId: str
+    workspaceId: str
+    userId: str
+    currentRunId: str | None
+    activeRunId: str | None = None
+    activeRunStatus: Literal[
+        "created",
+        "validating",
+        "rejected",
+        "queued",
+        "running",
+        "waiting",
+        "cancelling",
+        "cancelled",
+        "failed",
+        "completed",
+        "expired",
+    ] | None = None
+    title: str
+    status: Literal["active", "archived", "closed"]
+    latestMessageId: str | None = None
+    latestAssistantMessageId: str | None = None
+    latestAssistantMessageStatus: Literal[
+        "created",
+        "streaming",
+        "completed",
+        "failed",
+        "cancelled",
+    ] | None = None
+    createdAt: str
+    updatedAt: str
+
+
+class ConversationListResponse(BaseModel):
+    """Conversation list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ConversationListItemResponse]
 
 
 class CreateAnalysisRunRequest(BaseModel):
@@ -900,6 +953,7 @@ def runtime_error_response(
         "NOT_FOUND",
         "MISMATCH",
         "INVALID_STATE",
+        "CONVERSATION_BUSY",
         "UNAUTHORIZED",
         "FORBIDDEN",
     ],

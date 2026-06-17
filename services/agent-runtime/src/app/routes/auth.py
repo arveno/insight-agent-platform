@@ -76,7 +76,9 @@ def _auth_session_response(auth_session_id: str) -> AuthSessionResponse:
 
 
 def _user_response(user_id: str) -> UserResponse:
-    return UserResponse.model_validate(UserRepository(_runtime_foundation_database()).get_by_user_id(user_id))
+    return UserResponse.model_validate(
+        UserRepository(_runtime_foundation_database()).get_by_user_id(user_id)
+    )
 
 
 def _workspace_list_response(user_id: str) -> WorkspaceListResponse:
@@ -127,9 +129,9 @@ def login(request: LoginRequest, response: Response) -> LoginResponse | JSONResp
     """Create a new opaque cookie session for the matching user credentials."""
 
     try:
-        user_authentication = UserRepository(_runtime_foundation_database()).get_authentication_by_email(
-            request.email
-        )
+        user_authentication = UserRepository(
+            _runtime_foundation_database()
+        ).get_authentication_by_email(request.email)
     except KeyError:
         return runtime_error_response(
             status_code=401,
@@ -251,7 +253,10 @@ def select_workspace(
 
     membership_repository = WorkspaceMembershipRepository(_runtime_foundation_database())
     try:
-        membership_repository.get_by_user_id_and_workspace_id(auth_session.userId, payload.workspaceId)
+        membership_repository.get_by_user_id_and_workspace_id(
+            auth_session.userId,
+            payload.workspaceId,
+        )
     except KeyError:
         return runtime_error_response(
             status_code=403,

@@ -13,6 +13,7 @@ from src.app.auth import (
 )
 from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
+    ConversationListResponse,
     ConversationResponse,
     CreateConversationRequest,
     MessageListResponse,
@@ -128,6 +129,20 @@ def create_conversation(
     }
     _conversation_repository().create(conversation)
     return conversation
+
+
+@router.get("", response_model=ConversationListResponse, responses=FOUNDATION_ERROR_RESPONSE)
+def list_conversations(
+    context: AuthenticatedContext,
+) -> dict[str, object]:
+    """Return owner-scoped Conversation list items for re-entry and active-run discovery."""
+
+    return {
+        "items": _conversation_repository().list_by_owner_with_projection(
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    }
 
 
 @router.get(
