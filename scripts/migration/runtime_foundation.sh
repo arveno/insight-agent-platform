@@ -74,6 +74,21 @@ readonly EXPECTED_VERIFY_LINES=(
   "contextPack.futureReferencedArtifact.row_count=0"
   "contextPack.selfProducedArtifact.row_count=0"
 )
+readonly ECS_RELAXED_VERIFY_LINES=(
+  "analysis_tasks.row_count=4"
+  "conversations.row_count=4"
+  "analysis_runs.row_count=4"
+  "execution_attempts.row_count=0"
+  "run_events.row_count=0"
+  "tool_calls.row_count=0"
+  "model_calls.row_count=0"
+  "source_evidence.row_count=2"
+  "reports.row_count=2"
+  "report_sections.row_count=2"
+  "decisions.row_count=0"
+  "messages.row_count=0"
+  "message_streams.row_count=0"
+)
 
 migration_target="${IAP_MIGRATION_TARGET:-ecs}"
 ecs_host_alias="${IAP_MIGRATION_ECS_HOST_ALIAS:-iap-ecs}"
@@ -302,15 +317,78 @@ run_verify() {
   local expected_line
   local missing_line=0
   for expected_line in "${EXPECTED_VERIFY_LINES[@]}"; do
+    if [[ "${migration_target}" == "ecs" ]] && is_ecs_relaxed_verify_line "${expected_line}"; then
+      continue
+    fi
     if ! grep -Fqx -- "${expected_line}" <<<"${verify_output}"; then
       printf 'Missing expected query verify line: %s\n' "${expected_line}" >&2
       missing_line=1
     fi
   done
 
+  if [[ "${migration_target}" == "ecs" ]]; then
+    verify_minimum_count_line "${verify_output}" "analysis_tasks.row_count" 4 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "conversations.row_count" 4 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "analysis_runs.row_count" 4 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "execution_attempts.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "run_events.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "tool_calls.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "model_calls.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "source_evidence.row_count" 2 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "reports.row_count" 2 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "report_sections.row_count" 2 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "decisions.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "messages.row_count" 0 || missing_line=1
+    verify_minimum_count_line "${verify_output}" "message_streams.row_count" 0 || missing_line=1
+  fi
+
   if [[ "${missing_line}" -ne 0 ]]; then
     return 1
   fi
+}
+
+is_ecs_relaxed_verify_line() {
+  local expected_line="$1"
+  local relaxed_line
+
+  for relaxed_line in "${ECS_RELAXED_VERIFY_LINES[@]}"; do
+    if [[ "${expected_line}" == "${relaxed_line}" ]]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+verify_minimum_count_line() {
+  local verify_output="$1"
+  local line_prefix="$2"
+  local minimum_count="$3"
+  local actual_count
+
+  actual_count="$(
+    awk -F= -v prefix="${line_prefix}" '$1 == prefix {print $2; exit}' <<<"${verify_output}"
+  )"
+
+  if [[ -z "${actual_count}" ]]; then
+    printf 'Missing expected query verify line prefix: %s=\n' "${line_prefix}" >&2
+    return 1
+  fi
+
+  if ! [[ "${actual_count}" =~ ^[0-9]+$ ]]; then
+    printf 'Non-numeric query verify count for %s: %s\n' "${line_prefix}" "${actual_count}" >&2
+    return 1
+  fi
+
+  if ((actual_count < minimum_count)); then
+    printf 'Query verify count too small for %s: expected >= %s, got %s\n' \
+      "${line_prefix}" \
+      "${minimum_count}" \
+      "${actual_count}" >&2
+    return 1
+  fi
+
+  return 0
 }
 
 tear_down() {

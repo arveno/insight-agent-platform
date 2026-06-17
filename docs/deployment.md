@@ -55,7 +55,8 @@ services/agent-runtime/src/app/config.py
 - 不允许 `fake provider`、`mock provider`、`hardcoded response` 或本地 / 预览环境双轨 provider。
 - smoke、诊断和日志输出只允许表达 `apiKey=configured` 或等价非 secret 状态，不得打印真实 Key。
 - Model Gateway failure diagnosis 只能输出 safe redacted message；不得打印 API key、Authorization header、`.env.model.local` 内容或完整 provider raw secret。
-- 真实 provider readiness smoke 使用 `scripts/smoke/model-provider-readiness.py`；本地推荐从仓库根目录通过 `uv run --project services/agent-runtime python scripts/smoke/model-provider-readiness.py --env-file .env.model.local` 运行。ECS 仅在 `/opt/insight-agent-platform/current` 已部署该脚本时，才允许通过 `--env-file /opt/insight-agent-platform/env/model-provider.env` 执行 remote smoke。
+- 真实 provider readiness smoke 使用 `scripts/smoke/model-provider-readiness.py`；本地推荐从仓库根目录通过 `uv run --project services/agent-runtime python scripts/smoke/model-provider-readiness.py --env-file .env.model.local` 运行。
+- ECS host-side remote smoke 固定从 `/opt/insight-agent-platform/current` 执行，且要求 ECS host 上的 `uv` 可用；标准 provider env 固定通过 `--env-file /opt/insight-agent-platform/env/model-provider.env` 传入。
 
 ## 3. 必备环境变量占位
 
@@ -102,22 +103,23 @@ Agent Runtime 必须可以通过 Docker 启动。
 
 当前 ECS host foundation 入口：
 
-- `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin 和 `/opt/insight-agent-platform/**` 目录布局。
-- `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`。
+- `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin、host-side `uv` 和 `/opt/insight-agent-platform/**` 目录布局。
+- `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / host-side `uv` / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`。
 - `scripts/deploy/ecs/diagnose-docker-registry.sh`：Docker registry diagnostics 脚本，负责检查 Docker daemon 状态、registry mirror 配置、Docker Hub DNS/HTTPS 连通性，并可选测试 `hello-world` 拉取能力。
 - `scripts/deploy/ecs/configure-docker-registry.sh`：Docker registry mirror configuration 脚本，负责通过 `DOCKER_REGISTRY_MIRROR` 标准化写入 `/etc/docker/daemon.json` 并重启 Docker；该脚本不代表业务部署完成。
 
 当前 ECS compose / runnable app 入口：
 
-- `deploy/docker/compose.ecs.preview.yml`：ECS preview compose 栈；当前 runnable app slice 已包含 `mysql / redis / caddy / agent-runtime`，其中 `agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问。
+- `deploy/docker/compose.ecs.preview.yml`：ECS preview compose 栈；当前 runnable app slice 已包含 `mysql / redis / caddy / agent-runtime`，其中 `agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问；`agent-runtime` 与后续 `agent-worker` 如接入，必须注入 `/opt/insight-agent-platform/env/model-provider.env`。
 - `deploy/docker/agent-runtime/Dockerfile`：preview runtime Docker build 入口，基于 `uv` 安装正式依赖并启动 FastAPI；compose 可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 指向 ECS 可访问的 Python index。
-- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持基础镜像来源、`MYSQL_HOST_PORT` loopback bind、`AGENT_RUNTIME_HOST_PORT` loopback bind、`AGENT_RUNTIME_PYPI_INDEX_URL`、preview cookie 与 CORS 配置。
+- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持基础镜像来源、`MYSQL_HOST_PORT` loopback bind、`AGENT_RUNTIME_HOST_PORT` loopback bind、`AGENT_RUNTIME_PYPI_INDEX_URL`、`AGENT_RUNTIME_BUILD_CONTEXT=/opt/insight-agent-platform/current`、preview cookie 与 CORS 配置。
 - `scripts/deploy/ecs/init-compose-env.sh`：在 ECS 上生成 `/opt/insight-agent-platform/env/ecs-preview.env`；默认不覆盖已有 env，显式传 `--force` 才覆盖；支持通过环境变量覆盖默认镜像来源。
 - `scripts/deploy/ecs/configure-compose-images.sh`：在 ECS 上只更新已有 `ecs-preview.env` 的 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE`，不重置 MySQL 密码，不启动 compose。
 - `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
 - `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`；用于 infra foundation 验证，不代表 runnable app deploy。
 - `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL localhost-only bind / ping、Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
-- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、runtime build context sync、remote compose build/up，以及 `migration -> seed -> query verify`。
+- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up，以及 `migration -> seed -> query verify`。
+- ECS preview `query verify` 必须兼容已累计的 runtime artifact；seed baseline 使用 minimum/invariant 校验，不得依赖历史 row_count 固定不变。
 - `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/runtime/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
 - `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
 
@@ -213,9 +215,14 @@ scripts/smoke/
 
 - `scripts/smoke/runtime-result-delivery.py`
 - 本地真实 provider 推荐运行方式：`uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file .env.model.local`
+- ECS preview 标准运行方式：`cd /opt/insight-agent-platform/current && UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file /opt/insight-agent-platform/env/model-provider.env`
+- ECS host-side `uv` smoke 应与 preview image build 使用同一依赖源；未显式覆盖时默认走 `https://mirrors.aliyun.com/pypi/simple/`，避免 preview 中国区主机首次从默认 PyPI 拉包导致 smoke 长时间不可用。
+- `deploy-preview-app.sh` 必须把 `scripts/smoke/runtime-result-delivery.py`、`database/mysql/queries/*.sql`、`services/agent-runtime/**` 同步到 `/opt/insight-agent-platform/current`
+- 当前 SiliconFlow smoke 默认模型固定为 `Qwen/Qwen2.5-7B-Instruct`
+- `Qwen/Qwen3.5-4B` 与 `Qwen/Qwen3-8B` timeout 作为 provider/model health evidence 记录在 `#164`，不是新的 provider secret 来源
 - 成功路径必须覆盖 `submit -> dispatch -> worker execute -> MessageStream JSON replay -> MessageStream SSE replay -> delivery promote -> query verify`。
 - runtime 执行失败时，必须转向 failure-path query verify，输出结构化且已脱敏的失败诊断，而不是只打印 generic `status=failed`。
-- 日志只允许输出 `apiKey=configured` 等非 secret 状态。
+- 日志只允许输出 `apiKey=configured`、`API_KEY=<redacted>` 或等价非 secret 状态。
 - success / failure 两条路径都必须证明 MessageStream lifecycle 已 terminalize：success path 以 `stream.completed` 收口，failure path 以 `stream.failed` 或 `stream.cancelled` 收口。
 - runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口是 `RuntimeMessageStreamService`；worker 不得散落手写 terminal append 细节。
 - `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 `Accept: text/event-stream` 只 tail 已持久化 `MessageStream` rows；不得从 `RunEvent` 合成 token，也不得追加第二条 realtime mainline。

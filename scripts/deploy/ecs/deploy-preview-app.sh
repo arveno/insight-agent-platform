@@ -6,11 +6,11 @@ readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 readonly REMOTE_ROOT="/opt/insight-agent-platform"
 readonly REMOTE_FRONTEND_DIR="${REMOTE_ROOT}/shared/frontend"
 readonly REMOTE_DOCKER_DIR="${REMOTE_ROOT}/deploy/docker"
-readonly REMOTE_REPO_DIR="${REMOTE_ROOT}/repo"
+readonly REMOTE_CURRENT_DIR="${REMOTE_ROOT}/current"
 readonly REMOTE_ENV_FILE="${REMOTE_ROOT}/env/ecs-preview.env"
 readonly REMOTE_COMPOSE_FILE="${REMOTE_DOCKER_DIR}/compose.ecs.preview.yml"
-readonly REMOTE_INIT_ENV_SCRIPT="${REMOTE_REPO_DIR}/scripts/deploy/ecs/init-compose-env.sh"
-readonly REMOTE_ROLLBACK_SCRIPT="${REMOTE_REPO_DIR}/scripts/rollback/ecs-compose-infra.sh"
+readonly REMOTE_INIT_ENV_SCRIPT="${REMOTE_CURRENT_DIR}/scripts/deploy/ecs/init-compose-env.sh"
+readonly REMOTE_ROLLBACK_SCRIPT="${REMOTE_CURRENT_DIR}/scripts/rollback/ecs-compose-infra.sh"
 
 dry_run=0
 reset_data=0
@@ -96,7 +96,7 @@ ensure_local_prerequisites() {
 }
 
 ensure_remote_directories() {
-  run_remote_cmd "mkdir -p '${REMOTE_FRONTEND_DIR}' '${REMOTE_DOCKER_DIR}' '${REMOTE_REPO_DIR}'"
+  run_remote_cmd "mkdir -p '${REMOTE_FRONTEND_DIR}' '${REMOTE_DOCKER_DIR}' '${REMOTE_CURRENT_DIR}'"
 }
 
 build_frontend() {
@@ -118,11 +118,11 @@ sync_docker_assets() {
     "${ecs_host_alias}:${REMOTE_DOCKER_DIR}/"
 }
 
-sync_repo_build_context() {
-  log "Syncing reproducible runtime build context to ${REMOTE_REPO_DIR}."
+sync_current_source_tree() {
+  log "Syncing deployed runtime source tree to ${REMOTE_CURRENT_DIR}."
   run_rsync \
     "${REPO_ROOT}/" \
-    "${ecs_host_alias}:${REMOTE_REPO_DIR}/" \
+    "${ecs_host_alias}:${REMOTE_CURRENT_DIR}/" \
     --exclude .git \
     --exclude .DS_Store \
     --exclude node_modules \
@@ -147,6 +147,16 @@ sync_repo_build_context() {
 ensure_remote_env_file() {
   log "Ensuring ECS preview env file exists."
   run_remote_cmd "if [ ! -f '${REMOTE_ENV_FILE}' ]; then bash '${REMOTE_INIT_ENV_SCRIPT}'; fi"
+}
+
+ensure_remote_build_context_path() {
+  log "Ensuring ECS preview build context points at ${REMOTE_CURRENT_DIR}."
+  run_remote_cmd "if grep -q '^AGENT_RUNTIME_BUILD_CONTEXT=' '${REMOTE_ENV_FILE}'; then sed -i 's|^AGENT_RUNTIME_BUILD_CONTEXT=.*$|AGENT_RUNTIME_BUILD_CONTEXT=${REMOTE_CURRENT_DIR}|' '${REMOTE_ENV_FILE}'; else printf '\nAGENT_RUNTIME_BUILD_CONTEXT=${REMOTE_CURRENT_DIR}\n' >> '${REMOTE_ENV_FILE}'; fi"
+}
+
+ensure_remote_uv() {
+  log "Ensuring uv is available on the ECS host."
+  run_remote_cmd "if ! command -v uv >/dev/null 2>&1; then curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_UNMANAGED_INSTALL='/usr/local/bin' sh; fi && uv --version >/dev/null"
 }
 
 reset_remote_data_if_requested() {
@@ -242,8 +252,10 @@ main() {
   build_frontend
   sync_frontend_dist
   sync_docker_assets
-  sync_repo_build_context
+  sync_current_source_tree
   ensure_remote_env_file
+  ensure_remote_build_context_path
+  ensure_remote_uv
   reset_remote_data_if_requested
   build_runtime_image
   start_preview_stack
