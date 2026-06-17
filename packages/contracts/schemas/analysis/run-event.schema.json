@@ -84,14 +84,7 @@
     "status": {
       "description": "事件执行状态，必须使用 contracts 中定义的 RunEventStatus 枚举。",
       "type": "string",
-      "enum": [
-        "pending",
-        "running",
-        "succeeded",
-        "failed",
-        "skipped",
-        "cancelled"
-      ]
+      "enum": ["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
     },
     "phase": {
       "description": "事件发生时所处的 AnalysisRunPhase。",
@@ -133,38 +126,23 @@
     },
     "parentEventId": {
       "description": "父事件标识；没有父事件时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "refType": {
       "description": "事件直接引用的对象类型；没有引用时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "refId": {
       "description": "事件直接引用的对象标识；没有引用时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "errorCode": {
-      "description": "标准错误码；非错误事件时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "description": "标准错误码；对 model_call.failed / run.failed 等失败事件应使用稳定 failureClass。非错误事件时为 null。",
+      "type": ["string", "null"]
     },
     "errorMessage": {
       "description": "错误说明；非错误事件时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "nodeName": {
       "description": "产生该事件的 LangGraph 节点名称。",
@@ -176,25 +154,16 @@
     },
     "toolName": {
       "description": "事件关联的工具名称；非工具事件时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     },
     "startedAt": {
       "description": "事件开始时间；尚未开始时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     },
     "completedAt": {
       "description": "事件结束时间；运行中或尚未结束时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     }
   }

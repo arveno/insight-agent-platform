@@ -868,21 +868,39 @@ worker crash 后同 run 创建新 ExecutionAttempt
 ToolCall、ModelCall、SourceEvidence 已有 runId。
 ```
 
-目标模型：
+当前执行失败诊断规则：
 
 ```text
-execution 是循环
-ModelCall failed 不一定导致 run failed
-ToolCall failed 不一定导致 run failed
-SourceEvidence retrieval failed 不一定导致 run failed
-只有 recovery policy 判断不可恢复，run 才 failed
+Model Gateway 必须把 raw provider error -> stable failureClass。
+ModelCall.errorType 保留底层错误形状；failureClass 负责稳定分类。
+ModelCall.errorMessage / safeErrorMessage / rawErrorRedacted / RunEvent.errorMessage 必须使用统一 safe redaction。
+retryable 只表达策略分类，不代表系统已经自动重试。
+当前 #240 / #248 最小 worker 主线中，未恢复的 ModelCall 失败会直接 append model_call.failed / run.failed，并把 AnalysisRun 置为 failed。
 ```
 
-Contract Gap：
+当前 failureClass taxonomy：
 
 ```text
-recovery policy
-tool/model/evidence failure policy
+provider_auth_error
+provider_rate_limit
+provider_quota_error
+provider_timeout
+provider_network_error
+provider_cert_error
+provider_model_not_found
+provider_5xx
+provider_response_schema_error
+model_gateway_bug
+worker_integration_bug
+unknown
+```
+
+当前仍保留的 Contract Gap：
+
+```text
+automatic retry execution policy
+tool/model/evidence multi-step recovery policy
+provider health gate automation
 ```
 
 ### 8.9 Synthesis
@@ -1093,6 +1111,27 @@ RunEvent 已有 eventId、runId、eventType、status、phase、sequence、actor�
 eventType 当前已经收敛为受控 RunEventType 枚举。
 RunEventStatus 当前是 pending / running / succeeded / failed / skipped / cancelled。
 ```
+
+当前失败一致性规则：
+
+```text
+ModelCall.failureClass
+  -> RunEvent(model_call.failed).errorCode
+  -> RunEvent(run.failed).errorCode
+  -> AnalysisRun.failureCode
+  -> ExecutionAttempt.failureCode
+```
+
+```text
+ModelCall.errorMessage
+  -> RunEvent(model_call.failed).errorMessage
+  -> RunEvent(run.failed).errorMessage
+```
+
+规则补充：
+
+- `model_call.failed` 与 `run.failed` 不得只写 generic `network_error` 或 `failed`；errorCode 必须使用稳定 `failureClass`。
+- `errorMessage` 必须可审计、可诊断、且已经脱敏；不得泄露 API key、Authorization header、Bearer token、`.env.model.local` 原文或 provider secret。
 
 目标模型：
 

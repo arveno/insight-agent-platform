@@ -40,14 +40,7 @@
     "status": {
       "description": "执行尝试状态，必须使用 contracts 中定义的 ExecutionAttemptStatus 枚举。",
       "type": "string",
-      "enum": [
-        "leased",
-        "running",
-        "lost",
-        "released",
-        "failed",
-        "completed"
-      ]
+      "enum": ["leased", "running", "lost", "released", "failed", "completed"]
     },
     "leaseAcquiredAt": {
       "description": "worker 获取 lease 的时间。",
@@ -61,33 +54,21 @@
     },
     "heartbeatAt": {
       "description": "最近一次 worker heartbeat 时间；尚未 heartbeat 时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     },
     "releasedAt": {
       "description": "lease 被释放的时间；尚未释放时为 null。",
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "format": "date-time"
     },
     "failureCode": {
-      "description": "执行尝试失败码；没有失败码时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "description": "执行尝试失败码；当前应与稳定 failureClass 对齐。没有失败码时为 null。",
+      "type": ["string", "null"]
     },
     "failureMessage": {
       "description": "执行尝试失败说明；没有失败说明时为 null。",
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": ["string", "null"]
     }
   }
 }

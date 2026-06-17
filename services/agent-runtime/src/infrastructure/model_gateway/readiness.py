@@ -15,6 +15,13 @@ from urllib.request import urlopen as urllib_urlopen
 import certifi
 from src.app.config import ModelGatewaySettings, ModelProviderSettings, Settings
 from src.infrastructure.model_gateway.errors import ModelGatewayConfigurationError
+from src.infrastructure.model_gateway.failure_taxonomy import (
+    classify_http_error,
+    classify_model_gateway_bug,
+    classify_response_schema_error,
+    classify_transport_error,
+    suggested_action_for_failure_class,
+)
 from src.infrastructure.model_gateway.routing import (
     SUPPORTED_MODEL_API_FORMATS,
     resolve_model_provider,
@@ -44,16 +51,31 @@ class ModelProviderSmokeResult:
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    failure_class: str | None = None
     error_type: str | None = None
-    error_detail: str | None = None
+    safe_error_message: str | None = None
+    http_status: int | None = None
+    provider_error_code: str | None = None
+    provider_request_id: str | None = None
+    timeout_ms: int | None = None
+    retryable: bool | None = None
+    retry_after_ms: int | None = None
+    raw_error_redacted: str | None = None
+    suggested_action: str | None = None
 
     @property
     def exit_code(self) -> int:
         if self.status == "ok":
             return 0
-        if self.status == "auth_error":
+        if self.failure_class == "provider_auth_error":
             return 3
-        if self.status == "network_error":
+        if self.failure_class in {
+            "provider_timeout",
+            "provider_network_error",
+            "provider_cert_error",
+            "provider_rate_limit",
+            "provider_5xx",
+        }:
             return 4
         return 5
 
@@ -204,25 +226,6 @@ def build_model_provider_tls_context() -> ssl.SSLContext:
     return ssl.create_default_context(cafile=certifi.where())
 
 
-def _sanitize_error_detail(detail: object, *, api_key: str) -> str:
-    raw_detail = str(detail)
-    sanitized = raw_detail.replace(api_key, "[redacted]")
-    sanitized = sanitized.replace("Authorization", "[redacted-header]")
-    sanitized = sanitized.replace("Bearer", "[redacted-token]")
-    return sanitized
-
-
-def _build_error_detail(
-    exc: object,
-    *,
-    detail: object,
-    api_key: str,
-) -> str:
-    return (
-        f"{type(exc).__name__}: {_sanitize_error_detail(detail, api_key=api_key)}"
-    )[:200]
-
-
 def run_provider_smoke(
     readiness: ModelProviderReadinessReport,
     *,
@@ -278,47 +281,117 @@ def run_provider_smoke(
         )
     except HTTPError as exc:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
-        status = "auth_error" if exc.code in {401, 403} else "provider_error"
-        return ModelProviderSmokeResult(
-            provider=readiness.provider,
-            model=readiness.model,
-            base_url=readiness.base_url,
-            api_key_status=readiness.api_key_status,
-            status=status,
-            latency_ms=latency_ms,
-            error_type=f"http_{exc.code}",
-            error_detail=_sanitize_error_detail(exc.reason, api_key=readiness.api_key),
+        failure = classify_http_error(
+            exc,
+            api_key=readiness.api_key,
+            timeout_ms=timeout_ms,
         )
-    except (URLError, TimeoutError) as exc:
-        latency_ms = int((time.perf_counter() - started_at) * 1000)
-        reason = exc.reason if isinstance(exc, URLError) else exc
         return ModelProviderSmokeResult(
             provider=readiness.provider,
             model=readiness.model,
             base_url=readiness.base_url,
             api_key_status=readiness.api_key_status,
-            status="network_error",
+            status="failed",
             latency_ms=latency_ms,
-            error_type="network_error",
-            error_detail=_build_error_detail(
-                exc,
-                detail=reason,
-                api_key=readiness.api_key,
+            failure_class=failure.failure_class,
+            error_type=failure.error_type,
+            safe_error_message=failure.safe_error_message,
+            http_status=failure.http_status,
+            provider_error_code=failure.provider_error_code,
+            provider_request_id=failure.provider_request_id,
+            timeout_ms=failure.timeout_ms,
+            retryable=failure.retryable,
+            retry_after_ms=failure.retry_after_ms,
+            raw_error_redacted=failure.raw_error_redacted,
+            suggested_action=suggested_action_for_failure_class(
+                failure.failure_class,
+                retryable=failure.retryable,
+                error_type=failure.error_type,
+            ),
+        )
+    except (URLError, TimeoutError, OSError) as exc:
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        failure = classify_transport_error(
+            exc,
+            api_key=readiness.api_key,
+            timeout_ms=timeout_ms,
+        )
+        return ModelProviderSmokeResult(
+            provider=readiness.provider,
+            model=readiness.model,
+            base_url=readiness.base_url,
+            api_key_status=readiness.api_key_status,
+            status="failed",
+            latency_ms=latency_ms,
+            failure_class=failure.failure_class,
+            error_type=failure.error_type,
+            safe_error_message=failure.safe_error_message,
+            http_status=failure.http_status,
+            provider_error_code=failure.provider_error_code,
+            provider_request_id=failure.provider_request_id,
+            timeout_ms=failure.timeout_ms,
+            retryable=failure.retryable,
+            retry_after_ms=failure.retry_after_ms,
+            raw_error_redacted=failure.raw_error_redacted,
+            suggested_action=suggested_action_for_failure_class(
+                failure.failure_class,
+                retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
+        failure = classify_response_schema_error(
+            error_type="invalid_response_json",
+            provider_message="invalid JSON payload from model provider",
+            raw_error_redacted=str(exc),
+        )
         return ModelProviderSmokeResult(
             provider=readiness.provider,
             model=readiness.model,
             base_url=readiness.base_url,
             api_key_status=readiness.api_key_status,
-            status="provider_error",
+            status="failed",
             latency_ms=latency_ms,
-            error_type="invalid_response",
-            error_detail=_build_error_detail(
-                exc,
-                detail=exc,
-                api_key=readiness.api_key,
+            failure_class=failure.failure_class,
+            error_type=failure.error_type,
+            safe_error_message=failure.safe_error_message,
+            http_status=failure.http_status,
+            provider_error_code=failure.provider_error_code,
+            provider_request_id=failure.provider_request_id,
+            timeout_ms=failure.timeout_ms,
+            retryable=failure.retryable,
+            retry_after_ms=failure.retry_after_ms,
+            raw_error_redacted=failure.raw_error_redacted,
+            suggested_action=suggested_action_for_failure_class(
+                failure.failure_class,
+                retryable=failure.retryable,
+                error_type=failure.error_type,
+            ),
+        )
+    except Exception as exc:
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        failure = classify_model_gateway_bug(exc, api_key=readiness.api_key)
+        return ModelProviderSmokeResult(
+            provider=readiness.provider,
+            model=readiness.model,
+            base_url=readiness.base_url,
+            api_key_status=readiness.api_key_status,
+            status="failed",
+            latency_ms=latency_ms,
+            failure_class=failure.failure_class,
+            error_type=failure.error_type,
+            safe_error_message=failure.safe_error_message,
+            http_status=failure.http_status,
+            provider_error_code=failure.provider_error_code,
+            provider_request_id=failure.provider_request_id,
+            timeout_ms=failure.timeout_ms,
+            retryable=failure.retryable,
+            retry_after_ms=failure.retry_after_ms,
+            raw_error_redacted=failure.raw_error_redacted,
+            suggested_action=suggested_action_for_failure_class(
+                failure.failure_class,
+                retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )

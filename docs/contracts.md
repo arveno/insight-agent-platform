@@ -830,6 +830,11 @@ retryOfRunId
 originalRunId
 ```
 
+失败语义固定如下：
+
+- `failureCode` 表示当前 `AnalysisRun` 的稳定失败分类；当失败源自 `ModelCall` 时，必须与 `ModelCall.failureClass`、`ExecutionAttempt.failureCode`、`RunEvent(model_call.failed / run.failed).errorCode` 保持一致。
+- `retryable` 表示当前失败是否允许后续 retry / re-dispatch policy 继续处理；它不是“系统已经自动重试”的信号。
+
 以下对象不得作为 AnalysisRun 内嵌字段；它们必须通过 runId 或父对象链路关联查询：
 
 ```text
@@ -890,6 +895,11 @@ completedAt
 
 RunEvent 不等于 UI timeline item。UI 必须通过 mapper 转成 ViewModel。
 
+失败映射规则固定如下：
+
+- `model_call.failed.errorCode` 与 `run.failed.errorCode` 必须使用稳定 `failureClass`，不得只写 generic `network_error` 或 `failed`。
+- `model_call.failed.errorMessage` 与 `run.failed.errorMessage` 必须使用 safe redacted message，不得包含 API key、Authorization header、Bearer token、`.env.model.local` 原文或 provider secret。
+
 ## 7. ExecutionAttempt
 
 ExecutionAttempt 表示同一个 AnalysisRun 在 worker lease、恢复和重试过程中的执行尝试。
@@ -910,6 +920,8 @@ releasedAt
 failureCode
 failureMessage
 ```
+
+当 `ExecutionAttempt` 因 `ModelCall` 失败进入 failed 时，`failureCode` 必须复用同一稳定 `failureClass`。
 
 ## 8. ApprovalRequest
 
@@ -968,12 +980,46 @@ outputTokens
 cost
 latencyMs
 status
+failureClass
 errorType
+httpStatus
+providerErrorCode
+providerRequestId
+timeoutMs
+retryable
+retryAfterMs
+rawErrorRedacted
 startedAt
 completedAt
 ```
 
 模型调用必须走 Model Gateway。
+
+`failureClass` 当前固定为：
+
+```text
+provider_auth_error
+provider_rate_limit
+provider_quota_error
+provider_timeout
+provider_network_error
+provider_cert_error
+provider_model_not_found
+provider_5xx
+provider_response_schema_error
+model_gateway_bug
+worker_integration_bug
+unknown
+```
+
+字段语义固定如下：
+
+- `failureClass` 是对 raw provider error、HTTP status、异常类型和 schema parse failure 的稳定归一化分类。
+- `errorType` 保留底层错误形状，例如 `http_429`、`network_error`、`invalid_response_json`；它不替代 `failureClass`。
+- `safeErrorMessage` 必须和 `rawErrorRedacted` 一样先经过统一 redaction；两者都不得包含 API key、Authorization header、Bearer token 或 `.env.model.local` 原文。
+- `httpStatus`、`providerErrorCode`、`providerRequestId`、`timeoutMs`、`retryAfterMs` 只记录非敏感结构化诊断信息；缺失时为 `null`。
+- `retryable` 只表达策略判断；本轮 `#248` 只实现 retryability classification，不代表自动 retry 已执行。
+- `rawErrorRedacted` 允许保留安全脱敏后的原始错误摘要，但不得包含 API key、Authorization header、`.env.model.local` 内容或完整 provider secret。
 
 ## 11. SourceEvidence
 
