@@ -147,6 +147,17 @@ check_docker_versions() {
   fi
 }
 
+check_uv() {
+  local uv_version
+
+  if uv_version="$(uv --version 2>&1)"; then
+    log "uv version: ${uv_version}"
+    pass "uv is available for host-side remote smoke."
+  else
+    fail "uv version check failed: ${uv_version}"
+  fi
+}
+
 check_docker_service() {
   local enabled_state active_state
 
@@ -258,6 +269,7 @@ main() {
   print_swap_status
   check_docker_group_session
   check_docker_versions
+  check_uv
   check_docker_service
   check_project_directories
   print_listening_ports

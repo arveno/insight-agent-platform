@@ -83,6 +83,16 @@ install_base_packages() {
   sudo apt-get install -y "${BASE_PACKAGES[@]}"
 }
 
+install_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    log "uv is already installed."
+    return
+  fi
+
+  log "Installing uv for host-side remote smoke entrypoints."
+  curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_UNMANAGED_INSTALL="/usr/local/bin" sh
+}
+
 ensure_project_directories() {
   local path
 
@@ -175,6 +185,7 @@ main() {
   load_os_release
   require_supported_environment
   install_base_packages
+  install_uv
   ensure_project_directories
   ensure_swap
   configure_docker_repository

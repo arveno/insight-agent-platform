@@ -28,11 +28,14 @@ services:
 
   agent-runtime:
     build:
-      context: ${AGENT_RUNTIME_BUILD_CONTEXT:-/opt/insight-agent-platform/repo}
+      context: ${AGENT_RUNTIME_BUILD_CONTEXT:-/opt/insight-agent-platform/current}
       dockerfile: ${AGENT_RUNTIME_DOCKERFILE:-deploy/docker/agent-runtime/Dockerfile}
       args:
         AGENT_RUNTIME_PYPI_INDEX_URL: ${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}
     restart: unless-stopped
+    env_file:
+      - path: /opt/insight-agent-platform/env/model-provider.env
+        required: false
     depends_on:
       mysql:
         condition: service_healthy
