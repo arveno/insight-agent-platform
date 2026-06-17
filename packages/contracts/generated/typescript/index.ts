@@ -176,6 +176,14 @@ export interface ModelCall {
   status: "pending" | "running" | "succeeded" | "failed" | "skipped" | "cancelled";
   errorType?: string | null;
   errorMessage?: string | null;
+  failureClass?: string | null;
+  httpStatus?: number | null;
+  providerErrorCode?: string | null;
+  providerRequestId?: string | null;
+  timeoutMs?: number | null;
+  retryable?: boolean | null;
+  retryAfterMs?: number | null;
+  rawErrorRedacted?: string | null;
   startedAt: string | null;
   completedAt?: string | null;
 }

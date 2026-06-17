@@ -681,6 +681,14 @@ class ModelCallResponse(BaseModel):
     status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
     errorType: str | None = None
     errorMessage: str | None = None
+    failureClass: str | None = None
+    httpStatus: int | None = None
+    providerErrorCode: str | None = None
+    providerRequestId: str | None = None
+    timeoutMs: int | None = None
+    retryable: bool | None = None
+    retryAfterMs: int | None = None
+    rawErrorRedacted: str | None = None
     startedAt: str | None = None
     completedAt: str | None = None
 

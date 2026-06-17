@@ -168,6 +168,14 @@ class ModelCall(TypedDict):
     status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
     errorType: NotRequired[str | None]
     errorMessage: NotRequired[str | None]
+    failureClass: NotRequired[str | None]
+    httpStatus: NotRequired[int | None]
+    providerErrorCode: NotRequired[str | None]
+    providerRequestId: NotRequired[str | None]
+    timeoutMs: NotRequired[int | None]
+    retryable: NotRequired[bool | None]
+    retryAfterMs: NotRequired[int | None]
+    rawErrorRedacted: NotRequired[str | None]
     startedAt: str | None
     completedAt: NotRequired[str | None]
 

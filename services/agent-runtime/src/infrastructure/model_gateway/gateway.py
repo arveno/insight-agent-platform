@@ -27,6 +27,15 @@ from urllib.request import urlopen as urllib_urlopen
 from src.app.config import ModelGatewaySettings
 from src.infrastructure.database.runtime_foundation import ModelCallRecord
 from src.infrastructure.model_gateway.errors import ModelGatewayConfigurationError
+from src.infrastructure.model_gateway.failure_taxonomy import (
+    build_failed_model_call,
+    classify_configuration_error,
+    classify_http_error,
+    classify_model_gateway_bug,
+    classify_response_schema_error,
+    classify_transport_error,
+    sanitize_provider_error_detail,
+)
 from src.infrastructure.model_gateway.readiness import (
     UrlopenCallable,
     build_model_provider_readiness_report,
@@ -96,10 +105,9 @@ class ModelGateway:
             readiness = build_model_provider_readiness_report(self.settings)
         except ModelGatewayConfigurationError as exc:
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_configuration_error(exc, api_key=""),
                     completed_at=started_at,
-                    error_message=exc.detail,
-                    error_type=f"configuration_{exc.code}",
                     latency_ms=0,
                     model_call_id=model_call_id,
                     model_id=target.model_id,
@@ -147,12 +155,14 @@ class ModelGateway:
             with response:
                 raw_payload = response.read()
         except HTTPError as exc:
-            detail = _read_http_error_detail(exc)
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_http_error(
+                        exc,
+                        api_key=readiness.api_key,
+                        timeout_ms=self.settings.timeout_ms,
+                    ),
                     completed_at=_current_completed_at(started_at),
-                    error_message=_sanitize_error_detail(detail, api_key=readiness.api_key),
-                    error_type=f"http_{exc.code}",
                     latency_ms=_latency_ms(started_counter),
                     model_call_id=model_call_id,
                     model_id=readiness.model,
@@ -164,10 +174,13 @@ class ModelGateway:
             ) from exc
         except URLError as exc:
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_transport_error(
+                        exc,
+                        api_key=readiness.api_key,
+                        timeout_ms=self.settings.timeout_ms,
+                    ),
                     completed_at=_current_completed_at(started_at),
-                    error_message=_sanitize_error_detail(exc.reason, api_key=readiness.api_key),
-                    error_type="network_error",
                     latency_ms=_latency_ms(started_counter),
                     model_call_id=model_call_id,
                     model_id=readiness.model,
@@ -179,10 +192,27 @@ class ModelGateway:
             ) from exc
         except OSError as exc:
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_transport_error(
+                        exc,
+                        api_key=readiness.api_key,
+                        timeout_ms=self.settings.timeout_ms,
+                    ),
                     completed_at=_current_completed_at(started_at),
-                    error_message=_sanitize_error_detail(str(exc), api_key=readiness.api_key),
-                    error_type="network_error",
+                    latency_ms=_latency_ms(started_counter),
+                    model_call_id=model_call_id,
+                    model_id=readiness.model,
+                    prompt_version_id=prompt_version_id,
+                    provider=readiness.provider,
+                    run_id=run_id,
+                    started_at=started_at,
+                )
+            ) from exc
+        except Exception as exc:
+            raise ModelGatewayInvocationError(
+                build_failed_model_call(
+                    failure=classify_model_gateway_bug(exc, api_key=readiness.api_key),
+                    completed_at=_current_completed_at(started_at),
                     latency_ms=_latency_ms(started_counter),
                     model_call_id=model_call_id,
                     model_id=readiness.model,
@@ -200,10 +230,30 @@ class ModelGateway:
             payload_object = cast(dict[str, object], json.loads(raw_payload.decode("utf-8")))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_response_schema_error(
+                        error_type="invalid_response_json",
+                        provider_message="invalid JSON payload from model provider",
+                        raw_error_redacted=sanitize_provider_error_detail(
+                            raw_payload.decode("utf-8", errors="replace"),
+                            api_key=readiness.api_key,
+                        ),
+                    ),
                     completed_at=completed_at,
-                    error_message="invalid JSON payload from model provider",
-                    error_type="invalid_response",
+                    latency_ms=latency_ms,
+                    model_call_id=model_call_id,
+                    model_id=readiness.model,
+                    prompt_version_id=prompt_version_id,
+                    provider=readiness.provider,
+                    run_id=run_id,
+                    started_at=started_at,
+                )
+            ) from exc
+        except Exception as exc:
+            raise ModelGatewayInvocationError(
+                build_failed_model_call(
+                    failure=classify_model_gateway_bug(exc, api_key=readiness.api_key),
+                    completed_at=completed_at,
                     latency_ms=latency_ms,
                     model_call_id=model_call_id,
                     model_id=readiness.model,
@@ -217,10 +267,16 @@ class ModelGateway:
         output_text = _extract_output_text(payload_object)
         if output_text is None:
             raise ModelGatewayInvocationError(
-                _build_failed_model_call(
+                build_failed_model_call(
+                    failure=classify_response_schema_error(
+                        error_type="invalid_response_schema",
+                        provider_message="missing choices[0].message.content in provider response",
+                        raw_error_redacted=sanitize_provider_error_detail(
+                            raw_payload.decode("utf-8", errors="replace"),
+                            api_key=readiness.api_key,
+                        ),
+                    ),
                     completed_at=completed_at,
-                    error_message="missing choices[0].message.content in provider response",
-                    error_type="invalid_response",
                     latency_ms=latency_ms,
                     model_call_id=model_call_id,
                     model_id=readiness.model,
@@ -245,6 +301,14 @@ class ModelGateway:
             "status": "succeeded",
             "errorType": None,
             "errorMessage": None,
+            "failureClass": None,
+            "httpStatus": None,
+            "providerErrorCode": None,
+            "providerRequestId": None,
+            "timeoutMs": None,
+            "retryable": None,
+            "retryAfterMs": None,
+            "rawErrorRedacted": None,
             "startedAt": started_at,
             "completedAt": completed_at,
         }
@@ -292,28 +356,6 @@ def _extract_output_text(payload: dict[str, object]) -> str | None:
     return None
 
 
-def _sanitize_error_detail(detail: object, *, api_key: str) -> str:
-    sanitized = str(detail).replace(api_key, "[redacted]")
-    sanitized = sanitized.replace("Authorization", "[redacted-header]")
-    sanitized = sanitized.replace("Bearer", "[redacted-token]")
-    return sanitized[:200]
-
-
-def _read_http_error_detail(exc: HTTPError) -> str:
-    if exc.fp is None:
-        return exc.reason or exc.msg
-    try:
-        body = exc.fp.read()
-    except OSError:
-        return exc.reason or exc.msg
-    if isinstance(body, bytes):
-        try:
-            return body.decode("utf-8")
-        except UnicodeDecodeError:
-            return exc.reason or exc.msg
-    return str(body)
-
-
 def _latency_ms(started_counter: float) -> int:
     return max(int((time.perf_counter() - started_counter) * 1000), 0)
 
@@ -321,37 +363,6 @@ def _latency_ms(started_counter: float) -> int:
 def _current_completed_at(started_at: str) -> str:
     _ = started_at
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
-
-def _build_failed_model_call(
-    *,
-    completed_at: str,
-    error_message: str,
-    error_type: str,
-    latency_ms: int,
-    model_call_id: str,
-    model_id: str,
-    prompt_version_id: str,
-    provider: str,
-    run_id: str,
-    started_at: str,
-) -> ModelCallRecord:
-    return {
-        "modelCallId": model_call_id,
-        "runId": run_id,
-        "provider": provider,
-        "modelId": model_id,
-        "promptVersionId": prompt_version_id,
-        "inputTokens": 0,
-        "outputTokens": 0,
-        "cost": 0.0,
-        "latencyMs": latency_ms,
-        "status": "failed",
-        "errorType": error_type,
-        "errorMessage": error_message,
-        "startedAt": started_at,
-        "completedAt": completed_at,
-    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -393,6 +404,14 @@ class FoundationModelGateway:
             "status": "succeeded",
             "errorType": None,
             "errorMessage": None,
+            "failureClass": None,
+            "httpStatus": None,
+            "providerErrorCode": None,
+            "providerRequestId": None,
+            "timeoutMs": None,
+            "retryable": None,
+            "retryAfterMs": None,
+            "rawErrorRedacted": None,
             "startedAt": occurred_at,
             "completedAt": occurred_at,
         }

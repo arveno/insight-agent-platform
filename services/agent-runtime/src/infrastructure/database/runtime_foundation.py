@@ -466,6 +466,14 @@ class ModelCallRecord(TypedDict):
     status: Literal["pending", "running", "succeeded", "failed", "skipped", "cancelled"]
     errorType: str | None
     errorMessage: str | None
+    failureClass: str | None
+    httpStatus: int | None
+    providerErrorCode: str | None
+    providerRequestId: str | None
+    timeoutMs: int | None
+    retryable: bool | None
+    retryAfterMs: int | None
+    rawErrorRedacted: str | None
     startedAt: str | None
     completedAt: str | None
 
@@ -586,6 +594,18 @@ def _sql_literal(value: str | None) -> str:
     return f"'{escaped}'"
 
 
+def _nullable_int_literal(value: int | None) -> str:
+    if value is None:
+        return "NULL"
+    return str(value)
+
+
+def _nullable_bool_literal(value: bool | None) -> str:
+    if value is None:
+        return "NULL"
+    return "1" if value else "0"
+
+
 def _json_literal(value: object) -> str:
     payload = json.dumps(value, ensure_ascii=False)
     return f"CAST({_sql_literal(payload)} AS JSON)"
@@ -651,6 +671,13 @@ def _coerce_analysis_run_retryable(payload: dict[str, object]) -> AnalysisRunRec
     if isinstance(retryable, int):
         payload["retryable"] = bool(retryable)
     return cast(AnalysisRunRecord, payload)
+
+
+def _coerce_model_call_retryable(payload: dict[str, object]) -> ModelCallRecord:
+    retryable = payload.get("retryable")
+    if isinstance(retryable, int):
+        payload["retryable"] = bool(retryable)
+    return cast(ModelCallRecord, payload)
 
 
 def _analysis_run_upsert_sql(analysis_run: AnalysisRunRecord) -> str:
@@ -955,6 +982,14 @@ INSERT INTO model_calls (
   status,
   error_type,
   error_message,
+  failure_class,
+  http_status,
+  provider_error_code,
+  provider_request_id,
+  timeout_ms,
+  retryable,
+  retry_after_ms,
+  raw_error_redacted,
   started_at,
   completed_at
 ) VALUES (
@@ -970,6 +1005,14 @@ INSERT INTO model_calls (
   {_sql_literal(model_call["status"])},
   {_sql_literal(model_call["errorType"])},
   {_sql_literal(model_call["errorMessage"])},
+  {_sql_literal(model_call["failureClass"])},
+  {_nullable_int_literal(model_call["httpStatus"])},
+  {_sql_literal(model_call["providerErrorCode"])},
+  {_sql_literal(model_call["providerRequestId"])},
+  {_nullable_int_literal(model_call["timeoutMs"])},
+  {_nullable_bool_literal(model_call["retryable"])},
+  {_nullable_int_literal(model_call["retryAfterMs"])},
+  {_sql_literal(model_call["rawErrorRedacted"])},
   {_sql_literal(model_call["startedAt"])},
   {_sql_literal(model_call["completedAt"])}
 )
@@ -985,6 +1028,14 @@ ON DUPLICATE KEY UPDATE
   status = VALUES(status),
   error_type = VALUES(error_type),
   error_message = VALUES(error_message),
+  failure_class = VALUES(failure_class),
+  http_status = VALUES(http_status),
+  provider_error_code = VALUES(provider_error_code),
+  provider_request_id = VALUES(provider_request_id),
+  timeout_ms = VALUES(timeout_ms),
+  retryable = VALUES(retryable),
+  retry_after_ms = VALUES(retry_after_ms),
+  raw_error_redacted = VALUES(raw_error_redacted),
   started_at = VALUES(started_at),
   completed_at = VALUES(completed_at);
 """
@@ -2307,6 +2358,14 @@ SELECT JSON_OBJECT(
           'status', status,
           'errorType', error_type,
           'errorMessage', error_message,
+          'failureClass', failure_class,
+          'httpStatus', http_status,
+          'providerErrorCode', provider_error_code,
+          'providerRequestId', provider_request_id,
+          'timeoutMs', timeout_ms,
+          'retryable', retryable,
+          'retryAfterMs', retry_after_ms,
+          'rawErrorRedacted', raw_error_redacted,
           'startedAt', started_at,
           'completedAt', completed_at
         )
@@ -2325,6 +2384,14 @@ SELECT JSON_OBJECT(
           status,
           error_type,
           error_message,
+          failure_class,
+          http_status,
+          provider_error_code,
+          provider_request_id,
+          timeout_ms,
+          retryable,
+          retry_after_ms,
+          raw_error_redacted,
           started_at,
           completed_at
         FROM model_calls
@@ -2341,7 +2408,7 @@ SELECT JSON_OBJECT(
             return []
 
         items = _require_array(payload.get("items"), "ModelCall.items")
-        return cast(list[ModelCallRecord], items)
+        return [_coerce_model_call_retryable(cast(dict[str, object], item)) for item in items]
 
 
 class SourceEvidenceRepository:

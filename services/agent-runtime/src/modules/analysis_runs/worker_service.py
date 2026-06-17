@@ -26,14 +26,12 @@ from src.infrastructure.database.runtime_foundation import (
     RuntimeFoundationDatabase,
     ToolCallRecord,
 )
-from src.infrastructure.model_gateway.gateway import (
-    ModelGateway,
-    ModelGatewayInvocationError,
+from src.infrastructure.model_gateway.failure_taxonomy import (
+    build_failed_model_call,
+    classify_worker_integration_bug,
 )
-from src.infrastructure.tool_registry.registry import (
-    ToolRegistry,
-    ToolRegistryExecutionError,
-)
+from src.infrastructure.model_gateway.gateway import ModelGateway, ModelGatewayInvocationError
+from src.infrastructure.tool_registry.registry import ToolRegistry, ToolRegistryExecutionError
 from src.modules.analysis_runs.lifecycle_service import AnalysisRunLifecycleService
 from src.modules.analysis_runs.message_streaming import (
     RuntimeMessageStreamService,
@@ -433,6 +431,14 @@ class AnalysisRunExecutionWorker:
             "status": "running",
             "errorType": None,
             "errorMessage": None,
+            "failureClass": None,
+            "httpStatus": None,
+            "providerErrorCode": None,
+            "providerRequestId": None,
+            "timeoutMs": None,
+            "retryable": None,
+            "retryAfterMs": None,
+            "rawErrorRedacted": None,
             "startedAt": started_at,
             "completedAt": None,
         }
@@ -515,24 +521,25 @@ class AnalysisRunExecutionWorker:
             )
             failed_attempt = _update_execution_attempt(
                 state["execution_attempt"],
-                failureCode=exc.model_call["errorType"],
+                failureCode=exc.model_call["failureClass"],
                 failureMessage=exc.model_call["errorMessage"],
                 releasedAt=exc.model_call["completedAt"],
                 status="failed",
             )
             failed_run = _build_failed_run(
                 analysis_run=run,
-                failure_code=exc.model_call["errorType"] or "model_failure",
+                failure_code=exc.model_call["failureClass"] or "model_failure",
                 failure_message=exc.model_call["errorMessage"] or "Model call failed.",
                 occurred_at=exc.model_call["completedAt"] or started_at,
                 outcome="model_failure",
                 phase="synthesis",
+                retryable=exc.model_call["retryable"],
             )
             failure_events = [
                 self._build_run_event(
                     event_type="model_call.failed",
                     occurred_at=exc.model_call["completedAt"] or started_at,
-                    error_code=exc.model_call["errorType"],
+                    error_code=exc.model_call["failureClass"],
                     error_message=exc.model_call["errorMessage"],
                     phase="synthesis",
                     ref_id=model_call_id,
@@ -545,7 +552,7 @@ class AnalysisRunExecutionWorker:
                 self._build_run_event(
                     event_type="run.failed",
                     occurred_at=exc.model_call["completedAt"] or started_at,
-                    error_code=exc.model_call["errorType"],
+                    error_code=exc.model_call["failureClass"],
                     error_message=exc.model_call["errorMessage"],
                     phase="synthesis",
                     run_id=run["runId"],
@@ -566,6 +573,74 @@ class AnalysisRunExecutionWorker:
                 "assistant_message": failed_message,
                 "execution_attempt": failed_attempt,
                 "model_call": exc.model_call,
+                "model_output": None,
+                "next_sequence": next_sequence + len(failure_events),
+            }
+        except Exception as exc:
+            failed_model_call = build_failed_model_call(
+                failure=classify_worker_integration_bug(exc, api_key=""),
+                completed_at=_utc_now(),
+                latency_ms=0,
+                model_call_id=model_call_id,
+                model_id=target.model_id,
+                prompt_version_id=PROMPT_VERSION_ID,
+                provider=target.provider,
+                run_id=run["runId"],
+                started_at=started_at,
+            )
+            failed_attempt = _update_execution_attempt(
+                state["execution_attempt"],
+                failureCode=failed_model_call["failureClass"],
+                failureMessage=failed_model_call["errorMessage"],
+                releasedAt=failed_model_call["completedAt"],
+                status="failed",
+            )
+            failed_run = _build_failed_run(
+                analysis_run=run,
+                failure_code=failed_model_call["failureClass"] or "worker_integration_bug",
+                failure_message=failed_model_call["errorMessage"] or "Model call failed.",
+                occurred_at=failed_model_call["completedAt"] or started_at,
+                outcome="model_failure",
+                phase="synthesis",
+                retryable=failed_model_call["retryable"],
+            )
+            failure_events = [
+                self._build_run_event(
+                    event_type="model_call.failed",
+                    occurred_at=failed_model_call["completedAt"] or started_at,
+                    error_code=failed_model_call["failureClass"],
+                    error_message=failed_model_call["errorMessage"],
+                    phase="synthesis",
+                    ref_id=model_call_id,
+                    ref_type="modelCall",
+                    run_id=run["runId"],
+                    sequence=next_sequence,
+                    status="failed",
+                    summary="记录 Worker 与 Model Gateway 集成失败。",
+                ),
+                self._build_run_event(
+                    event_type="run.failed",
+                    occurred_at=failed_model_call["completedAt"] or started_at,
+                    error_code=failed_model_call["failureClass"],
+                    error_message=failed_model_call["errorMessage"],
+                    phase="synthesis",
+                    run_id=run["runId"],
+                    sequence=next_sequence + 1,
+                    status="failed",
+                    summary="记录 AnalysisRun 因 Worker / Model Gateway 集成失败进入 failed。",
+                ),
+            ]
+            self._lifecycle_repository.record_execution_state(
+                analysis_run=failed_run,
+                execution_attempt=failed_attempt,
+                model_call=failed_model_call,
+                run_events=failure_events,
+            )
+            return {
+                **state,
+                "analysis_run": failed_run,
+                "execution_attempt": failed_attempt,
+                "model_call": failed_model_call,
                 "model_output": None,
                 "next_sequence": next_sequence + len(failure_events),
             }
@@ -746,6 +821,7 @@ def _build_failed_run(
     occurred_at: str,
     outcome: RunOutcome,
     phase: RunPhase,
+    retryable: bool | None = True,
 ) -> AnalysisRunRecord:
     return _update_analysis_run(
         analysis_run,
@@ -757,7 +833,7 @@ def _build_failed_run(
         terminalReason=failure_message,
         completedAt=None,
         expiredAt=None,
-        retryable=True,
+        retryable=retryable,
     )
 
 
