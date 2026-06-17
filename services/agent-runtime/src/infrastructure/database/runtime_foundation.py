@@ -2103,6 +2103,58 @@ LIMIT 1;
             raise KeyError(analysis_task_id)
         return _coerce_analysis_run_retryable(payload)
 
+    def find_next_queued_run(self) -> AnalysisRunRecord | None:
+        sql = """
+SELECT JSON_OBJECT(
+  'runId', analysis_run.run_id,
+  'workspaceId', analysis_run.workspace_id,
+  'userId', analysis_run.user_id,
+  'analysisTaskId', analysis_run.analysis_task_id,
+  'status', analysis_run.status,
+  'phase', analysis_run.phase,
+  'outcome', analysis_run.outcome,
+  'waitingFor', analysis_run.waiting_for,
+  'createdAt', analysis_run.created_at,
+  'validatingAt', analysis_run.validating_at,
+  'queuedAt', analysis_run.queued_at,
+  'startedAt', analysis_run.started_at,
+  'waitingSince', analysis_run.waiting_since,
+  'timeoutAt', analysis_run.timeout_at,
+  'cancelRequestedAt', analysis_run.cancel_requested_at,
+  'cancellingAt', analysis_run.cancelling_at,
+  'completedAt', analysis_run.completed_at,
+  'failedAt', analysis_run.failed_at,
+  'cancelledAt', analysis_run.cancelled_at,
+  'expiredAt', analysis_run.expired_at,
+  'rejectedAt', analysis_run.rejected_at,
+  'terminalReason', analysis_run.terminal_reason,
+  'failureCode', analysis_run.failure_code,
+  'retryable', analysis_run.retryable,
+  'retryOfRunId', analysis_run.retry_of_run_id,
+  'originalRunId', analysis_run.original_run_id
+)
+FROM analysis_runs analysis_run
+INNER JOIN (
+  SELECT
+    execution_attempt.run_id AS run_id,
+    MAX(execution_attempt.id) AS latest_attempt_id
+  FROM execution_attempts execution_attempt
+  GROUP BY execution_attempt.run_id
+) latest_attempt
+  ON latest_attempt.run_id = analysis_run.run_id
+INNER JOIN execution_attempts execution_attempt
+  ON execution_attempt.id = latest_attempt.latest_attempt_id
+WHERE analysis_run.status = 'queued'
+  AND analysis_run.phase = 'queueing'
+  AND execution_attempt.status = 'leased'
+ORDER BY analysis_run.queued_at ASC, analysis_run.id ASC
+LIMIT 1;
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return None
+        return _coerce_analysis_run_retryable(payload)
+
 
 class ExecutionAttemptRepository:
     """Repository boundary for ExecutionAttempt persistence and lookup."""

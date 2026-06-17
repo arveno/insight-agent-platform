@@ -4,9 +4,11 @@ set -Eeuo pipefail
 readonly COMPOSE_FILE="/opt/insight-agent-platform/deploy/docker/compose.ecs.preview.yml"
 readonly ENV_FILE="/opt/insight-agent-platform/env/ecs-preview.env"
 readonly SERVICES=(mysql redis caddy)
+readonly REQUIRED_COMPOSE_SERVICES=(mysql redis caddy agent-runtime agent-worker)
 
 failures=0
 running_services=""
+configured_services=""
 
 log() {
   printf '[ecs-compose-verify] %s\n' "$*"
@@ -106,6 +108,30 @@ collect_running_services() {
   else
     fail "Unable to read running compose services: ${running_services}"
     running_services=""
+  fi
+}
+
+collect_configured_services() {
+  if configured_services="$(compose_cmd config --services 2>&1)"; then
+    log "Configured compose services:"
+    if [[ -n "${configured_services}" ]]; then
+      printf '%s\n' "${configured_services}" | sed 's/^/[ecs-compose-verify]   /'
+    else
+      log "  none"
+    fi
+  else
+    fail "Unable to read configured compose services: ${configured_services}"
+    configured_services=""
+  fi
+}
+
+check_configured_service() {
+  local service="$1"
+
+  if printf '%s\n' "${configured_services}" | grep -qx "${service}"; then
+    pass "${service} is defined in compose config."
+  else
+    fail "${service} is missing from compose config."
   fi
 }
 
@@ -244,6 +270,12 @@ main() {
   fi
 
   collect_running_services
+  collect_configured_services
+
+  local configured_service
+  for configured_service in "${REQUIRED_COMPOSE_SERVICES[@]}"; do
+    check_configured_service "${configured_service}"
+  done
 
   check_service_running mysql
   check_service_running redis

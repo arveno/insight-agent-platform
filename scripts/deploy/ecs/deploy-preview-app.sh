@@ -173,13 +173,13 @@ compose_remote() {
 }
 
 build_runtime_image() {
-  log "Building remote agent-runtime image."
-  compose_remote "build agent-runtime"
+  log "Building remote agent-runtime and agent-worker images."
+  compose_remote "build agent-runtime agent-worker"
 }
 
 start_preview_stack() {
-  log "Starting preview stack: mysql redis agent-runtime caddy."
-  compose_remote "up -d mysql redis agent-runtime caddy"
+  log "Starting preview stack: mysql redis agent-runtime agent-worker caddy."
+  compose_remote "up -d mysql redis agent-runtime agent-worker caddy"
 }
 
 recreate_caddy_container() {

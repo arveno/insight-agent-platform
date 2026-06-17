@@ -110,15 +110,15 @@ Agent Runtime 必须可以通过 Docker 启动。
 
 当前 ECS compose / runnable app 入口：
 
-- `deploy/docker/compose.ecs.preview.yml`：ECS preview compose 栈；当前 runnable app slice 已包含 `mysql / redis / caddy / agent-runtime`，其中 `agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问；`agent-runtime` 与后续 `agent-worker` 如接入，必须注入 `/opt/insight-agent-platform/env/model-provider.env`。
+- `deploy/docker/compose.ecs.preview.yml`：ECS preview compose 栈；当前 runnable app slice 已包含 `mysql / redis / caddy / agent-runtime / agent-worker`。`agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问；`agent-worker` 使用真实 `python -m src.app.worker` 长驻入口，不暴露公网端口；两者都必须注入 `/opt/insight-agent-platform/env/model-provider.env`。
 - `deploy/docker/agent-runtime/Dockerfile`：preview runtime Docker build 入口，基于 `uv` 安装正式依赖并启动 FastAPI；compose 可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 指向 ECS 可访问的 Python index。
-- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持基础镜像来源、`MYSQL_HOST_PORT` loopback bind、`AGENT_RUNTIME_HOST_PORT` loopback bind、`AGENT_RUNTIME_PYPI_INDEX_URL`、`AGENT_RUNTIME_BUILD_CONTEXT=/opt/insight-agent-platform/current`、preview cookie 与 CORS 配置。
+- `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持基础镜像来源、`MYSQL_HOST_PORT` loopback bind、`AGENT_RUNTIME_HOST_PORT` loopback bind、`AGENT_RUNTIME_PYPI_INDEX_URL`、`AGENT_RUNTIME_BUILD_CONTEXT=/opt/insight-agent-platform/current`、`IAP_AGENT_WORKER_POLL_INTERVAL_SECONDS`、preview cookie 与 CORS 配置。
 - `scripts/deploy/ecs/init-compose-env.sh`：在 ECS 上生成 `/opt/insight-agent-platform/env/ecs-preview.env`；默认不覆盖已有 env，显式传 `--force` 才覆盖；支持通过环境变量覆盖默认镜像来源。
 - `scripts/deploy/ecs/configure-compose-images.sh`：在 ECS 上只更新已有 `ecs-preview.env` 的 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE`，不重置 MySQL 密码，不启动 compose。
 - `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
 - `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`；用于 infra foundation 验证，不代表 runnable app deploy。
 - `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL localhost-only bind / ping、Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
-- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up，以及 `migration -> seed -> query verify`。
+- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up `agent-runtime + agent-worker`，以及 `migration -> seed -> query verify`。
 - ECS preview `query verify` 必须兼容已累计的 runtime artifact；seed baseline 使用 minimum/invariant 校验，不得依赖历史 row_count 固定不变。
 - `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/runtime/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
 - `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
@@ -141,7 +141,7 @@ ssh -N -L 13306:127.0.0.1:3306 iap-ecs
 
 `Navicat`、`VS Code SQLTools`、`DBeaver` 只作为查看工具，不是数据库事实源。禁止手工建表、手工加字段、手工改数据，禁止执行未入库、未审查 SQL。
 
-当前 runnable app slice 只完成 frontend static + `agent-runtime` + `mysql` + `redis` + same-origin proxy + auth smoke 这条演示链路，不代表完整 `#164` 完成，也不代表 `agent-worker`、`Milvus Lite`、full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
+当前 runnable app slice 已完成 frontend static + `agent-runtime + agent-worker` + `mysql` + `redis` + same-origin proxy + auth smoke 这条演示链路，但不代表完整 `#164` 完成，也不代表 `Milvus Lite`、rollback versioning 或完整 CI/CD 已完成。
 
 如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
 

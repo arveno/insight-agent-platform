@@ -8,7 +8,7 @@
 - ECS preview compose infra foundation
 - ECS preview runnable app deployment slice
 
-当前已支持 frontend static + `agent-runtime` 的 runnable app deploy，但仍不负责 `agent-worker`、`Milvus Lite`、完整 CI/CD 或 rollback versioning。
+当前已支持 frontend static + `agent-runtime + agent-worker` 的 runnable app deploy，但仍不负责 `Milvus Lite`、完整 CI/CD 或 rollback versioning。
 
 如 ECS 默认 Python index 出现超时，可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 覆盖 runtime image build 使用的依赖源；默认值为 `https://mirrors.aliyun.com/pypi/simple/`。
 
@@ -148,6 +148,7 @@ bash scripts/deploy/ecs/verify-bootstrap.sh --hello-world
 - `redis`
 - `caddy`
 - `agent-runtime`
+- `agent-worker`
 
 镜像来源通过 compose env 配置，不再把 `redis:7` 的 ECS 手工 `docker tag` 视为正式流程。Preview 如需使用 ACR，应通过 `MYSQL_IMAGE / REDIS_IMAGE / CADDY_IMAGE` 配置镜像地址；`ACR Personal Edition` 只作为 preview 镜像来源，不作为 production registry。
 
@@ -239,10 +240,18 @@ pnpm deploy:ecs-preview
 - 同步 `deploy/docker/**` 到 `/opt/insight-agent-platform/deploy/docker`
 - 同步已部署源码快照到 `/opt/insight-agent-platform/current`
 - 确保 ECS host 上可用 `uv`
-- 在 ECS 上 `docker compose build agent-runtime`
-- 在 ECS 上 `docker compose up -d mysql redis agent-runtime caddy`
+- 在 ECS 上 `docker compose build agent-runtime agent-worker`
+- 在 ECS 上 `docker compose up -d mysql redis agent-runtime agent-worker caddy`
 - 运行 `migration -> seed -> query verify`
 - 输出 `/login` 访问地址
+
+deploy 完成后，`docker compose --env-file /opt/insight-agent-platform/env/ecs-preview.env -f /opt/insight-agent-platform/deploy/docker/compose.ecs.preview.yml ps --services` 应至少包含：
+
+- `agent-runtime`
+- `agent-worker`
+- `mysql`
+- `redis`
+- `caddy`
 
 其中 ECS preview `query verify` 允许环境中已经存在累计的 runtime artifact 行；它验证 seed minimum 和链路 invariant，不要求历史 runtime row_count 固定不变。
 
@@ -311,6 +320,7 @@ bash scripts/deploy/ecs/verify-compose-infra.sh
 
 - compose 文件存在
 - env 文件存在
+- compose config 包含 `mysql / redis / caddy / agent-runtime / agent-worker`
 - `mysql / redis / caddy` 容器运行
 - MySQL ping
 - Redis ping
@@ -334,7 +344,7 @@ bash scripts/rollback/ecs-compose-infra.sh --reset-data
 ## 边界
 
 - 当前新增的是 runnable app deployment slice，不代表完整 `#164` 完成。
-- 当前不代表 `agent-worker`、`Milvus Lite`、full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
-- 后续仍需补 worker、vector store、更多 smoke、failure simulation 和版本化 rollback。
+- 当前不代表 `Milvus Lite`、rollback versioning 或完整 CI/CD 已完成。
+- 后续仍需补 vector store、更多 smoke、failure simulation 和版本化 rollback。
 - 不允许手工改数据库；后续 preview reset 仍必须回到 `migration -> seed -> query verify`。
 - 不允许把 `MySQL 3306`、`Redis 6379`、`FastAPI 8000` 直接暴露到公网。
