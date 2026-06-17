@@ -25,6 +25,7 @@ class RuntimeRequestErrorResponse(BaseModel):
     errorCode: Literal[
         "NOT_FOUND",
         "MISMATCH",
+        "INVALID_REQUEST",
         "INVALID_STATE",
         "CONVERSATION_BUSY",
         "UNAUTHORIZED",
@@ -952,6 +953,7 @@ def runtime_error_response(
         "NOT_IMPLEMENTED",
         "NOT_FOUND",
         "MISMATCH",
+        "INVALID_REQUEST",
         "INVALID_STATE",
         "CONVERSATION_BUSY",
         "UNAUTHORIZED",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import socket
@@ -154,6 +155,29 @@ def load_env_file(env_file: Path) -> None:
 
 def response_json_dict(payload: object) -> dict[str, Any]:
     return cast(dict[str, Any], payload)
+
+
+def parse_sse_events(response: Any) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    current: dict[str, Any] = {}
+
+    def flush_current() -> None:
+        if not current:
+            return
+        parsed = dict(current)
+        if "data" in parsed:
+            parsed["json"] = json.loads(parsed["data"])
+        events.append(parsed)
+        current.clear()
+
+    for line in response.iter_lines():
+        if line == "":
+            flush_current()
+            continue
+        key, _, value = line.partition(":")
+        current[key] = value.lstrip()
+    flush_current()
+    return events
 
 
 def pick_free_port() -> str:
@@ -402,8 +426,27 @@ def main() -> int:
                     headers={"accept": "application/json"},
                 ).json()
             )["items"]
+            with client.stream(
+                "GET",
+                (
+                    f"/conversations/{conversation_id}/messages/"
+                    f"{final_assistant_message['messageId']}/stream"
+                ),
+                headers={"accept": "text/event-stream"},
+            ) as sse_response:
+                if sse_response.status_code != 200:
+                    raise RuntimeError(
+                        "message stream SSE replay failed: "
+                        f"{sse_response.status_code} {sse_response.text}"
+                    )
+                sse_events = parse_sse_events(sse_response)
 
         analysis_run = response_json_dict(delivery_response.json())
+        sse_terminal_events = [
+            event["event"]
+            for event in sse_events
+            if event["event"] in {"stream.completed", "stream.failed", "stream.cancelled"}
+        ]
         print(f"runId={analysis_run['runId']}")
         print(f"status={analysis_run['status']}")
         print(f"phase={analysis_run['phase']}")
@@ -413,6 +456,12 @@ def main() -> int:
         print(f"decisionCount={len(decision_items)}")
         print(f"preDeliveryMessageStreamCount={len(pre_delivery_replay_items)}")
         print(f"postDeliveryMessageStreamCount={len(post_delivery_replay_items)}")
+        print(f"sseReplayCount={len(sse_events)}")
+        print(f"sseFirstEvent={sse_events[0]['event'] if sse_events else '<none>'}")
+        print(
+            "sseTerminalEvent="
+            f"{sse_terminal_events[0] if len(sse_terminal_events) == 1 else '<invalid>'}"
+        )
         print(f"assistantMessageId={assistant_message['messageId']}")
         print(f"assistantMessageIdAfterDelivery={final_assistant_message['messageId']}")
         print(
@@ -440,6 +489,14 @@ def main() -> int:
             or post_delivery_projection["latestAssistantMessageStatus"] != "completed"
             or assistant_message["messageId"] != final_assistant_message["messageId"]
             or pre_delivery_replay_items != post_delivery_replay_items
+            or len(sse_events) != len(post_delivery_replay_items)
+            or [event["event"] for event in sse_events]
+            != [item["eventType"] for item in post_delivery_replay_items]
+            or [event["json"] for event in sse_events] != post_delivery_replay_items
+            or [int(event["id"]) for event in sse_events] != list(range(len(sse_events)))
+            or not sse_events
+            or sse_events[0]["event"] != "stream.started"
+            or sse_terminal_events != ["stream.completed"]
         ):
             print("status=failed", file=sys.stderr)
             return 1

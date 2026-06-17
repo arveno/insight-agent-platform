@@ -1254,12 +1254,17 @@ frontend 刷新 / re-entry 时必须先用 JSON replay 恢复 persisted MessageS
 frontend 不得绕过 backend same-conversation busy policy 创建第二条 active run。
 JSON replay 只返回 persisted MessageStream rows，不得重新调用模型或再生成 Message / Report / Decision / SourceEvidence。
 replay 必须验证 `Conversation / Message / AnalysisRun / AnalysisTask` 的 owner-scoped chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 返回 `404`。
+SSE live tail 只读取 persisted MessageStream rows；不得从 `RunEvent` 合成 token，也不得再次触发模型调用。
+SSE event `id` 固定使用 `MessageStream.sequence`；`Last-Event-ID=N` 从 `sequence=N+1` 继续，非法 cursor 返回 `400 INVALID_REQUEST`。
+transport-only `heartbeat` 只用于 tail 等待；它不是 `MessageStream` row，不得持久化，也不得进入 JSON replay。
 一旦 runtime 写入 assistant placeholder 与 `stream.started`，后续 MessageStream 必须最终进入且只进入一个 terminal event。
 terminal event 只能是 `stream.completed`、`stream.failed` 或 `stream.cancelled`，并且必须是最后一条 sequence。
 `RuntimeMessageStreamService` 是 runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口；worker_service 只调用 start / complete / fail lifecycle API，不得散落维护 terminal sequence、terminal uniqueness 或 assistant terminal status。
 `stream.failed.errorCode` 必须使用 `ModelCall.failureClass`，`stream.failed.errorMessage` 必须使用已脱敏的 `ModelCall.errorMessage`。
 failure path 也必须 terminalize assistant Message / MessageStream；不得留下只有 `stream.started` 的半开 stream。
 `Conversation.currentRunId` 当前表示该会话最近一次正式绑定的 canonical runId 引用；它不是 active-run 唯一性本身，same-conversation serialization 必须由 backend active-run guard 显式执行。
+SSE live tail 可以在 non-terminal stream 上保持连接直到 terminal event 或 server-side tail timeout；`stream.completed` 仍然不等于 `run.completed`。
+运行时正式实时主线仍然只有这一条 SSE persisted-row tail；不得并行引入 WebSocket 第二 realtime mainline，也不得把 provider token streaming 暴露成新的正式 transport。
 ```
 
 ---

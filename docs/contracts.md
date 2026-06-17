@@ -615,6 +615,9 @@ Conversation / Message / MessageStream 的边界固定如下：
 - `stream.failed.errorCode` 必须使用 `ModelCall.failureClass`；`errorType` 只表示底层错误形状，不得替代治理级 failure taxonomy。
 - runtime execution 阶段的 assistant Message / MessageStream terminal lifecycle 规则入口固定为 `RuntimeMessageStreamService`；worker 只表达 start / complete / fail 流程意图，不得散落手写 terminal append 细节。
 - `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 JSON replay 只回放已持久化 `MessageStream` rows，不得重新调用模型或再生成消息产物。
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 SSE live tail 也只读取已持久化 `MessageStream` rows；不得从 `RunEvent` 合成 token，不得再次调模型。
+- SSE event `id` 固定使用 `MessageStream.sequence`；`Last-Event-ID=N` 必须从 `sequence=N+1` 继续。
+- SSE `heartbeat` 是 transport-only event，不是 `MessageStream` row，不得持久化，也不得进入 JSON replay。
 - `MessageStream` replay 是 assistant-message only；`user / system / tool` message 不拥有 replay 成功路径。
 - replay 必须校验 `Conversation / Message / AnalysisRun / AnalysisTask` 同一 owner chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 不得泄漏存在性。
 - frontend 必须从 backend submit / conversation list / message list read surface 获取 assistant `messageId`，不得猜测或本地合成 stream owner。

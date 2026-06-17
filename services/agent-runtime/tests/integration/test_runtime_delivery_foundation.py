@@ -213,6 +213,29 @@ def response_json_dict(payload: object) -> dict[str, Any]:
     return cast(dict[str, Any], payload)
 
 
+def parse_sse_events(response: Any) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    current: dict[str, Any] = {}
+
+    def flush_current() -> None:
+        if not current:
+            return
+        parsed = dict(current)
+        if "data" in parsed:
+            parsed["json"] = json.loads(parsed["data"])
+        events.append(parsed)
+        current.clear()
+
+    for line in response.iter_lines():
+        if line == "":
+            flush_current()
+            continue
+        key, _, value = line.partition(":")
+        current[key] = value.lstrip()
+    flush_current()
+    return events
+
+
 class FakeUrlopenResponse:
     def __init__(self, payload: dict[str, object], *, status: int = 200) -> None:
         self._payload = payload
@@ -1057,9 +1080,47 @@ def test_runtime_execution_persists_placeholder_and_non_empty_json_replay_before
     )
 
 
+def test_message_stream_sse_replays_terminal_stream_rows_in_order_and_closes(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{run_id}-assistant"
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+
+    with client.stream(
+        "GET",
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "text/event-stream"},
+    ) as response:
+        assert response.status_code == 200
+        events = parse_sse_events(response)
+
+    assert len(events) == len(replay_items)
+    assert [int(event["id"]) for event in events] == list(range(len(events)))
+    assert [event["event"] for event in events] == [item["eventType"] for item in replay_items]
+    assert [event["json"] for event in events] == replay_items
+    assert events[0]["event"] == "stream.started"
+    assert events[-1]["event"] == "stream.completed"
+
+
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_requires_owned_conversation(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1074,16 +1135,18 @@ def test_message_stream_replay_requires_owned_conversation(
     select_workspace(client, "workspace-northstar-retail-sea")
     response = client.get(
         f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 404
     assert response.json()["errorCode"] == "NOT_FOUND"
 
 
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_rejects_same_owner_cross_conversation_mismatch(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1102,7 +1165,7 @@ def test_message_stream_replay_rejects_same_owner_cross_conversation_mismatch(
 
     response = client.get(
         f"/conversations/{other_conversation_id}/messages/{assistant_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 409
@@ -1110,9 +1173,11 @@ def test_message_stream_replay_rejects_same_owner_cross_conversation_mismatch(
     assert "mismatched the owned Conversation / Message binding" in response.json()["message"]
 
 
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_rejects_user_message_owner_even_when_stream_rows_are_empty(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1125,7 +1190,7 @@ def test_message_stream_replay_rejects_user_message_owner_even_when_stream_rows_
 
     response = client.get(
         f"/conversations/{conversation_id}/messages/{user_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 409
@@ -1158,9 +1223,38 @@ def test_message_stream_replay_allows_empty_rows_for_explicit_assistant_pre_deli
     assert response_json_dict(response.json()) == {"items": []}
 
 
+def test_message_stream_sse_rejects_invalid_last_event_id(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{run_id}-assistant"
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={
+            "accept": "text/event-stream",
+            "Last-Event-ID": "invalid-sequence",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["errorCode"] == "INVALID_REQUEST"
+    assert "Last-Event-ID" in response.json()["message"]
+
+
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_rejects_same_owner_run_mismatch(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1178,7 +1272,7 @@ def test_message_stream_replay_rejects_same_owner_run_mismatch(
 
     response = client.get(
         f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 409
@@ -1186,9 +1280,11 @@ def test_message_stream_replay_rejects_same_owner_run_mismatch(
     assert "analysisRun.analysisTaskId" in response.json()["message"]
 
 
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_rejects_same_owner_analysis_task_mismatch(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1206,7 +1302,7 @@ def test_message_stream_replay_rejects_same_owner_analysis_task_mismatch(
 
     response = client.get(
         f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 409
@@ -1214,9 +1310,11 @@ def test_message_stream_replay_rejects_same_owner_analysis_task_mismatch(
     assert "analysisTask.conversationId" in response.json()["message"]
 
 
+@pytest.mark.parametrize("accept_header", ["application/json", "text/event-stream"])
 def test_message_stream_replay_returns_404_for_other_owner_run_chain(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    accept_header: str,
 ) -> None:
     execution_state = execute_to_persisted_synthesis_state(
         client,
@@ -1237,7 +1335,7 @@ def test_message_stream_replay_returns_404_for_other_owner_run_chain(
 
     response = client.get(
         f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
-        headers={"accept": "application/json"},
+        headers={"accept": accept_header},
     )
 
     assert response.status_code == 404

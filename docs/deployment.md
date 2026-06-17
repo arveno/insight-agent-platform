@@ -213,13 +213,15 @@ scripts/smoke/
 
 - `scripts/smoke/runtime-result-delivery.py`
 - 本地真实 provider 推荐运行方式：`uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file .env.model.local`
-- 成功路径必须覆盖 `submit -> dispatch -> worker execute -> conversation list/message read surface -> MessageStream replay -> delivery promote -> query verify`。
+- 成功路径必须覆盖 `submit -> dispatch -> worker execute -> conversation list/message read surface -> MessageStream JSON replay -> MessageStream SSE replay -> delivery promote -> query verify`。
 - runtime 执行失败时，必须转向 failure-path query verify，输出结构化且已脱敏的失败诊断，而不是只打印 generic `status=failed`。
 - 日志只允许输出 `apiKey=configured` 等非 secret 状态。
 - success / failure 两条路径都必须证明 MessageStream lifecycle 已 terminalize：success path 以 `stream.completed` 收口，failure path 以 `stream.failed` 或 `stream.cancelled` 收口。
 - runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口是 `RuntimeMessageStreamService`；worker 不得散落手写 terminal append 细节。
 - same-conversation single-active-run policy 必须由 backend submit / create-run / dispatch guard 执行；frontend 不得尝试绕过 busy policy。
 - `Conversation.currentRunId` 可以继续作为最近一次正式绑定 run 的引用出现在 read surface 中，但它不是 active-run 唯一性本身；运维验证不得只看 `currentRunId` 就假设 busy policy 已满足。
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 `Accept: text/event-stream` 只 tail 已持久化 `MessageStream` rows；不得从 `RunEvent` 合成 token，也不得追加第二条 realtime mainline。
+- 当前 backend tail 安全常量固定为：heartbeat 间隔 `2s`、poll 间隔 `0.2s`、单次 tail 最长 `15s`。`heartbeat` 是 transport-only event，不落库。
 
 ### 8.1 Model Provider Structured Failure Smoke
 
