@@ -2973,6 +2973,8 @@ class AnalysisRunLifecycleRepository:
         *,
         analysis_run: AnalysisRunRecord | None = None,
         execution_attempt: ExecutionAttemptRecord | None = None,
+        message: MessageRecord | None = None,
+        message_streams: Sequence[MessageStreamRecord] = (),
         model_call: ModelCallRecord | None = None,
         run_events: Sequence[RunEventRecord] = (),
         tool_call: ToolCallRecord | None = None,
@@ -2982,10 +2984,15 @@ class AnalysisRunLifecycleRepository:
             statements.append(_analysis_run_upsert_sql(analysis_run))
         if execution_attempt is not None:
             statements.append(_execution_attempt_upsert_sql(execution_attempt))
+        if message is not None:
+            statements.append(_message_upsert_sql(message))
         if tool_call is not None:
             statements.append(_tool_call_upsert_sql(tool_call))
         if model_call is not None:
             statements.append(_model_call_upsert_sql(model_call))
+        statements.extend(
+            _message_stream_upsert_sql(message_stream) for message_stream in message_streams
+        )
         statements.extend(_run_event_insert_sql(run_event) for run_event in run_events)
         self._database.execute_transaction(statements)
 

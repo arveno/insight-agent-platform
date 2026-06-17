@@ -19,6 +19,8 @@ from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
     ExecutionAttemptRepository,
+    MessageRepository,
+    MessageStreamRepository,
     ModelCallRepository,
     ReportRepository,
     RuntimeFoundationMysqlCli,
@@ -34,6 +36,11 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "model_gateway_failure_verify.sh"
 )
+TERMINAL_MESSAGE_STREAM_EVENT_TYPES = {
+    "stream.completed",
+    "stream.failed",
+    "stream.cancelled",
+}
 
 TASK_PAYLOAD = {
     "businessDomainId": "business-domain-revenue-quality",
@@ -378,12 +385,29 @@ def execute_worker(
     monkeypatch: pytest.MonkeyPatch,
     *,
     urlopen: object,
-) -> tuple[dict[str, Any], str]:
+) -> tuple[dict[str, Any], str, str]:
     configure_model_gateway_env(monkeypatch)
     dispatched = create_dispatched_submit_run(client)
     run_id = dispatched["analysisRun"]["runId"]
+    conversation_id = dispatched["submit"]["conversation"]["conversationId"]
     worker = build_worker(urlopen=urlopen)
-    return worker.execute_run(run_id), run_id
+    return worker.execute_run(run_id), run_id, conversation_id
+
+
+def assert_message_stream_lifecycle(
+    replay_items: list[dict[str, Any]],
+    *,
+    terminal_event_type: str,
+) -> dict[str, Any]:
+    assert replay_items
+    assert [item["sequence"] for item in replay_items] == list(range(len(replay_items)))
+    terminal_items = [
+        item for item in replay_items if item["eventType"] in TERMINAL_MESSAGE_STREAM_EVENT_TYPES
+    ]
+    assert len(terminal_items) == 1
+    assert replay_items[-1]["eventType"] == terminal_event_type
+    assert terminal_items[0] == replay_items[-1]
+    return replay_items[-1]
 
 
 def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
@@ -470,12 +494,37 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
     messages = response_json_dict(
         client.get(f"/conversations/{conversation_id}/messages").json()
     )["items"]
-    assert [message["role"] for message in messages] == ["user"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["messageId"] == f"message-{run_id}-assistant"
+    assert assistant_message["status"] == "streaming"
+    assert assistant_message["reportId"] is None
+    assert assistant_message["sourceEvidenceIds"] == []
+    assert assistant_message["toolCallIds"] == [result["toolCall"]["toolCallId"]]
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    terminal_item = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.completed",
+    )
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert terminal_item["errorCode"] is None
+    assert terminal_item["errorMessage"] is None
 
     database = RuntimeFoundationMysqlCli()
     assert len(ExecutionAttemptRepository(database).list_by_run_id(run_id)) == 1
     assert len(ToolCallRepository(database).list_by_run_id(run_id)) == 1
     assert len(ModelCallRepository(database).list_by_run_id(run_id)) == 1
+    assert len(MessageRepository(database).list_by_run_id(run_id)) == 2
+    persisted_stream_rows = MessageStreamRepository(database).list_by_message_id(
+        assistant_message["messageId"]
+    )
+    assert len(persisted_stream_rows) == len(replay_items)
     assert SourceEvidenceRepository(database).list_by_run_id(run_id) == []
     assert ReportRepository(database).list_by_run_id(run_id) == []
 
@@ -582,7 +631,7 @@ def test_worker_execution_classifies_failed_model_calls(
     urlopen: object,
     expected: dict[str, object],
 ) -> None:
-    result, run_id = execute_worker(client, monkeypatch, urlopen=urlopen)
+    result, run_id, conversation_id = execute_worker(client, monkeypatch, urlopen=urlopen)
 
     assert result["analysisRun"]["runId"] == run_id
     assert result["analysisRun"]["status"] == "failed"
@@ -637,6 +686,27 @@ def test_worker_execution_classifies_failed_model_calls(
     assert client.get(f"/analysis-runs/{run_id}/source-evidence").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/reports").json() == {"items": []}
     assert client.get(f"/analysis-runs/{run_id}/decisions").json() == {"items": []}
+    messages = response_json_dict(
+        client.get(f"/conversations/{conversation_id}/messages").json()
+    )["items"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["status"] == "failed"
+    assert assistant_message["completedAt"] is not None
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    failed_terminal = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.failed",
+    )
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert failed_terminal["errorCode"] == expected["failureClass"]
+    assert failed_terminal["errorMessage"] == result["modelCall"]["errorMessage"]
 
 
 def test_worker_execution_classifies_worker_integration_bug(
@@ -657,6 +727,7 @@ def test_worker_execution_classifies_worker_integration_bug(
     configure_model_gateway_env(monkeypatch)
     dispatched = create_dispatched_submit_run(client)
     run_id = dispatched["analysisRun"]["runId"]
+    conversation_id = dispatched["submit"]["conversation"]["conversationId"]
     worker = build_worker_with_gateway(
         model_gateway=cast(ModelGateway, FakeWorkerIntegrationGateway())
     )
@@ -676,13 +747,36 @@ def test_worker_execution_classifies_worker_integration_bug(
     run_failed_event = next(item for item in events if item["eventType"] == "run.failed")
     assert model_failed_event["errorCode"] == "worker_integration_bug"
     assert run_failed_event["errorCode"] == "worker_integration_bug"
+    assert run_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
+
+    messages = response_json_dict(
+        client.get(f"/conversations/{conversation_id}/messages").json()
+    )["items"]
+    assert [message["role"] for message in messages] == ["user", "assistant"]
+    assistant_message = messages[-1]
+    assert assistant_message["status"] == "failed"
+    assert assistant_message["completedAt"] is not None
+
+    replay_items = response_json_dict(
+        client.get(
+            f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+            headers={"accept": "application/json"},
+        ).json()
+    )["items"]
+    failed_terminal = assert_message_stream_lifecycle(
+        replay_items,
+        terminal_event_type="stream.failed",
+    )
+    assert replay_items[0]["eventType"] == "stream.started"
+    assert failed_terminal["errorCode"] == "worker_integration_bug"
+    assert failed_terminal["errorMessage"] == result["modelCall"]["errorMessage"]
 
 
 def test_worker_failure_query_verify_reports_structured_timeout_classification(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _, run_id = execute_worker(client, monkeypatch, urlopen=fake_model_timeout)
+    _, run_id, _ = execute_worker(client, monkeypatch, urlopen=fake_model_timeout)
 
     verify_result = subprocess.run(
         [str(MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT), run_id, "provider_timeout"],

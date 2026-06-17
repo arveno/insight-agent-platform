@@ -25,12 +25,22 @@ from src.app.routes.runtime_contracts import (
     utc_timestamp,
 )
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunRecord,
+    AnalysisRunRepository,
+    AnalysisTaskRecord,
+    AnalysisTaskRepository,
     ConversationRecord,
     ConversationRepository,
+    MessageRecord,
     MessageRepository,
     MessageStreamRecord,
     MessageStreamRepository,
     RuntimeFoundationPyMySqlDatabase,
+)
+from src.modules.analysis_runs.message_streaming import (
+    MessageStreamStateError,
+    validate_message_stream_chain,
+    validate_message_stream_replay_message,
 )
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -58,6 +68,10 @@ FOUNDATION_ERROR_RESPONSE: dict[int | str, dict[str, Any]] = {
 }
 
 
+class MessageStreamReplayNotFoundError(RuntimeError):
+    """Raised when the replay chain resolves to a non-owned runtime object."""
+
+
 def _runtime_foundation_database() -> RuntimeFoundationPyMySqlDatabase:
     settings = get_settings()
     return RuntimeFoundationPyMySqlDatabase(
@@ -71,6 +85,14 @@ def _runtime_foundation_database() -> RuntimeFoundationPyMySqlDatabase:
 
 def _conversation_repository() -> ConversationRepository:
     return ConversationRepository(_runtime_foundation_database())
+
+
+def _analysis_task_repository() -> AnalysisTaskRepository:
+    return AnalysisTaskRepository(_runtime_foundation_database())
+
+
+def _analysis_run_repository() -> AnalysisRunRepository:
+    return AnalysisRunRepository(_runtime_foundation_database())
 
 
 def _message_repository() -> MessageRepository:
@@ -197,7 +219,7 @@ def stream_conversation_message(
     """Serve MessageStream replay as JSON or SSE from the same persisted record chain."""
 
     try:
-        _conversation_repository().get_by_conversation_id_and_owner(
+        conversation = _conversation_repository().get_by_conversation_id_and_owner(
             conversation_id,
             workspace_id=context.workspaceId,
             user_id=context.userId,
@@ -215,13 +237,36 @@ def stream_conversation_message(
             conversation_id=conversation_id,
         )
     except KeyError:
-        return runtime_error_response(
-            status_code=404,
-            error_code="NOT_FOUND",
-            message=f"Message not found: {message_id}",
+        return _message_not_found_or_mismatched_response(
+            context=context,
+            conversation_id=conversation_id,
+            message_id=message_id,
         )
 
     message_streams = _message_stream_repository().list_by_message_id(message_id)
+    try:
+        validate_message_stream_replay_message(
+            message=message,
+            has_message_streams=bool(message_streams),
+        )
+        _validate_owned_message_stream_replay_chain(
+            context=context,
+            conversation=conversation,
+            message=message,
+        )
+        validate_message_stream_chain(message=message, message_streams=message_streams)
+    except MessageStreamStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="INVALID_STATE",
+            message=str(exc),
+        )
+    except MessageStreamReplayNotFoundError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"MessageStream replay chain not found for messageId: {message_id}",
+        )
     if accept is not None and "text/event-stream" in accept:
         return StreamingResponse(
             _encode_message_stream_sse(message_streams),
@@ -236,3 +281,122 @@ def _encode_message_stream_sse(
     for message_stream in message_streams:
         payload = json.dumps(message_stream, ensure_ascii=False, separators=(",", ":"))
         yield f"event: {message_stream['eventType']}\ndata: {payload}\n\n"
+
+
+def _message_not_found_or_mismatched_response(
+    *,
+    context: AuthenticatedRequestContext,
+    conversation_id: str,
+    message_id: str,
+) -> JSONResponse:
+    try:
+        message = _message_repository().get_by_message_id(message_id)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found: {message_id}",
+        )
+
+    try:
+        _conversation_repository().get_by_conversation_id_and_owner(
+            message["conversationId"],
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"Message not found: {message_id}",
+        )
+
+    return runtime_error_response(
+        status_code=409,
+        error_code="INVALID_STATE",
+        message=(
+            "MessageStream replay requires the requested conversationId and messageId to share "
+            f"the same persisted object chain; conversationId={conversation_id} "
+            f"messageId={message_id} mismatched the owned Conversation / Message binding."
+        ),
+    )
+
+
+def _validate_owned_message_stream_replay_chain(
+    *,
+    context: AuthenticatedRequestContext,
+    conversation: ConversationRecord,
+    message: MessageRecord,
+) -> None:
+    analysis_task = _resolve_owned_analysis_task_for_message(context=context, message=message)
+    analysis_run = _resolve_owned_analysis_run_for_message(context=context, message=message)
+
+    mismatches: list[str] = []
+    if analysis_task["conversationId"] != conversation["conversationId"]:
+        mismatches.append("analysisTask.conversationId")
+    if message["analysisTaskId"] != analysis_task["analysisTaskId"]:
+        mismatches.append("message.analysisTaskId")
+    if message["runId"] != analysis_run["runId"]:
+        mismatches.append("message.runId")
+    if analysis_run["analysisTaskId"] != analysis_task["analysisTaskId"]:
+        mismatches.append("analysisRun.analysisTaskId")
+
+    if mismatches:
+        mismatch_summary = ", ".join(mismatches)
+        raise MessageStreamStateError(
+            "MessageStream replay requires Conversation / Message / AnalysisRun / "
+            "AnalysisTask to share the same owned runtime chain; mismatched fields: "
+            f"{mismatch_summary}."
+        )
+
+
+def _resolve_owned_analysis_task_for_message(
+    *,
+    context: AuthenticatedRequestContext,
+    message: MessageRecord,
+) -> AnalysisTaskRecord:
+    analysis_task_id = message["analysisTaskId"]
+    if analysis_task_id is None:
+        raise MessageStreamStateError("MessageStream replay requires message.analysisTaskId.")
+
+    try:
+        return _analysis_task_repository().get_by_analysis_task_id_and_owner(
+            analysis_task_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    except KeyError:
+        try:
+            _analysis_task_repository().get_by_analysis_task_id(analysis_task_id)
+        except KeyError as exc:
+            raise MessageStreamStateError(
+                "MessageStream replay requires message.analysisTaskId to resolve to a "
+                "persisted AnalysisTask."
+            ) from exc
+        raise MessageStreamReplayNotFoundError(analysis_task_id) from None
+
+
+def _resolve_owned_analysis_run_for_message(
+    *,
+    context: AuthenticatedRequestContext,
+    message: MessageRecord,
+) -> AnalysisRunRecord:
+    run_id = message["runId"]
+    if run_id is None:
+        raise MessageStreamStateError("MessageStream replay requires message.runId.")
+
+    try:
+        return _analysis_run_repository().get_by_run_id_and_owner(
+            run_id,
+            workspace_id=context.workspaceId,
+            user_id=context.userId,
+        )
+    except KeyError:
+        try:
+            _analysis_run_repository().get_by_run_id(run_id)
+        except KeyError as exc:
+            raise MessageStreamStateError(
+                "MessageStream replay requires message.runId to resolve to a persisted "
+                "AnalysisRun."
+            ) from exc
+        raise MessageStreamReplayNotFoundError(run_id) from None

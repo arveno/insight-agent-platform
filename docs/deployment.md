@@ -205,8 +205,19 @@ scripts/smoke/
 - 创建 workspace
 - 创建 analysis task
 - 创建 analysis run
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` JSON replay
 - SSE / run events 基础链路
 - contract response check
+
+当前 runtime delivery / replay smoke 入口：
+
+- `scripts/smoke/runtime-result-delivery.py`
+- 本地真实 provider 推荐运行方式：`uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file .env.model.local`
+- 成功路径必须覆盖 `submit -> dispatch -> worker execute -> MessageStream replay -> delivery promote -> query verify`。
+- runtime 执行失败时，必须转向 failure-path query verify，输出结构化且已脱敏的失败诊断，而不是只打印 generic `status=failed`。
+- 日志只允许输出 `apiKey=configured` 等非 secret 状态。
+- success / failure 两条路径都必须证明 MessageStream lifecycle 已 terminalize：success path 以 `stream.completed` 收口，failure path 以 `stream.failed` 或 `stream.cancelled` 收口。
+- runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口是 `RuntimeMessageStreamService`；worker 不得散落手写 terminal append 细节。
 
 ### 8.1 Model Provider Structured Failure Smoke
 
@@ -234,6 +245,7 @@ suggestedAction
 - `scripts/smoke/model-provider-readiness.py` 用于 provider readiness 与单次调用结构化诊断。
 - readiness smoke 的配置错误也必须输出结构化 failure diagnosis，而不是只打印裸 `errorType`；`missing_api_key` 映射 `failureClass=provider_auth_error`，`missing_config / invalid_base_url / unsupported_api_format / invalid_provider` 当前映射 `failureClass=model_gateway_bug`，并要求 `suggestedAction=fix_provider_env_or_configuration`。
 - `scripts/smoke/runtime-result-delivery.py` 在 runtime 执行失败时，必须转向 failure-path query verify，输出结构化失败诊断，而不是只打印 generic `status=failed`。
+- failure path 的 MessageStream terminal 规则固定为：assistant Message terminalized，`stream.failed.errorCode = ModelCall.failureClass`，且不得留下半开 stream。
 - failureClass 必须能区分 `timeout / rate limit / auth / quota / model not found / 5xx / schema error / code bug`。
 - 判断 provider/env issue 与 PR regression 时，必须优先做 baseline branch 对照，而不是凭猜测归因。
 - `#248` 当前只实现 retryability classification，不包含 silent fallback，也不自动切到第二 provider mainline。

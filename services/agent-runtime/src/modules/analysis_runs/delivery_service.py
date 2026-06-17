@@ -307,8 +307,6 @@ def _assert_no_existing_delivery_artifacts(
     source_evidence: list[SourceEvidenceRecord],
 ) -> None:
     duplicates: list[str] = []
-    if any(message["role"] == "assistant" and message["runId"] == run_id for message in messages):
-        duplicates.append("assistant_message")
     if source_evidence:
         duplicates.append("source_evidence")
     if reports:

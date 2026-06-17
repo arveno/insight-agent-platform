@@ -82,6 +82,18 @@ WHERE run_id = '__RUN_ID__'
   AND role = 'assistant';
 
 SELECT CONCAT(
+  'messages.assistant.final.same_message_id=',
+  EXISTS(
+    SELECT 1
+    FROM messages
+    WHERE run_id = '__RUN_ID__'
+      AND role = 'assistant'
+      AND message_id = CONCAT('message-', '__RUN_ID__', '-assistant')
+      AND status = 'completed'
+  )
+) AS check_line;
+
+SELECT CONCAT(
   'messages.assistant.report_link.exists=',
   EXISTS(
     SELECT 1
@@ -190,6 +202,108 @@ SELECT CONCAT(
 SELECT CONCAT('message_streams.run.row_count=', COUNT(*)) AS check_line
 FROM message_streams
 WHERE run_id = '__RUN_ID__';
+
+SELECT CONCAT(
+  'message_streams.message_link.exists=',
+  NOT EXISTS(
+    SELECT 1
+    FROM message_streams message_stream
+    LEFT JOIN messages message
+      ON message.message_id = message_stream.message_id
+     AND message.run_id = message_stream.run_id
+    WHERE message_stream.run_id = '__RUN_ID__'
+      AND message.message_id IS NULL
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'message_streams.conversation_link.exists=',
+  NOT EXISTS(
+    SELECT 1
+    FROM message_streams message_stream
+    LEFT JOIN messages message
+      ON message.message_id = message_stream.message_id
+    LEFT JOIN conversations conversation
+      ON conversation.conversation_id = message_stream.conversation_id
+    WHERE message_stream.run_id = '__RUN_ID__'
+      AND (
+        message.message_id IS NULL
+        OR conversation.conversation_id IS NULL
+        OR message.conversation_id <> message_stream.conversation_id
+      )
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'message_streams.run_link.exists=',
+  NOT EXISTS(
+    SELECT 1
+    FROM message_streams message_stream
+    LEFT JOIN analysis_runs analysis_run
+      ON analysis_run.run_id = message_stream.run_id
+    WHERE message_stream.run_id = '__RUN_ID__'
+      AND analysis_run.run_id IS NULL
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'message_streams.sequence.contiguous=',
+  CASE
+    WHEN COUNT(*) = 0 THEN 0
+    WHEN MIN(sequence_number) = 0
+      AND MAX(sequence_number) = COUNT(*) - 1
+      AND COUNT(DISTINCT sequence_number) = COUNT(*)
+    THEN 1
+    ELSE 0
+  END
+) AS check_line
+FROM message_streams
+WHERE run_id = '__RUN_ID__';
+
+SELECT CONCAT(
+  'message_streams.terminal.exists=',
+  EXISTS(
+    SELECT 1
+    FROM message_streams
+    WHERE run_id = '__RUN_ID__'
+      AND event_type IN ('stream.completed', 'stream.failed', 'stream.cancelled')
+  )
+) AS check_line;
+
+SELECT CONCAT(
+  'message_streams.terminal.single=',
+  CASE
+    WHEN (
+      SELECT COUNT(*)
+      FROM message_streams
+      WHERE run_id = '__RUN_ID__'
+        AND event_type IN ('stream.completed', 'stream.failed', 'stream.cancelled')
+    ) = 1
+    THEN 1
+    ELSE 0
+  END
+) AS check_line;
+
+SELECT CONCAT(
+  'message_streams.no_orphans=',
+  NOT EXISTS(
+    SELECT 1
+    FROM message_streams message_stream
+    LEFT JOIN messages message
+      ON message.message_id = message_stream.message_id
+     AND message.run_id = message_stream.run_id
+    LEFT JOIN conversations conversation
+      ON conversation.conversation_id = message_stream.conversation_id
+    LEFT JOIN analysis_runs analysis_run
+      ON analysis_run.run_id = message_stream.run_id
+    WHERE message_stream.run_id = '__RUN_ID__'
+      AND (
+        message.message_id IS NULL
+        OR conversation.conversation_id IS NULL
+        OR analysis_run.run_id IS NULL
+      )
+  )
+) AS check_line;
 
 SELECT CONCAT(
   'run_events.verification.started.exists=',

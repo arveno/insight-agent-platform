@@ -672,6 +672,7 @@ created
 running/execution -> running/delivery 只是进入 delivery gate，不等于 completed。
 worker release 只释放 control-plane 上的 ExecutionAttempt，不得直接写 run.completed。
 run.completed 必须等 Message / MessageStream / SourceEvidence / Report / Decision 等 delivery artifacts 真实落地后再写。
+worker/runtime 可以先创建 deterministic assistant placeholder Message 与其 MessageStream rows；delivery 只能 promote 同一 assistant Message，不得为同一 runId 再创建第二条 assistant Message。
 ```
 
 目标硬规则：
@@ -1065,7 +1066,8 @@ delivery/complete 不得把 failed / skipped / cancelled / pending ToolCall 或 
 delivery/complete 必须从 AnalysisTask.contextPack.root 中真实存在的 traceable sourceRef 生成 SourceEvidence；没有可用 sourceRef 时必须 409 honest failure。
 delivery/complete 必须按 sourceType + sourceId 去重 SourceEvidence，并生成 run-scoped deterministic safe sourceEvidenceId。
 delivery/complete 生成的 assistant Message 必须复用同一 conversationId / analysisTaskId / runId 的 user submit turnId；找不到该 user turnId 时必须 409 honest failure。
-delivery/complete 如果发现 assistant Message / SourceEvidence / Report / Decision / run.completed 任一已存在，必须 409 INVALID_STATE，不能 overwrite。
+delivery/complete 如果发现 SourceEvidence / Report / Decision / run.completed 已存在，必须 409 INVALID_STATE，不能 overwrite。
+delivery/complete 如果发现已存在 assistant Message，必须区分合法 placeholder promotion 与冲突 assistant_message：只有同一 deterministic messageId、同一 conversationId / analysisTaskId / runId / turnId、`reportId = null`、`sourceEvidenceIds = []`、pre-delivery status 的 placeholder 允许 promote，其它情况必须 409 INVALID_STATE。
 delivery/complete 成功前不得写 verification.passed。
 artifact.persisted 必须在 delivery artifacts 全部落库后写。
 run.completed 必须在 artifact.persisted 后写。
@@ -1199,10 +1201,13 @@ conversationId / messageId / turnId / messageStreamId 已进入正式 contracts�
 Conversation 承接会话主线和 currentRunId 引用。
 Message 展示 conversation 内容。
 MessageStream 传输流式输出。
+MessageStream 是 assistant Message child resource，不是 RunEvent alias。
 RunEvent 记录审计事实。
 Message 不拥有 ToolCall / Evidence / Report 生命周期。
 SSE 是 live MessageStream 的唯一实时传输方式。
 HTTP JSON 只用于 MessageStream snapshot / replay / history，不替代 live streaming 主通道。
+runtime execution 可以先写 assistant placeholder Message；delivery 再 promote 同一 messageId 为 final assistant Message。
+MessageStream replay 是 assistant-message only；user message 不得 replay 成 `{"items": []}`。
 ```
 
 禁止：
@@ -1239,6 +1244,13 @@ GET /analysis-runs/{runId}/decisions
 stream.completed 表示消息流结束，不表示 AnalysisRun 已 completed。
 RunEvent 不承载 token delta。
 前端实时渲染 assistant 增量时，事实源是 MessageStream，不是 RunEvent。
+JSON replay 只返回 persisted MessageStream rows，不得重新调用模型或再生成 Message / Report / Decision / SourceEvidence。
+replay 必须验证 `Conversation / Message / AnalysisRun / AnalysisTask` 的 owner-scoped chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 返回 `404`。
+一旦 runtime 写入 assistant placeholder 与 `stream.started`，后续 MessageStream 必须最终进入且只进入一个 terminal event。
+terminal event 只能是 `stream.completed`、`stream.failed` 或 `stream.cancelled`，并且必须是最后一条 sequence。
+`RuntimeMessageStreamService` 是 runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口；worker_service 只调用 start / complete / fail lifecycle API，不得散落维护 terminal sequence、terminal uniqueness 或 assistant terminal status。
+`stream.failed.errorCode` 必须使用 `ModelCall.failureClass`，`stream.failed.errorMessage` 必须使用已脱敏的 `ModelCall.errorMessage`。
+failure path 也必须 terminalize assistant Message / MessageStream；不得留下只有 `stream.started` 的半开 stream。
 ```
 
 ---

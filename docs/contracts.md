@@ -602,9 +602,19 @@ Conversation / Message / MessageStream 的边界固定如下：
 - `AnalysisTask` 是同一 `Conversation` 内一次正式提交的分析请求，也是 typed input snapshot。
 - `AnalysisRun` 是一个 `AnalysisTask` 的 execution attempt。
 - `Message` / `MessageStream` 不拥有 `AnalysisRun` 生命周期。
+- `MessageStream` 是 `assistant Message` 的 child resource；必须绑定同一 `conversationId / messageId / runId`。
 - `Message` 在同一 `Conversation` 内表达 turn record；在 `#201` phase 中，每次 composer submit 产生的持久化消息必须绑定 `analysisTaskId`。
 - `Message` 可以引用 `runId`，但不得用 `message status` 替代 `run status`。
 - `stream.completed` 不能替代 `run.completed`。
+- `assistant placeholder Message` 可以在 runtime execution 阶段先落库；delivery 只能 promote 同一 `messageId`，不得为同一 `runId` 再创建第二条 assistant Message。
+- 一旦 runtime 为 assistant placeholder 写入 `stream.started`，后续 `MessageStream` 必须最终进入且只进入一个 terminal event：`stream.completed`、`stream.failed` 或 `stream.cancelled`。
+- terminal event 必须是最后一条 sequence；MessageStream sequence 必须保持 0-based contiguous。
+- failure path 也必须 terminalize assistant Message / MessageStream；不得留下只有 `stream.started` 的半开 stream。
+- `stream.failed.errorCode` 必须使用 `ModelCall.failureClass`；`errorType` 只表示底层错误形状，不得替代治理级 failure taxonomy。
+- runtime execution 阶段的 assistant Message / MessageStream terminal lifecycle 规则入口固定为 `RuntimeMessageStreamService`；worker 只表达 start / complete / fail 流程意图，不得散落手写 terminal append 细节。
+- `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 JSON replay 只回放已持久化 `MessageStream` rows，不得重新调用模型或再生成消息产物。
+- `MessageStream` replay 是 assistant-message only；`user / system / tool` message 不拥有 replay 成功路径。
+- replay 必须校验 `Conversation / Message / AnalysisRun / AnalysisTask` 同一 owner chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 不得泄漏存在性。
 
 ## 5. AnalysisTask 输入任务
 

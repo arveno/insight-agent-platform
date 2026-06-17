@@ -60,8 +60,16 @@ expected_lines=(
   "source_evidence.run.row_count=0"
   "reports.run.row_count=0"
   "decisions.run.row_count=0"
-  "messages.assistant.run.row_count=0"
-  "message_streams.run.row_count=0"
+  "messages.assistant.run.row_count=1"
+  "messages.assistant.placeholder.exists=1"
+  "message_streams.message_link.exists=1"
+  "message_streams.conversation_link.exists=1"
+  "message_streams.run_link.exists=1"
+  "message_streams.sequence.contiguous=1"
+  "message_streams.terminal.exists=1"
+  "message_streams.terminal.single=1"
+  "message_streams.no_orphans=1"
+  "message_streams.stream_completed_without_run_completed=1"
 )
 
 for expected_line in "${expected_lines[@]}"; do
@@ -72,5 +80,9 @@ done
 
 tool_calls_count="$(line_value "${verify_output}" "tool_calls.run.row_count")"
 model_calls_count="$(line_value "${verify_output}" "model_calls.run.row_count")"
+assistant_message_count="$(line_value "${verify_output}" "messages.assistant.run.row_count")"
+message_stream_count="$(line_value "${verify_output}" "message_streams.run.row_count")"
 [[ "${tool_calls_count}" -gt 0 ]] || die "Expected tool_calls.run.row_count > 0"
 [[ "${model_calls_count}" -gt 0 ]] || die "Expected model_calls.run.row_count > 0"
+[[ "${assistant_message_count}" -gt 0 ]] || die "Expected messages.assistant.run.row_count > 0"
+[[ "${message_stream_count}" -gt 0 ]] || die "Expected message_streams.run.row_count > 0"

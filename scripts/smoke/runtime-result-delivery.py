@@ -29,6 +29,9 @@ from src.infrastructure.tool_registry.registry import ToolRegistry
 from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
 
 RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts" / "migration" / "runtime_foundation.sh"
+RUNTIME_EXECUTION_VERIFY_SCRIPT = (
+    REPO_ROOT / "scripts" / "migration" / "runtime_execution_verify.sh"
+)
 MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "model_gateway_failure_verify.sh"
 )
@@ -247,7 +250,10 @@ def missing_provider_env() -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Local smoke for #232 runtime evidence/report/decision delivery."
+        description=(
+            "Local smoke for #233a MessageStream replay, #232 delivery promotion, "
+            "and #248 structured failure verification."
+        )
     )
     parser.add_argument(
         "--env-file", type=Path, help="Optional env file with real provider config."
@@ -293,14 +299,14 @@ def main() -> int:
 
             execution_result = build_worker().execute_run(run_id)
             execution_attempt = execution_result["executionAttempt"]
+            verify_env = os.environ.copy()
+            verify_env.update(env_overrides)
+            verify_env["IAP_RUNTIME_VERIFY_RUN_ID"] = run_id
             if (
                 execution_result["analysisRun"]["status"] != "running"
                 or execution_result["analysisRun"]["phase"] != "synthesis"
                 or execution_attempt["status"] != "released"
             ):
-                verify_env = os.environ.copy()
-                verify_env.update(env_overrides)
-                verify_env["IAP_RUNTIME_VERIFY_RUN_ID"] = run_id
                 failure_verify_result = subprocess.run(
                     [str(MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT)],
                     cwd=REPO_ROOT,
@@ -314,6 +320,36 @@ def main() -> int:
                 if failure_verify_result.stderr:
                     print(failure_verify_result.stderr, file=sys.stderr, end="")
                 return failure_verify_result.returncode or 1
+
+            pre_delivery_messages = response_json_dict(
+                client.get(f"/conversations/{conversation_id}/messages").json()
+            )["items"]
+            assistant_message = next(
+                message for message in pre_delivery_messages if message["role"] == "assistant"
+            )
+            pre_delivery_replay_items = response_json_dict(
+                client.get(
+                    f"/conversations/{conversation_id}/messages/{assistant_message['messageId']}/stream",
+                    headers={"accept": "application/json"},
+                ).json()
+            )["items"]
+            if not pre_delivery_replay_items:
+                raise RuntimeError("MessageStream replay returned no persisted rows before delivery.")
+
+            execution_verify_result = subprocess.run(
+                [str(RUNTIME_EXECUTION_VERIFY_SCRIPT)],
+                cwd=REPO_ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+                env=verify_env,
+            )
+            if execution_verify_result.stdout:
+                print(execution_verify_result.stdout, end="")
+            if execution_verify_result.returncode != 0:
+                if execution_verify_result.stderr:
+                    print(execution_verify_result.stderr, file=sys.stderr)
+                return execution_verify_result.returncode
 
             delivery_response = client.post(
                 f"/analysis-runs/{run_id}/delivery/complete",
@@ -337,6 +373,15 @@ def main() -> int:
             message_items = response_json_dict(
                 client.get(f"/conversations/{conversation_id}/messages").json()
             )["items"]
+            final_assistant_message = next(
+                message for message in message_items if message["role"] == "assistant"
+            )
+            post_delivery_replay_items = response_json_dict(
+                client.get(
+                    f"/conversations/{conversation_id}/messages/{final_assistant_message['messageId']}/stream",
+                    headers={"accept": "application/json"},
+                ).json()
+            )["items"]
 
         analysis_run = response_json_dict(delivery_response.json())
         print(f"runId={analysis_run['runId']}")
@@ -346,6 +391,10 @@ def main() -> int:
         print(f"sourceEvidenceCount={len(source_evidence_items)}")
         print(f"reportCount={len(report_items)}")
         print(f"decisionCount={len(decision_items)}")
+        print(f"preDeliveryMessageStreamCount={len(pre_delivery_replay_items)}")
+        print(f"postDeliveryMessageStreamCount={len(post_delivery_replay_items)}")
+        print(f"assistantMessageId={assistant_message['messageId']}")
+        print(f"assistantMessageIdAfterDelivery={final_assistant_message['messageId']}")
         print(
             "assistantMessageCount="
             f"{sum(1 for message in message_items if message['role'] == 'assistant')}"
@@ -357,12 +406,12 @@ def main() -> int:
             or execution_result["analysisRun"]["status"] != "running"
             or execution_result["analysisRun"]["phase"] != "synthesis"
             or execution_attempt["status"] != "released"
+            or assistant_message["messageId"] != final_assistant_message["messageId"]
+            or pre_delivery_replay_items != post_delivery_replay_items
         ):
             print("status=failed", file=sys.stderr)
             return 1
 
-        verify_env = os.environ.copy()
-        verify_env.update(env_overrides)
         verify_env["IAP_RUNTIME_VERIFY_RUN_ID"] = analysis_run["runId"]
         verify_result = subprocess.run(
             [str(RUNTIME_RESULT_DELIVERY_VERIFY_SCRIPT)],

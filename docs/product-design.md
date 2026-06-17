@@ -306,7 +306,8 @@ Analysis
 - 当前阶段不再区分“异常追问 / 结果追问 / 普通追问”的执行路径；这些只是不同来源的 context，最终都进入同一个 `text + context` submit transaction。
 - `#223` 第一阶段只建立 shared metric source 与 Analysis text context entry。
 - `#202-2` 仍负责 `SourceRef detail / Open full source`。
-- `#203` 仍负责 `Conversation list / re-entry`。
+- `#233` 负责当前 runtime 主线里的 `Conversation list / re-entry` execution slice。
+- `#203` 在该 runtime slice 中只保留为历史产品设计来源，不阻塞 `#233` 执行。
 - 本规则不推翻既有 `#202` subject-scoped Inspector tree 方向，也不把 `Dashboard` 改成单个 metric detail 页面。
 
 ### Dashboard Context Tree / Action Projection template
