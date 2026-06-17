@@ -126,6 +126,19 @@ Issue 是执行合同，不是需求备忘录。不能只写“遵守文档”�
 
 Codex 的输出必须能回到 Issue 和仓库事实源中逐项验证。
 
+### Remote command governance
+
+涉及 ECS 或其它远端主机时，Codex 必须额外遵守以下规则：
+
+- Codex 不得默认 SSH 到 ECS。
+- 远端命令必须由 ChatGPT prompt 明确授权；未被明确授权的远端命令视为禁止。
+- 禁止并发 SSH。
+- 每轮远端命令必须少量、串行、可解释。
+- 禁止在 ECS host 上跑 `pytest`、frontend tests 或 full `uv` smoke。
+- 长命令必须后台日志化，避免占满交互 SSH。
+- 如果 SSH 不稳定，立即停止，不得反复重试。
+- 如果发现内存、CPU、load 异常，立即停止，不得继续排查扩大影响。
+
 ## Scoped fact-source reading and verification policy
 
 ### Scoped reading
