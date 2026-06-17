@@ -22,7 +22,14 @@ class RuntimeRequestErrorResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    errorCode: Literal["NOT_FOUND", "MISMATCH", "INVALID_STATE", "UNAUTHORIZED", "FORBIDDEN"]
+    errorCode: Literal[
+        "NOT_FOUND",
+        "MISMATCH",
+        "INVALID_REQUEST",
+        "INVALID_STATE",
+        "UNAUTHORIZED",
+        "FORBIDDEN",
+    ]
     message: str
 
 
@@ -899,6 +906,7 @@ def runtime_error_response(
         "NOT_IMPLEMENTED",
         "NOT_FOUND",
         "MISMATCH",
+        "INVALID_REQUEST",
         "INVALID_STATE",
         "UNAUTHORIZED",
         "FORBIDDEN",
