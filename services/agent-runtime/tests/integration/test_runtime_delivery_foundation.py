@@ -477,6 +477,35 @@ def persist_existing_assistant_message(
     )
 
 
+def persist_empty_assistant_message(
+    *,
+    analysis_task_id: str,
+    conversation_id: str,
+    run_id: str,
+    turn_id: str,
+    status: str = "created",
+) -> str:
+    message_id = f"message-{run_id}-assistant-empty"
+    MessageRepository(runtime_database()).create(
+        {
+            "messageId": message_id,
+            "conversationId": conversation_id,
+            "analysisTaskId": analysis_task_id,
+            "turnId": turn_id,
+            "runId": run_id,
+            "role": "assistant",
+            "content": "",
+            "status": cast(Any, status),
+            "sourceEvidenceIds": [],
+            "toolCallIds": [],
+            "reportId": None,
+            "createdAt": "2026-06-12T11:30:00Z",
+            "completedAt": None,
+        }
+    )
+    return message_id
+
+
 def persist_existing_run_completed_event(run_id: str) -> None:
     run_events = RunEventRepository(runtime_database()).list_by_run_id(run_id)
     sequence = int(run_events[-1]["sequence"]) + 1
@@ -630,6 +659,15 @@ def detach_submit_user_message_turn_binding(
     )
 
 
+def overwrite_message(
+    message_id: str,
+    **updates: Any,
+) -> None:
+    repository = MessageRepository(runtime_database())
+    message = repository.get_by_message_id(message_id)
+    repository.create(cast(Any, {**message, **updates}))
+
+
 def get_run_payload(client: TestClient, run_id: str) -> dict[str, Any]:
     response = client.get(f"/analysis-runs/{run_id}")
     assert response.status_code == 200, response.text
@@ -741,6 +779,140 @@ def test_message_stream_replay_rejects_same_owner_cross_conversation_mismatch(
     assert response.status_code == 409
     assert response.json()["errorCode"] == "INVALID_STATE"
     assert "mismatched the owned Conversation / Message binding" in response.json()["message"]
+
+
+def test_message_stream_replay_rejects_user_message_owner_even_when_stream_rows_are_empty(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    user_message_id = submit_payload["userMessage"]["messageId"]
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{user_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "assistant Message owner" in response.json()["message"]
+
+
+def test_message_stream_replay_allows_empty_rows_for_explicit_assistant_pre_delivery_state(
+    client: TestClient,
+) -> None:
+    dispatched = submit_and_dispatch(client, task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES)
+    run_id = dispatched["analysisRun"]["runId"]
+    conversation_id = dispatched["submit"]["conversation"]["conversationId"]
+    analysis_task_id = dispatched["submit"]["analysisTask"]["analysisTaskId"]
+    turn_id = dispatched["submit"]["userMessage"]["turnId"]
+    assistant_message_id = persist_empty_assistant_message(
+        analysis_task_id=analysis_task_id,
+        conversation_id=conversation_id,
+        run_id=run_id,
+        turn_id=turn_id,
+        status="created",
+    )
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response_json_dict(response.json()) == {"items": []}
+
+
+def test_message_stream_replay_rejects_same_owner_run_mismatch(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    original_run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{original_run_id}-assistant"
+
+    second_dispatched = submit_and_dispatch(client, task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES)
+    same_owner_run_id = second_dispatched["analysisRun"]["runId"]
+    overwrite_message(assistant_message_id, runId=same_owner_run_id)
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "analysisRun.analysisTaskId" in response.json()["message"]
+
+
+def test_message_stream_replay_rejects_same_owner_analysis_task_mismatch(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{run_id}-assistant"
+
+    second_dispatched = submit_and_dispatch(client, task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES)
+    same_owner_analysis_task_id = second_dispatched["submit"]["analysisTask"]["analysisTaskId"]
+    overwrite_message(assistant_message_id, analysisTaskId=same_owner_analysis_task_id)
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "INVALID_STATE"
+    assert "analysisTask.conversationId" in response.json()["message"]
+
+
+def test_message_stream_replay_returns_404_for_other_owner_run_chain(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    submit_payload = execution_state["submit"]
+    owned_run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    assistant_message_id = f"message-{owned_run_id}-assistant"
+
+    select_workspace(client, "workspace-northstar-retail-sea")
+    sea_dispatched = submit_and_dispatch(client, task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES)
+    other_owner_run_id = sea_dispatched["analysisRun"]["runId"]
+    select_workspace(client, "workspace-northstar-retail-china")
+
+    overwrite_message(assistant_message_id, runId=other_owner_run_id)
+
+    response = client.get(
+        f"/conversations/{conversation_id}/messages/{assistant_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["errorCode"] == "NOT_FOUND"
 
 
 def test_delivery_complete_persists_artifacts_from_persisted_execution_state(

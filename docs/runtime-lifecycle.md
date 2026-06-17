@@ -1168,6 +1168,7 @@ Message 不拥有 ToolCall / Evidence / Report 生命周期。
 SSE 是 live MessageStream 的唯一实时传输方式。
 HTTP JSON 只用于 MessageStream snapshot / replay / history，不替代 live streaming 主通道。
 runtime execution 可以先写 assistant placeholder Message；delivery 再 promote 同一 messageId 为 final assistant Message。
+MessageStream replay 是 assistant-message only；user message 不得 replay 成 `{"items": []}`。
 ```
 
 禁止：
@@ -1205,6 +1206,7 @@ stream.completed 表示消息流结束，不表示 AnalysisRun 已 completed。
 RunEvent 不承载 token delta。
 前端实时渲染 assistant 增量时，事实源是 MessageStream，不是 RunEvent。
 JSON replay 只返回 persisted MessageStream rows，不得重新调用模型或再生成 Message / Report / Decision / SourceEvidence。
+replay 必须验证 `Conversation / Message / AnalysisRun / AnalysisTask` 的 owner-scoped chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 返回 `404`。
 ```
 
 ---

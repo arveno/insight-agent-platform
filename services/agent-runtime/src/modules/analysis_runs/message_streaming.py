@@ -154,12 +154,12 @@ def validate_message_stream_chain(
     message: MessageRecord,
     message_streams: Sequence[MessageStreamRecord],
 ) -> None:
+    validate_message_stream_replay_message(
+        message=message,
+        has_message_streams=bool(message_streams),
+    )
     if not message_streams:
         return
-    if message["role"] != "assistant":
-        raise MessageStreamStateError("MessageStream replay requires an assistant Message owner.")
-    if message["runId"] is None:
-        raise MessageStreamStateError("MessageStream replay requires message.runId.")
 
     terminal_indexes: list[int] = []
     for index, message_stream in enumerate(message_streams):
@@ -196,6 +196,22 @@ def validate_message_stream_chain(
         raise MessageStreamStateError("MessageStream allows exactly one terminal event.")
     if terminal_indexes and terminal_indexes[0] != len(message_streams) - 1:
         raise MessageStreamStateError("MessageStream terminal event must be the final sequence.")
+
+
+def validate_message_stream_replay_message(
+    *,
+    message: MessageRecord,
+    has_message_streams: bool,
+) -> None:
+    if message["role"] != "assistant":
+        raise MessageStreamStateError("MessageStream replay requires an assistant Message owner.")
+    if message["runId"] is None:
+        raise MessageStreamStateError("MessageStream replay requires message.runId.")
+    if not has_message_streams and message["status"] not in PRE_DELIVERY_MESSAGE_STATUSES:
+        raise MessageStreamStateError(
+            "MessageStream replay requires persisted stream rows for terminal assistant "
+            "Messages."
+        )
 
 
 @dataclass(slots=True)

@@ -608,6 +608,8 @@ Conversation / Message / MessageStream 的边界固定如下：
 - `stream.completed` 不能替代 `run.completed`。
 - `assistant placeholder Message` 可以在 runtime execution 阶段先落库；delivery 只能 promote 同一 `messageId`，不得为同一 `runId` 再创建第二条 assistant Message。
 - `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 JSON replay 只回放已持久化 `MessageStream` rows，不得重新调用模型或再生成消息产物。
+- `MessageStream` replay 是 assistant-message only；`user / system / tool` message 不拥有 replay 成功路径。
+- replay 必须校验 `Conversation / Message / AnalysisRun / AnalysisTask` 同一 owner chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 不得泄漏存在性。
 
 ## 5. AnalysisTask 输入任务
 
