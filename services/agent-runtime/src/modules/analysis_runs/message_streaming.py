@@ -419,6 +419,7 @@ class RuntimeMessageStreamService:
 
 @dataclass(slots=True)
 class PersistedMessageStreamSseTailService:
+    message_repository: MessageRepository
     message_stream_repository: MessageStreamRepository
     heartbeat_interval_seconds: float = DEFAULT_MESSAGE_STREAM_SSE_HEARTBEAT_SECONDS
     poll_interval_seconds: float = DEFAULT_MESSAGE_STREAM_SSE_POLL_SECONDS
@@ -437,10 +438,11 @@ class PersistedMessageStreamSseTailService:
         next_heartbeat_at = started_at + self.heartbeat_interval_seconds
 
         while True:
+            latest_message = self._load_message(message["messageId"])
             message_streams = self.message_stream_repository.list_by_message_id(
-                message["messageId"]
+                latest_message["messageId"]
             )
-            validate_message_stream_chain(message=message, message_streams=message_streams)
+            validate_message_stream_chain(message=latest_message, message_streams=message_streams)
 
             while next_sequence < len(message_streams):
                 message_stream = message_streams[next_sequence]
@@ -463,6 +465,14 @@ class PersistedMessageStreamSseTailService:
 
             remaining = max(self.max_tail_seconds - elapsed, 0.0)
             self.sleep(min(self.poll_interval_seconds, remaining))
+
+    def _load_message(self, message_id: str) -> MessageRecord:
+        try:
+            return self.message_repository.get_by_message_id(message_id)
+        except KeyError as exc:
+            raise MessageStreamStateError(
+                "MessageStream SSE tail requires a persisted assistant Message owner."
+            ) from exc
 
 
 def resolve_message_stream_next_sequence(*, last_event_id: str | None) -> int:

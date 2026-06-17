@@ -854,6 +854,7 @@ def test_persisted_message_stream_sse_tail_service_replays_from_last_event_id(
     )
 
     tail_service = PersistedMessageStreamSseTailService(
+        message_repository=MessageRepository(database),
         message_stream_repository=MessageStreamRepository(database),
         heartbeat_interval_seconds=60.0,
         poll_interval_seconds=0.01,
@@ -914,6 +915,7 @@ def test_persisted_message_stream_sse_tail_service_emits_existing_then_new_rows_
             completed["done"] = True
 
     tail_service = PersistedMessageStreamSseTailService(
+        message_repository=MessageRepository(database),
         message_stream_repository=message_stream_repository,
         heartbeat_interval_seconds=60.0,
         poll_interval_seconds=0.01,
@@ -970,6 +972,7 @@ def test_persisted_message_stream_sse_tail_service_includes_failed_terminal_even
 
     frames = list(
         PersistedMessageStreamSseTailService(
+            message_repository=MessageRepository(database),
             message_stream_repository=message_stream_repository,
             heartbeat_interval_seconds=60.0,
             poll_interval_seconds=0.01,
@@ -984,10 +987,88 @@ def test_persisted_message_stream_sse_tail_service_includes_failed_terminal_even
     assert '"errorCode":"provider_timeout"' in parsed_frames[-1]["data"]
 
 
+def test_persisted_message_stream_sse_tail_service_emits_live_failed_terminal_transition(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    message_repository = MessageRepository(database)
+    message_stream_repository = MessageStreamRepository(database)
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    AnalysisRunRepository(database).create(build_analysis_run())
+
+    stream_service = RuntimeMessageStreamService(
+        lifecycle_repository=AnalysisRunLifecycleRepository(database),
+        message_repository=message_repository,
+        message_stream_repository=message_stream_repository,
+    )
+    assistant_message = stream_service.start_assistant_stream(
+        analysis_task_id=ANALYSIS_TASK_ID,
+        conversation_id=CONVERSATION_ID,
+        created_at="2026-06-05T11:22:00+08:00",
+        run_id=RUN_ID,
+        tool_call_ids=["tool-call-analysis-q2-revenue-gap-metrics"],
+        turn_id="turn-revenue-gap-q2-1",
+    )
+
+    clock = {"now": 0.0}
+    failed = {"done": False}
+    failed_model_call = {
+        **build_model_call_record(),
+        "status": "failed",
+        "errorType": "timeout_error",
+        "errorMessage": "The read operation timed out",
+        "failureClass": "provider_timeout",
+        "completedAt": "2026-06-05T11:24:00+08:00",
+        "retryable": True,
+        "timeoutMs": 30000,
+        "rawErrorRedacted": "The read operation timed out",
+    }
+
+    def monotonic() -> float:
+        return clock["now"]
+
+    def sleep(seconds: float) -> None:
+        clock["now"] += seconds
+        if not failed["done"]:
+            stream_service.fail_assistant_stream_from_model_call(
+                message=assistant_message,
+                model_call=failed_model_call,
+            )
+            failed["done"] = True
+
+    frames = list(
+        PersistedMessageStreamSseTailService(
+            message_repository=message_repository,
+            message_stream_repository=message_stream_repository,
+            heartbeat_interval_seconds=60.0,
+            poll_interval_seconds=0.01,
+            max_tail_seconds=0.1,
+            monotonic=monotonic,
+            sleep=sleep,
+        ).stream(message=assistant_message, last_event_id=None)
+    )
+    parsed_frames = [parse_sse_frame(frame) for frame in frames]
+    latest_message = message_repository.get_by_message_id(assistant_message["messageId"])
+    terminal_events = [
+        frame
+        for frame in parsed_frames
+        if frame["event"] in {"stream.completed", "stream.failed", "stream.cancelled"}
+    ]
+
+    assert parsed_frames[0]["event"] == "stream.started"
+    assert parsed_frames[-1]["event"] == "stream.failed"
+    assert '"errorCode":"provider_timeout"' in parsed_frames[-1]["data"]
+    assert '"errorMessage":"The read operation timed out"' in parsed_frames[-1]["data"]
+    assert len(terminal_events) == 1
+    assert latest_message["status"] == "failed"
+
+
 def test_persisted_message_stream_sse_tail_service_heartbeat_is_not_persisted(
     runtime_foundation_env: None,
 ) -> None:
     database = RuntimeFoundationMysqlCli()
+    message_repository = MessageRepository(database)
     AnalysisTaskRepository(database).create(build_analysis_task())
     ConversationRepository(database).create(build_conversation())
     AnalysisRunRepository(database).create(build_analysis_run())
@@ -995,7 +1076,7 @@ def test_persisted_message_stream_sse_tail_service_heartbeat_is_not_persisted(
     message_stream_repository = MessageStreamRepository(database)
     stream_service = RuntimeMessageStreamService(
         lifecycle_repository=AnalysisRunLifecycleRepository(database),
-        message_repository=MessageRepository(database),
+        message_repository=message_repository,
         message_stream_repository=message_stream_repository,
     )
     assistant_message = stream_service.start_assistant_stream(
@@ -1017,6 +1098,7 @@ def test_persisted_message_stream_sse_tail_service_heartbeat_is_not_persisted(
 
     frames = list(
         PersistedMessageStreamSseTailService(
+            message_repository=message_repository,
             message_stream_repository=message_stream_repository,
             heartbeat_interval_seconds=0.01,
             poll_interval_seconds=0.01,

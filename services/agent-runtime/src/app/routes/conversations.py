@@ -108,7 +108,10 @@ def _message_stream_repository() -> MessageStreamRepository:
 
 
 def _message_stream_sse_tail_service() -> PersistedMessageStreamSseTailService:
-    return PersistedMessageStreamSseTailService(_message_stream_repository())
+    return PersistedMessageStreamSseTailService(
+        message_repository=_message_repository(),
+        message_stream_repository=_message_stream_repository(),
+    )
 
 
 @router.post(
@@ -289,7 +292,14 @@ def stream_conversation_message(
                 error_code="INVALID_REQUEST",
                 message=str(exc),
             )
-        return StreamingResponse(stream_iterator, media_type="text/event-stream")
+        return StreamingResponse(
+            stream_iterator,
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
     return {"items": message_streams}
 
 
