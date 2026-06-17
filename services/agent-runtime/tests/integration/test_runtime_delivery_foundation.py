@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from src.app.config import get_settings
 from src.app.main import create_app
 from src.infrastructure.database.runtime_foundation import (
+    AnalysisRunRepository,
     AnalysisTaskRepository,
     ConversationRepository,
     DecisionRepository,
@@ -402,6 +403,33 @@ def overwrite_analysis_task(
     )
 
 
+def overwrite_analysis_run(
+    run_id: str,
+    *,
+    status: str | None = None,
+    phase: str | None = None,
+    completed_at: str | None = None,
+    failed_at: str | None = None,
+    cancelled_at: str | None = None,
+    expired_at: str | None = None,
+    rejected_at: str | None = None,
+) -> None:
+    repository = AnalysisRunRepository(runtime_database())
+    analysis_run = repository.get_by_run_id(run_id)
+    repository.create(
+        {
+            **analysis_run,
+            "status": status or analysis_run["status"],
+            "phase": phase or analysis_run["phase"],
+            "completedAt": completed_at,
+            "failedAt": failed_at,
+            "cancelledAt": cancelled_at,
+            "expiredAt": expired_at,
+            "rejectedAt": rejected_at,
+        }
+    )
+
+
 def overwrite_conversation(
     conversation_id: str,
     *,
@@ -527,6 +555,307 @@ def persist_empty_assistant_message(
         }
     )
     return message_id
+
+
+def test_submit_rejects_same_conversation_when_active_run_exists(client: TestClient) -> None:
+    first_response = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert first_response.status_code == 201, first_response.text
+    first_payload = response_json_dict(first_response.json())
+    conversation_id = first_payload["conversation"]["conversationId"]
+    run_id = first_payload["analysisRun"]["runId"]
+
+    second_response = client.post(
+        "/analysis-tasks/submit",
+        json={
+            **deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+            "conversationId": conversation_id,
+        },
+    )
+
+    assert second_response.status_code == 409
+    assert second_response.json()["errorCode"] == "CONVERSATION_BUSY"
+    assert run_id in second_response.json()["message"]
+
+
+@pytest.mark.parametrize(
+    ("terminal_status", "terminal_phase", "terminal_fields"),
+    [
+        ("completed", "delivery", {"completed_at": "2026-06-12T12:10:00Z"}),
+        ("failed", "synthesis", {"failed_at": "2026-06-12T12:10:00Z"}),
+        ("cancelled", "delivery", {"cancelled_at": "2026-06-12T12:10:00Z"}),
+    ],
+)
+def test_submit_allows_same_conversation_after_terminal_run(
+    client: TestClient,
+    terminal_status: str,
+    terminal_phase: str,
+    terminal_fields: dict[str, str],
+) -> None:
+    first_response = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert first_response.status_code == 201, first_response.text
+    first_payload = response_json_dict(first_response.json())
+    conversation_id = first_payload["conversation"]["conversationId"]
+    run_id = first_payload["analysisRun"]["runId"]
+    overwrite_analysis_run(
+        run_id,
+        status=terminal_status,
+        phase=terminal_phase,
+        completed_at=terminal_fields.get("completed_at"),
+        failed_at=terminal_fields.get("failed_at"),
+        cancelled_at=terminal_fields.get("cancelled_at"),
+    )
+
+    second_response = client.post(
+        "/analysis-tasks/submit",
+        json={
+            **deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+            "conversationId": conversation_id,
+        },
+    )
+
+    assert second_response.status_code == 201, second_response.text
+    assert response_json_dict(second_response.json())["conversation"]["conversationId"] == conversation_id
+
+
+def test_submit_allows_parallel_active_runs_for_different_conversations(
+    client: TestClient,
+) -> None:
+    first_response = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert first_response.status_code == 201, first_response.text
+    first_payload = response_json_dict(first_response.json())
+
+    second_conversation_response = client.post(
+        "/conversations",
+        json={"title": "不同 conversation 并行运行"},
+    )
+    assert second_conversation_response.status_code == 201, second_conversation_response.text
+    second_conversation_id = response_json_dict(second_conversation_response.json())["conversationId"]
+
+    second_submit_response = client.post(
+        "/analysis-tasks/submit",
+        json={
+            **deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+            "conversationId": second_conversation_id,
+        },
+    )
+
+    assert second_submit_response.status_code == 201, second_submit_response.text
+    second_payload = response_json_dict(second_submit_response.json())
+    assert first_payload["conversation"]["conversationId"] != second_payload["conversation"]["conversationId"]
+    assert first_payload["analysisRun"]["runId"] != second_payload["analysisRun"]["runId"]
+
+
+def test_submit_does_not_leak_other_owner_busy_conversation(client: TestClient) -> None:
+    select_workspace(client, "workspace-northstar-retail-sea")
+    other_owner_submit = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert other_owner_submit.status_code == 201, other_owner_submit.text
+    other_owner_conversation_id = response_json_dict(other_owner_submit.json())["conversation"][
+        "conversationId"
+    ]
+    select_workspace(client, "workspace-northstar-retail-china")
+
+    response = client.post(
+        "/analysis-tasks/submit",
+        json={
+            **deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+            "conversationId": other_owner_conversation_id,
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["errorCode"] == "NOT_FOUND"
+
+
+def test_create_analysis_run_rejects_same_conversation_when_active_run_exists(
+    client: TestClient,
+) -> None:
+    submit_response = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert submit_response.status_code == 201, submit_response.text
+    analysis_task_id = response_json_dict(submit_response.json())["analysisTask"]["analysisTaskId"]
+
+    response = client.post("/analysis-runs", json={"analysisTaskId": analysis_task_id})
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "CONVERSATION_BUSY"
+
+
+def test_dispatch_rejects_created_run_when_same_conversation_has_another_active_run(
+    client: TestClient,
+) -> None:
+    submit_response = client.post(
+        "/analysis-tasks/submit",
+        json=deepcopy(TASK_PAYLOAD_WITH_DELIVERY_SOURCES),
+    )
+    assert submit_response.status_code == 201, submit_response.text
+    submit_payload = response_json_dict(submit_response.json())
+    conversation_id = submit_payload["conversation"]["conversationId"]
+    workspace_id = submit_payload["conversation"]["workspaceId"]
+    user_id = submit_payload["conversation"]["userId"]
+
+    second_analysis_task_id = "analysis-task-conversation-busy-dispatch"
+    second_run_id = "analysis-run-conversation-busy-dispatch"
+    AnalysisTaskRepository(runtime_database()).create(
+        {
+            "analysisTaskId": second_analysis_task_id,
+            "conversationId": conversation_id,
+            "workspaceId": workspace_id,
+            "userId": user_id,
+            "businessDomainId": TASK_PAYLOAD_WITH_DELIVERY_SOURCES["businessDomainId"],
+            "question": "为 dispatch guard 构造第二条 created run。",
+            "contextPack": None,
+            "createdAt": "2026-06-12T12:20:00Z",
+            "updatedAt": "2026-06-12T12:20:00Z",
+        }
+    )
+    AnalysisRunRepository(runtime_database()).create(
+        {
+            "runId": second_run_id,
+            "workspaceId": workspace_id,
+            "userId": user_id,
+            "analysisTaskId": second_analysis_task_id,
+            "status": "created",
+            "phase": "intake",
+            "outcome": None,
+            "waitingFor": None,
+            "createdAt": "2026-06-12T12:20:00Z",
+            "validatingAt": None,
+            "queuedAt": None,
+            "startedAt": None,
+            "waitingSince": None,
+            "timeoutAt": None,
+            "cancelRequestedAt": None,
+            "cancellingAt": None,
+            "completedAt": None,
+            "failedAt": None,
+            "cancelledAt": None,
+            "expiredAt": None,
+            "rejectedAt": None,
+            "terminalReason": None,
+            "failureCode": None,
+            "retryable": True,
+            "retryOfRunId": None,
+            "originalRunId": None,
+        }
+    )
+
+    response = client.post(f"/analysis-runs/{second_run_id}/dispatch")
+
+    assert response.status_code == 409
+    assert response.json()["errorCode"] == "CONVERSATION_BUSY"
+
+
+def test_list_conversations_is_owner_scoped_and_exposes_active_projection_before_delivery(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    owned_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    owned_conversation_id = owned_state["submit"]["conversation"]["conversationId"]
+    owned_run_id = owned_state["workerResult"]["analysisRun"]["runId"]
+    owned_assistant_message_id = f"message-{owned_run_id}-assistant"
+
+    select_workspace(client, "workspace-northstar-retail-sea")
+    other_owner_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    other_owner_conversation_id = other_owner_state["submit"]["conversation"]["conversationId"]
+
+    owned_detail_response = client.get(f"/conversations/{owned_conversation_id}")
+    assert owned_detail_response.status_code == 404
+    owned_messages_response = client.get(
+        f"/conversations/{owned_conversation_id}/messages"
+    )
+    assert owned_messages_response.status_code == 404
+
+    select_workspace(client, "workspace-northstar-retail-china")
+
+    list_response = client.get("/conversations")
+    assert list_response.status_code == 200, list_response.text
+    items = response_json_dict(list_response.json())["items"]
+    projection = next(item for item in items if item["conversationId"] == owned_conversation_id)
+
+    assert other_owner_conversation_id not in {item["conversationId"] for item in items}
+    assert projection["currentRunId"] == owned_run_id
+    assert projection["activeRunId"] == owned_run_id
+    assert projection["activeRunStatus"] == "running"
+    assert projection["latestAssistantMessageId"] == owned_assistant_message_id
+    assert projection["latestAssistantMessageStatus"] == "streaming"
+
+    detail_response = client.get(f"/conversations/{owned_conversation_id}")
+    assert detail_response.status_code == 200, detail_response.text
+    assert response_json_dict(detail_response.json())["currentRunId"] == owned_run_id
+
+    messages_response = client.get(f"/conversations/{owned_conversation_id}/messages")
+    assert messages_response.status_code == 200, messages_response.text
+    messages = response_json_dict(messages_response.json())["items"]
+    assistant_messages = [message for message in messages if message["role"] == "assistant"]
+    assert [message["messageId"] for message in assistant_messages] == [owned_assistant_message_id]
+    assert assistant_messages[0]["status"] == "streaming"
+
+
+def test_reentry_surfaces_discover_assistant_message_after_delivery(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+    conversation_id = execution_state["submit"]["conversation"]["conversationId"]
+
+    complete_response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert complete_response.status_code == 202, complete_response.text
+
+    list_response = client.get("/conversations")
+    assert list_response.status_code == 200, list_response.text
+    items = response_json_dict(list_response.json())["items"]
+    projection = next(item for item in items if item["conversationId"] == conversation_id)
+    discovered_message_id = projection["latestAssistantMessageId"]
+
+    assert projection["currentRunId"] == run_id
+    assert projection["activeRunId"] is None
+    assert projection["activeRunStatus"] is None
+    assert projection["latestAssistantMessageStatus"] == "completed"
+    assert discovered_message_id == f"message-{run_id}-assistant"
+
+    messages_response = client.get(f"/conversations/{conversation_id}/messages")
+    assert messages_response.status_code == 200, messages_response.text
+    messages = response_json_dict(messages_response.json())["items"]
+    assistant_messages = [message for message in messages if message["role"] == "assistant"]
+    assert [message["messageId"] for message in assistant_messages] == [discovered_message_id]
+    assert assistant_messages[0]["status"] == "completed"
+
+    replay_response = client.get(
+        f"/conversations/{conversation_id}/messages/{discovered_message_id}/stream",
+        headers={"accept": "application/json"},
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert response_json_dict(replay_response.json())["items"]
 
 
 def persist_existing_run_completed_event(run_id: str) -> None:

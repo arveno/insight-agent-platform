@@ -220,11 +220,13 @@ scripts/smoke/
 - `deploy-preview-app.sh` 必须把 `scripts/smoke/runtime-result-delivery.py`、`database/mysql/queries/*.sql`、`services/agent-runtime/**` 同步到 `/opt/insight-agent-platform/current`
 - 当前 SiliconFlow smoke 默认模型固定为 `Qwen/Qwen2.5-7B-Instruct`
 - `Qwen/Qwen3.5-4B` 与 `Qwen/Qwen3-8B` timeout 作为 provider/model health evidence 记录在 `#164`，不是新的 provider secret 来源
-- 成功路径必须覆盖 `submit -> dispatch -> worker execute -> MessageStream JSON replay -> MessageStream SSE replay -> delivery promote -> query verify`。
+- 成功路径必须覆盖 `submit -> dispatch -> worker execute -> conversation list/message read surface -> MessageStream JSON replay -> MessageStream SSE replay -> delivery promote -> query verify`。
 - runtime 执行失败时，必须转向 failure-path query verify，输出结构化且已脱敏的失败诊断，而不是只打印 generic `status=failed`。
 - 日志只允许输出 `apiKey=configured`、`API_KEY=<redacted>` 或等价非 secret 状态。
 - success / failure 两条路径都必须证明 MessageStream lifecycle 已 terminalize：success path 以 `stream.completed` 收口，failure path 以 `stream.failed` 或 `stream.cancelled` 收口。
 - runtime assistant Message / MessageStream terminal lifecycle 的唯一规则入口是 `RuntimeMessageStreamService`；worker 不得散落手写 terminal append 细节。
+- same-conversation single-active-run policy 必须由 backend submit / create-run / dispatch guard 执行；frontend 不得尝试绕过 busy policy。
+- `Conversation.currentRunId` 可以继续作为最近一次正式绑定 run 的引用出现在 read surface 中，但它不是 active-run 唯一性本身；运维验证不得只看 `currentRunId` 就假设 busy policy 已满足。
 - `GET /conversations/{conversationId}/messages/{messageId}/stream` 的 `Accept: text/event-stream` 只 tail 已持久化 `MessageStream` rows；不得从 `RunEvent` 合成 token，也不得追加第二条 realtime mainline。
 - 当前 backend tail 安全常量固定为：heartbeat 间隔 `2s`、poll 间隔 `0.2s`、单次 tail 最长 `15s`。`heartbeat` 是 transport-only event，不落库。
 

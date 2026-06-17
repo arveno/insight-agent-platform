@@ -348,8 +348,18 @@ def main() -> int:
             pre_delivery_messages = response_json_dict(
                 client.get(f"/conversations/{conversation_id}/messages").json()
             )["items"]
+            pre_delivery_conversations = response_json_dict(client.get("/conversations").json())[
+                "items"
+            ]
+            pre_delivery_projection = next(
+                item
+                for item in pre_delivery_conversations
+                if item["conversationId"] == conversation_id
+            )
             assistant_message = next(
-                message for message in pre_delivery_messages if message["role"] == "assistant"
+                message
+                for message in pre_delivery_messages
+                if message["messageId"] == pre_delivery_projection["latestAssistantMessageId"]
             )
             pre_delivery_replay_items = response_json_dict(
                 client.get(
@@ -397,8 +407,18 @@ def main() -> int:
             message_items = response_json_dict(
                 client.get(f"/conversations/{conversation_id}/messages").json()
             )["items"]
+            post_delivery_conversations = response_json_dict(client.get("/conversations").json())[
+                "items"
+            ]
+            post_delivery_projection = next(
+                item
+                for item in post_delivery_conversations
+                if item["conversationId"] == conversation_id
+            )
             final_assistant_message = next(
-                message for message in message_items if message["role"] == "assistant"
+                message
+                for message in message_items
+                if message["messageId"] == post_delivery_projection["latestAssistantMessageId"]
             )
             post_delivery_replay_items = response_json_dict(
                 client.get(
@@ -445,6 +465,14 @@ def main() -> int:
         print(f"assistantMessageId={assistant_message['messageId']}")
         print(f"assistantMessageIdAfterDelivery={final_assistant_message['messageId']}")
         print(
+            "conversationListAssistantMessageIdBeforeDelivery="
+            f"{pre_delivery_projection['latestAssistantMessageId']}"
+        )
+        print(
+            "conversationListAssistantMessageIdAfterDelivery="
+            f"{post_delivery_projection['latestAssistantMessageId']}"
+        )
+        print(
             "assistantMessageCount="
             f"{sum(1 for message in message_items if message['role'] == 'assistant')}"
         )
@@ -455,6 +483,10 @@ def main() -> int:
             or execution_result["analysisRun"]["status"] != "running"
             or execution_result["analysisRun"]["phase"] != "synthesis"
             or execution_attempt["status"] != "released"
+            or pre_delivery_projection["activeRunId"] != run_id
+            or pre_delivery_projection["activeRunStatus"] != "running"
+            or post_delivery_projection["activeRunId"] is not None
+            or post_delivery_projection["latestAssistantMessageStatus"] != "completed"
             or assistant_message["messageId"] != final_assistant_message["messageId"]
             or pre_delivery_replay_items != post_delivery_replay_items
             or len(sse_events) != len(post_delivery_replay_items)

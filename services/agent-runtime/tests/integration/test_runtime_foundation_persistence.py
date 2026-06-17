@@ -530,6 +530,116 @@ def test_runtime_foundation_repositories_round_trip_frozen_chain(
     assert foundation["analysisRun"] == analysis_run
 
 
+def test_analysis_run_repository_finds_active_run_by_conversation_and_ignores_terminal_statuses(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    ConversationRepository(database).create(build_conversation())
+    analysis_run_repository = AnalysisRunRepository(database)
+    analysis_run_repository.create(build_analysis_run())
+
+    active_run = analysis_run_repository.find_active_by_conversation_id_and_owner(
+        CONVERSATION_ID,
+        workspace_id="workspace-northstar-retail-china",
+        user_id="user-zoe",
+    )
+    assert active_run is not None
+    assert active_run["runId"] == RUN_ID
+
+    analysis_run_repository.create(
+        {
+            **build_analysis_run(),
+            "status": "completed",
+            "phase": "delivery",
+            "completedAt": "2026-06-05T11:30:00+08:00",
+            "retryable": False,
+        }
+    )
+
+    assert (
+        analysis_run_repository.find_active_by_conversation_id_and_owner(
+            CONVERSATION_ID,
+            workspace_id="workspace-northstar-retail-china",
+            user_id="user-zoe",
+        )
+        is None
+    )
+
+
+def test_conversation_repository_list_projection_returns_owner_scoped_runtime_reentry_fields(
+    runtime_foundation_env: None,
+) -> None:
+    database = RuntimeFoundationMysqlCli()
+    AnalysisTaskRepository(database).create(build_analysis_task())
+    conversation_repository = ConversationRepository(database)
+    conversation_repository.create(build_conversation())
+    AnalysisRunRepository(database).create(
+        {
+            **build_analysis_run(),
+            "status": "completed",
+            "phase": "delivery",
+            "completedAt": "2026-06-05T11:30:00+08:00",
+            "retryable": False,
+        }
+    )
+    message_repository = MessageRepository(database)
+    for message in build_message_records():
+        message_repository.create(message)
+
+    AnalysisTaskRepository(database).create(
+        {
+            **build_analysis_task(),
+            "analysisTaskId": "analysis-task-sea-conversation",
+            "conversationId": "conversation-sea-runtime",
+            "workspaceId": "workspace-northstar-retail-sea",
+            "updatedAt": "2026-06-05T12:08:12+08:00",
+        }
+    )
+    conversation_repository.create(
+        {
+            **build_conversation(),
+            "conversationId": "conversation-sea-runtime",
+            "workspaceId": "workspace-northstar-retail-sea",
+            "currentRunId": "analysis-run-sea-runtime",
+            "updatedAt": "2026-06-05T12:08:12+08:00",
+        }
+    )
+    AnalysisRunRepository(database).create(
+        {
+            **build_analysis_run(),
+            "runId": "analysis-run-sea-runtime",
+            "analysisTaskId": "analysis-task-sea-conversation",
+            "workspaceId": "workspace-northstar-retail-sea",
+            "status": "running",
+            "phase": "synthesis",
+        }
+    )
+
+    items = conversation_repository.list_by_owner_with_projection(
+        workspace_id="workspace-northstar-retail-china",
+        user_id="user-zoe",
+    )
+
+    assert items == [
+        {
+            "conversationId": CONVERSATION_ID,
+            "workspaceId": "workspace-northstar-retail-china",
+            "userId": "user-zoe",
+            "currentRunId": RUN_ID,
+            "activeRunId": None,
+            "activeRunStatus": None,
+            "title": "收入增速异常",
+            "status": "active",
+            "latestMessageId": "message-revenue-gap-q2-assistant",
+            "latestAssistantMessageId": "message-revenue-gap-q2-assistant",
+            "latestAssistantMessageStatus": "completed",
+            "createdAt": "2026-06-05T11:08:12+08:00",
+            "updatedAt": "2026-06-05T11:08:12+08:00",
+        }
+    ]
+
+
 def test_runtime_artifact_repositories_round_trip(runtime_foundation_env: None) -> None:
     database = RuntimeFoundationMysqlCli()
     analysis_task_repository = AnalysisTaskRepository(database)

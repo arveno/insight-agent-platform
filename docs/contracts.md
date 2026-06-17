@@ -601,6 +601,8 @@ Conversation / Message / MessageStream 的边界固定如下：
 - `Conversation` 是 user-facing chat thread / interaction container。
 - `AnalysisTask` 是同一 `Conversation` 内一次正式提交的分析请求，也是 typed input snapshot。
 - `AnalysisRun` 是一个 `AnalysisTask` 的 execution attempt。
+- 同一 `Conversation` 保持线性主线；同一时刻最多只允许一个 non-terminal `AnalysisRun` / assistant stream。
+- 不同 `Conversation` 可以并发运行与并发 streaming。
 - `Message` / `MessageStream` 不拥有 `AnalysisRun` 生命周期。
 - `MessageStream` 是 `assistant Message` 的 child resource；必须绑定同一 `conversationId / messageId / runId`。
 - `Message` 在同一 `Conversation` 内表达 turn record；在 `#201` phase 中，每次 composer submit 产生的持久化消息必须绑定 `analysisTaskId`。
@@ -618,6 +620,8 @@ Conversation / Message / MessageStream 的边界固定如下：
 - SSE `heartbeat` 是 transport-only event，不是 `MessageStream` row，不得持久化，也不得进入 JSON replay。
 - `MessageStream` replay 是 assistant-message only；`user / system / tool` message 不拥有 replay 成功路径。
 - replay 必须校验 `Conversation / Message / AnalysisRun / AnalysisTask` 同一 owner chain；same-owner cross-object mismatch 返回 `409 INVALID_STATE`，other-owner chain 不得泄漏存在性。
+- frontend 必须从 backend submit / conversation list / message list read surface 获取 assistant `messageId`，不得猜测或本地合成 stream owner。
+- `Conversation.currentRunId` 表示当前会话最近一次正式绑定的 canonical `runId` 引用；它不是 same-conversation active-run 唯一性本身，busy policy 必须由 backend active-run guard 显式执行。
 
 ## 5. AnalysisTask 输入任务
 
@@ -779,6 +783,36 @@ analysisTaskId
 AnalysisTask.contextPack.root
 run outputs for selected runId
 ```
+
+conversation re-entry 所需的 owner-scoped backend read surface 当前固定至少包括：
+
+```text
+GET /conversations
+GET /conversations/{conversationId}
+GET /conversations/{conversationId}/messages
+GET /conversations/{conversationId}/messages/{messageId}/stream
+GET /analysis-runs/{runId}
+```
+
+其中 `GET /conversations` 的 list projection 至少承接：
+
+```text
+conversationId
+workspaceId
+userId
+title
+status
+createdAt
+updatedAt
+currentRunId
+activeRunId
+activeRunStatus
+latestMessageId
+latestAssistantMessageId
+latestAssistantMessageStatus
+```
+
+同一 `Conversation` 命中 busy policy 时，submit / create-run / dispatch 必须返回 `409 CONVERSATION_BUSY`；frontend 不得绕过该 guard 继续创建第二条 active run。
 
 该 read surface 未来可以由 aggregate read API 或 task/run 分离读取实现，但读取语义不能缺失。
 
