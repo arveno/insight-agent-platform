@@ -306,6 +306,7 @@ def run_provider_smoke(
             suggested_action=suggested_action_for_failure_class(
                 failure.failure_class,
                 retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )
     except (URLError, TimeoutError, OSError) as exc:
@@ -335,6 +336,7 @@ def run_provider_smoke(
             suggested_action=suggested_action_for_failure_class(
                 failure.failure_class,
                 retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
@@ -364,6 +366,7 @@ def run_provider_smoke(
             suggested_action=suggested_action_for_failure_class(
                 failure.failure_class,
                 retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )
     except Exception as exc:
@@ -389,5 +392,6 @@ def run_provider_smoke(
             suggested_action=suggested_action_for_failure_class(
                 failure.failure_class,
                 retryable=failure.retryable,
+                error_type=failure.error_type,
             ),
         )

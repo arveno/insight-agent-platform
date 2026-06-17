@@ -235,6 +235,24 @@ def fake_model_quota_429(
     )
 
 
+def fake_model_http_400_sensitive_message(
+    request: Request,
+    timeout: float,
+    context: object,
+) -> FakeUrlopenResponse:
+    _ = (timeout, context)
+    raise HTTPError(
+        url=request.full_url,
+        code=400,
+        msg="Bad Request",
+        hdrs=_http_headers({"X-Request-Id": "request-sensitive-400"}),
+        fp=io.BytesIO(
+            b'{"error":{"message":"Authorization: Bearer siliconflow-secret '
+            b'should not leak","code":"bad_request"}}'
+        ),
+    )
+
+
 def fake_model_cert_error(
     request: Request,
     timeout: float,
@@ -479,6 +497,19 @@ def test_worker_execution_runs_langgraph_and_stops_in_running_synthesis(
             },
         ),
         (
+            fake_model_http_400_sensitive_message,
+            {
+                "failureClass": "unknown",
+                "errorType": "http_400",
+                "httpStatus": 400,
+                "providerErrorCode": "bad_request",
+                "providerRequestId": "request-sensitive-400",
+                "timeoutMs": None,
+                "retryable": False,
+                "retryAfterMs": None,
+            },
+        ),
+        (
             fake_model_http_429,
             {
                 "failureClass": "provider_rate_limit",
@@ -572,8 +603,13 @@ def test_worker_execution_classifies_failed_model_calls(
     assert result["modelCall"]["retryable"] == expected["retryable"]
     assert result["modelCall"]["retryAfterMs"] == expected["retryAfterMs"]
     assert result["modelCall"]["rawErrorRedacted"] is not None
+    assert result["modelCall"]["errorMessage"] is not None
+    assert "Authorization" not in result["modelCall"]["errorMessage"]
+    assert "Bearer" not in result["modelCall"]["errorMessage"]
+    assert "siliconflow-secret" not in result["modelCall"]["errorMessage"]
     assert "Authorization" not in result["modelCall"]["rawErrorRedacted"]
-    assert "Bearer " not in result["modelCall"]["rawErrorRedacted"]
+    assert "Bearer" not in result["modelCall"]["rawErrorRedacted"]
+    assert "siliconflow-secret" not in result["modelCall"]["rawErrorRedacted"]
 
     events = response_json_dict(client.get(f"/analysis-runs/{run_id}/events").json())["items"]
     event_types = [item["eventType"] for item in events]
@@ -586,6 +622,12 @@ def test_worker_execution_classifies_failed_model_calls(
     assert run_failed_event["errorCode"] == expected["failureClass"]
     assert model_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
     assert run_failed_event["errorMessage"] == result["modelCall"]["errorMessage"]
+    assert "Authorization" not in model_failed_event["errorMessage"]
+    assert "Bearer" not in model_failed_event["errorMessage"]
+    assert "siliconflow-secret" not in model_failed_event["errorMessage"]
+    assert "Authorization" not in run_failed_event["errorMessage"]
+    assert "Bearer" not in run_failed_event["errorMessage"]
+    assert "siliconflow-secret" not in run_failed_event["errorMessage"]
 
     persisted_model_call = response_json_dict(
         client.get(f"/analysis-runs/{run_id}/model-calls").json()

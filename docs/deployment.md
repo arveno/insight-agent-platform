@@ -232,10 +232,12 @@ suggestedAction
 补充规则：
 
 - `scripts/smoke/model-provider-readiness.py` 用于 provider readiness 与单次调用结构化诊断。
+- readiness smoke 的配置错误也必须输出结构化 failure diagnosis，而不是只打印裸 `errorType`；`missing_api_key` 映射 `failureClass=provider_auth_error`，`missing_config / invalid_base_url / unsupported_api_format / invalid_provider` 当前映射 `failureClass=model_gateway_bug`，并要求 `suggestedAction=fix_provider_env_or_configuration`。
 - `scripts/smoke/runtime-result-delivery.py` 在 runtime 执行失败时，必须转向 failure-path query verify，输出结构化失败诊断，而不是只打印 generic `status=failed`。
 - failureClass 必须能区分 `timeout / rate limit / auth / quota / model not found / 5xx / schema error / code bug`。
 - 判断 provider/env issue 与 PR regression 时，必须优先做 baseline branch 对照，而不是凭猜测归因。
 - `#248` 当前只实现 retryability classification，不包含 silent fallback，也不自动切到第二 provider mainline。
+- `safeErrorMessage` 与 `rawErrorRedacted` 都必须经过统一 redaction；两者都不得打印 API key、Authorization header、Bearer token 或 `.env.model.local` 原文。
 
 ## 9. Load Test
 

@@ -121,6 +121,18 @@ def sanitize_provider_error_detail(detail: object, *, api_key: str) -> str:
     if api_key:
         sanitized = sanitized.replace(api_key, "[redacted]")
     sanitized = re.sub(
+        r"(IAP_[A-Z0-9_]*API_KEY)\s*=\s*[^\s;]+",
+        r"\1=[redacted]",
+        sanitized,
+        flags=re.IGNORECASE,
+    )
+    sanitized = re.sub(
+        r"\.env\.model\.local",
+        "[redacted-env-file]",
+        sanitized,
+        flags=re.IGNORECASE,
+    )
+    sanitized = re.sub(
         r"Authorization\b[:\s]+[^\r\n]*",
         "[redacted-header]",
         sanitized,
@@ -142,13 +154,18 @@ def classify_configuration_error(
     api_key: str,
 ) -> ModelGatewayFailureDetails:
     detail = sanitize_provider_error_detail(exc.detail, api_key=api_key)
+    failure_class = _classify_configuration_failure(exc.code)
     return _build_failure_details(
-        failure_class="model_gateway_bug",
+        failure_class=failure_class,
         error_type=f"configuration_{exc.code}",
         provider_message=detail,
         raw_error_redacted=detail,
         http_status=None,
-        provider_error_code=exc.code,
+        provider_error_code=_sanitize_provider_metadata_value(
+            exc.code,
+            api_key=api_key,
+            max_length=64,
+        ),
         provider_request_id=None,
         timeout_ms=None,
         retry_after_ms=None,
@@ -163,7 +180,15 @@ def classify_http_error(
 ) -> ModelGatewayFailureDetails:
     detail = _read_http_error_detail(exc)
     payload = _extract_provider_error_payload(detail)
-    combined_detail = payload.message or sanitize_provider_error_detail(detail, api_key=api_key)
+    sanitized_payload_message = (
+        sanitize_provider_error_detail(payload.message, api_key=api_key)
+        if payload.message
+        else None
+    )
+    combined_detail = sanitized_payload_message or sanitize_provider_error_detail(
+        detail,
+        api_key=api_key,
+    )
     headers = cast(Message | None, getattr(exc, "headers", None) or getattr(exc, "hdrs", None))
     failure_class = _classify_http_failure(
         http_status=exc.code,
@@ -176,8 +201,16 @@ def classify_http_error(
         provider_message=combined_detail,
         raw_error_redacted=sanitize_provider_error_detail(detail, api_key=api_key),
         http_status=exc.code,
-        provider_error_code=payload.code,
-        provider_request_id=payload.request_id or _extract_request_id(headers),
+        provider_error_code=_sanitize_provider_metadata_value(
+            payload.code,
+            api_key=api_key,
+            max_length=128,
+        ),
+        provider_request_id=_sanitize_provider_metadata_value(
+            payload.request_id or _extract_request_id(headers),
+            api_key=api_key,
+            max_length=128,
+        ),
         timeout_ms=timeout_ms if failure_class == "provider_timeout" else None,
         retry_after_ms=_parse_retry_after_ms(headers),
     )
@@ -323,7 +356,14 @@ def build_failed_model_call(
     }
 
 
-def suggested_action_for_failure_class(failure_class: str, *, retryable: bool) -> str:
+def suggested_action_for_failure_class(
+    failure_class: str,
+    *,
+    retryable: bool,
+    error_type: str | None = None,
+) -> str:
+    if error_type is not None and error_type.startswith("configuration_"):
+        return "fix_provider_env_or_configuration"
     if failure_class in {"provider_auth_error", "provider_quota_error", "provider_model_not_found"}:
         return "fix_provider_env_or_configuration"
     if failure_class in {
@@ -371,6 +411,12 @@ def _build_failure_details(
         retryable=failure_class in RETRYABLE_FAILURE_CLASSES,
         retry_after_ms=retry_after_ms,
     )
+
+
+def _classify_configuration_failure(code: str) -> ModelGatewayFailureClass:
+    if code == "missing_api_key":
+        return "provider_auth_error"
+    return "model_gateway_bug"
 
 
 def _classify_http_failure(
@@ -463,6 +509,21 @@ def _extract_provider_error_payload(detail: object) -> _ProviderErrorPayload:
 
 def _string_value(value: object) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
+
+
+def _sanitize_provider_metadata_value(
+    value: str | None,
+    *,
+    api_key: str,
+    max_length: int,
+) -> str | None:
+    normalized_value = _string_value(value)
+    if normalized_value is None:
+        return None
+    sanitized_value = sanitize_provider_error_detail(normalized_value, api_key=api_key)
+    sanitized_value = re.sub(r"[^A-Za-z0-9._:/=\-\[\]]+", "-", sanitized_value)
+    sanitized_value = re.sub(r"-{2,}", "-", sanitized_value).strip("-")
+    return sanitized_value[:max_length] or None
 
 
 def _extract_request_id(headers: Message | None) -> str | None:

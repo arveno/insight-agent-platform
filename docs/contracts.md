@@ -898,7 +898,7 @@ RunEvent 不等于 UI timeline item。UI 必须通过 mapper 转成 ViewModel。
 失败映射规则固定如下：
 
 - `model_call.failed.errorCode` 与 `run.failed.errorCode` 必须使用稳定 `failureClass`，不得只写 generic `network_error` 或 `failed`。
-- `model_call.failed.errorMessage` 与 `run.failed.errorMessage` 必须使用 safe redacted message，不得包含 API key、Authorization header 或 provider secret。
+- `model_call.failed.errorMessage` 与 `run.failed.errorMessage` 必须使用 safe redacted message，不得包含 API key、Authorization header、Bearer token、`.env.model.local` 原文或 provider secret。
 
 ## 7. ExecutionAttempt
 
@@ -1016,6 +1016,7 @@ unknown
 
 - `failureClass` 是对 raw provider error、HTTP status、异常类型和 schema parse failure 的稳定归一化分类。
 - `errorType` 保留底层错误形状，例如 `http_429`、`network_error`、`invalid_response_json`；它不替代 `failureClass`。
+- `safeErrorMessage` 必须和 `rawErrorRedacted` 一样先经过统一 redaction；两者都不得包含 API key、Authorization header、Bearer token 或 `.env.model.local` 原文。
 - `httpStatus`、`providerErrorCode`、`providerRequestId`、`timeoutMs`、`retryAfterMs` 只记录非敏感结构化诊断信息；缺失时为 `null`。
 - `retryable` 只表达策略判断；本轮 `#248` 只实现 retryability classification，不代表自动 retry 已执行。
 - `rawErrorRedacted` 允许保留安全脱敏后的原始错误摘要，但不得包含 API key、Authorization header、`.env.model.local` 内容或完整 provider secret。

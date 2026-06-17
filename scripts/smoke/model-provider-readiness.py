@@ -14,6 +14,10 @@ if str(RUNTIME_ROOT) not in sys.path:
 
 from src.app.config import get_settings
 from src.infrastructure.model_gateway.errors import ModelGatewayConfigurationError
+from src.infrastructure.model_gateway.failure_taxonomy import (
+    classify_configuration_error,
+    suggested_action_for_failure_class,
+)
 from src.infrastructure.model_gateway.readiness import (
     build_model_provider_readiness_report,
     run_provider_smoke,
@@ -91,6 +95,21 @@ def print_readiness(
         print(f"suggestedAction={suggested_action}")
 
 
+def _configuration_surface(provider_name: str, *, settings_provider: object) -> tuple[str, str, str, str, str]:
+    api_format = getattr(settings_provider, "api_format", "") or "<unknown>"
+    model = getattr(settings_provider, "default_model", "") or "<unknown>"
+    base_url = getattr(settings_provider, "base_url", "") or "<unknown>"
+    api_key_value = getattr(settings_provider, "api_key", "")
+    api_key_status = "configured" if api_key_value else "unknown" if settings_provider is None else "missing"
+    return (
+        provider_name or "<unknown>",
+        model,
+        base_url,
+        api_format,
+        api_key_status,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Smoke the active real model provider config.")
     parser.add_argument("--env-file", type=Path, help="Path to env file to load before smoke.")
@@ -109,14 +128,37 @@ def main() -> int:
     try:
         readiness = build_model_provider_readiness_report(settings, provider_name=args.provider)
     except ModelGatewayConfigurationError as exc:
-        provider_name = (args.provider or settings.model_gateway.active_provider or "<missing>").strip()
-        print(f"provider={provider_name or '<missing>'}")
-        if exc.code == "missing_api_key":
-            print("apiKey=missing")
-        else:
-            print("apiKey=unknown")
-        print(f"status={exc.code}")
-        print(f"errorType={exc.code}")
+        provider_name = (
+            (args.provider or settings.model_gateway.active_provider or "").strip().lower()
+        )
+        provider_settings = settings.model_gateway.provider(provider_name) if provider_name else None
+        provider, model, base_url, api_format, api_key_status = _configuration_surface(
+            provider_name,
+            settings_provider=provider_settings,
+        )
+        failure = classify_configuration_error(
+            exc,
+            api_key=getattr(provider_settings, "api_key", ""),
+        )
+        print_readiness(
+            provider=provider,
+            model=model,
+            base_url=base_url,
+            api_format=api_format,
+            api_key_status=api_key_status if exc.code == "missing_api_key" else api_key_status,
+            status="failed",
+            failure_class=failure.failure_class,
+            error_type=failure.error_type,
+            safe_error_message=failure.safe_error_message,
+            provider_error_code=failure.provider_error_code,
+            retryable=failure.retryable,
+            raw_error_redacted=failure.raw_error_redacted,
+            suggested_action=suggested_action_for_failure_class(
+                failure.failure_class,
+                retryable=failure.retryable,
+                error_type=failure.error_type,
+            ),
+        )
         return 2
 
     result = run_provider_smoke(

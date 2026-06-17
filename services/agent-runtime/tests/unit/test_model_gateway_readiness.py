@@ -256,6 +256,40 @@ def test_run_provider_smoke_classifies_auth_error(
     assert result.suggested_action == "fix_provider_env_or_configuration"
 
 
+def test_run_provider_smoke_sanitizes_http_provider_error_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure_real_provider_env(monkeypatch)
+    readiness = build_model_provider_readiness_report(get_settings())
+
+    def fake_urlopen(request: object, timeout: float, context: ssl.SSLContext) -> FakeResponse:
+        del request, timeout, context
+        raise HTTPError(
+            readiness.chat_completions_url,
+            400,
+            "Bad Request",
+            hdrs=HTTPMessage(),
+            fp=io.BytesIO(
+                b'{"error":{"message":"Authorization: Bearer siliconflow-secret '
+                b'should not leak","code":"bad_request"}}'
+            ),
+        )
+
+    result = run_provider_smoke(readiness, timeout_ms=30000, urlopen=fake_urlopen)
+
+    assert result.status == "failed"
+    assert result.failure_class == "unknown"
+    assert result.safe_error_message is not None
+    assert result.raw_error_redacted is not None
+    assert result.provider_error_code == "bad_request"
+    assert "Authorization" not in result.safe_error_message
+    assert "Bearer" not in result.safe_error_message
+    assert "siliconflow-secret" not in result.safe_error_message
+    assert "Authorization" not in result.raw_error_redacted
+    assert "Bearer" not in result.raw_error_redacted
+    assert "siliconflow-secret" not in result.raw_error_redacted
+
+
 def test_run_provider_smoke_sanitizes_network_error_detail(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
