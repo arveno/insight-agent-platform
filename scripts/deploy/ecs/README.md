@@ -8,9 +8,34 @@
 - ECS preview compose infra foundation
 - ECS preview runnable app deployment slice
 
-当前已支持 frontend static + `agent-runtime` 的 runnable app deploy，但仍不负责 `agent-worker`、`Milvus Lite`、完整 CI/CD 或 rollback versioning。
+当前已支持 frontend static + `agent-runtime` 的 `preview-small` runnable app deploy，但仍不负责 `agent-worker`、`Milvus Lite`、完整 CI/CD 或 rollback versioning。
 
 如 ECS 默认 Python index 出现超时，可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 覆盖 runtime image build 使用的依赖源；默认值为 `https://mirrors.aliyun.com/pypi/simple/`。
+
+## Current preview-small boundary
+
+当前 `1.6G` ECS 只允许 `preview-small` runtime-only slice：
+
+- `mysql`
+- `redis`
+- `caddy`
+- frontend static
+- `agent-runtime`
+
+默认不允许：
+
+- `agent-worker`
+- `Milvus Lite`
+- ECS host-side `uv` full smoke
+- `pytest`
+- frontend tests
+- heavy diagnostics
+
+强制保护入口：
+
+- `bash scripts/deploy/ecs/verify-preview-small-config.sh`
+- `bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- `IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
 
 ## 前置条件
 
@@ -32,7 +57,7 @@ bash scripts/deploy/ecs/bootstrap.sh
 
 - 安装基础依赖
 - 通过 Docker 官方 apt repository 安装 Docker Engine 与 Docker Compose plugin
-- 安装 ECS host-side remote smoke 所需的 `uv`
+- 安装 ECS host-side `uv`
 - 创建 `/opt/insight-agent-platform/**` 目录布局
 - 创建默认 `2G` swap（如果系统尚无 active swap）
 - 启用并启动 Docker
@@ -246,14 +271,26 @@ pnpm deploy:ecs-preview
 
 其中 ECS preview `query verify` 允许环境中已经存在累计的 runtime artifact 行；它验证 seed minimum 和链路 invariant，不要求历史 runtime row_count 固定不变。
 
-remote runtime delivery smoke 标准入口：
+ECS lightweight smoke 标准入口：
+
+```bash
+PREVIEW_BASE_URL=http://<ECS_IP_OR_DOMAIN> \
+bash scripts/smoke/ecs-preview-lightweight.sh
+```
+
+`ecs-preview-lightweight.sh` 复用 `ecs-preview-auth.sh` 的 curl/auth/session/workspace 检查，只验证 `/health` 与轻量 endpoint；它不会运行 `uv`、`pytest`、Python full smoke、provider 模型调用或 `agent-worker`。
+
+host-side full runtime smoke 仅作为手工 fallback，不是 `preview-small` 标准路径：
 
 ```bash
 cd /opt/insight-agent-platform/current
+IAP_ALLOW_ECS_HOST_FULL_SMOKE=1 \
 UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" \
 uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py \
   --env-file /opt/insight-agent-platform/env/model-provider.env
 ```
+
+只有 human 明确授权且确认资源足够时，才允许使用这条 fallback。
 
 只做 dry-run：
 
@@ -334,7 +371,26 @@ bash scripts/rollback/ecs-compose-infra.sh --reset-data
 ## 边界
 
 - 当前新增的是 runnable app deployment slice，不代表完整 `#164` 完成。
-- 当前不代表 `agent-worker`、`Milvus Lite`、full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
+- 当前不代表 `agent-worker`、`Milvus Lite`、host-side full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
 - 后续仍需补 worker、vector store、更多 smoke、failure simulation 和版本化 rollback。
 - 不允许手工改数据库；后续 preview reset 仍必须回到 `migration -> seed -> query verify`。
 - 不允许把 `MySQL 3306`、`Redis 6379`、`FastAPI 8000` 直接暴露到公网。
+
+## Safe restore runbook
+
+How to restore runtime-only preview safely:
+
+- run `bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- run `IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
+- do not run host-side full smoke
+- do not start worker
+- validate only `/health` and lightweight endpoints
+- prefer `bash scripts/smoke/ecs-preview-lightweight.sh`
+
+## Emergency note
+
+If Docker stack exhausts memory:
+
+- stop `docker.service` and `docker.socket`
+- keep ECS stable
+- do not restart full stack until runtime-only profile is confirmed

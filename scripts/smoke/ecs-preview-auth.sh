@@ -34,7 +34,7 @@ api_url() {
 
 assert_health() {
   local payload
-  payload="$(curl "${CURL_ARGS[@]}" "${preview_base_url}/runtime/health")"
+  payload="$(curl "${CURL_ARGS[@]}" "${preview_base_url}/health")"
   JSON_PAYLOAD="${payload}" python3 - <<'PY'
 import json
 import os
@@ -43,7 +43,7 @@ payload = json.loads(os.environ["JSON_PAYLOAD"])
 assert payload["status"] == "ok", payload
 assert payload["service"] == "agent-runtime", payload
 PY
-  log "PASS runtime health"
+  log "PASS /health"
 }
 
 assert_login_page() {

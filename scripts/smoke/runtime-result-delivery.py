@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, cast
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+ECS_HOST_CURRENT_ROOT = Path("/opt/insight-agent-platform/current")
 RUNTIME_ROOT = REPO_ROOT / "services" / "agent-runtime"
 if str(RUNTIME_ROOT) not in sys.path:
     sys.path.insert(0, str(RUNTIME_ROOT))
@@ -272,6 +273,22 @@ def missing_provider_env() -> list[str]:
     return [key for key in required_keys if not os.environ.get(key, "").strip()]
 
 
+def guard_ecs_host_full_smoke() -> int | None:
+    if REPO_ROOT != ECS_HOST_CURRENT_ROOT:
+        return None
+
+    if os.environ.get("IAP_ALLOW_ECS_HOST_FULL_SMOKE", "").strip() == "1":
+        return None
+
+    print("status=blocked reason=preview_small_ecs_host_full_smoke_denied", file=sys.stderr)
+    print("当前 ECS preview-small 禁止 host-side full runtime smoke。", file=sys.stderr)
+    print(
+        "请在本机运行，或显式设置 IAP_ALLOW_ECS_HOST_FULL_SMOKE=1 由 human 授权。",
+        file=sys.stderr,
+    )
+    return 2
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -286,6 +303,10 @@ def main() -> int:
         "--keep-db", action="store_true", help="Keep local MySQL container after run."
     )
     args = parser.parse_args()
+
+    blocked = guard_ecs_host_full_smoke()
+    if blocked is not None:
+        return blocked
 
     if args.env_file is not None:
         if not args.env_file.exists():

@@ -7,22 +7,33 @@
 项目采用：
 
 - Frontend：`apps/web` 的 `Vite build output` 由 ECS 上的 `Caddy / Nginx` 托管。
-- Agent Runtime：`Python / FastAPI / LangGraph`，与 `agent-worker` 一起由 ECS 上的 Docker Compose 承载。
+- Agent Runtime：`Python / FastAPI / LangGraph`，当前 `preview-small` 通过 ECS 上的 Docker Compose 承载 `agent-runtime`；`agent-worker` 仅保留为后续受控扩展，不属于当前默认栈。
 - Database：`MySQL 8.x` container，作为当前 preview 主数据库。
-- Vector Store：`Milvus Lite` file-backed preview mode，作为当前 preview 的向量检索承载。
+- Vector Store：`Milvus Lite` file-backed preview mode 保留为后续 preview 扩展承载，不属于当前 `1.6G` `preview-small` 默认栈。
 - Cache / Queue：`Redis` container，作为当前 preview 的 cache / queue 承载。
 
-当前 preview 主部署链路是 `Single ECS Docker Runtime`。
+当前 preview 部署方向仍是 `Single ECS Docker Runtime`。
 
-一台 ECS 承载以下 preview 责任：
+### 1.1 ECS preview-small
+
+当前正在使用的 `1.6G` ECS 只能承载压缩后的 `preview-small` runtime-only 环境。
+
+允许：
 
 - `caddy` 或 `nginx`
 - frontend static files
 - `agent-runtime` FastAPI
-- `agent-worker`
 - `mysql 8.x`
 - `redis`
-- `Milvus Lite` file-backed data
+
+默认不允许：
+
+- `agent-worker`
+- `Milvus Lite`
+- ECS host-side `uv` full smoke
+- `pytest`
+- frontend tests
+- heavy diagnostics
 
 `CloudBase Run / CloudBase Pages / CloudBase SQL` 仅保留为历史验证资源或后续可选平台，不作为当前 preview 主线。`CloudBase Functions` 仍不作为当前主部署链路。
 
@@ -56,7 +67,8 @@ services/agent-runtime/src/app/config.py
 - smoke、诊断和日志输出只允许表达 `apiKey=configured` 或等价非 secret 状态，不得打印真实 Key。
 - Model Gateway failure diagnosis 只能输出 safe redacted message；不得打印 API key、Authorization header、`.env.model.local` 内容或完整 provider raw secret。
 - 真实 provider readiness smoke 使用 `scripts/smoke/model-provider-readiness.py`；本地推荐从仓库根目录通过 `uv run --project services/agent-runtime python scripts/smoke/model-provider-readiness.py --env-file .env.model.local` 运行。
-- ECS host-side remote smoke 固定从 `/opt/insight-agent-platform/current` 执行，且要求 ECS host 上的 `uv` 可用；标准 provider env 固定通过 `--env-file /opt/insight-agent-platform/env/model-provider.env` 传入。
+- ECS host 上保留 `uv` 只用于受控的人肉授权运维或诊断，不代表 host-side full smoke 成为默认验证路径。
+- 当前 `preview-small` 默认禁止 ECS host-side `uv` full smoke；只有 human 明确授权并显式设置 `IAP_ALLOW_ECS_HOST_FULL_SMOKE=1` 时，才允许从 `/opt/insight-agent-platform/current` 手工运行 full smoke，并继续使用 `--env-file /opt/insight-agent-platform/env/model-provider.env` 传入标准 provider env。
 
 ## 3. 必备环境变量占位
 
@@ -92,25 +104,47 @@ Agent Runtime 必须可以通过 Docker 启动。
 当前 preview 部署要求如下：
 
 - Frontend：`apps/web` 的 build output 由 ECS 上的 `Caddy / Nginx` 托管。
-- Runtime：ECS 通过 Docker Compose 承载 `agent-runtime` FastAPI 与 `agent-worker`。
+- Runtime：当前 `1.6G` `preview-small` 只通过 Docker Compose 承载 `agent-runtime` FastAPI；`agent-worker` 不属于默认 small preview profile。
 - Database：`MySQL 8.x` container 作为当前 preview 主数据库；`CloudBase SQL` 不作为当前 preview 主数据库。
-- Vector Store：`Milvus Lite` 是当前 preview 的向量检索承载；完整 `Milvus Standalone / Distributed` 不是当前 preview 目标。
+- Vector Store：`Milvus Lite` 不属于当前 `preview-small` 默认栈；完整 `Milvus Standalone / Distributed` 也不是当前 preview 目标。
 - Cache / Queue：`Redis` container 作为当前 preview cache / queue；不依赖 `CloudBase` 标准版、腾讯云 `Redis` 或 VPC 内网互联。
 - Security：公网只开放 `22 / 80 / 443`；`MySQL 3306`、`Redis 6379`、`FastAPI` 内部端口不得公网开放。
 - Deployment automation：必须逐步落到 `scripts/build`、`scripts/package`、`scripts/deploy`、`scripts/smoke`、`scripts/rollback`。
 - Preview reset：必须通过 `migration -> seed -> query verify`，不能通过控制台手工改表或散操作恢复。
 - CloudBase：`CloudBase Run / CloudBase Pages / CloudBase SQL` 保留为历史验证资源或后续可选平台，不作为当前 preview 主线；`CloudBase Functions` 仍不作为主部署链路。
 
+### 5.1 ECS preview-small 运行边界
+
+当前 `1.6G` ECS 的正式运行边界固定如下：
+
+- 允许默认运行：`mysql`、`redis`、`caddy`、frontend static、`agent-runtime`
+- 默认不允许：`agent-worker`、`Milvus Lite`、ECS host-side `uv` full smoke、`pytest`、frontend tests、heavy diagnostics
+
+当前 smoke 分层固定如下：
+
+- Local full smoke：在开发机运行 `scripts/smoke/runtime-result-delivery.py`，使用 `.env.model.local` 验证完整 runtime 链路。
+- ECS lightweight smoke：只验证部署可用性与轻量接口，例如 `/health`、auth/session、`/auth/me`、`/workspaces`，并允许做非 secret 的 provider env configured/redacted 核对；不得调用 provider 模型，不得依赖 `agent-worker`。
+- ECS host-side full smoke：当前禁止作为默认验证路径；只有 human 明确授权且确认机器资源足够时，才允许手工执行。
+
+当前 worker 规则固定如下：
+
+- `agent-worker` 不得默认进入 `preview-small` compose。
+- 如后续重新接入，必须使用 compose profile。
+- 默认不得启动。
+- 必须具备 CPU / memory 限制。
+- 必须具备 backoff / sleep / error cooldown。
+- 验证完必须可关闭。
+
 当前 ECS host foundation 入口：
 
-- `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin、host-side `uv` 和 `/opt/insight-agent-platform/**` 目录布局。
-- `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / host-side `uv` / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`。
+- `scripts/deploy/ecs/bootstrap.sh`：ECS 主机 bootstrap 脚本，负责基础依赖、swap、Docker Engine、Docker Compose plugin、受控诊断所需的 host-side `uv` 和 `/opt/insight-agent-platform/**` 目录布局。
+- `scripts/deploy/ecs/verify-bootstrap.sh`：bootstrap 完成后的基础校验脚本，覆盖 OS / 资源摘要 / swap / Docker / host-side `uv` / 目录布局 / 监听端口，并可选执行 `docker run --rm hello-world`；`uv` 存在不代表允许默认跑 host-side full smoke。
 - `scripts/deploy/ecs/diagnose-docker-registry.sh`：Docker registry diagnostics 脚本，负责检查 Docker daemon 状态、registry mirror 配置、Docker Hub DNS/HTTPS 连通性，并可选测试 `hello-world` 拉取能力。
 - `scripts/deploy/ecs/configure-docker-registry.sh`：Docker registry mirror configuration 脚本，负责通过 `DOCKER_REGISTRY_MIRROR` 标准化写入 `/etc/docker/daemon.json` 并重启 Docker；该脚本不代表业务部署完成。
 
 当前 ECS compose / runnable app 入口：
 
-- `deploy/docker/compose.ecs.preview.yml`：ECS preview compose 栈；当前 runnable app slice 已包含 `mysql / redis / caddy / agent-runtime`，其中 `agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问；`agent-runtime` 与后续 `agent-worker` 如接入，必须注入 `/opt/insight-agent-platform/env/model-provider.env`。
+- `deploy/docker/compose.ecs.preview.yml`：ECS `preview-small` compose 栈；当前 runnable app slice 只包含 `mysql / redis / caddy / agent-runtime`。`agent-runtime` 只能通过 Caddy 或 ECS localhost bind 访问；`agent-worker` 不属于默认 small preview profile，如后续接入，必须保持 default-off 并继续注入 `/opt/insight-agent-platform/env/model-provider.env`。
 - `deploy/docker/agent-runtime/Dockerfile`：preview runtime Docker build 入口，基于 `uv` 安装正式依赖并启动 FastAPI；compose 可通过 `AGENT_RUNTIME_PYPI_INDEX_URL` 指向 ECS 可访问的 Python index。
 - `deploy/docker/env.ecs.preview.example`：ECS preview compose env 示例，不包含真实密码；支持基础镜像来源、`MYSQL_HOST_PORT` loopback bind、`AGENT_RUNTIME_HOST_PORT` loopback bind、`AGENT_RUNTIME_PYPI_INDEX_URL`、`AGENT_RUNTIME_BUILD_CONTEXT=/opt/insight-agent-platform/current`、preview cookie 与 CORS 配置。
 - `scripts/deploy/ecs/init-compose-env.sh`：在 ECS 上生成 `/opt/insight-agent-platform/env/ecs-preview.env`；默认不覆盖已有 env，显式传 `--force` 才覆盖；支持通过环境变量覆盖默认镜像来源。
@@ -118,9 +152,13 @@ Agent Runtime 必须可以通过 Docker 启动。
 - `scripts/deploy/ecs/sync-compose-assets.sh`：从本地同步 `deploy/docker/**` 到 ECS 的 `/opt/insight-agent-platform/deploy/docker/`。
 - `scripts/deploy/ecs/up-compose-infra.sh`：只启动 `mysql / redis / caddy` 基础服务，不启动 `agent-runtime / agent-worker`；用于 infra foundation 验证，不代表 runnable app deploy。
 - `scripts/deploy/ecs/verify-compose-infra.sh`：校验 compose 文件、env 文件、基础容器状态、MySQL localhost-only bind / ping、Redis ping、`http://127.0.0.1/health` 和非公网暴露约束。
-- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up，以及 `migration -> seed -> query verify`。
+- `scripts/deploy/ecs/verify-preview-small-config.sh`：本地 preview-small compose guard；使用 example env 执行 `docker compose config --services`，默认服务只允许 `mysql / redis / caddy / agent-runtime`，并显式拒绝 `agent-worker / milvus / milvus-lite`。
+- `scripts/deploy/ecs/check-preview-small-capacity.sh`：capacity preflight；用于人工在 ECS 上或显式授权的远端执行前做内存、load、根分区和 swap 状态检查，不运行 Docker。
+- `scripts/deploy/ecs/restore-preview-small-runtime-only.sh`：runtime-only restore 入口；必须由 human 手工执行或显式远端授权后执行，只恢复 `mysql / redis / caddy / agent-runtime`，不运行 `uv`、`pytest`、frontend tests 或 full smoke。
+- `scripts/deploy/ecs/deploy-preview-app.sh`：本地触发的 runnable app deploy 入口；负责 frontend build、frontend dist sync、deploy/docker sync、deployed source tree sync 到 `/opt/insight-agent-platform/current`、ECS host `uv` availability、remote compose build/up，以及 `migration -> seed -> query verify`。当前默认 deploy 路径不包含 `agent-worker`，也不自动触发 host-side full smoke。
 - ECS preview `query verify` 必须兼容已累计的 runtime artifact；seed baseline 使用 minimum/invariant 校验，不得依赖历史 row_count 固定不变。
-- `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/runtime/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
+- `scripts/smoke/ecs-preview-lightweight.sh`：ECS `preview-small` 轻量 smoke 入口；复用 auth/session curl 级检查，不运行 `uv`、`pytest`、Python full smoke、provider 模型或 `agent-worker`。
+- `scripts/smoke/ecs-preview-auth.sh`：curl smoke 入口；覆盖 `/health`、`/login`、`/auth/login`、`/auth/me`、`/workspaces` 和 `/auth/select-workspace`。
 - `scripts/rollback/ecs-compose-infra.sh`：基础 compose rollback 入口；默认只 `compose down` 并保留数据，显式传 `--reset-data` 才删除 `MySQL / Redis` 数据。
 
 ECS compose infra 的基础镜像来源通过 compose env 配置，不应再依赖 ECS 手工 `docker tag redis:7` 作为正式流程。Preview 环境可以把 `REDIS_IMAGE` 指向 ACR VPC registry，例如 `<registry-vpc>/<namespace>/redis:7`；`ACR Personal Edition` 仅作为 preview 镜像来源，不作为 production registry。Production 后续应切换到 `ACR Enterprise Edition` 或等价生产级 registry。
@@ -141,7 +179,7 @@ ssh -N -L 13306:127.0.0.1:3306 iap-ecs
 
 `Navicat`、`VS Code SQLTools`、`DBeaver` 只作为查看工具，不是数据库事实源。禁止手工建表、手工加字段、手工改数据，禁止执行未入库、未审查 SQL。
 
-当前 runnable app slice 只完成 frontend static + `agent-runtime` + `mysql` + `redis` + same-origin proxy + auth smoke 这条演示链路，不代表完整 `#164` 完成，也不代表 `agent-worker`、`Milvus Lite`、full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
+当前 runnable app slice 只完成 frontend static + `agent-runtime` + `mysql` + `redis` + same-origin proxy + lightweight smoke 这条演示链路，不代表完整 `#164` 完成，也不代表 `agent-worker`、`Milvus Lite`、local full smoke 之外的 ECS full runtime smoke、rollback versioning 或完整 CI/CD 已完成。
 
 如仓库中保留历史部署目录，它们也不能覆盖以上当前 preview 主线事实。
 
@@ -195,10 +233,21 @@ Smoke Test 放在：
 scripts/smoke/
 ```
 
+当前 `preview-small` smoke 分层固定如下：
+
+- Local full smoke：`scripts/smoke/runtime-result-delivery.py`，标准运行位置是开发机，标准 provider env 是 `.env.model.local`。
+- ECS lightweight smoke：`scripts/smoke/ecs-preview-lightweight.sh`，复用 `scripts/smoke/ecs-preview-auth.sh` 的 curl/auth/session/workspace 检查，不调用 provider 模型，不依赖 `agent-worker`，不运行 `uv` full smoke；health check 固定使用 `/health`。
+- ECS host-side full smoke：不是当前 `preview-small` 标准路径；只有 human 明确授权并设置 `IAP_ALLOW_ECS_HOST_FULL_SMOKE=1` 时，才允许手工运行。
+
+为避免再次出现 preview-small 默认栈越界或资源耗尽，当前额外要求如下：
+
+- preview-small compose guard 必须先通过 `scripts/deploy/ecs/verify-preview-small-config.sh`。
+- capacity preflight 必须在任何人工恢复或显式远端恢复前通过 `scripts/deploy/ecs/check-preview-small-capacity.sh`。
+- runtime-only restore 路径固定为 `scripts/deploy/ecs/restore-preview-small-runtime-only.sh`；该路径只允许恢复 `mysql / redis / caddy / agent-runtime`。
+
 至少覆盖：
 
 - `/health`
-- `/runtime/health`
 - `/login`
 - `/auth/login`
 - `/auth/me`
@@ -215,8 +264,12 @@ scripts/smoke/
 
 - `scripts/smoke/runtime-result-delivery.py`
 - 本地真实 provider 推荐运行方式：`uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file .env.model.local`
-- ECS preview 标准运行方式：`cd /opt/insight-agent-platform/current && UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file /opt/insight-agent-platform/env/model-provider.env`
-- ECS host-side `uv` smoke 应与 preview image build 使用同一依赖源；未显式覆盖时默认走 `https://mirrors.aliyun.com/pypi/simple/`，避免 preview 中国区主机首次从默认 PyPI 拉包导致 smoke 长时间不可用。
+- ECS lightweight smoke 标准入口：`bash scripts/smoke/ecs-preview-lightweight.sh`
+- ECS host-side full smoke 只作为人肉授权的手工 fallback：`cd /opt/insight-agent-platform/current && IAP_ALLOW_ECS_HOST_FULL_SMOKE=1 UV_DEFAULT_INDEX="${AGENT_RUNTIME_PYPI_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple/}" uv run --project services/agent-runtime python scripts/smoke/runtime-result-delivery.py --env-file /opt/insight-agent-platform/env/model-provider.env`
+- 上述 host-side fallback 不是当前 `preview-small` 标准验证路径；如需执行，`uv` 依赖源仍应与 preview image build 保持一致，未显式覆盖时默认走 `https://mirrors.aliyun.com/pypi/simple/`。
+- preview-small compose guard 入口：`bash scripts/deploy/ecs/verify-preview-small-config.sh`
+- capacity preflight 入口：`bash scripts/deploy/ecs/check-preview-small-capacity.sh`
+- runtime-only restore 入口：`IAP_PREVIEW_SMALL_RESTORE_AUTHORIZED=1 bash scripts/deploy/ecs/restore-preview-small-runtime-only.sh`
 - `deploy-preview-app.sh` 必须把 `scripts/smoke/runtime-result-delivery.py`、`database/mysql/queries/*.sql`、`services/agent-runtime/**` 同步到 `/opt/insight-agent-platform/current`
 - 当前 SiliconFlow smoke 默认模型固定为 `Qwen/Qwen2.5-7B-Instruct`
 - `Qwen/Qwen3.5-4B` 与 `Qwen/Qwen3-8B` timeout 作为 provider/model health evidence 记录在 `#164`，不是新的 provider secret 来源
