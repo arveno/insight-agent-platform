@@ -1,5 +1,5 @@
 import { PlusOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, Space, Typography } from "antd";
 
 import { SelectableList } from "../../../shared/ui/lists/SelectableList";
 import type { AnalysisSessionViewModel } from "../models/analysisViewModel";
@@ -34,7 +34,14 @@ export function AnalysisSessionNav({
       emptyText="暂无匹配会话"
       items={sessions.map((session) => ({
         key: session.conversationId,
-        title: session.sessionSummary.title
+        title: (
+          <Space direction="vertical" size={2} style={{ minWidth: 0 }}>
+            <Typography.Text ellipsis>{session.sessionSummary.title}</Typography.Text>
+            <Typography.Text ellipsis type="secondary">
+              {`${session.currentRun.status} · ${session.sessionSummary.updatedAtText}`}
+            </Typography.Text>
+          </Space>
+        )
       }))}
       onBack={onBack}
       onSearchChange={onSearchChange}

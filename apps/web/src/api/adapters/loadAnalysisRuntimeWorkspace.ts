@@ -1,6 +1,14 @@
-import { AgentRuntimeClient, RuntimeApiError } from "../client/agentRuntimeClient";
+import {
+  AgentRuntimeClient,
+  RuntimeApiError,
+  type ConversationListItem
+} from "../client/agentRuntimeClient";
 import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "../../modules/analysis/mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel";
-import type { AnalysisWorkspaceViewModel, AnalysisSurfaceState } from "../../modules/analysis/models/analysisViewModel";
+import type {
+  AnalysisSessionViewModel,
+  AnalysisWorkspaceViewModel,
+  AnalysisSurfaceState
+} from "../../modules/analysis/models/analysisViewModel";
 
 export type AnalysisRuntimeBootstrap = {
   conversationId?: string | null;
@@ -28,10 +36,6 @@ type SurfaceResult<T> = {
   state: AnalysisSurfaceState;
 };
 
-function isMissingBootstrap(bootstrap: AnalysisRuntimeBootstrap): boolean {
-  return !bootstrap.conversationId && !bootstrap.runId;
-}
-
 async function loadSurface<T>(fetcher: () => Promise<{ items: T[] }>): Promise<SurfaceResult<T>> {
   try {
     const response = await fetcher();
@@ -49,11 +53,70 @@ async function loadSurface<T>(fetcher: () => Promise<{ items: T[] }>): Promise<S
   }
 }
 
-export async function loadAnalysisRuntimeWorkspace(
-  bootstrap: AnalysisRuntimeBootstrap,
-  client = new AgentRuntimeClient()
+async function loadConversationSession(
+  conversation: ConversationListItem,
+  runId: string,
+  client: AgentRuntimeClient
+): Promise<AnalysisSessionViewModel> {
+  const [currentRun, messageList] = await Promise.all([
+    client.getAnalysisRun(runId),
+    client.listConversationMessages(conversation.conversationId)
+  ]);
+  const analysisTask = await client.getAnalysisTask(currentRun.analysisTaskId);
+  const latestAssistantMessage = messageList.items
+    .filter((message) => message.role === "assistant")
+    .at(-1);
+  const [messageStream, runEvents, toolCalls, modelCalls, sourceEvidence, reports, decisions] =
+    await Promise.all([
+      latestAssistantMessage
+        ? loadSurface(() =>
+            client.listMessageStream(conversation.conversationId, latestAssistantMessage.messageId)
+          )
+        : Promise.resolve({ items: [], state: "empty" as const }),
+      loadSurface(() => client.listRunEvents(runId)),
+      loadSurface(() => client.listToolCalls(runId)),
+      loadSurface(() => client.listModelCalls(runId)),
+      loadSurface(() => client.listSourceEvidence(runId)),
+      loadSurface(() => client.listReports(runId)),
+      loadSurface(() => client.listDecisions(runId))
+    ]);
+
+  return mapAnalysisRuntimeContractsToWorkspaceViewModel(
+    {
+      analysisTask,
+      conversation,
+      currentRun,
+      decisions: decisions.items,
+      messageStream: messageStream.items,
+      messages: messageList.items,
+      modelCalls: modelCalls.items,
+      reports: reports.items,
+      runEvents: runEvents.items,
+      sourceEvidence: sourceEvidence.items,
+      toolCalls: toolCalls.items
+    },
+    {
+      surfaceStates: {
+        decisions: decisions.state,
+        messageStream: messageStream.state,
+        modelDetails: modelCalls.state,
+        reportPreview: reports.state,
+        sourceEvidence: sourceEvidence.state,
+        toolDetails: toolCalls.state
+      }
+    }
+  ).sessions[0]!;
+}
+
+async function loadWorkspaceFromConversationList(
+  client: AgentRuntimeClient
 ): Promise<AnalysisWorkspaceLoadResult> {
-  if (isMissingBootstrap(bootstrap)) {
+  const conversationList = await client.listConversations();
+  const runnableConversations = conversationList.items.filter(
+    (conversation) => conversation.currentRunId
+  );
+
+  if (runnableConversations.length === 0) {
     return {
       description: "输入问题开始新的分析，或从其他入口带入上下文。",
       kind: "empty",
@@ -61,7 +124,45 @@ export async function loadAnalysisRuntimeWorkspace(
     };
   }
 
+  const sessions = (
+    await Promise.all(
+      runnableConversations.map((conversation) =>
+        loadConversationSession(conversation, conversation.currentRunId!, client).catch(() => null)
+      )
+    )
+  ).filter((session): session is AnalysisSessionViewModel => session !== null);
+
+  if (sessions.length === 0) {
+    return {
+      description: "暂时无法读取当前会话的分析详情，请稍后重试。",
+      kind: "error",
+      title: "暂时无法加载分析详情"
+    };
+  }
+
+  return {
+    kind: "ready",
+    viewModel: {
+      contextPanelNote: "右侧会围绕当前运行显示分析详情与上下文。",
+      modelOptions: [
+        { key: "default", label: "Default" },
+        { key: "reasoning", label: "Reasoning" },
+        { key: "fast", label: "Fast" }
+      ],
+      sessions
+    }
+  };
+}
+
+export async function loadAnalysisRuntimeWorkspace(
+  bootstrap: AnalysisRuntimeBootstrap,
+  client = new AgentRuntimeClient()
+): Promise<AnalysisWorkspaceLoadResult> {
   try {
+    if (!bootstrap.conversationId && !bootstrap.runId) {
+      return await loadWorkspaceFromConversationList(client);
+    }
+
     const conversation = bootstrap.conversationId
       ? await client.getConversation(bootstrap.conversationId)
       : await client.getRunConversation(bootstrap.runId!);
@@ -75,56 +176,19 @@ export async function loadAnalysisRuntimeWorkspace(
       };
     }
 
-    const [currentRun, messageList] = await Promise.all([
-      client.getAnalysisRun(runId),
-      client.listConversationMessages(conversation.conversationId)
-    ]);
-    const analysisTask = await client.getAnalysisTask(currentRun.analysisTaskId);
-    const latestAssistantMessage = messageList.items
-      .filter((message) => message.role === "assistant")
-      .at(-1);
-    const [messageStream, runEvents, toolCalls, modelCalls, sourceEvidence, reports, decisions] =
-      await Promise.all([
-        latestAssistantMessage
-          ? loadSurface(() =>
-              client.listMessageStream(conversation.conversationId, latestAssistantMessage.messageId)
-            )
-          : Promise.resolve({ items: [], state: "empty" as const }),
-        loadSurface(() => client.listRunEvents(runId)),
-        loadSurface(() => client.listToolCalls(runId)),
-        loadSurface(() => client.listModelCalls(runId)),
-        loadSurface(() => client.listSourceEvidence(runId)),
-        loadSurface(() => client.listReports(runId)),
-        loadSurface(() => client.listDecisions(runId))
-      ]);
+    const session = await loadConversationSession(conversation, runId, client);
 
     return {
       kind: "ready",
-      viewModel: mapAnalysisRuntimeContractsToWorkspaceViewModel(
-        {
-          analysisTask,
-          conversation,
-          currentRun,
-          decisions: decisions.items,
-          messageStream: messageStream.items,
-          messages: messageList.items,
-          modelCalls: modelCalls.items,
-          reports: reports.items,
-          runEvents: runEvents.items,
-          sourceEvidence: sourceEvidence.items,
-          toolCalls: toolCalls.items
-        },
-        {
-          surfaceStates: {
-            decisions: decisions.state,
-            messageStream: messageStream.state,
-            modelDetails: modelCalls.state,
-            reportPreview: reports.state,
-            sourceEvidence: sourceEvidence.state,
-            toolDetails: toolCalls.state
-          }
-        }
-      )
+      viewModel: {
+        contextPanelNote: "右侧会围绕当前运行显示分析详情与上下文。",
+        modelOptions: [
+          { key: "default", label: "Default" },
+          { key: "reasoning", label: "Reasoning" },
+          { key: "fast", label: "Fast" }
+        ],
+        sessions: [session]
+      }
     };
   } catch {
     return {

@@ -36,14 +36,93 @@ afterEach(() => {
 });
 
 describe("loadAnalysisRuntimeWorkspace", () => {
-  it("returns an honest empty state when no bootstrap ids are available", async () => {
-    const fetchMock = vi.fn();
+  it("returns an honest empty state when no persisted conversations are available", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.endsWith("/conversations")) {
+        return Response.json({ items: [] });
+      }
+
+      throw new Error(`Unhandled request: ${url}`);
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await loadAnalysisRuntimeWorkspace({});
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(result.kind).toBe("empty");
+  });
+
+  it("loads persisted conversations for refresh and re-entry when no bootstrap id is provided", async () => {
+    const goldenPath = goldenPathExample as GoldenPathExample;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.endsWith("/conversations")) {
+        return Response.json({ items: [goldenPath.conversation] });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}`)) {
+        return Response.json(goldenPath.analysisRun);
+      }
+
+      if (url.endsWith(`/analysis-tasks/${goldenPath.analysisTask.analysisTaskId}`)) {
+        return Response.json(goldenPath.analysisTask);
+      }
+
+      if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}/messages`)) {
+        return Response.json({ items: goldenPath.messages });
+      }
+
+      if (
+        url.endsWith(
+          `/conversations/${goldenPath.conversation.conversationId}/messages/${goldenPath.messages[2]!.messageId}/stream`
+        )
+      ) {
+        return Response.json({ items: goldenPath.messageStream });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/events`)) {
+        return Response.json({ items: goldenPath.runEvents });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/tool-calls`)) {
+        return Response.json({ items: goldenPath.toolCalls });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/model-calls`)) {
+        return Response.json({ items: goldenPath.modelCalls });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/source-evidence`)) {
+        return Response.json({ items: goldenPath.sourceEvidence });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/reports`)) {
+        return Response.json({ items: goldenPath.reports });
+      }
+
+      if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/decisions`)) {
+        return Response.json({ items: goldenPath.decisions });
+      }
+
+      throw new Error(`Unhandled request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await loadAnalysisRuntimeWorkspace({});
+
+    expect(result.kind).toBe("ready");
+    if (result.kind !== "ready") {
+      return;
+    }
+
+    expect(result.viewModel.sessions).toHaveLength(1);
+    expect(result.viewModel.sessions[0]?.conversationId).toBe(
+      goldenPath.conversation.conversationId
+    );
+    expect(result.viewModel.sessions[0]?.messageStream?.replayText).toContain("华东");
   });
 
   it("loads the approved runtime read surfaces and maps them into the analysis workspace view model", async () => {

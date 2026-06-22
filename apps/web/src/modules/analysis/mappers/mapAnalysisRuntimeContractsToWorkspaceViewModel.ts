@@ -222,10 +222,7 @@ function mapMessages(messages: MessageContract[]): AnalysisMessage[] {
           ? "本条消息只记录用户问题。"
           : undefined,
     messageId: message.messageId,
-    metaText:
-      message.role === "system"
-        ? "系统消息"
-        : undefined,
+    metaText: message.role === "system" ? "系统消息" : undefined,
     reportId: message.reportId,
     role: message.role,
     runId: message.runId,
@@ -256,6 +253,28 @@ function mapMessageStream(
   };
 }
 
+function applyMessageStreamReplayToMessages(
+  messages: AnalysisMessage[],
+  messageStream?: AnalysisMessageStreamViewModel
+): AnalysisMessage[] {
+  if (!messageStream || messageStream.replayText.length === 0) {
+    return messages;
+  }
+
+  return messages.map((message) =>
+    message.messageId === messageStream.messageId && message.role === "assistant"
+      ? {
+          ...message,
+          content:
+            message.content.trim().length === 0 || message.status === "streaming"
+              ? messageStream.replayText
+              : message.content,
+          status: messageStream.status === "completed" ? "completed" : messageStream.status
+        }
+      : message
+  );
+}
+
 function mapRunEvents(runEvents: RunEventContract[]): AnalysisRunEvent[] {
   return runEvents
     .slice()
@@ -267,8 +286,7 @@ function mapRunEvents(runEvents: RunEventContract[]): AnalysisRunEvent[] {
       errorType: event.errorCode ?? undefined,
       eventId: event.eventId,
       eventType: event.eventType,
-      evidenceRefs:
-        event.refType === "sourceEvidence" && event.refId ? [event.refId] : undefined,
+      evidenceRefs: event.refType === "sourceEvidence" && event.refId ? [event.refId] : undefined,
       inputSummary: event.nodeName,
       modelName: event.agentName,
       outputSummary: event.errorMessage ?? undefined,
@@ -368,12 +386,12 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   input: AnalysisRuntimeContractsWorkspaceInput,
   options?: AnalysisRuntimeContractsWorkspaceOptions
 ): AnalysisWorkspaceViewModel {
-  const messages = mapMessages(input.messages);
   const runEvents = mapRunEvents(input.runEvents);
   const currentRun = mapCurrentRun(input.currentRun, input.modelCalls, input.runEvents);
-  const assistantMessage = input.messages.find((message) => message.role === "assistant");
   const report = input.reports[0];
   const messageStream = mapMessageStream(input.messageStream);
+  const messages = applyMessageStreamReplayToMessages(mapMessages(input.messages), messageStream);
+  const assistantMessage = messages.find((message) => message.role === "assistant");
   const modelDetails = mapModelDetails(input.modelCalls);
   const decisions = mapDecisions(input.decisions);
 
@@ -384,10 +402,7 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     currentRun,
     decisions,
     decisionsState: resolveSurfaceState(options?.surfaceStates?.decisions, decisions.length),
-    followUpComposer: createComposerViewModel(
-      "follow_up",
-      options?.followUpComposerDraft ?? ""
-    ),
+    followUpComposer: createComposerViewModel("follow_up", options?.followUpComposerDraft ?? ""),
     inputComposer: createComposerViewModel(
       "analysis",
       options?.inputComposerDraft ??
@@ -402,7 +417,10 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     ),
     messages,
     modelDetails,
-    modelDetailsState: resolveSurfaceState(options?.surfaceStates?.modelDetails, modelDetails.length),
+    modelDetailsState: resolveSurfaceState(
+      options?.surfaceStates?.modelDetails,
+      modelDetails.length
+    ),
     reportPreview: report
       ? {
           reportId: report.reportId,
@@ -447,12 +465,14 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
       toolCallId: toolCall.toolCallId,
       toolName: toolCall.toolName
     })),
-    toolDetailsState: resolveSurfaceState(options?.surfaceStates?.toolDetails, input.toolCalls.length)
+    toolDetailsState: resolveSurfaceState(
+      options?.surfaceStates?.toolDetails,
+      input.toolCalls.length
+    )
   };
 
   return {
-    contextPanelNote:
-      options?.contextPanelNote ?? "右侧会围绕当前运行显示分析详情与上下文。",
+    contextPanelNote: options?.contextPanelNote ?? "右侧会围绕当前运行显示分析详情与上下文。",
     modelOptions: options?.modelOptions ?? defaultModelOptions,
     sessions: [session]
   };

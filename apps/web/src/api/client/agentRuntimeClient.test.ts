@@ -157,13 +157,16 @@ describe("AgentRuntimeClient", () => {
     const result = await client.getMetric("metric-recognized-revenue");
 
     expect(result).toEqual(metric);
-    expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/metrics/metric-recognized-revenue", {
-      headers: {
-        Accept: "application/json"
-      },
-      method: "GET",
-      credentials: "include"
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://runtime.test/metrics/metric-recognized-revenue",
+      {
+        headers: {
+          Accept: "application/json"
+        },
+        method: "GET",
+        credentials: "include"
+      }
+    );
   });
 
   it("reads the persisted analysis task surface by canonical analysisTaskId", async () => {
@@ -186,6 +189,42 @@ describe("AgentRuntimeClient", () => {
 
     expect(result).toEqual(analysisTask);
     expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/analysis-tasks/analysis-task-123", {
+      headers: {
+        Accept: "application/json"
+      },
+      method: "GET",
+      credentials: "include"
+    });
+  });
+
+  it("lists owner-scoped conversations for persisted re-entry", async () => {
+    const conversationList = {
+      items: [
+        {
+          conversationId: "conversation-123",
+          workspaceId: "workspace-northstar-retail-china",
+          userId: "user-zoe",
+          currentRunId: "analysis-run-123",
+          activeRunId: null,
+          activeRunStatus: null,
+          title: "收入增速异常",
+          status: "active",
+          latestMessageId: "message-123",
+          latestAssistantMessageId: "message-456",
+          latestAssistantMessageStatus: "streaming",
+          createdAt: "2026-06-12T10:30:00+08:00",
+          updatedAt: "2026-06-12T10:31:00+08:00"
+        }
+      ]
+    };
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(conversationList));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new AgentRuntimeClient("http://runtime.test");
+
+    const result = await client.listConversations();
+
+    expect(result).toEqual(conversationList);
+    expect(fetchMock).toHaveBeenCalledWith("http://runtime.test/conversations", {
       headers: {
         Accept: "application/json"
       },
@@ -279,6 +318,30 @@ describe("AgentRuntimeClient", () => {
       {
         headers: {
           Accept: "text/event-stream"
+        },
+        method: "GET",
+        credentials: "include"
+      }
+    );
+  });
+
+  it("requests the MessageStream SSE resume path with Last-Event-ID", async () => {
+    const response = {
+      ok: true,
+      status: 200
+    } as unknown as Response;
+    const fetchMock = vi.fn().mockResolvedValue(response);
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new AgentRuntimeClient("http://runtime.test");
+
+    await client.streamMessageStream("conversation-123", "message-456", undefined, "2");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://runtime.test/conversations/conversation-123/messages/message-456/stream",
+      {
+        headers: {
+          Accept: "text/event-stream",
+          "Last-Event-ID": "2"
         },
         method: "GET",
         credentials: "include"
