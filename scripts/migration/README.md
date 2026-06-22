@@ -46,3 +46,18 @@ IAP_MIGRATION_TARGET=local ./scripts/migration/runtime_foundation.sh migrate
 ```bash
 IAP_MIGRATION_TARGET=local IAP_RUNTIME_VERIFY_RUN_ID=<runId> ./scripts/migration/runtime_execution_verify.sh
 ```
+
+## `runtime_feedback_evaluation_verify.sh`
+
+`scripts/migration/runtime_feedback_evaluation_verify.sh` 是 `#234a` 的 run-scoped query verify。
+
+- 读取 `database/mysql/queries/008_analysis_feedback_evaluation_verify.sql`
+- 要求显式提供 `runId`
+- 验证 `Feedback -> BadCase -> EvaluationRun` 与 `Report / EvaluationDataset` 链接
+- 复用 `runtime_foundation.sh query-json` 的目标选择逻辑
+
+示例：
+
+```bash
+IAP_MIGRATION_TARGET=local IAP_RUNTIME_VERIFY_RUN_ID=<runId> ./scripts/migration/runtime_feedback_evaluation_verify.sh
+```

@@ -1263,6 +1263,73 @@ paths:
                     createdAt: "2026-06-05T03:26:00Z"
         "404":
           $ref: "#/components/responses/RuntimeNotFound"
+  /analysis-runs/{runId}/feedback:
+    post:
+      summary: 提交运行结果反馈
+      operationId: submitAnalysisRunFeedback
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitFeedbackRequest"
+      responses:
+        "201":
+          description: Feedback 已落库，并生成 EvaluationRun 待复审入口；负向反馈同时生成 BadCase。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackClosure"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+        "409":
+          $ref: "#/components/responses/RuntimeMismatch"
+    get:
+      summary: 获取反馈列表
+      operationId: listFeedback
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Feedback 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbackList"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+  /analysis-runs/{runId}/bad-cases:
+    get:
+      summary: 获取 BadCase 列表
+      operationId: listBadCases
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: BadCase 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadCaseList"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
+  /analysis-runs/{runId}/evaluation-runs:
+    get:
+      summary: 获取评估运行列表
+      operationId: listEvaluationRuns
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: EvaluationRun 列表。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationRunList"
+        "404":
+          $ref: "#/components/responses/RuntimeNotFound"
   /analysis-runs/{runId}/execution-attempts:
     get:
       summary: 获取执行尝试列表
@@ -1653,6 +1720,47 @@ components:
       properties:
         producerId:
           type: string
+    SubmitFeedbackRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - reportId
+        - feedbackType
+      properties:
+        reportId:
+          type: string
+        feedbackType:
+          type: string
+          enum:
+            - useful
+            - not_useful
+            - incorrect
+            - sql_error
+            - source_insufficient
+            - analysis_shallow
+            - suggestion_unusable
+            - format_preference
+            - manual_correction
+        comment:
+          type:
+            - string
+            - "null"
+        correction:
+          type:
+            - string
+            - "null"
+        failureType:
+          type:
+            - string
+            - "null"
+        failureReason:
+          type:
+            - string
+            - "null"
+        expectedBehavior:
+          type:
+            - string
+            - "null"
     CancelAnalysisRunRequest:
       type: object
       additionalProperties: false
@@ -1703,6 +1811,12 @@ components:
       $ref: "../schemas/reports/report.schema.json"
     Decision:
       $ref: "../schemas/reports/decision.schema.json"
+    Feedback:
+      $ref: "../schemas/feedback/feedback.schema.json"
+    BadCase:
+      $ref: "../schemas/evaluation/bad-case.schema.json"
+    EvaluationRun:
+      $ref: "../schemas/evaluation/evaluation-run.schema.json"
     ExecutionAttempt:
       $ref: "../schemas/analysis/execution-attempt.schema.json"
     ApprovalRequest:
@@ -1797,6 +1911,52 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Decision"
+    FeedbackClosure:
+      type: object
+      additionalProperties: false
+      required:
+        - feedback
+        - evaluationRun
+        - badCase
+      properties:
+        feedback:
+          $ref: "#/components/schemas/Feedback"
+        evaluationRun:
+          $ref: "#/components/schemas/EvaluationRun"
+        badCase:
+          anyOf:
+            - $ref: "#/components/schemas/BadCase"
+            - type: "null"
+    FeedbackList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feedback"
+    BadCaseList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BadCase"
+    EvaluationRunList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluationRun"
     ExecutionAttemptList:
       type: object
       additionalProperties: false

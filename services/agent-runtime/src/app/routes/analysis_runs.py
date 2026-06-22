@@ -13,19 +13,24 @@ from src.app.config import get_settings
 from src.app.routes.runtime_contracts import (
     AnalysisRunResponse,
     ApprovalDecisionRequest,
+    BadCaseListResponse,
     CancelAnalysisRunRequest,
     ConversationResponse,
     CreateAnalysisRunRequest,
     DecisionListResponse,
     DeliveryCompleteRequest,
+    EvaluationRunListResponse,
     ExecutionAttemptListResponse,
     ExecutionAttemptResponse,
+    FeedbackClosureResponse,
+    FeedbackListResponse,
     ModelCallListResponse,
     ReportListResponse,
     RunEventListResponse,
     RuntimeRequestErrorResponse,
     RuntimeRouteStubErrorResponse,
     SourceEvidenceListResponse,
+    SubmitFeedbackRequest,
     ToolCallListResponse,
     WorkerClaimRequest,
     WorkerFailureRequest,
@@ -42,11 +47,16 @@ from src.infrastructure.database.runtime_foundation import (
     AnalysisRunRecord,
     AnalysisRunRepository,
     AnalysisTaskRepository,
+    BadCaseRecord,
+    BadCaseRepository,
     ConversationRecord,
     ConversationRepository,
     DecisionRepository,
+    EvaluationRunRepository,
     ExecutionAttemptRecord,
     ExecutionAttemptRepository,
+    FeedbackEvaluationClosureRepository,
+    FeedbackRepository,
     MessageRepository,
     ModelCallRepository,
     ReportRepository,
@@ -61,6 +71,12 @@ from src.modules.analysis_runs.lifecycle_service import (
     AnalysisRunInvalidStateError,
     AnalysisRunLifecycleService,
     build_run_created_event,
+)
+from src.modules.reports.feedback_service import (
+    NEGATIVE_FEEDBACK_TYPES,
+    FeedbackClosureInput,
+    FeedbackClosureService,
+    FeedbackClosureStateError,
 )
 
 router = APIRouter(prefix="/analysis-runs", tags=["analysis-runs"])
@@ -140,6 +156,17 @@ def _report_repository() -> ReportRepository:
 
 def _decision_repository() -> DecisionRepository:
     return DecisionRepository(_runtime_foundation_database())
+
+
+def _feedback_closure_service() -> FeedbackClosureService:
+    database = _runtime_foundation_database()
+    return FeedbackClosureService(
+        bad_case_repository=BadCaseRepository(database),
+        closure_repository=FeedbackEvaluationClosureRepository(database),
+        evaluation_run_repository=EvaluationRunRepository(database),
+        feedback_repository=FeedbackRepository(database),
+        report_repository=ReportRepository(database),
+    )
 
 
 def _analysis_run_lifecycle_repository() -> AnalysisRunLifecycleRepository:
@@ -481,6 +508,169 @@ def list_analysis_run_decisions(
         )
 
     return {"items": _decision_repository().list_by_run_id(run_id)}
+
+
+@router.post(
+    "/{runId}/feedback",
+    response_model=FeedbackClosureResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def submit_analysis_run_feedback(
+    request: SubmitFeedbackRequest,
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Persist user Feedback and minimal quality closure records for one run result."""
+
+    try:
+        analysis_run = _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    now = utc_timestamp()
+    feedback_id = generate_canonical_id("feedback")
+    evaluation_run_id = generate_canonical_id("evaluation-run")
+    dataset_id = f"evaluation-dataset-{context.workspaceId}-feedback-review"
+    bad_case: BadCaseRecord | None = None
+    if request.feedbackType in NEGATIVE_FEEDBACK_TYPES:
+        bad_case = {
+            "badCaseId": generate_canonical_id("bad-case"),
+            "workspaceId": context.workspaceId,
+            "runId": analysis_run["runId"],
+            "feedbackId": feedback_id,
+            "evaluationRunId": evaluation_run_id,
+            "failureType": request.failureType or request.feedbackType,
+            "failureReason": request.failureReason
+            or request.comment
+            or "User marked result for review.",
+            "expectedBehavior": request.expectedBehavior
+            or request.correction
+            or "Review this result before using it as a quality baseline.",
+            "relatedRule": "Feedback / Evaluation domains stay separate from Memory.",
+            "relatedContract": "Feedback -> BadCase -> EvaluationRun",
+            "createdAt": now,
+        }
+
+    try:
+        result = _feedback_closure_service().create(
+            FeedbackClosureInput(
+                feedback={
+                    "feedbackId": feedback_id,
+                    "workspaceId": context.workspaceId,
+                    "userId": context.userId,
+                    "runId": analysis_run["runId"],
+                    "reportId": request.reportId,
+                    "feedbackType": request.feedbackType,
+                    "comment": request.comment,
+                    "correction": request.correction,
+                    "createdAt": now,
+                },
+                dataset={
+                    "datasetId": dataset_id,
+                    "workspaceId": context.workspaceId,
+                    "name": "L3 feedback review",
+                    "createdAt": now,
+                },
+                evaluation_run={
+                    "evaluationRunId": evaluation_run_id,
+                    "workspaceId": context.workspaceId,
+                    "runId": analysis_run["runId"],
+                    "datasetId": dataset_id,
+                    "status": "needs_review",
+                    "score": None,
+                    "failureReason": request.failureReason or request.comment,
+                    "createdAt": now,
+                    "completedAt": None,
+                },
+                bad_case=bad_case,
+            )
+        )
+    except FeedbackClosureStateError as exc:
+        return runtime_error_response(
+            status_code=409,
+            error_code="MISMATCH",
+            message=str(exc),
+        )
+
+    return {
+        "feedback": result.feedback,
+        "evaluationRun": result.evaluation_run,
+        "badCase": result.bad_case,
+    }
+
+
+@router.get(
+    "/{runId}/feedback",
+    response_model=FeedbackListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_feedback(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted Feedback records for a real AnalysisRun."""
+
+    try:
+        _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _feedback_closure_service().list_feedback(run_id)}
+
+
+@router.get(
+    "/{runId}/bad-cases",
+    response_model=BadCaseListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_bad_cases(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted BadCase records for a real AnalysisRun."""
+
+    try:
+        _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _feedback_closure_service().list_bad_cases(run_id)}
+
+
+@router.get(
+    "/{runId}/evaluation-runs",
+    response_model=EvaluationRunListResponse,
+    responses=FOUNDATION_ERROR_RESPONSE,
+)
+def list_analysis_run_evaluation_runs(
+    context: AuthenticatedContext,
+    run_id: str = Path(alias="runId"),
+) -> dict[str, object] | JSONResponse:
+    """Return persisted EvaluationRun records for a real AnalysisRun."""
+
+    try:
+        _get_owned_run(run_id, context)
+    except KeyError:
+        return runtime_error_response(
+            status_code=404,
+            error_code="NOT_FOUND",
+            message=f"AnalysisRun not found: {run_id}",
+        )
+
+    return {"items": _feedback_closure_service().list_evaluation_runs(run_id)}
 
 
 @router.get(

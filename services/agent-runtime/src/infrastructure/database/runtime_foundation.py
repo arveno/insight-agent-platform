@@ -562,6 +562,69 @@ class DecisionRecord(TypedDict):
     createdAt: str
 
 
+class FeedbackRecord(TypedDict):
+    """Feedback contract-shaped persistence record."""
+
+    feedbackId: str
+    workspaceId: str
+    userId: str
+    runId: str
+    reportId: str
+    feedbackType: Literal[
+        "useful",
+        "not_useful",
+        "incorrect",
+        "sql_error",
+        "source_insufficient",
+        "analysis_shallow",
+        "suggestion_unusable",
+        "format_preference",
+        "manual_correction",
+    ]
+    comment: str | None
+    correction: str | None
+    createdAt: str
+
+
+class EvaluationDatasetRecord(TypedDict):
+    """EvaluationDataset contract-shaped persistence record."""
+
+    datasetId: str
+    workspaceId: str
+    name: str
+    createdAt: str
+
+
+class EvaluationRunRecord(TypedDict):
+    """EvaluationRun contract-shaped persistence record."""
+
+    evaluationRunId: str
+    workspaceId: str
+    runId: str
+    datasetId: str
+    status: Literal["queued", "running", "passed", "failed", "needs_review"]
+    score: float | None
+    failureReason: str | None
+    createdAt: str
+    completedAt: str | None
+
+
+class BadCaseRecord(TypedDict):
+    """BadCase contract-shaped persistence record."""
+
+    badCaseId: str
+    workspaceId: str
+    runId: str
+    feedbackId: str | None
+    evaluationRunId: str | None
+    failureType: str
+    failureReason: str
+    expectedBehavior: str
+    relatedRule: str | None
+    relatedContract: str | None
+    createdAt: str
+
+
 class MessageRecord(TypedDict):
     """Message contract-shaped persistence record."""
 
@@ -626,6 +689,12 @@ def _sql_literal_joined(values: Sequence[str]) -> str:
 
 
 def _nullable_int_literal(value: int | None) -> str:
+    if value is None:
+        return "NULL"
+    return str(value)
+
+
+def _nullable_float_literal(value: float | None) -> str:
     if value is None:
         return "NULL"
     return str(value)
@@ -1307,6 +1376,137 @@ ON DUPLICATE KEY UPDATE
   report_id = VALUES(report_id),
   title = VALUES(title),
   status = VALUES(status),
+  created_at = VALUES(created_at);
+"""
+
+
+def _feedback_upsert_sql(feedback: FeedbackRecord) -> str:
+    return f"""
+INSERT INTO feedback (
+  feedback_id,
+  workspace_id,
+  user_id,
+  run_id,
+  report_id,
+  feedback_type,
+  comment,
+  correction,
+  created_at
+) VALUES (
+  {_sql_literal(feedback["feedbackId"])},
+  {_sql_literal(feedback["workspaceId"])},
+  {_sql_literal(feedback["userId"])},
+  {_sql_literal(feedback["runId"])},
+  {_sql_literal(feedback["reportId"])},
+  {_sql_literal(feedback["feedbackType"])},
+  {_sql_literal(feedback["comment"])},
+  {_sql_literal(feedback["correction"])},
+  {_sql_literal(feedback["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  user_id = VALUES(user_id),
+  run_id = VALUES(run_id),
+  report_id = VALUES(report_id),
+  feedback_type = VALUES(feedback_type),
+  comment = VALUES(comment),
+  correction = VALUES(correction),
+  created_at = VALUES(created_at);
+"""
+
+
+def _evaluation_dataset_upsert_sql(dataset: EvaluationDatasetRecord) -> str:
+    return f"""
+INSERT INTO evaluation_datasets (
+  dataset_id,
+  workspace_id,
+  name,
+  created_at
+) VALUES (
+  {_sql_literal(dataset["datasetId"])},
+  {_sql_literal(dataset["workspaceId"])},
+  {_sql_literal(dataset["name"])},
+  {_sql_literal(dataset["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  name = VALUES(name),
+  created_at = VALUES(created_at);
+"""
+
+
+def _evaluation_run_upsert_sql(evaluation_run: EvaluationRunRecord) -> str:
+    return f"""
+INSERT INTO evaluation_runs (
+  evaluation_run_id,
+  workspace_id,
+  run_id,
+  dataset_id,
+  status,
+  score,
+  failure_reason,
+  created_at,
+  completed_at
+) VALUES (
+  {_sql_literal(evaluation_run["evaluationRunId"])},
+  {_sql_literal(evaluation_run["workspaceId"])},
+  {_sql_literal(evaluation_run["runId"])},
+  {_sql_literal(evaluation_run["datasetId"])},
+  {_sql_literal(evaluation_run["status"])},
+  {_nullable_float_literal(evaluation_run["score"])},
+  {_sql_literal(evaluation_run["failureReason"])},
+  {_sql_literal(evaluation_run["createdAt"])},
+  {_sql_literal(evaluation_run["completedAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  run_id = VALUES(run_id),
+  dataset_id = VALUES(dataset_id),
+  status = VALUES(status),
+  score = VALUES(score),
+  failure_reason = VALUES(failure_reason),
+  created_at = VALUES(created_at),
+  completed_at = VALUES(completed_at);
+"""
+
+
+def _bad_case_upsert_sql(bad_case: BadCaseRecord) -> str:
+    return f"""
+INSERT INTO bad_cases (
+  bad_case_id,
+  workspace_id,
+  run_id,
+  feedback_id,
+  evaluation_run_id,
+  failure_type,
+  failure_reason,
+  expected_behavior,
+  related_rule,
+  related_contract,
+  created_at
+) VALUES (
+  {_sql_literal(bad_case["badCaseId"])},
+  {_sql_literal(bad_case["workspaceId"])},
+  {_sql_literal(bad_case["runId"])},
+  {_sql_literal(bad_case["feedbackId"])},
+  {_sql_literal(bad_case["evaluationRunId"])},
+  {_sql_literal(bad_case["failureType"])},
+  {_sql_literal(bad_case["failureReason"])},
+  {_sql_literal(bad_case["expectedBehavior"])},
+  {_sql_literal(bad_case["relatedRule"])},
+  {_sql_literal(bad_case["relatedContract"])},
+  {_sql_literal(bad_case["createdAt"])}
+)
+ON DUPLICATE KEY UPDATE
+  workspace_id = VALUES(workspace_id),
+  run_id = VALUES(run_id),
+  feedback_id = VALUES(feedback_id),
+  evaluation_run_id = VALUES(evaluation_run_id),
+  failure_type = VALUES(failure_type),
+  failure_reason = VALUES(failure_reason),
+  expected_behavior = VALUES(expected_behavior),
+  related_rule = VALUES(related_rule),
+  related_contract = VALUES(related_contract),
   created_at = VALUES(created_at);
 """
 
@@ -2789,6 +2989,193 @@ SELECT JSON_OBJECT(
 
         items = _require_array(payload.get("items"), "Decision.items")
         return cast(list[DecisionRecord], items)
+
+
+class FeedbackRepository:
+    """Repository boundary for Feedback lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def list_by_run_id(self, run_id: str) -> list[FeedbackRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'feedbackId', feedback_id,
+          'workspaceId', workspace_id,
+          'userId', user_id,
+          'runId', run_id,
+          'reportId', report_id,
+          'feedbackType', feedback_type,
+          'comment', comment,
+          'correction', correction,
+          'createdAt', created_at
+        )
+      )
+      FROM (
+        SELECT
+          feedback_id,
+          workspace_id,
+          user_id,
+          run_id,
+          report_id,
+          feedback_type,
+          comment,
+          correction,
+          created_at
+        FROM feedback
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_feedback
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "Feedback.items")
+        return cast(list[FeedbackRecord], items)
+
+
+class EvaluationRunRepository:
+    """Repository boundary for EvaluationRun lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def list_by_run_id(self, run_id: str) -> list[EvaluationRunRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'evaluationRunId', evaluation_run_id,
+          'workspaceId', workspace_id,
+          'runId', run_id,
+          'datasetId', dataset_id,
+          'status', status,
+          'score', score,
+          'failureReason', failure_reason,
+          'createdAt', created_at,
+          'completedAt', completed_at
+        )
+      )
+      FROM (
+        SELECT
+          evaluation_run_id,
+          workspace_id,
+          run_id,
+          dataset_id,
+          status,
+          score,
+          failure_reason,
+          created_at,
+          completed_at
+        FROM evaluation_runs
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_evaluation_runs
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "EvaluationRun.items")
+        return cast(list[EvaluationRunRecord], items)
+
+
+class BadCaseRepository:
+    """Repository boundary for BadCase lookup."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def list_by_run_id(self, run_id: str) -> list[BadCaseRecord]:
+        sql = f"""
+SELECT JSON_OBJECT(
+  'items',
+  COALESCE(
+    (
+      SELECT JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'badCaseId', bad_case_id,
+          'workspaceId', workspace_id,
+          'runId', run_id,
+          'feedbackId', feedback_id,
+          'evaluationRunId', evaluation_run_id,
+          'failureType', failure_type,
+          'failureReason', failure_reason,
+          'expectedBehavior', expected_behavior,
+          'relatedRule', related_rule,
+          'relatedContract', related_contract,
+          'createdAt', created_at
+        )
+      )
+      FROM (
+        SELECT
+          bad_case_id,
+          workspace_id,
+          run_id,
+          feedback_id,
+          evaluation_run_id,
+          failure_type,
+          failure_reason,
+          expected_behavior,
+          related_rule,
+          related_contract,
+          created_at
+        FROM bad_cases
+        WHERE run_id = {_sql_literal(run_id)}
+        ORDER BY created_at ASC, id ASC
+      ) ordered_bad_cases
+    ),
+    JSON_ARRAY()
+  )
+);
+"""
+        payload = self._database.query_json_object(sql)
+        if payload is None:
+            return []
+
+        items = _require_array(payload.get("items"), "BadCase.items")
+        return cast(list[BadCaseRecord], items)
+
+
+class FeedbackEvaluationClosureRepository:
+    """Transactional write boundary for post-run feedback closure records."""
+
+    def __init__(self, database: RuntimeFoundationDatabase) -> None:
+        self._database = database
+
+    def create(
+        self,
+        *,
+        feedback: FeedbackRecord,
+        dataset: EvaluationDatasetRecord,
+        evaluation_run: EvaluationRunRecord,
+        bad_case: BadCaseRecord | None,
+    ) -> None:
+        statements = [
+            _feedback_upsert_sql(feedback),
+            _evaluation_dataset_upsert_sql(dataset),
+            _evaluation_run_upsert_sql(evaluation_run),
+        ]
+        if bad_case is not None:
+            statements.append(_bad_case_upsert_sql(bad_case))
+        self._database.execute_transaction(statements)
 
 
 class MessageRepository:

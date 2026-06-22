@@ -3,6 +3,8 @@ from __future__ import annotations
 # mypy: disable-error-code="untyped-decorator"
 import hashlib
 import json
+import os
+import subprocess
 from collections.abc import Iterator
 from copy import deepcopy
 from typing import Any, cast
@@ -29,9 +31,12 @@ from src.infrastructure.model_gateway.gateway import ModelGateway
 from src.infrastructure.model_gateway.readiness import UrlopenCallable
 from src.infrastructure.tool_registry.registry import ToolRegistry
 from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
-from tests.integration.conftest import login_client, seed_runtime_foundation
+from tests.integration.conftest import REPO_ROOT, login_client, seed_runtime_foundation
 
 DELIVERY_PRODUCER_ID = "delivery-producer-runtime"
+FEEDBACK_EVALUATION_VERIFY_SCRIPT = (
+    REPO_ROOT / "scripts/migration/runtime_feedback_evaluation_verify.sh"
+)
 EXPECTED_SOURCE_IDS = [
     "knowledge-document-channel-weekly-17",
     "knowledge-document-inventory-east-04",
@@ -620,7 +625,10 @@ def test_submit_allows_same_conversation_after_terminal_run(
     )
 
     assert second_response.status_code == 201, second_response.text
-    assert response_json_dict(second_response.json())["conversation"]["conversationId"] == conversation_id
+    assert (
+        response_json_dict(second_response.json())["conversation"]["conversationId"]
+        == conversation_id
+    )
 
 
 def test_submit_allows_parallel_active_runs_for_different_conversations(
@@ -638,7 +646,9 @@ def test_submit_allows_parallel_active_runs_for_different_conversations(
         json={"title": "不同 conversation 并行运行"},
     )
     assert second_conversation_response.status_code == 201, second_conversation_response.text
-    second_conversation_id = response_json_dict(second_conversation_response.json())["conversationId"]
+    second_conversation_id = response_json_dict(second_conversation_response.json())[
+        "conversationId"
+    ]
 
     second_submit_response = client.post(
         "/analysis-tasks/submit",
@@ -650,7 +660,10 @@ def test_submit_allows_parallel_active_runs_for_different_conversations(
 
     assert second_submit_response.status_code == 201, second_submit_response.text
     second_payload = response_json_dict(second_submit_response.json())
-    assert first_payload["conversation"]["conversationId"] != second_payload["conversation"]["conversationId"]
+    assert (
+        first_payload["conversation"]["conversationId"]
+        != second_payload["conversation"]["conversationId"]
+    )
     assert first_payload["analysisRun"]["runId"] != second_payload["analysisRun"]["runId"]
 
 
@@ -782,9 +795,7 @@ def test_list_conversations_is_owner_scoped_and_exposes_active_projection_before
 
     owned_detail_response = client.get(f"/conversations/{owned_conversation_id}")
     assert owned_detail_response.status_code == 404
-    owned_messages_response = client.get(
-        f"/conversations/{owned_conversation_id}/messages"
-    )
+    owned_messages_response = client.get(f"/conversations/{owned_conversation_id}/messages")
     assert owned_messages_response.status_code == 404
 
     select_workspace(client, "workspace-northstar-retail-china")
@@ -856,6 +867,87 @@ def test_reentry_surfaces_discover_assistant_message_after_delivery(
     )
     assert replay_response.status_code == 200, replay_response.text
     assert response_json_dict(replay_response.json())["items"]
+
+
+def test_feedback_submission_creates_bad_case_and_evaluation_entry(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execution_state = execute_to_persisted_synthesis_state(
+        client,
+        monkeypatch,
+        task_payload=TASK_PAYLOAD_WITH_DELIVERY_SOURCES,
+    )
+    run_id = execution_state["workerResult"]["analysisRun"]["runId"]
+
+    complete_response = client.post(
+        f"/analysis-runs/{run_id}/delivery/complete",
+        json={"producerId": DELIVERY_PRODUCER_ID},
+    )
+    assert complete_response.status_code == 202, complete_response.text
+
+    reports = response_json_dict(client.get(f"/analysis-runs/{run_id}/reports").json())["items"]
+    report_id = reports[0]["reportId"]
+
+    response = client.post(
+        f"/analysis-runs/{run_id}/feedback",
+        json={
+            "reportId": report_id,
+            "feedbackType": "analysis_shallow",
+            "comment": "原因解释偏浅，需要补充渠道确认延迟的证据链。",
+            "correction": "应明确华东渠道确认延迟与促销库存错配的贡献。",
+            "failureType": "analysis_shallow",
+            "failureReason": "缺少对主要原因的证据展开。",
+            "expectedBehavior": "反馈后应形成可回归的 BadCase 和 EvaluationRun 入口。",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    closure = response_json_dict(response.json())
+    feedback = closure["feedback"]
+    bad_case = closure["badCase"]
+    evaluation_run = closure["evaluationRun"]
+
+    assert feedback["runId"] == run_id
+    assert feedback["reportId"] == report_id
+    assert feedback["feedbackType"] == "analysis_shallow"
+    assert bad_case["runId"] == run_id
+    assert bad_case["feedbackId"] == feedback["feedbackId"]
+    assert bad_case["evaluationRunId"] == evaluation_run["evaluationRunId"]
+    assert evaluation_run["runId"] == run_id
+    assert evaluation_run["status"] == "needs_review"
+
+    assert response_json_dict(client.get(f"/analysis-runs/{run_id}/feedback").json())["items"] == [
+        feedback
+    ]
+    assert response_json_dict(client.get(f"/analysis-runs/{run_id}/bad-cases").json())["items"] == [
+        bad_case
+    ]
+    assert response_json_dict(client.get(f"/analysis-runs/{run_id}/evaluation-runs").json())[
+        "items"
+    ] == [evaluation_run]
+
+    verify_result = subprocess.run(
+        [str(FEEDBACK_EVALUATION_VERIFY_SCRIPT), run_id],
+        cwd=REPO_ROOT,
+        env=os.environ.copy(),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert verify_result.returncode == 0, verify_result.stderr or verify_result.stdout
+    assert f"runId={run_id}" in verify_result.stdout
+
+    mismatch_response = client.post(
+        f"/analysis-runs/{run_id}/feedback",
+        json={
+            "reportId": "report-not-owned-by-this-run",
+            "feedbackType": "analysis_shallow",
+        },
+    )
+
+    assert mismatch_response.status_code == 409
+    assert mismatch_response.json()["errorCode"] == "MISMATCH"
 
 
 def persist_existing_run_completed_event(run_id: str) -> None:
@@ -1433,9 +1525,7 @@ def test_delivery_complete_persists_artifacts_from_persisted_execution_state(
     )
     assert [section["title"] for section in report["sections"]] == EXPECTED_REPORT_SECTION_TITLES
     assert [section["reportId"] for section in report["sections"]] == [report["reportId"]] * 3
-    assert report["sourceEvidence"] == [
-        item["sourceEvidenceId"] for item in source_evidence_items
-    ]
+    assert report["sourceEvidence"] == [item["sourceEvidenceId"] for item in source_evidence_items]
 
     decisions = response_json_dict(client.get(f"/analysis-runs/{run_id}/decisions").json())["items"]
     assert len(decisions) == 1
