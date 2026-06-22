@@ -37,9 +37,12 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
 
     const workspaceViewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
       analysisTask: goldenPath.analysisTask,
+      badCases: [],
       conversation: goldenPath.conversation,
       currentRun: goldenPath.analysisRun,
       decisions: goldenPath.decisions,
+      evaluationRuns: [],
+      feedback: [],
       messageStream: goldenPath.messageStream,
       messages: goldenPath.messages,
       modelCalls: goldenPath.modelCalls,
@@ -108,6 +111,7 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
 
     const workspaceViewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
       analysisTask: goldenPath.analysisTask,
+      badCases: [],
       conversation: goldenPath.conversation,
       currentRun: {
         ...goldenPath.analysisRun,
@@ -116,6 +120,8 @@ describe("mapAnalysisRuntimeContractsToWorkspaceViewModel", () => {
         status: "running"
       },
       decisions: goldenPath.decisions,
+      evaluationRuns: [],
+      feedback: [],
       messageStream: goldenPath.messageStream,
       messages: goldenPath.messages,
       modelCalls: goldenPath.modelCalls,

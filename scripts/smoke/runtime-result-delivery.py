@@ -30,7 +30,9 @@ from src.infrastructure.model_gateway.gateway import ModelGateway
 from src.infrastructure.tool_registry.registry import ToolRegistry
 from src.modules.analysis_runs.worker_service import AnalysisRunExecutionWorker
 
-RUNTIME_FOUNDATION_SCRIPT = REPO_ROOT / "scripts" / "migration" / "runtime_foundation.sh"
+RUNTIME_FOUNDATION_SCRIPT = (
+    REPO_ROOT / "scripts" / "migration" / "runtime_foundation.sh"
+)
 RUNTIME_EXECUTION_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "runtime_execution_verify.sh"
 )
@@ -39,6 +41,9 @@ MODEL_GATEWAY_FAILURE_VERIFY_SCRIPT = (
 )
 RUNTIME_RESULT_DELIVERY_VERIFY_SCRIPT = (
     REPO_ROOT / "scripts" / "migration" / "runtime_result_delivery_verify.sh"
+)
+RUNTIME_FEEDBACK_EVALUATION_VERIFY_SCRIPT = (
+    REPO_ROOT / "scripts" / "migration" / "runtime_feedback_evaluation_verify.sh"
 )
 LOGIN_EMAIL = "zoe@northstar.example.com"
 LOGIN_PASSWORD = "zoe-password"
@@ -280,7 +285,10 @@ def guard_ecs_host_full_smoke() -> int | None:
     if os.environ.get("IAP_ALLOW_ECS_HOST_FULL_SMOKE", "").strip() == "1":
         return None
 
-    print("status=blocked reason=preview_small_ecs_host_full_smoke_denied", file=sys.stderr)
+    print(
+        "status=blocked reason=preview_small_ecs_host_full_smoke_denied",
+        file=sys.stderr,
+    )
     print("当前 ECS preview-small 禁止 host-side full runtime smoke。", file=sys.stderr)
     print(
         "请在本机运行，或显式设置 IAP_ALLOW_ECS_HOST_FULL_SMOKE=1 由 human 授权。",
@@ -328,12 +336,16 @@ def main() -> int:
     get_settings.cache_clear()
 
     try:
-        migrate_result = run_runtime_foundation_command("migrate", env_overrides=env_overrides)
+        migrate_result = run_runtime_foundation_command(
+            "migrate", env_overrides=env_overrides
+        )
         if migrate_result.returncode != 0:
             print(migrate_result.stderr, file=sys.stderr)
             return migrate_result.returncode
 
-        seed_result = run_runtime_foundation_command("seed", env_overrides=env_overrides)
+        seed_result = run_runtime_foundation_command(
+            "seed", env_overrides=env_overrides
+        )
         if seed_result.returncode != 0:
             print(seed_result.stderr, file=sys.stderr)
             return seed_result.returncode
@@ -369,9 +381,9 @@ def main() -> int:
             pre_delivery_messages = response_json_dict(
                 client.get(f"/conversations/{conversation_id}/messages").json()
             )["items"]
-            pre_delivery_conversations = response_json_dict(client.get("/conversations").json())[
-                "items"
-            ]
+            pre_delivery_conversations = response_json_dict(
+                client.get("/conversations").json()
+            )["items"]
             pre_delivery_projection = next(
                 item
                 for item in pre_delivery_conversations
@@ -380,7 +392,8 @@ def main() -> int:
             assistant_message = next(
                 message
                 for message in pre_delivery_messages
-                if message["messageId"] == pre_delivery_projection["latestAssistantMessageId"]
+                if message["messageId"]
+                == pre_delivery_projection["latestAssistantMessageId"]
             )
             pre_delivery_replay_items = response_json_dict(
                 client.get(
@@ -389,7 +402,9 @@ def main() -> int:
                 ).json()
             )["items"]
             if not pre_delivery_replay_items:
-                raise RuntimeError("MessageStream replay returned no persisted rows before delivery.")
+                raise RuntimeError(
+                    "MessageStream replay returned no persisted rows before delivery."
+                )
 
             execution_verify_result = subprocess.run(
                 [str(RUNTIME_EXECUTION_VERIFY_SCRIPT)],
@@ -428,9 +443,9 @@ def main() -> int:
             message_items = response_json_dict(
                 client.get(f"/conversations/{conversation_id}/messages").json()
             )["items"]
-            post_delivery_conversations = response_json_dict(client.get("/conversations").json())[
-                "items"
-            ]
+            post_delivery_conversations = response_json_dict(
+                client.get("/conversations").json()
+            )["items"]
             post_delivery_projection = next(
                 item
                 for item in post_delivery_conversations
@@ -439,7 +454,8 @@ def main() -> int:
             final_assistant_message = next(
                 message
                 for message in message_items
-                if message["messageId"] == post_delivery_projection["latestAssistantMessageId"]
+                if message["messageId"]
+                == post_delivery_projection["latestAssistantMessageId"]
             )
             post_delivery_replay_items = response_json_dict(
                 client.get(
@@ -466,7 +482,8 @@ def main() -> int:
         sse_terminal_events = [
             event["event"]
             for event in sse_events
-            if event["event"] in {"stream.completed", "stream.failed", "stream.cancelled"}
+            if event["event"]
+            in {"stream.completed", "stream.failed", "stream.cancelled"}
         ]
         print(f"runId={analysis_run['runId']}")
         print(f"status={analysis_run['status']}")
@@ -514,7 +531,8 @@ def main() -> int:
             or [event["event"] for event in sse_events]
             != [item["eventType"] for item in post_delivery_replay_items]
             or [event["json"] for event in sse_events] != post_delivery_replay_items
-            or [int(event["id"]) for event in sse_events] != list(range(len(sse_events)))
+            or [int(event["id"]) for event in sse_events]
+            != list(range(len(sse_events)))
             or not sse_events
             or sse_events[0]["event"] != "stream.started"
             or sse_terminal_events != ["stream.completed"]
@@ -538,11 +556,67 @@ def main() -> int:
                 print(verify_result.stderr, file=sys.stderr)
             return verify_result.returncode
 
+        if not report_items:
+            print("status=failed reason=missing_report_for_feedback", file=sys.stderr)
+            return 1
+
+        feedback_response = client.post(
+            f"/analysis-runs/{run_id}/feedback",
+            json={
+                "reportId": report_items[0]["reportId"],
+                "feedbackType": "incorrect",
+                "comment": "Full smoke marks the delivered report for review.",
+                "failureType": "incorrect",
+                "failureReason": "Full smoke marks the delivered report for review.",
+                "expectedBehavior": "Persist Feedback, BadCase, and EvaluationRun linkage.",
+            },
+        )
+        if feedback_response.status_code != 201:
+            raise RuntimeError(
+                f"analysis-runs/{run_id}/feedback failed: "
+                f"{feedback_response.status_code} {feedback_response.text}"
+            )
+        feedback_payload = response_json_dict(feedback_response.json())
+        feedback_items = response_json_dict(
+            client.get(f"/analysis-runs/{run_id}/feedback").json()
+        )["items"]
+        bad_case_items = response_json_dict(
+            client.get(f"/analysis-runs/{run_id}/bad-cases").json()
+        )["items"]
+        evaluation_run_items = response_json_dict(
+            client.get(f"/analysis-runs/{run_id}/evaluation-runs").json()
+        )["items"]
+        if feedback_payload["badCase"] is None:
+            print(
+                "status=failed reason=missing_bad_case_after_feedback", file=sys.stderr
+            )
+            return 1
+
+        feedback_verify_result = subprocess.run(
+            [str(RUNTIME_FEEDBACK_EVALUATION_VERIFY_SCRIPT)],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=verify_env,
+        )
+        if feedback_verify_result.stdout:
+            print(feedback_verify_result.stdout, end="")
+        if feedback_verify_result.returncode != 0:
+            if feedback_verify_result.stderr:
+                print(feedback_verify_result.stderr, file=sys.stderr)
+            return feedback_verify_result.returncode
+
+        print(f"feedbackCount={len(feedback_items)}")
+        print(f"badCaseCount={len(bad_case_items)}")
+        print(f"evaluationRunCount={len(evaluation_run_items)}")
         print("status=ok")
         return 0
     finally:
         if not args.keep_db:
-            run_runtime_foundation_command("down", env_overrides=env_overrides, check=False)
+            run_runtime_foundation_command(
+                "down", env_overrides=env_overrides, check=False
+            )
             shutil.rmtree(temp_dir, ignore_errors=True)
         get_settings.cache_clear()
 

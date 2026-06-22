@@ -66,27 +66,43 @@ async function loadConversationSession(
   const latestAssistantMessage = messageList.items
     .filter((message) => message.role === "assistant")
     .at(-1);
-  const [messageStream, runEvents, toolCalls, modelCalls, sourceEvidence, reports, decisions] =
-    await Promise.all([
-      latestAssistantMessage
-        ? loadSurface(() =>
-            client.listMessageStream(conversation.conversationId, latestAssistantMessage.messageId)
-          )
-        : Promise.resolve({ items: [], state: "empty" as const }),
-      loadSurface(() => client.listRunEvents(runId)),
-      loadSurface(() => client.listToolCalls(runId)),
-      loadSurface(() => client.listModelCalls(runId)),
-      loadSurface(() => client.listSourceEvidence(runId)),
-      loadSurface(() => client.listReports(runId)),
-      loadSurface(() => client.listDecisions(runId))
-    ]);
+  const [
+    messageStream,
+    runEvents,
+    toolCalls,
+    modelCalls,
+    sourceEvidence,
+    reports,
+    decisions,
+    feedback,
+    badCases,
+    evaluationRuns
+  ] = await Promise.all([
+    latestAssistantMessage
+      ? loadSurface(() =>
+          client.listMessageStream(conversation.conversationId, latestAssistantMessage.messageId)
+        )
+      : Promise.resolve({ items: [], state: "empty" as const }),
+    loadSurface(() => client.listRunEvents(runId)),
+    loadSurface(() => client.listToolCalls(runId)),
+    loadSurface(() => client.listModelCalls(runId)),
+    loadSurface(() => client.listSourceEvidence(runId)),
+    loadSurface(() => client.listReports(runId)),
+    loadSurface(() => client.listDecisions(runId)),
+    loadSurface(() => client.listFeedback(runId)),
+    loadSurface(() => client.listBadCases(runId)),
+    loadSurface(() => client.listEvaluationRuns(runId))
+  ]);
 
   return mapAnalysisRuntimeContractsToWorkspaceViewModel(
     {
       analysisTask,
+      badCases: badCases.items,
       conversation,
       currentRun,
       decisions: decisions.items,
+      evaluationRuns: evaluationRuns.items,
+      feedback: feedback.items,
       messageStream: messageStream.items,
       messages: messageList.items,
       modelCalls: modelCalls.items,
@@ -98,6 +114,12 @@ async function loadConversationSession(
     {
       surfaceStates: {
         decisions: decisions.state,
+        feedbackClosure:
+          feedback.state === "ready" ||
+          badCases.state === "ready" ||
+          evaluationRuns.state === "ready"
+            ? "ready"
+            : feedback.state,
         messageStream: messageStream.state,
         modelDetails: modelCalls.state,
         reportPreview: reports.state,
