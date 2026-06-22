@@ -2,7 +2,7 @@ import type {
   SharedRiskViewModel,
   SharedStatusViewModel
 } from "../../../shared/utils/viewModelState";
-import type { AnalysisTaskContextPack } from "./runtimeContractTypes";
+import type { AnalysisTaskContextPack, MessageStreamStatus } from "./runtimeContractTypes";
 
 import type { AnalysisMessage } from "./analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "./analysisRun";
@@ -43,7 +43,7 @@ export type AnalysisMessageStreamViewModel = {
   messageId: string;
   replayText: string;
   runId: string;
-  status: string;
+  status: MessageStreamStatus;
   updatedAtText: string;
 };
 

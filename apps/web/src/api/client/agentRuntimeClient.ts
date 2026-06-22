@@ -26,6 +26,14 @@ type ListResponse<T> = {
   items: T[];
 };
 
+export type ConversationListItem = Conversation & {
+  activeRunId?: string | null;
+  activeRunStatus?: AnalysisRun["status"] | null;
+  latestAssistantMessageId?: string | null;
+  latestAssistantMessageStatus?: Message["status"] | null;
+  latestMessageId?: string | null;
+};
+
 type RuntimeErrorPayload = {
   errorCode?: string;
   message?: string;
@@ -102,10 +110,19 @@ export class AgentRuntimeClient {
       accept?: string;
       body?: string;
       contentType?: string;
+      lastEventId?: string;
       method?: "GET" | "POST";
+      signal?: AbortSignal;
     } = {}
   ): Promise<Response> {
-    const { accept = "application/json", body, contentType, method = "GET" } = options;
+    const {
+      accept = "application/json",
+      body,
+      contentType,
+      lastEventId,
+      method = "GET",
+      signal
+    } = options;
     let response: Response;
 
     try {
@@ -115,12 +132,19 @@ export class AgentRuntimeClient {
       if (contentType) {
         headers["Content-Type"] = contentType;
       }
-      response = await fetch(`${this.baseUrl}${path}`, {
+      if (lastEventId) {
+        headers["Last-Event-ID"] = lastEventId;
+      }
+      const init: RequestInit = {
         body,
         credentials: "include",
         headers,
         method
-      });
+      };
+      if (signal) {
+        init.signal = signal;
+      }
+      response = await fetch(`${this.baseUrl}${path}`, init);
     } catch (error) {
       throw new RuntimeApiError(
         error instanceof Error ? error.message : "Runtime API request failed.",
@@ -155,6 +179,10 @@ export class AgentRuntimeClient {
     return this.get<Conversation>(`/conversations/${conversationId}`);
   }
 
+  listConversations() {
+    return this.get<ListResponse<ConversationListItem>>("/conversations");
+  }
+
   listMetrics() {
     return this.get<ListResponse<Metric>>("/metrics");
   }
@@ -185,9 +213,16 @@ export class AgentRuntimeClient {
     );
   }
 
-  streamMessageStream(conversationId: string, messageId: string) {
+  streamMessageStream(
+    conversationId: string,
+    messageId: string,
+    signal?: AbortSignal,
+    lastEventId?: string
+  ) {
     return this.request(`/conversations/${conversationId}/messages/${messageId}/stream`, {
-      accept: "text/event-stream"
+      accept: "text/event-stream",
+      lastEventId,
+      signal
     });
   }
 

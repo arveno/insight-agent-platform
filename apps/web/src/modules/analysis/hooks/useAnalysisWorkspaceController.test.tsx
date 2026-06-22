@@ -18,9 +18,7 @@ import type {
 import goldenPathExample from "../../../../../../packages/contracts/examples/analysis-runtime/golden-path.json";
 
 import { mapAnalysisRuntimeContractsToWorkspaceViewModel } from "../mappers/mapAnalysisRuntimeContractsToWorkspaceViewModel";
-import {
-  createRunTraceRootNodeId
-} from "../models/inspectorTree";
+import { createRunTraceRootNodeId } from "../models/inspectorTree";
 import {
   useAnalysisWorkspaceController,
   type UseAnalysisWorkspaceControllerOptions
@@ -93,8 +91,12 @@ function createGoldenPathWorkspaceViewModel(goldenPath: GoldenPathExample) {
 }
 
 describe("useAnalysisWorkspaceController", () => {
-  it("enters draft mode when no runtime bootstrap id is available", async () => {
-    const loader = vi.fn();
+  it("checks persisted conversations and falls back to draft when none are available", async () => {
+    const loader = vi.fn().mockResolvedValue({
+      description: "输入问题开始新的分析，或从其他入口带入上下文。",
+      kind: "empty",
+      title: "当前还没有可展示的分析内容"
+    });
     const { result } = renderHook(() =>
       useAnalysisWorkspaceController({
         bootstrap: {},
@@ -106,7 +108,7 @@ describe("useAnalysisWorkspaceController", () => {
       expect(result.current.workspaceState.kind).toBe("draft");
     });
 
-    expect(loader).not.toHaveBeenCalled();
+    expect(loader).toHaveBeenCalledWith({});
     expect(result.current.sessions).toHaveLength(0);
     expect(result.current.visibleSessions).toHaveLength(0);
     expect(result.current.selectedConversationId).toBeNull();
@@ -224,8 +226,88 @@ describe("useAnalysisWorkspaceController", () => {
     });
   });
 
+  it("renders live MessageStream deltas on the selected assistant message", async () => {
+    const goldenPath = goldenPathExample as GoldenPathExample;
+    const streamingMessageStream = goldenPath.messageStream.slice(0, 2).map((event) => ({
+      ...event,
+      status: "streaming" as const
+    }));
+    const viewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
+      analysisTask: goldenPath.analysisTask,
+      conversation: goldenPath.conversation,
+      currentRun: {
+        ...goldenPath.analysisRun,
+        status: "running"
+      },
+      decisions: [],
+      messageStream: streamingMessageStream,
+      messages: goldenPath.messages.map((message) =>
+        message.role === "assistant" ? { ...message, content: "", status: "streaming" } : message
+      ),
+      modelCalls: goldenPath.modelCalls,
+      reports: [],
+      runEvents: goldenPath.runEvents,
+      sourceEvidence: [],
+      toolCalls: goldenPath.toolCalls
+    });
+    const loader = vi.fn().mockResolvedValue({
+      kind: "ready",
+      viewModel
+    });
+    let pushStreamEvent: ((event: MessageStream) => void) | undefined;
+    const streamSubscriber = vi.fn(({ onEvent }) => {
+      pushStreamEvent = onEvent;
+      return vi.fn();
+    });
+    const { result } = renderHook(() =>
+      useAnalysisWorkspaceController({
+        bootstrap: {
+          conversationId: goldenPath.conversation.conversationId,
+          runId: goldenPath.analysisRun.runId
+        },
+        loader,
+        streamSubscriber
+      })
+    );
+
+    await waitFor(() => {
+      expect(result.current.workspaceState.kind).toBe("ready");
+    });
+
+    const assistantMessage = goldenPath.messages.find((message) => message.role === "assistant")!;
+
+    expect(streamSubscriber).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: goldenPath.conversation.conversationId,
+        messageId: assistantMessage.messageId
+      })
+    );
+
+    act(() => {
+      pushStreamEvent?.({
+        ...goldenPath.messageStream[2]!,
+        delta: "补充说明。",
+        eventType: "stream.completed",
+        sequence: 2,
+        status: "completed"
+      });
+    });
+
+    await waitFor(() => {
+      expect(
+        result.current.messages.find((message) => message.messageId === assistantMessage.messageId)
+          ?.content
+      ).toContain("补充说明。");
+    });
+    expect(result.current.selectedSession?.messageStream?.status).toBe("completed");
+  });
+
   it("keeps draft mode and exposes the submit error when canonical submit fails", async () => {
-    const loader = vi.fn();
+    const loader = vi.fn().mockResolvedValue({
+      description: "输入问题开始新的分析，或从其他入口带入上下文。",
+      kind: "empty",
+      title: "当前还没有可展示的分析内容"
+    });
     const submitter = vi
       .fn()
       .mockRejectedValue(new Error("Conversation.workspaceId does not match request.workspaceId"));
@@ -255,7 +337,7 @@ describe("useAnalysisWorkspaceController", () => {
       expect(submitter).toHaveBeenCalled();
     });
 
-    expect(loader).not.toHaveBeenCalled();
+    expect(loader).toHaveBeenCalledWith({});
     await waitFor(() => {
       expect(result.current.workspaceState.kind).toBe("draft");
       expect(result.current.messages).toEqual([]);

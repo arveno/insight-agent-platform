@@ -9,6 +9,10 @@ import {
   submitAnalysisDraft,
   type SubmitAnalysisDraftInput
 } from "../../../api/adapters/submitAnalysisDraft";
+import {
+  subscribeToAnalysisMessageStream,
+  type AnalysisMessageStreamSubscriber
+} from "../../../api/adapters/streamAnalysisMessageStream";
 import type { AnalysisContextRouteState } from "../../../shared/navigation/navigationTypes";
 import type { ContextTreeNodeDisplayMap } from "../../../shared/view-model/contextTreeNodeDisplay";
 import type {
@@ -21,14 +25,12 @@ import type {
 import type { AnalysisMessage } from "../models/analysisMessage";
 import type { AnalysisRun } from "../models/analysisRun";
 import type { InspectorSubject } from "../models/inspectorSubject";
+import type { AnalysisInspectorTreeState } from "../models/inspectorTree";
+import { createEmptyInspectorTreeState, createRunTraceRootNodeId } from "../models/inspectorTree";
 import type {
-  AnalysisInspectorTreeState
-} from "../models/inspectorTree";
-import {
-  createEmptyInspectorTreeState,
-  createRunTraceRootNodeId,
-} from "../models/inspectorTree";
-import type { SubmitAnalysisDraftResponse } from "../models/runtimeContractTypes";
+  MessageStreamContract,
+  SubmitAnalysisDraftResponse
+} from "../models/runtimeContractTypes";
 
 type ComposerState = "idle" | "running";
 
@@ -65,6 +67,7 @@ export type UseAnalysisWorkspaceControllerOptions = {
   draftContext?: AnalysisContextRouteState;
   draftContextNodeDisplay?: ContextTreeNodeDisplayMap;
   loader?: AnalysisWorkspaceDataLoader;
+  streamSubscriber?: AnalysisMessageStreamSubscriber;
   submitIdentity?: AnalysisDraftSubmitIdentity;
   submitter?: AnalysisDraftSubmitter;
 };
@@ -165,7 +168,9 @@ function parseBootstrapFromLocation(): AnalysisRuntimeBootstrap {
   };
 }
 
-function getWorkspaceStateFromLoadResult(result: AnalysisWorkspaceLoadResult): AnalysisWorkspaceState {
+function getWorkspaceStateFromLoadResult(
+  result: AnalysisWorkspaceLoadResult
+): AnalysisWorkspaceState {
   switch (result.kind) {
     case "empty":
       return {
@@ -194,6 +199,65 @@ function findLatestMessageByRole(
     .find((message) => message.role === role);
 }
 
+function replaceSession(
+  viewModel: AnalysisWorkspaceViewModel,
+  session: AnalysisSessionViewModel
+): AnalysisWorkspaceViewModel {
+  return {
+    ...viewModel,
+    sessions: viewModel.sessions.map((item) =>
+      item.conversationId === session.conversationId ? session : item
+    )
+  };
+}
+
+function applyStreamEventToSession(
+  session: AnalysisSessionViewModel,
+  event: MessageStreamContract
+): AnalysisSessionViewModel {
+  if (session.conversationId !== event.conversationId || session.currentRun.runId !== event.runId) {
+    return session;
+  }
+
+  if (session.messageStream && event.sequence < session.messageStream.eventCount) {
+    return session;
+  }
+
+  const nextReplayText = `${session.messageStream?.replayText ?? ""}${event.delta}`;
+
+  return {
+    ...session,
+    messageStream: {
+      eventCount: Math.max(session.messageStream?.eventCount ?? 0, event.sequence + 1),
+      messageId: event.messageId,
+      replayText: nextReplayText,
+      runId: event.runId,
+      status: event.status,
+      updatedAtText: event.occurredAt
+    },
+    messageStreamState: "ready",
+    messages: session.messages.map((message) =>
+      message.messageId === event.messageId && message.role === "assistant"
+        ? {
+            ...message,
+            content: nextReplayText,
+            status: event.status === "completed" ? "completed" : event.status
+          }
+        : message
+    )
+  };
+}
+
+function applyStreamEventToViewModel(
+  viewModel: AnalysisWorkspaceViewModel,
+  event: MessageStreamContract
+): AnalysisWorkspaceViewModel {
+  return {
+    ...viewModel,
+    sessions: viewModel.sessions.map((session) => applyStreamEventToSession(session, event))
+  };
+}
+
 function createRunSubject(session: AnalysisSessionViewModel): InspectorSubject {
   return {
     type: "analysisRun",
@@ -204,9 +268,7 @@ function createRunSubject(session: AnalysisSessionViewModel): InspectorSubject {
 
 function createContextTreeState(contextRootNodeId?: string): AnalysisInspectorTreeState {
   return {
-    expandedNodeIds: [contextRootNodeId].filter(
-      (nodeId): nodeId is string => Boolean(nodeId)
-    ),
+    expandedNodeIds: [contextRootNodeId].filter((nodeId): nodeId is string => Boolean(nodeId)),
     selectedNodeId: contextRootNodeId ?? null
   };
 }
@@ -228,6 +290,7 @@ export function useAnalysisWorkspaceController(
     [options.bootstrap?.conversationId, options.bootstrap?.runId]
   );
   const loader = options.loader ?? loadAnalysisRuntimeWorkspace;
+  const streamSubscriber = options.streamSubscriber ?? subscribeToAnalysisMessageStream;
   const submitter = options.submitter ?? submitAnalysisDraft;
   const draftContextSignature = useMemo(
     () => getDraftContextSignature(options.draftContext),
@@ -242,7 +305,9 @@ export function useAnalysisWorkspaceController(
         }
       : { kind: "draft" }
   );
-  const [workspaceViewModel, setWorkspaceViewModel] = useState<AnalysisWorkspaceViewModel | null>(null);
+  const [workspaceViewModel, setWorkspaceViewModel] = useState<AnalysisWorkspaceViewModel | null>(
+    null
+  );
   const [draftContext, setDraftContext] = useState<AnalysisContextRouteState | undefined>(
     options.draftContext
   );
@@ -284,7 +349,7 @@ export function useAnalysisWorkspaceController(
     let cancelled = false;
 
     async function run() {
-      if (!bootstrap.conversationId && !bootstrap.runId) {
+      if (!bootstrap.conversationId && !bootstrap.runId && options.draftContext) {
         setWorkspaceState({ kind: "draft" });
         setWorkspaceViewModel(null);
         return;
@@ -293,6 +358,12 @@ export function useAnalysisWorkspaceController(
       const result = await loader(bootstrap);
 
       if (cancelled) {
+        return;
+      }
+
+      if (!bootstrap.conversationId && !bootstrap.runId && result.kind !== "ready") {
+        setWorkspaceState({ kind: "draft" });
+        setWorkspaceViewModel(null);
         return;
       }
 
@@ -305,7 +376,7 @@ export function useAnalysisWorkspaceController(
     return () => {
       cancelled = true;
     };
-  }, [bootstrap, loader]);
+  }, [bootstrap, draftContextSignature, loader, options.draftContext]);
 
   const sessions = workspaceViewModel?.sessions ?? [];
   const selectedSession = useMemo(() => {
@@ -339,7 +410,9 @@ export function useAnalysisWorkspaceController(
       setSelectedInspectorSubject(undefined);
       setSelectedMessageId(null);
       setInspectorTreeState(
-        draftContext ? createContextTreeState(draftContext.root.nodeId) : createEmptyInspectorTreeState()
+        draftContext
+          ? createContextTreeState(draftContext.root.nodeId)
+          : createEmptyInspectorTreeState()
       );
       setAnalysisDraft(draftContext?.suggestedPrompt ?? "");
       setFollowUpDraft("");
@@ -370,6 +443,39 @@ export function useAnalysisWorkspaceController(
       session.sessionSummary.title.toLowerCase().includes(normalizedQuery)
     );
   }, [sessionSearchQuery, sessions]);
+  const streamTarget = useMemo(() => {
+    if (!selectedSession?.messageStream || selectedSession.messageStream.status !== "streaming") {
+      return undefined;
+    }
+
+    return {
+      conversationId: selectedSession.conversationId,
+      messageId: selectedSession.messageStream.messageId
+    };
+  }, [
+    selectedSession?.conversationId,
+    selectedSession?.messageStream?.messageId,
+    selectedSession?.messageStream?.status
+  ]);
+
+  useEffect(() => {
+    if (!streamTarget) {
+      return undefined;
+    }
+
+    return streamSubscriber({
+      conversationId: streamTarget.conversationId,
+      messageId: streamTarget.messageId,
+      onError: () => {
+        setInteractionMessage(createInteractionMessage("实时输出已中断，可刷新后读取回放。"));
+      },
+      onEvent: (event) => {
+        setWorkspaceViewModel((current) =>
+          current ? applyStreamEventToViewModel(current, event) : current
+        );
+      }
+    });
+  }, [streamSubscriber, streamTarget]);
 
   const draftComposerViewModels = useMemo(
     () => createDraftComposerViewModels(draftContext),
@@ -394,8 +500,7 @@ export function useAnalysisWorkspaceController(
     composerViewModels,
     currentRun: selectedSession?.currentRun,
     draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
-    draftContextNodeDisplay:
-      workspaceState.kind === "draft" ? draftContextNodeDisplay : undefined,
+    draftContextNodeDisplay: workspaceState.kind === "draft" ? draftContextNodeDisplay : undefined,
     interactionMessage,
     inspectorTreeState,
     messages: selectedSession?.messages ?? [],
@@ -502,6 +607,32 @@ export function useAnalysisWorkspaceController(
       setComposerState("idle");
       setInspectorTreeState(createRunTraceTreeState(nextSession));
       setInteractionMessage("");
+
+      void (async () => {
+        const loadResult = await loader({ conversationId });
+
+        if (loadResult.kind !== "ready") {
+          setInteractionMessage(
+            createInteractionMessage(loadResult.description ?? "暂时无法重新加载该会话。")
+          );
+          return;
+        }
+
+        const loadedSession = loadResult.viewModel.sessions[0];
+
+        if (!loadedSession) {
+          return;
+        }
+
+        setWorkspaceViewModel((current) =>
+          current ? replaceSession(current, loadedSession) : loadResult.viewModel
+        );
+        setSelectedInspectorSubject(createRunSubject(loadedSession));
+        setSelectedMessageId(
+          findLatestMessageByRole(loadedSession, "assistant")?.messageId ?? null
+        );
+        setInspectorTreeState(createRunTraceTreeState(loadedSession));
+      })();
     },
     onSessionSearchChange: setSessionSearchQuery,
     onSubmitComposer: () => {
@@ -516,9 +647,7 @@ export function useAnalysisWorkspaceController(
 
       if (!submitIdentity) {
         setComposerState("idle");
-        setInteractionMessage(
-          createInteractionMessage("当前环境未配置分析提交能力。")
-        );
+        setInteractionMessage(createInteractionMessage("当前环境未配置分析提交能力。"));
         return;
       }
 
@@ -571,13 +700,15 @@ export function useAnalysisWorkspaceController(
               : undefined
           );
           setSelectedMessageId(
-            loadedSession ? findLatestMessageByRole(loadedSession, "assistant")?.messageId ?? null : null
+            loadedSession
+              ? (findLatestMessageByRole(loadedSession, "assistant")?.messageId ?? null)
+              : null
           );
           setInspectorTreeState(
             loadedSession ? createRunTraceTreeState(loadedSession) : createEmptyInspectorTreeState()
           );
           setInteractionMessage("");
-        } catch (error) {
+        } catch {
           setComposerState("idle");
           setInteractionMessage(createInteractionMessage("发送失败，请稍后重试。"));
         }
