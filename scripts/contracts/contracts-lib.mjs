@@ -97,13 +97,7 @@ export const messageStreamEventTypes = [
   "stream.cancelled"
 ];
 
-export const messageStreamStatuses = [
-  "created",
-  "streaming",
-  "completed",
-  "failed",
-  "cancelled"
-];
+export const messageStreamStatuses = ["created", "streaming", "completed", "failed", "cancelled"];
 
 export const runEventTypes = [
   "run.created",
@@ -176,13 +170,7 @@ export const approvalStatuses = [
   "superseded"
 ];
 
-export const decisionStatuses = [
-  "proposed",
-  "accepted",
-  "rejected",
-  "in_progress",
-  "completed"
-];
+export const decisionStatuses = ["proposed", "accepted", "rejected", "in_progress", "completed"];
 
 export const formalRuntimeEnumDocs = [
   { heading: "AnalysisRunStatus", values: analysisRunStatuses },
@@ -516,6 +504,9 @@ export const minimumOpenApiPaths = [
   "/analysis-runs/{runId}/model-calls",
   "/analysis-runs/{runId}/source-evidence",
   "/analysis-runs/{runId}/reports",
+  "/analysis-runs/{runId}/feedback",
+  "/analysis-runs/{runId}/bad-cases",
+  "/analysis-runs/{runId}/evaluation-runs",
   "/analysis-runs/{runId}/execution-attempts",
   "/analysis-runs/{runId}/approvals",
   "/analysis-runs/{runId}/cancel",
@@ -612,9 +603,7 @@ function renderInlineTsObject(schemaFragment, context) {
   }
 
   const members = properties.map(([propertyName, propertySchema]) => {
-    const key = identifierPattern.test(propertyName)
-      ? propertyName
-      : JSON.stringify(propertyName);
+    const key = identifierPattern.test(propertyName) ? propertyName : JSON.stringify(propertyName);
     const optionalMarker = required.has(propertyName) ? "" : "?";
 
     return `${key}${optionalMarker}: ${renderTypeScriptType(propertySchema, context)};`;
@@ -630,9 +619,7 @@ export function renderTypeScriptType(schemaFragment, context) {
   }
 
   if (schemaFragment.anyOf) {
-    return schemaFragment.anyOf
-      .map((member) => renderTypeScriptType(member, context))
-      .join(" | ");
+    return schemaFragment.anyOf.map((member) => renderTypeScriptType(member, context)).join(" | ");
   }
 
   if (schemaFragment.enum) {
@@ -640,9 +627,11 @@ export function renderTypeScriptType(schemaFragment, context) {
   }
 
   if (Array.isArray(schemaFragment.type)) {
-    return [...new Set(schemaFragment.type)].map((typeName) =>
-      renderTypeScriptType({ ...schemaFragment, type: typeName, enum: undefined }, context)
-    ).join(" | ");
+    return [...new Set(schemaFragment.type)]
+      .map((typeName) =>
+        renderTypeScriptType({ ...schemaFragment, type: typeName, enum: undefined }, context)
+      )
+      .join(" | ");
   }
 
   switch (schemaFragment.type) {
@@ -869,9 +858,7 @@ function validateSchemaFragment(value, schemaFragment, context, path, errors) {
 
     if (!memberErrors.some((branchErrors) => branchErrors.length === 0)) {
       errors.push(
-        `${path} does not satisfy any allowed schema shape: ${memberErrors
-          .flat()
-          .join(" | ")}`
+        `${path} does not satisfy any allowed schema shape: ${memberErrors.flat().join(" | ")}`
       );
     }
 
@@ -947,7 +934,13 @@ function validateSchemaFragment(value, schemaFragment, context, path, errors) {
       }
 
       value.forEach((item, index) => {
-        validateSchemaFragment(item, schemaFragment.items ?? {}, context, `${path}[${index}]`, errors);
+        validateSchemaFragment(
+          item,
+          schemaFragment.items ?? {},
+          context,
+          `${path}[${index}]`,
+          errors
+        );
       });
       return;
     case "object":

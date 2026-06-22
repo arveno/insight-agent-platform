@@ -452,30 +452,36 @@ class ConversationListItemResponse(BaseModel):
     userId: str
     currentRunId: str | None
     activeRunId: str | None = None
-    activeRunStatus: Literal[
-        "created",
-        "validating",
-        "rejected",
-        "queued",
-        "running",
-        "waiting",
-        "cancelling",
-        "cancelled",
-        "failed",
-        "completed",
-        "expired",
-    ] | None = None
+    activeRunStatus: (
+        Literal[
+            "created",
+            "validating",
+            "rejected",
+            "queued",
+            "running",
+            "waiting",
+            "cancelling",
+            "cancelled",
+            "failed",
+            "completed",
+            "expired",
+        ]
+        | None
+    ) = None
     title: str
     status: Literal["active", "archived", "closed"]
     latestMessageId: str | None = None
     latestAssistantMessageId: str | None = None
-    latestAssistantMessageStatus: Literal[
-        "created",
-        "streaming",
-        "completed",
-        "failed",
-        "cancelled",
-    ] | None = None
+    latestAssistantMessageStatus: (
+        Literal[
+            "created",
+            "streaming",
+            "completed",
+            "failed",
+            "cancelled",
+        ]
+        | None
+    ) = None
     createdAt: str
     updatedAt: str
 
@@ -869,6 +875,117 @@ class DecisionListResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     items: list[DecisionResponse]
+
+
+FeedbackType: TypeAlias = Literal[
+    "useful",
+    "not_useful",
+    "incorrect",
+    "sql_error",
+    "source_insufficient",
+    "analysis_shallow",
+    "suggestion_unusable",
+    "format_preference",
+    "manual_correction",
+]
+
+
+class SubmitFeedbackRequest(BaseModel):
+    """POST /analysis-runs/{runId}/feedback request contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reportId: str
+    feedbackType: FeedbackType
+    comment: str | None = None
+    correction: str | None = None
+    failureType: str | None = None
+    failureReason: str | None = None
+    expectedBehavior: str | None = None
+
+
+class FeedbackResponse(BaseModel):
+    """Feedback contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    feedbackId: str
+    workspaceId: str
+    userId: str
+    runId: str
+    reportId: str
+    feedbackType: FeedbackType
+    comment: str | None = None
+    correction: str | None = None
+    createdAt: str
+
+
+class FeedbackListResponse(BaseModel):
+    """Feedback list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[FeedbackResponse]
+
+
+class EvaluationRunResponse(BaseModel):
+    """EvaluationRun contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    evaluationRunId: str
+    workspaceId: str
+    runId: str
+    datasetId: str
+    status: Literal["queued", "running", "passed", "failed", "needs_review"]
+    score: float | None = None
+    failureReason: str | None = None
+    createdAt: str
+    completedAt: str | None = None
+
+
+class EvaluationRunListResponse(BaseModel):
+    """EvaluationRun list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[EvaluationRunResponse]
+
+
+class BadCaseResponse(BaseModel):
+    """BadCase contract-shaped API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    badCaseId: str
+    workspaceId: str
+    runId: str
+    feedbackId: str | None = None
+    evaluationRunId: str | None = None
+    failureType: str
+    failureReason: str
+    expectedBehavior: str
+    relatedRule: str | None = None
+    relatedContract: str | None = None
+    createdAt: str
+
+
+class BadCaseListResponse(BaseModel):
+    """BadCase list API response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[BadCaseResponse]
+
+
+class FeedbackClosureResponse(BaseModel):
+    """POST feedback response with quality closure entries."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    feedback: FeedbackResponse
+    evaluationRun: EvaluationRunResponse
+    badCase: BadCaseResponse | None = None
 
 
 class MessageResponse(BaseModel):

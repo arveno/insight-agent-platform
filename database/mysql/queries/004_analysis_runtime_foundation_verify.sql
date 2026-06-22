@@ -25,6 +25,11 @@ SELECT CONCAT(
         'reports',
         'report_sections',
         'decisions',
+        'feedback',
+        'evaluation_datasets',
+        'evaluation_runs',
+        'evaluation_scores',
+        'bad_cases',
         'messages',
         'message_streams'
       )
@@ -157,6 +162,21 @@ FROM report_sections;
 
 SELECT CONCAT('decisions.row_count=', COUNT(*)) AS check_line
 FROM decisions;
+
+SELECT CONCAT('feedback.row_count=', COUNT(*)) AS check_line
+FROM feedback;
+
+SELECT CONCAT('evaluation_datasets.row_count=', COUNT(*)) AS check_line
+FROM evaluation_datasets;
+
+SELECT CONCAT('evaluation_runs.row_count=', COUNT(*)) AS check_line
+FROM evaluation_runs;
+
+SELECT CONCAT('evaluation_scores.row_count=', COUNT(*)) AS check_line
+FROM evaluation_scores;
+
+SELECT CONCAT('bad_cases.row_count=', COUNT(*)) AS check_line
+FROM bad_cases;
 
 SELECT CONCAT('messages.row_count=', COUNT(*)) AS check_line
 FROM messages;
