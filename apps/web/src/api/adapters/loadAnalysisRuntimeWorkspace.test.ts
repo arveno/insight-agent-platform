@@ -107,6 +107,14 @@ describe("loadAnalysisRuntimeWorkspace", () => {
         return Response.json({ items: goldenPath.decisions });
       }
 
+      if (
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/feedback`) ||
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/bad-cases`) ||
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/evaluation-runs`)
+      ) {
+        return Response.json({ items: [] });
+      }
+
       throw new Error(`Unhandled request: ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -178,6 +186,14 @@ describe("loadAnalysisRuntimeWorkspace", () => {
         return Response.json({ items: goldenPath.decisions });
       }
 
+      if (
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/feedback`) ||
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/bad-cases`) ||
+        url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/evaluation-runs`)
+      ) {
+        return Response.json({ items: [] });
+      }
+
       throw new Error(`Unhandled request: ${url}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -210,6 +226,7 @@ describe("loadAnalysisRuntimeWorkspace", () => {
     expect(session.decisions.map((item) => item.decisionId)).toEqual(
       goldenPath.decisions.map((item) => item.decisionId)
     );
-    expect(fetchMock).toHaveBeenCalledTimes(11);
+    expect(session.feedbackClosure.feedbackCount).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(14);
   });
 });

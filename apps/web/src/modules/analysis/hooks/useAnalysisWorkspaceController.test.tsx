@@ -77,9 +77,12 @@ function createDraftContext(): AnalysisTaskContextPack {
 function createGoldenPathWorkspaceViewModel(goldenPath: GoldenPathExample) {
   return mapAnalysisRuntimeContractsToWorkspaceViewModel({
     analysisTask: goldenPath.analysisTask,
+    badCases: [],
     conversation: goldenPath.conversation,
     currentRun: goldenPath.analysisRun,
     decisions: goldenPath.decisions,
+    evaluationRuns: [],
+    feedback: [],
     messageStream: goldenPath.messageStream,
     messages: goldenPath.messages,
     modelCalls: goldenPath.modelCalls,
@@ -234,12 +237,15 @@ describe("useAnalysisWorkspaceController", () => {
     }));
     const viewModel = mapAnalysisRuntimeContractsToWorkspaceViewModel({
       analysisTask: goldenPath.analysisTask,
+      badCases: [],
       conversation: goldenPath.conversation,
       currentRun: {
         ...goldenPath.analysisRun,
         status: "running"
       },
       decisions: [],
+      evaluationRuns: [],
+      feedback: [],
       messageStream: streamingMessageStream,
       messages: goldenPath.messages.map((message) =>
         message.role === "assistant" ? { ...message, content: "", status: "streaming" } : message

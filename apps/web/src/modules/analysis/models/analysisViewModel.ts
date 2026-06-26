@@ -3,6 +3,7 @@ import type {
   SharedStatusViewModel
 } from "../../../shared/utils/viewModelState";
 import type { AnalysisTaskContextPack, MessageStreamStatus } from "./runtimeContractTypes";
+import type { EvaluationRun, Feedback } from "./runtimeContractTypes";
 
 import type { AnalysisMessage } from "./analysisMessage";
 import type { AnalysisRun, AnalysisRunEvent } from "./analysisRun";
@@ -84,6 +85,15 @@ export type AnalysisReportPreviewViewModel = {
   title: string;
 };
 
+export type AnalysisFeedbackClosureViewModel = {
+  badCaseCount: number;
+  evaluationRunCount: number;
+  feedbackCount: number;
+  latestEvaluationStatus?: EvaluationRun["status"];
+  latestFeedbackType?: Feedback["feedbackType"];
+  state: AnalysisSurfaceState;
+};
+
 export type AnalysisDecisionViewModel = {
   createdAtText: string;
   decisionId: string;
@@ -103,6 +113,7 @@ export type AnalysisSessionViewModel = {
   currentRun: AnalysisRun;
   decisions: AnalysisDecisionViewModel[];
   decisionsState: AnalysisSurfaceState;
+  feedbackClosure: AnalysisFeedbackClosureViewModel;
   followUpComposer: AnalysisComposerViewModel;
   inputComposer: AnalysisComposerViewModel;
   messageStream?: AnalysisMessageStreamViewModel;

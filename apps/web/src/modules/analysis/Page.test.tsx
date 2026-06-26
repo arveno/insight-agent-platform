@@ -34,6 +34,13 @@ type GoldenPathExample = {
   toolCalls: ToolCall[];
 };
 
+type FeedbackMockState = {
+  badCaseItems: unknown[];
+  evaluationRunItems: unknown[];
+  feedbackItems: unknown[];
+  onSubmit?: (payload: Record<string, unknown>) => unknown;
+};
+
 function createDraftContext(): AnalysisTaskContextPack {
   return {
     capturedAt: "2026-06-12T10:28:00+08:00",
@@ -58,9 +65,19 @@ function createDraftContext(): AnalysisTaskContextPack {
   };
 }
 
-function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+function installRuntimeFetchMock(goldenPath: GoldenPathExample, feedbackState?: FeedbackMockState) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+
+    if (
+      (init?.method ?? "GET") === "POST" &&
+      url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/feedback`)
+    ) {
+      return Response.json(
+        feedbackState?.onSubmit?.(JSON.parse(String(init?.body ?? "{}"))) ?? {},
+        { status: 201 }
+      );
+    }
 
     if (url.endsWith(`/conversations/${goldenPath.conversation.conversationId}`)) {
       return Response.json(goldenPath.conversation);
@@ -108,6 +125,18 @@ function installRuntimeFetchMock(goldenPath: GoldenPathExample) {
 
     if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/decisions`)) {
       return Response.json({ items: goldenPath.decisions });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/feedback`)) {
+      return Response.json({ items: feedbackState?.feedbackItems ?? [] });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/bad-cases`)) {
+      return Response.json({ items: feedbackState?.badCaseItems ?? [] });
+    }
+
+    if (url.endsWith(`/analysis-runs/${goldenPath.analysisRun.runId}/evaluation-runs`)) {
+      return Response.json({ items: feedbackState?.evaluationRunItems ?? [] });
     }
 
     throw new Error(`Unhandled request: ${url}`);
@@ -179,9 +208,9 @@ describe("AnalysisPage", () => {
     expect(screen.queryByText(/^Context$/)).toBeNull();
     expect(within(main).queryByText("已附带上下文，详情见右侧分析详情。")).toBeNull();
     expect(within(main).getByText("输入问题开始分析")).toBeTruthy();
-    expect((screen.getByRole("textbox", { name: "输入你想分析的问题" }) as HTMLTextAreaElement).value).toBe(
-      draftContext.suggestedPrompt
-    );
+    expect(
+      (screen.getByRole("textbox", { name: "输入你想分析的问题" }) as HTMLTextAreaElement).value
+    ).toBe(draftContext.suggestedPrompt);
   });
 
   it("loads the runtime-backed conversation shell when a bootstrap conversationId is present", async () => {
@@ -230,7 +259,102 @@ describe("AnalysisPage", () => {
       )
     ).toBeNull();
 
-    expect(fetchMock).toHaveBeenCalledTimes(11);
+    expect(fetchMock).toHaveBeenCalledTimes(14);
+  });
+
+  it("submits report feedback and reads back the persisted evaluation closure", async () => {
+    const goldenPath = goldenPathExample as GoldenPathExample;
+    const report = goldenPath.reports[0]!;
+    const feedbackState: FeedbackMockState = {
+      badCaseItems: [],
+      evaluationRunItems: [],
+      feedbackItems: [],
+      onSubmit: (payload) => {
+        expect(payload).toMatchObject({
+          comment: "结论缺少华东渠道证据。",
+          failureReason: "结论缺少华东渠道证据。",
+          failureType: "incorrect",
+          feedbackType: "incorrect",
+          reportId: report.reportId
+        });
+
+        const feedback = {
+          comment: payload.comment,
+          correction: null,
+          createdAt: "2026-06-12T10:40:00+08:00",
+          feedbackId: "feedback-ui-test",
+          feedbackType: payload.feedbackType,
+          reportId: report.reportId,
+          runId: goldenPath.analysisRun.runId,
+          userId: goldenPath.analysisRun.userId,
+          workspaceId: goldenPath.analysisRun.workspaceId
+        };
+        const evaluationRun = {
+          completedAt: null,
+          createdAt: "2026-06-12T10:40:00+08:00",
+          datasetId: "evaluation-dataset-ui-test",
+          evaluationRunId: "evaluation-run-ui-test",
+          failureReason: payload.failureReason,
+          runId: goldenPath.analysisRun.runId,
+          score: null,
+          status: "needs_review",
+          workspaceId: goldenPath.analysisRun.workspaceId
+        };
+        const badCase = {
+          badCaseId: "bad-case-ui-test",
+          createdAt: "2026-06-12T10:40:00+08:00",
+          evaluationRunId: evaluationRun.evaluationRunId,
+          expectedBehavior: payload.expectedBehavior,
+          failureReason: payload.failureReason,
+          failureType: payload.failureType,
+          feedbackId: feedback.feedbackId,
+          relatedContract: "Feedback -> BadCase -> EvaluationRun",
+          relatedRule: "Feedback / Evaluation domains stay separate from Memory.",
+          runId: goldenPath.analysisRun.runId,
+          workspaceId: goldenPath.analysisRun.workspaceId
+        };
+
+        feedbackState.feedbackItems = [feedback];
+        feedbackState.evaluationRunItems = [evaluationRun];
+        feedbackState.badCaseItems = [badCase];
+
+        return {
+          badCase,
+          evaluationRun,
+          feedback
+        };
+      }
+    };
+    installRuntimeFetchMock(goldenPath, feedbackState);
+    window.history.replaceState(
+      {},
+      "",
+      `/?conversationId=${encodeURIComponent(goldenPath.conversation.conversationId)}`
+    );
+
+    render(
+      <TestProviders>
+        <AnalysisPage />
+      </TestProviders>
+    );
+
+    const feedbackRegion = await screen.findByRole("region", {
+      name: "Analysis report feedback"
+    });
+
+    expect(
+      within(feedbackRegion).getByText("Feedback 0 · BadCase 0 · EvaluationRun 0")
+    ).toBeTruthy();
+
+    fireEvent.click(within(feedbackRegion).getByLabelText("需要修正"));
+    fireEvent.change(within(feedbackRegion).getByLabelText("反馈说明"), {
+      target: { value: "结论缺少华东渠道证据。" }
+    });
+    fireEvent.click(within(feedbackRegion).getByRole("button", { name: "提交反馈" }));
+
+    expect(await screen.findByText("Feedback 1 · BadCase 1 · EvaluationRun 1")).toBeTruthy();
+    expect(screen.getByText("最新: 需要修正 · needs_review")).toBeTruthy();
+    expect(screen.getAllByText("Feedback 已提交，闭环状态已更新。").length).toBeGreaterThan(0);
   });
 
   it("submits a tree-shaped context pack through POST /analysis-tasks/submit and switches into the runtime conversation", async () => {
@@ -366,7 +490,10 @@ describe("AnalysisPage", () => {
         url.endsWith("/analysis-runs/analysis-run-201-submit/model-calls") ||
         url.endsWith("/analysis-runs/analysis-run-201-submit/source-evidence") ||
         url.endsWith("/analysis-runs/analysis-run-201-submit/reports") ||
-        url.endsWith("/analysis-runs/analysis-run-201-submit/decisions")
+        url.endsWith("/analysis-runs/analysis-run-201-submit/decisions") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/feedback") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/bad-cases") ||
+        url.endsWith("/analysis-runs/analysis-run-201-submit/evaluation-runs")
       ) {
         return Response.json({ items: [] });
       }

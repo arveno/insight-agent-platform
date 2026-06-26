@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  AgentRuntimeClient,
+  type FeedbackClosureResponse,
+  type SubmitFeedbackRequest
+} from "../../../api/client/agentRuntimeClient";
+import {
   loadAnalysisRuntimeWorkspace,
   type AnalysisRuntimeBootstrap,
   type AnalysisWorkspaceLoadResult
@@ -28,11 +33,13 @@ import type { InspectorSubject } from "../models/inspectorSubject";
 import type { AnalysisInspectorTreeState } from "../models/inspectorTree";
 import { createEmptyInspectorTreeState, createRunTraceRootNodeId } from "../models/inspectorTree";
 import type {
+  Feedback,
   MessageStreamContract,
   SubmitAnalysisDraftResponse
 } from "../models/runtimeContractTypes";
 
 type ComposerState = "idle" | "running";
+type FeedbackSubmitState = "idle" | "submitting";
 
 const defaultModelOptions = [
   { key: "default", label: "Default" },
@@ -62,10 +69,20 @@ export type AnalysisDraftSubmitter = (
   input: SubmitAnalysisDraftInput
 ) => Promise<SubmitAnalysisDraftResponse>;
 
+export type AnalysisFeedbackSubmitInput = {
+  payload: SubmitFeedbackRequest;
+  runId: string;
+};
+
+export type AnalysisFeedbackSubmitter = (
+  input: AnalysisFeedbackSubmitInput
+) => Promise<FeedbackClosureResponse>;
+
 export type UseAnalysisWorkspaceControllerOptions = {
   bootstrap?: AnalysisRuntimeBootstrap;
   draftContext?: AnalysisContextRouteState;
   draftContextNodeDisplay?: ContextTreeNodeDisplayMap;
+  feedbackSubmitter?: AnalysisFeedbackSubmitter;
   loader?: AnalysisWorkspaceDataLoader;
   streamSubscriber?: AnalysisMessageStreamSubscriber;
   submitIdentity?: AnalysisDraftSubmitIdentity;
@@ -83,6 +100,9 @@ export type AnalysisWorkspaceController = {
   currentRun?: AnalysisRun;
   draftContext?: AnalysisDraftContextViewModel;
   draftContextNodeDisplay?: ContextTreeNodeDisplayMap;
+  feedbackComment: string;
+  feedbackSubmitState: FeedbackSubmitState;
+  feedbackType: Feedback["feedbackType"] | null;
   interactionMessage: string;
   inspectorTreeState: AnalysisInspectorTreeState;
   messages: AnalysisMessage[];
@@ -91,6 +111,8 @@ export type AnalysisWorkspaceController = {
   onComposerDraftChange: (value: string) => void;
   onComposerModeChange: (mode: AnalysisComposerMode) => void;
   onComposerStop: () => void;
+  onFeedbackCommentChange: (value: string) => void;
+  onFeedbackTypeChange: (value: Feedback["feedbackType"]) => void;
   onResetForNewAnalysis: () => void;
   onSelectCurrentRun: () => void;
   onSetInspectorExpandedNodeIds: (nodeIds: string[]) => void;
@@ -100,6 +122,7 @@ export type AnalysisWorkspaceController = {
   onSelectSession: (conversationId: string) => void;
   onSessionSearchChange: (value: string) => void;
   onSubmitComposer: () => void;
+  onSubmitFeedback: () => void;
   selectedConversationId: string | null;
   selectedInspectorSubject?: InspectorSubject;
   selectedMessageId: string | null;
@@ -114,6 +137,12 @@ export type AnalysisWorkspaceController = {
 
 function createInteractionMessage(text: string): string {
   return text;
+}
+
+function submitFeedbackToRuntime(
+  input: AnalysisFeedbackSubmitInput
+): Promise<FeedbackClosureResponse> {
+  return new AgentRuntimeClient().submitFeedback(input.runId, input.payload);
 }
 
 function createDraftComposerViewModels(
@@ -290,6 +319,7 @@ export function useAnalysisWorkspaceController(
     [options.bootstrap?.conversationId, options.bootstrap?.runId]
   );
   const loader = options.loader ?? loadAnalysisRuntimeWorkspace;
+  const feedbackSubmitter = options.feedbackSubmitter ?? submitFeedbackToRuntime;
   const streamSubscriber = options.streamSubscriber ?? subscribeToAnalysisMessageStream;
   const submitter = options.submitter ?? submitAnalysisDraft;
   const draftContextSignature = useMemo(
@@ -325,6 +355,9 @@ export function useAnalysisWorkspaceController(
     bootstrap.conversationId || bootstrap.runId ? "follow_up" : "analysis"
   );
   const [composerState, setComposerState] = useState<ComposerState>("idle");
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackSubmitState, setFeedbackSubmitState] = useState<FeedbackSubmitState>("idle");
+  const [feedbackType, setFeedbackType] = useState<Feedback["feedbackType"] | null>(null);
   const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelOptions[0].key);
   const [interactionMessage, setInteractionMessage] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
@@ -429,6 +462,9 @@ export function useAnalysisWorkspaceController(
     setSelectedMessageId(latestAssistantMessage?.messageId ?? null);
     setInspectorTreeState(createRunTraceTreeState(selectedSession));
     setAnalysisDraft(selectedSession.inputComposer.initialDraft);
+    setFeedbackComment("");
+    setFeedbackSubmitState("idle");
+    setFeedbackType(null);
     setFollowUpDraft(selectedSession.followUpComposer.initialDraft);
   }, [draftContext, selectedSession, workspaceState.kind]);
 
@@ -493,6 +529,62 @@ export function useAnalysisWorkspaceController(
     modelOptions[0]?.label ??
     "Default";
 
+  const submitFeedback = () => {
+    if (!selectedSession?.reportPreview || !feedbackType || feedbackSubmitState === "submitting") {
+      return;
+    }
+
+    const comment = feedbackComment.trim();
+    const payload: SubmitFeedbackRequest = {
+      comment: comment.length > 0 ? comment : null,
+      feedbackType,
+      reportId: selectedSession.reportPreview.reportId
+    };
+
+    if (feedbackType !== "useful") {
+      payload.expectedBehavior = "复核报告结论后再进入验收基线。";
+      payload.failureReason = comment.length > 0 ? comment : "用户标记结果需要复核。";
+      payload.failureType = feedbackType;
+    }
+
+    setFeedbackSubmitState("submitting");
+    setInteractionMessage("");
+
+    void (async () => {
+      try {
+        await feedbackSubmitter({
+          payload,
+          runId: selectedSession.currentRun.runId
+        });
+
+        const loadResult = await loader({
+          conversationId: selectedSession.conversationId,
+          runId: selectedSession.currentRun.runId
+        });
+
+        if (loadResult.kind === "ready") {
+          const loadedSession = loadResult.viewModel.sessions[0];
+
+          if (loadedSession) {
+            setWorkspaceViewModel((current) =>
+              current ? replaceSession(current, loadedSession) : loadResult.viewModel
+            );
+          }
+        }
+
+        setFeedbackComment("");
+        setFeedbackType(null);
+        setInteractionMessage(createInteractionMessage("Feedback 已提交，闭环状态已更新。"));
+      } catch (error) {
+        setInteractionMessage(
+          createInteractionMessage(error instanceof Error ? error.message : "Feedback 提交失败。")
+        );
+      } finally {
+        setFeedbackSubmitState("idle");
+      }
+    })();
+  };
+
   return {
     composerDraft: getActiveDraft(analysisDraft, composerMode, followUpDraft),
     composerMode,
@@ -501,6 +593,9 @@ export function useAnalysisWorkspaceController(
     currentRun: selectedSession?.currentRun,
     draftContext: workspaceState.kind === "draft" ? draftContext : undefined,
     draftContextNodeDisplay: workspaceState.kind === "draft" ? draftContextNodeDisplay : undefined,
+    feedbackComment,
+    feedbackSubmitState,
+    feedbackType,
     interactionMessage,
     inspectorTreeState,
     messages: selectedSession?.messages ?? [],
@@ -525,6 +620,11 @@ export function useAnalysisWorkspaceController(
       setComposerState("idle");
       setInteractionMessage(createInteractionMessage("当前无法停止此次生成。"));
     },
+    onFeedbackCommentChange: setFeedbackComment,
+    onFeedbackTypeChange: (value) => {
+      setFeedbackType(value);
+      setInteractionMessage("");
+    },
     onResetForNewAnalysis: () => {
       composerModeRef.current = "analysis";
       setComposerMode("analysis");
@@ -534,6 +634,9 @@ export function useAnalysisWorkspaceController(
       setDraftContext(undefined);
       setDraftContextNodeDisplay(undefined);
       setAnalysisDraft("");
+      setFeedbackComment("");
+      setFeedbackSubmitState("idle");
+      setFeedbackType(null);
       setFollowUpDraft("");
       setSelectedConversationId(null);
       setSelectedInspectorSubject(undefined);
@@ -714,6 +817,7 @@ export function useAnalysisWorkspaceController(
         }
       })();
     },
+    onSubmitFeedback: submitFeedback,
     selectedConversationId,
     selectedInspectorSubject,
     selectedMessageId,

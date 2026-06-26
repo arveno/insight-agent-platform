@@ -1,8 +1,11 @@
 import type {
   AnalysisRunContract,
   AnalysisTask,
+  BadCase,
   ConversationContract,
   Decision,
+  EvaluationRun,
+  Feedback,
   MessageContract,
   MessageStreamContract,
   ModelCall,
@@ -26,9 +29,12 @@ import type {
 
 export type AnalysisRuntimeContractsWorkspaceInput = {
   analysisTask: AnalysisTask;
+  badCases: BadCase[];
   conversation: ConversationContract;
   currentRun: AnalysisRunContract;
   decisions: Decision[];
+  evaluationRuns: EvaluationRun[];
+  feedback: Feedback[];
   messageStream: MessageStreamContract[];
   messages: MessageContract[];
   modelCalls: ModelCall[];
@@ -45,6 +51,7 @@ export type AnalysisRuntimeContractsWorkspaceOptions = {
   modelOptions?: readonly { key: string; label: string }[];
   surfaceStates?: Partial<{
     decisions: AnalysisSurfaceState;
+    feedbackClosure: AnalysisSurfaceState;
     messageStream: AnalysisSurfaceState;
     modelDetails: AnalysisSurfaceState;
     reportPreview: AnalysisSurfaceState;
@@ -123,6 +130,14 @@ function resolveSurfaceState(
   }
 
   return itemCount > 0 ? "ready" : "empty";
+}
+
+function sortByCreatedAt<T extends { createdAt: string }>(items: T[]): T[] {
+  return items
+    .slice()
+    .sort(
+      (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+    );
 }
 
 function mapRunStatusToViewModel(status: AnalysisRunContract["status"]): SharedStatusViewModel {
@@ -389,6 +404,11 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
   const runEvents = mapRunEvents(input.runEvents);
   const currentRun = mapCurrentRun(input.currentRun, input.modelCalls, input.runEvents);
   const report = input.reports[0];
+  const reportFeedback = report
+    ? input.feedback.filter((feedback) => feedback.reportId === report.reportId)
+    : [];
+  const latestFeedback = sortByCreatedAt(reportFeedback).at(-1);
+  const latestEvaluationRun = sortByCreatedAt(input.evaluationRuns).at(-1);
   const messageStream = mapMessageStream(input.messageStream);
   const messages = applyMessageStreamReplayToMessages(mapMessages(input.messages), messageStream);
   const assistantMessage = messages.find((message) => message.role === "assistant");
@@ -402,6 +422,14 @@ export function mapAnalysisRuntimeContractsToWorkspaceViewModel(
     currentRun,
     decisions,
     decisionsState: resolveSurfaceState(options?.surfaceStates?.decisions, decisions.length),
+    feedbackClosure: {
+      badCaseCount: input.badCases.length,
+      evaluationRunCount: input.evaluationRuns.length,
+      feedbackCount: reportFeedback.length,
+      latestEvaluationStatus: latestEvaluationRun?.status,
+      latestFeedbackType: latestFeedback?.feedbackType,
+      state: resolveSurfaceState(options?.surfaceStates?.feedbackClosure, reportFeedback.length)
+    },
     followUpComposer: createComposerViewModel("follow_up", options?.followUpComposerDraft ?? ""),
     inputComposer: createComposerViewModel(
       "analysis",

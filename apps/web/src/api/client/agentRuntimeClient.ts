@@ -1,8 +1,11 @@
 import type {
   AnalysisRun,
   AnalysisTask,
+  BadCase,
   Conversation,
   Decision,
+  EvaluationRun,
+  Feedback,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
@@ -24,6 +27,22 @@ import type {
 
 type ListResponse<T> = {
   items: T[];
+};
+
+export type SubmitFeedbackRequest = {
+  comment?: string | null;
+  correction?: string | null;
+  expectedBehavior?: string | null;
+  failureReason?: string | null;
+  failureType?: string | null;
+  feedbackType: Feedback["feedbackType"];
+  reportId: string;
+};
+
+export type FeedbackClosureResponse = {
+  badCase: BadCase | null;
+  evaluationRun: EvaluationRun;
+  feedback: Feedback;
 };
 
 export type ConversationListItem = Conversation & {
@@ -278,5 +297,24 @@ export class AgentRuntimeClient {
 
   listDecisions(runId: string) {
     return this.get<ListResponse<Decision>>(`/analysis-runs/${runId}/decisions`);
+  }
+
+  listFeedback(runId: string) {
+    return this.get<ListResponse<Feedback>>(`/analysis-runs/${runId}/feedback`);
+  }
+
+  listBadCases(runId: string) {
+    return this.get<ListResponse<BadCase>>(`/analysis-runs/${runId}/bad-cases`);
+  }
+
+  listEvaluationRuns(runId: string) {
+    return this.get<ListResponse<EvaluationRun>>(`/analysis-runs/${runId}/evaluation-runs`);
+  }
+
+  submitFeedback(runId: string, payload: SubmitFeedbackRequest) {
+    return this.post<FeedbackClosureResponse, SubmitFeedbackRequest>(
+      `/analysis-runs/${runId}/feedback`,
+      payload
+    );
   }
 }
